@@ -741,7 +741,7 @@
 
     tbody.innerHTML = items.map(function (r) {
       return (
-        '<tr data-id="' + r._id + '">' +
+        '<tr data-id="' + r.id + '">' +
           '<td><span class="cell-truncate" style="max-width:220px;display:block;" title="' + escapeHtml(r.title) + '">' + escapeHtml(r.title) + '</span></td>' +
           '<td><span class="text-sm">' + escapeHtml(r.subject || '—') + '</span></td>' +
           '<td><span class="text-sm">' + escapeHtml(r.resource_type || r.type || '—') + '</span></td>' +
@@ -749,11 +749,11 @@
           '<td><span class="fw-600">' + (r.download_count || 0) + '</span></td>' +
           '<td>' + (r.is_visible ? '<span class="badge badge-visible"><i class="fas fa-eye"></i>Yes</span>' : '<span class="badge badge-hidden"><i class="fas fa-eye-slash"></i>No</span>') + '</td>' +
           '<td class="col-actions">' +
-            '<button class="btn-icon primary btn-admin-sm res-edit-btn" data-id="' + r._id + '" title="Edit" aria-label="Edit ' + escapeHtml(r.title) + '">' +
+            '<button class="btn-icon primary btn-admin-sm res-edit-btn" data-id="' + r.id + '" title="Edit" aria-label="Edit ' + escapeHtml(r.title) + '">' +
               '<i class="fas fa-pen"></i>' +
             '</button>' +
             ' ' +
-            '<button class="btn-icon danger btn-admin-sm res-delete-btn" data-id="' + r._id + '" title="Delete" aria-label="Delete ' + escapeHtml(r.title) + '">' +
+            '<button class="btn-icon danger btn-admin-sm res-delete-btn" data-id="' + r.id + '" title="Delete" aria-label="Delete ' + escapeHtml(r.title) + '">' +
               '<i class="fas fa-trash"></i>' +
             '</button>' +
           '</td>' +
@@ -765,7 +765,7 @@
     tbody.querySelectorAll('.res-edit-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var id = this.getAttribute('data-id');
-        var resource = resourcesState.items.find(function (r) { return r._id === id; });
+        var resource = resourcesState.items.find(function (r) { return r.id === id; });
         if (resource) openResourceModal(resource);
       });
     });
@@ -844,7 +844,7 @@
     }
 
     var method = isEdit ? 'PUT' : 'POST';
-    var path   = isEdit ? '/api/resources/' + resourcesState.editing._id : '/api/resources';
+    var path   = isEdit ? '/api/resources/' + resourcesState.editing.id : '/api/resources';
 
     var btn = $('btnSaveResource');
     if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…'; }
@@ -862,7 +862,7 @@
 
   /** Delete a resource by ID */
   function deleteResource(id) {
-    var resource = resourcesState.items.find(function (r) { return r._id === id; });
+    var resource = resourcesState.items.find(function (r) { return r.id === id; });
     var name     = resource ? resource.title : 'this resource';
 
     if (!confirm('Delete "' + name + '"? This cannot be undone.')) return;
@@ -972,17 +972,17 @@
       var dateStr   = fmtDate(p.published_at || p.created_at || p.createdAt);
 
       return (
-        '<tr data-id="' + p._id + '">' +
+        '<tr data-id="' + p.id + '">' +
           '<td><span class="cell-truncate" style="max-width:260px;display:block;" title="' + escapeHtml(p.title) + '">' + escapeHtml(p.title) + '</span></td>' +
           '<td><span class="text-sm">' + catLabel + '</span></td>' +
           '<td>' + status + '</td>' +
           '<td><span class="text-sm text-muted">' + dateStr + '</span></td>' +
           '<td class="col-actions">' +
-            '<button class="btn-icon primary btn-admin-sm blog-edit-btn" data-id="' + p._id + '" title="Edit" aria-label="Edit ' + escapeHtml(p.title) + '">' +
+            '<button class="btn-icon primary btn-admin-sm blog-edit-btn" data-id="' + p.id + '" title="Edit" aria-label="Edit ' + escapeHtml(p.title) + '">' +
               '<i class="fas fa-pen"></i>' +
             '</button>' +
             ' ' +
-            '<button class="btn-icon danger btn-admin-sm blog-delete-btn" data-id="' + p._id + '" title="Delete" aria-label="Delete ' + escapeHtml(p.title) + '">' +
+            '<button class="btn-icon danger btn-admin-sm blog-delete-btn" data-id="' + p.id + '" title="Delete" aria-label="Delete ' + escapeHtml(p.title) + '">' +
               '<i class="fas fa-trash"></i>' +
             '</button>' +
           '</td>' +
@@ -993,7 +993,7 @@
     tbody.querySelectorAll('.blog-edit-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var id   = this.getAttribute('data-id');
-        var post = blogState.items.find(function (p) { return p._id === id; });
+        var post = blogState.items.find(function (p) { return p.id === id; });
         if (post) openBlogModal(post);
       });
     });
@@ -1084,7 +1084,7 @@
     }
 
     var method = isEdit ? 'PUT' : 'POST';
-    var path   = isEdit ? '/api/blog/' + blogState.editing._id : '/api/blog';
+    var path   = isEdit ? '/api/blog/' + blogState.editing.id : '/api/blog';
 
     var btn = $('btnSaveBlog');
     if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…'; }
@@ -1102,7 +1102,7 @@
 
   /** Delete a blog post by ID */
   function deleteBlog(id) {
-    var post = blogState.items.find(function (p) { return p._id === id; });
+    var post = blogState.items.find(function (p) { return p.id === id; });
     var name = post ? post.title : 'this post';
 
     if (!confirm('Delete "' + name + '"? This cannot be undone.')) return;
@@ -1205,7 +1205,7 @@
 
     tbody.innerHTML = items.map(function (t) {
       return (
-        '<tr data-id="' + t._id + '">' +
+        '<tr data-id="' + t.id + '">' +
           '<td><span class="fw-600">' + escapeHtml(t.student_name || t.name || '—') + '</span></td>' +
           '<td><span class="text-sm">' + escapeHtml(t.exam_type || t.exam || '—') + '</span></td>' +
           '<td><span class="text-sm text-muted">' + escapeHtml(String(t.exam_year || '—')) + '</span></td>' +
@@ -1213,11 +1213,11 @@
           '<td>' + (t.is_featured ? '<span class="badge badge-featured"><i class="fas fa-star"></i>Yes</span>' : '<span class="text-muted text-sm">—</span>') + '</td>' +
           '<td>' + (t.is_visible ? '<span class="badge badge-visible"><i class="fas fa-eye"></i>Yes</span>' : '<span class="badge badge-hidden"><i class="fas fa-eye-slash"></i>No</span>') + '</td>' +
           '<td class="col-actions">' +
-            '<button class="btn-icon primary btn-admin-sm testi-edit-btn" data-id="' + t._id + '" title="Edit" aria-label="Edit testimonial">' +
+            '<button class="btn-icon primary btn-admin-sm testi-edit-btn" data-id="' + t.id + '" title="Edit" aria-label="Edit testimonial">' +
               '<i class="fas fa-pen"></i>' +
             '</button>' +
             ' ' +
-            '<button class="btn-icon danger btn-admin-sm testi-delete-btn" data-id="' + t._id + '" title="Delete" aria-label="Delete testimonial">' +
+            '<button class="btn-icon danger btn-admin-sm testi-delete-btn" data-id="' + t.id + '" title="Delete" aria-label="Delete testimonial">' +
               '<i class="fas fa-trash"></i>' +
             '</button>' +
           '</td>' +
@@ -1228,7 +1228,7 @@
     tbody.querySelectorAll('.testi-edit-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var id   = this.getAttribute('data-id');
-        var tsti = testiState.items.find(function (t) { return t._id === id; });
+        var tsti = testiState.items.find(function (t) { return t.id === id; });
         if (tsti) openTestiModal(tsti);
       });
     });
@@ -1292,7 +1292,7 @@
     }
 
     var method = isEdit ? 'PUT' : 'POST';
-    var path   = isEdit ? '/api/testimonials/' + testiState.editing._id : '/api/testimonials';
+    var path   = isEdit ? '/api/testimonials/' + testiState.editing.id : '/api/testimonials';
 
     var btn = $('btnSaveTesti');
     if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…'; }
@@ -1310,7 +1310,7 @@
 
   /** Delete a testimonial */
   function deleteTesti(id) {
-    var testi = testiState.items.find(function (t) { return t._id === id; });
+    var testi = testiState.items.find(function (t) { return t.id === id; });
     var name  = testi ? (testi.student_name || testi.name) : 'this testimonial';
 
     if (!confirm('Delete testimonial by "' + name + '"? This cannot be undone.')) return;
@@ -1393,7 +1393,7 @@
     var html = '<div class="messages-grid">';
 
     items.forEach(function (m) {
-      var id       = m._id;
+      var id       = m.id;
       var name     = escapeHtml(m.name || m.full_name || 'Anonymous');
       var email    = escapeHtml(m.email || '');
       var subject  = escapeHtml(m.subject || '');
@@ -1462,7 +1462,7 @@
   function markRead(id) {
     adminFetch('PUT', '/api/contact/' + id + '/read').then(function () {
       /* Update state locally */
-      var msg = messagesState.items.find(function (m) { return m._id === id; });
+      var msg = messagesState.items.find(function (m) { return m.id === id; });
       if (msg) msg.is_read = true;
       /* Reload to refresh badges */
       loadMessages();
@@ -1538,7 +1538,7 @@
     tbody.innerHTML = items.map(function (l) {
       var isActive = l.is_active !== undefined ? l.is_active : true;
       return (
-        '<tr data-id="' + (l._id || l.id) + '">' +
+        '<tr data-id="' + (l.id || l.id) + '">' +
           '<td><span class="fw-600">' + escapeHtml(l.name || l.full_name || '—') + '</span></td>' +
           '<td><span class="text-sm">' + escapeHtml(l.email || '—') + '</span></td>' +
           '<td><span class="text-sm">' + escapeHtml(l.exam_target || l.exam || '—') + '</span></td>' +
