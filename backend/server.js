@@ -38,19 +38,19 @@ app.use(cors({
 
 /* ── Rate Limiting ───────────────────────────────────────── */
 
-// General API limiter — 100 requests per 15 minutes per IP
+// General API limiter — 500 requests per 15 minutes per IP
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 500,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests, please try again later.' },
 });
 
-// Stricter limiter for login — 10 attempts per 15 minutes per IP
+// Stricter limiter for login — 20 attempts per 15 minutes per IP
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 20,
   message: { error: 'Too many login attempts. Please wait 15 minutes.' },
 });
 
