@@ -24,6 +24,7 @@ const pdfStorage = new CloudinaryStorage({
   params: async (req, file) => ({
     folder:        'jaspalsingh/resources',
     resource_type: 'raw',
+    access_mode:   'public',
     format:        'pdf',
     public_id:     `resource_${Date.now()}`,
   }),

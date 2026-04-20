@@ -98,7 +98,9 @@ const getOne = async (req, res, next) => {
 };
 
 /* POST /api/resources/download/:id
-   Increments download counter and returns the file URL.
+   Increments download counter and returns a short-lived signed Cloudinary URL.
+   Signed URLs bypass access restrictions — works for all files regardless of
+   when they were uploaded or what access_mode they have.
 */
 const download = async (req, res, next) => {
   try {
@@ -106,7 +108,7 @@ const download = async (req, res, next) => {
       `UPDATE resources
        SET download_count = download_count + 1
        WHERE id = $1 AND is_visible = TRUE
-       RETURNING id, title, file_url, download_count`,
+       RETURNING id, title, file_url, file_public_id, download_count`,
       [req.params.id]
     );
     if (result.rows.length === 0) {
@@ -115,6 +117,23 @@ const download = async (req, res, next) => {
 
     const resourceId = result.rows[0].id;
     const learnerId  = req.learner ? req.learner.id : null;
+
+    /* Build a signed URL that expires in 15 minutes.
+       This bypasses any access_mode restriction on the Cloudinary asset. */
+    let file_url = result.rows[0].file_url;
+    const publicId = result.rows[0].file_public_id;
+    if (publicId) {
+      try {
+        file_url = cloudinary.url(publicId, {
+          resource_type: 'raw',
+          sign_url:      true,
+          secure:        true,
+          expires_at:    Math.floor(Date.now() / 1000) + 900, // 15 min
+        });
+      } catch (e) {
+        console.warn('[resources] Could not generate signed URL, using stored URL:', e.message);
+      }
+    }
 
     /* Log to download_events (time-series analytics — fire and forget) */
     query(
@@ -132,7 +151,7 @@ const download = async (req, res, next) => {
       ).catch(err => console.warn('[resources] learner download log failed:', err.message));
     }
 
-    res.json({ resource: result.rows[0] });
+    res.json({ resource: { ...result.rows[0], file_url } });
   } catch (err) {
     next(err);
   }

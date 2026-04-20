@@ -125,7 +125,9 @@ const login = async (req, res, next) => {
 const getMe = async (req, res, next) => {
   try {
     const result = await query(
-      'SELECT id, name, email, target_exam, phone, notify_strategy, created_at, last_login FROM learners WHERE id = $1',
+      `SELECT id, name, email, target_exam, phone, dob, gender, graduation_college,
+              notify_strategy, created_at, last_login
+       FROM learners WHERE id = $1`,
       [req.learner.id]
     );
     if (!result.rows.length) return res.status(404).json({ error: 'Learner not found.' });
@@ -136,18 +138,28 @@ const getMe = async (req, res, next) => {
 /* ── PUT /api/learners/me ───────────────────────────────────── */
 const updateMe = async (req, res, next) => {
   try {
-    const { name, target_exam, phone, notify_strategy } = req.body;
+    const { name, target_exam, phone, dob, gender, graduation_college, notify_strategy } = req.body;
     const result = await query(
       `UPDATE learners
-       SET name = COALESCE($1, name),
-           target_exam = COALESCE($2, target_exam),
-           phone = COALESCE($3, phone),
-           notify_strategy = COALESCE($4, notify_strategy)
-       WHERE id = $5
-       RETURNING id, name, email, target_exam, phone, notify_strategy`,
-      [name || null, target_exam || null, phone || null,
-       notify_strategy !== undefined ? notify_strategy : null,
-       req.learner.id]
+       SET name               = COALESCE($1, name),
+           target_exam        = COALESCE($2, target_exam),
+           phone              = COALESCE($3, phone),
+           dob                = COALESCE($4, dob),
+           gender             = COALESCE($5, gender),
+           graduation_college = COALESCE($6, graduation_college),
+           notify_strategy    = COALESCE($7, notify_strategy)
+       WHERE id = $8
+       RETURNING id, name, email, target_exam, phone, dob, gender, graduation_college, notify_strategy`,
+      [
+        name               || null,
+        target_exam        || null,
+        phone              || null,
+        dob                || null,
+        gender             || null,
+        graduation_college || null,
+        notify_strategy !== undefined ? notify_strategy : null,
+        req.learner.id,
+      ]
     );
     res.json({ message: 'Profile updated.', learner: result.rows[0] });
   } catch (err) { next(err); }

@@ -351,7 +351,6 @@
   /* ── Header learner pill ────────────────────────────────── */
 
   function updateHeaderUI() {
-    /* Remove any existing learner UI element */
     var existing = document.getElementById('learnerHeaderUI');
     if (existing) existing.remove();
 
@@ -368,9 +367,9 @@
         '<i class="fas fa-user-circle" style="margin-right:4px;color:var(--magenta,#F0345A);"></i>Hi, ' +
         escHtml(firstName) + '!' +
       '</span>' +
+      '<a href="/profile.html" class="learner-profile-link">My Profile</a>' +
       '<button class="learner-logout" id="learnerLogoutBtn">Logout</button>';
 
-    /* Insert after the main nav (before hamburger button) */
     var headerInner = document.querySelector('.header-inner');
     var hamburger   = document.getElementById('hamburger');
     if (headerInner && hamburger) {
@@ -408,5 +407,17 @@
   } else {
     updateHeaderUI();
   }
+
+  /* ── Show login modal after 1 min if visitor not logged in ── */
+  (function () {
+    var SESSION_KEY = 'lauth_auto_prompted';
+    if (isLoggedIn() || sessionStorage.getItem(SESSION_KEY)) return;
+    setTimeout(function () {
+      if (!isLoggedIn()) {
+        sessionStorage.setItem(SESSION_KEY, '1');
+        showModal(null);
+      }
+    }, 60000);
+  })();
 
 })(window);

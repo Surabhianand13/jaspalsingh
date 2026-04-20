@@ -155,7 +155,6 @@
       var id = btn.dataset.resourceId;
       if (!id) return;
 
-      /* Gate behind learner auth — show modal if not logged in */
       var auth = window.LearnerAuth;
       if (auth && !auth.isLoggedIn()) {
         auth.showModal(function () { proceedDownload(id, btn); });

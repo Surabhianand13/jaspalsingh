@@ -198,5 +198,11 @@ CREATE INDEX IF NOT EXISTS idx_dev_learner  ON download_events(learner_id);
 CREATE INDEX IF NOT EXISTS idx_dev_date     ON download_events(downloaded_at DESC);
 
 
+-- ── Learner Profile Extra Fields (migration — safe to re-run) ────
+ALTER TABLE learners ADD COLUMN IF NOT EXISTS dob DATE;
+ALTER TABLE learners ADD COLUMN IF NOT EXISTS gender VARCHAR(20);
+ALTER TABLE learners ADD COLUMN IF NOT EXISTS graduation_college VARCHAR(300);
+
+
 -- ── Done ─────────────────────────────────────────────────────
 SELECT 'Schema applied successfully — jaspalsingh.in' AS status;
