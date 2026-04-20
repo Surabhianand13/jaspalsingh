@@ -840,7 +840,7 @@
 
     /* Only attach file if one was selected */
     if (file) {
-      fd.append('pdf', file);
+      fd.append('file', file);
     }
 
     var method = isEdit ? 'PUT' : 'POST';
