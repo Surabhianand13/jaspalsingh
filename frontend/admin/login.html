@@ -424,6 +424,42 @@
         btn.classList.toggle('loading', on);
       }
 
+      /* ── API login call (with cold-start retry) ─ */
+      function doLogin(email, password, isRetry) {
+        return fetch(API_BASE + '/api/auth/login', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ email: email, password: password })
+        }).then(function (res) {
+          if (res.status === 503 && !isRetry) {
+            showError('Server is starting up — retrying in 12 seconds…');
+            return new Promise(function (resolve, reject) {
+              setTimeout(function () {
+                doLogin(email, password, true).then(resolve).catch(reject);
+              }, 12000);
+            });
+          }
+          if (!res.ok) {
+            return res.json().then(function (data) {
+              throw new Error(data.message || data.error || 'Login failed. Please try again.');
+            }, function () {
+              throw new Error('Login failed (HTTP ' + res.status + '). Please try again.');
+            });
+          }
+          return res.json();
+        }).catch(function (err) {
+          if (err.name === 'TypeError' && !isRetry) {
+            showError('Server is starting up — retrying in 12 seconds…');
+            return new Promise(function (resolve, reject) {
+              setTimeout(function () {
+                doLogin(email, password, true).then(resolve).catch(reject);
+              }, 12000);
+            });
+          }
+          throw err;
+        });
+      }
+
       /* ── Form submit ────────────────────── */
       form.addEventListener('submit', function (e) {
         e.preventDefault();
@@ -432,7 +468,6 @@
         var email    = emailEl.value.trim();
         var password = passEl.value;
 
-        /* Basic client-side validation */
         if (!email || !password) {
           showError('Please enter both email and password.');
           return;
@@ -440,27 +475,11 @@
 
         setLoading(true);
 
-        fetch(API_BASE + '/api/auth/login', {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ email: email, password: password })
-        })
-          .then(function (res) {
-            if (!res.ok) {
-              /* Try to get error message from body */
-              return res.json().then(function (data) {
-                throw new Error(data.message || data.error || 'Login failed. Please try again.');
-              }, function () {
-                throw new Error('Login failed (HTTP ' + res.status + '). Please try again.');
-              });
-            }
-            return res.json();
-          })
+        doLogin(email, password, false)
           .then(function (data) {
             if (!data.token) {
               throw new Error('No token received. Please try again.');
             }
-            /* Store admin JWT and redirect */
             localStorage.setItem(TOKEN_KEY, data.token);
             location.replace('dashboard.html');
           })

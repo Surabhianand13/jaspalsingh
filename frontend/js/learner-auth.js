@@ -45,8 +45,12 @@
   /* ── API helpers ────────────────────────────────────────── */
 
   function authPost(path, body) {
+    return doAuthPost(path, body, false);
+  }
+
+  function doAuthPost(path, body, isRetry) {
     var controller = new AbortController();
-    var timeoutId  = setTimeout(function () { controller.abort(); }, 10000); /* 10 s */
+    var timeoutId  = setTimeout(function () { controller.abort(); }, 15000); /* 15 s */
 
     return fetch(API_BASE + path, {
       method:  'POST',
@@ -55,13 +59,32 @@
       signal:  controller.signal,
     }).then(function (res) {
       clearTimeout(timeoutId);
+      /* 503 = Render cold start — retry once after 12 s */
+      if (res.status === 503 && !isRetry) {
+        return new Promise(function (resolve, reject) {
+          showError('Server is starting up — please wait a moment…');
+          setTimeout(function () {
+            doAuthPost(path, body, true).then(resolve).catch(reject);
+          }, 12000);
+        });
+      }
       return res.json().then(function (data) {
         if (!res.ok) throw new Error(data.error || 'Something went wrong (' + res.status + ')');
         return data;
       });
     }).catch(function (err) {
       clearTimeout(timeoutId);
-      if (err.name === 'AbortError') throw new Error('Request timed out. Please check your connection and try again.');
+      if (err.name === 'AbortError') {
+        if (!isRetry) {
+          return new Promise(function (resolve, reject) {
+            showError('Server is starting up — retrying in 12 seconds…');
+            setTimeout(function () {
+              doAuthPost(path, body, true).then(resolve).catch(reject);
+            }, 12000);
+          });
+        }
+        throw new Error('Server took too long to respond. Please try again in a moment.');
+      }
       throw err;
     });
   }

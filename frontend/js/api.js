@@ -20,7 +20,7 @@
     if (host === 'localhost' || host === '127.0.0.1') {
       return 'http://localhost:5000';
     }
-    /* Production: same origin — Vercel rewrites /api/* to Railway */
+    /* Production: same origin — Vercel rewrites /api/* to Render */
     return '';
   })();
 
@@ -275,5 +275,16 @@
 
   /* ── Expose globally ─────────────────────────────────────────── */
   global.JaspalAPI = api;
+
+  /* ── Auto-wake backend on every page load ───────────────────── */
+  /* Render free tier sleeps after 15 min; this silent ping wakes  */
+  /* it up immediately so it's ready by the time a user submits.  */
+  (function () {
+    var isProd = window.location.hostname !== 'localhost' &&
+                 window.location.hostname !== '127.0.0.1';
+    if (isProd) {
+      fetch('/api/health', { method: 'GET' }).catch(function () {});
+    }
+  })();
 
 })(window);

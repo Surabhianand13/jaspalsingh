@@ -350,10 +350,26 @@
           btn.innerHTML          = '<i class="fas fa-paper-plane"></i> Send Message';
         }
 
-        if (api && api.contact) {
+        function trySubmit(isRetry) {
           api.contact.submit({ name: name, email: email, message: message })
             .then(function () { onSuccess(); })
-            .catch(function (err) { onError(err && err.message); });
+            .catch(function (err) {
+              var status = err && err.status;
+              if ((status === 503 || err.name === 'TypeError') && !isRetry) {
+                errorEl.textContent   = 'Server is starting up — retrying in 12 seconds…';
+                errorEl.style.display = 'block';
+                setTimeout(function () {
+                  errorEl.style.display = 'none';
+                  trySubmit(true);
+                }, 12000);
+              } else {
+                onError(err && err.message);
+              }
+            });
+        }
+
+        if (api && api.contact) {
+          trySubmit(false);
         } else {
           /* Fallback: no API client loaded — graceful degradation */
           setTimeout(onSuccess, 900);

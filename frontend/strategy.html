@@ -844,13 +844,33 @@
         }
 
         function onError() {
-          submitBtn.disabled  = false;
-          submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Me My Strategy Plan';
-          alert('Something went wrong. Please try again or reach out on Telegram.');
+          /* Backend not available — fall back to mailto so no request is lost */
+          var body = encodeURIComponent(
+            'Name: ' + payload.name + '\n' +
+            'Email: ' + payload.email + '\n\n' +
+            payload.message
+          );
+          var subject = encodeURIComponent(payload.subject || 'Strategy Plan Request');
+          window.location.href = 'mailto:admin@jaspalsingh.in?subject=' + subject + '&body=' + body;
+          onSuccess();
+        }
+
+        function trySubmit(isRetry) {
+          api.contact.submit(payload)
+            .then(onSuccess)
+            .catch(function (err) {
+              var status = err && err.status;
+              if ((status === 503 || err.name === 'TypeError') && !isRetry) {
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Server starting — retrying…';
+                setTimeout(function () { trySubmit(true); }, 12000);
+              } else {
+                onError();
+              }
+            });
         }
 
         if (api && api.contact) {
-          api.contact.submit(payload).then(onSuccess).catch(onError);
+          trySubmit(false);
         } else {
           /* Graceful degradation if API module not loaded */
           setTimeout(onSuccess, 900);
