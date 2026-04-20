@@ -89,8 +89,20 @@
 
   /* ── Render API cards ─────────────────────────────────────── */
 
+  var TYPE_CLASS_MAP = {
+    'Notes':             'type-notes',
+    'Formula Book':      'type-formula',
+    'PYQ':               'type-pyq',
+    'Strategy Guide':    'type-strategy',
+    'Handwritten Notes': 'type-handwritten',
+    'Exam Update':       'type-update',
+  };
+
+  function typeBadgeClass(type) {
+    return TYPE_CLASS_MAP[type] || 'type-other';
+  }
+
   function renderCards(items, total) {
-    /* Clear grid, preserve noResults */
     if (noResults && noResults.parentNode === grid) grid.removeChild(noResults);
     grid.innerHTML = '';
     if (noResults) grid.appendChild(noResults);
@@ -108,6 +120,7 @@
 
     items.forEach(function (r) {
       var tagClass  = api.utils.subjectClass(r.subject || '');
+      var typeClass = typeBadgeClass(r.resource_type || r.type || '');
       var date      = api.utils.monthYear(r.created_at);
       var size      = api.utils.fileSize(r.file_size);
       var dlCount   = api.utils.count(r.download_count || 0);
@@ -118,15 +131,18 @@
       var id        = r.id;
 
       var card = document.createElement('article');
-      card.className = 'resource-card';
+      card.className = 'resource-card ' + tagClass;
       card.dataset.id = id;
       card.innerHTML =
-        '<div class="resource-card-top">' +
-          '<span class="subject-tag ' + tagClass + '">' + subject + '</span>' +
-          '<span class="resource-type-badge">' + type + '</span>' +
+        '<div class="rc-icon-zone">' +
+          '<div class="rc-pdf-icon ' + tagClass + '"><i class="fas fa-file-pdf"></i></div>' +
+          '<span class="resource-type-badge ' + typeClass + '">' + type + '</span>' +
         '</div>' +
-        '<h3 class="resource-title">' + title + '</h3>' +
-        '<p class="resource-desc">' + desc + '</p>' +
+        '<div class="rc-body">' +
+          '<span class="subject-tag ' + tagClass + '">' + subject + '</span>' +
+          '<h3 class="resource-title">' + title + '</h3>' +
+          (desc ? '<p class="resource-desc">' + desc + '</p>' : '') +
+        '</div>' +
         '<div class="resource-meta">' +
           (date    ? '<span><i class="fas fa-calendar-alt"></i> ' + date    + '</span>' : '') +
           (size    ? '<span><i class="fas fa-file-pdf"></i> '     + size    + '</span>' : '') +
@@ -136,7 +152,6 @@
           '<i class="fas fa-download"></i> Download Free' +
         '</a>';
 
-      /* Insert before noResults */
       grid.insertBefore(card, noResults);
 
       var dlBtn = card.querySelector('.btn-download');
