@@ -1,0 +1,14 @@
+# robots.txt — jaspalsingh.in
+# Allow all search engines to crawl the public site.
+
+User-agent: *
+Allow: /
+
+# Block admin panel from indexing
+Disallow: /admin/
+
+# Block API from indexing (backend, but just in case)
+Disallow: /api/
+
+# Sitemap location
+Sitemap: https://jaspalsingh.in/sitemap.xml

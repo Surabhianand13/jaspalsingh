@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard — Dr. Jaspal Singh</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- Font Awesome 6.5.1 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <!-- Quill.js 1.3.7 -->
+  <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet" />
+
+  <!-- Admin styles -->
+  <link rel="stylesheet" href="css/admin.css" />
+</head>
+<body>
+
+<!-- Mobile sidebar toggle -->
+<button class="admin-sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
+  <i class="fas fa-bars"></i>
+</button>
+
+<!-- Mobile overlay -->
+<div class="admin-sidebar-overlay" id="sidebarOverlay"></div>
+
+<div class="admin-layout">
+
+  <!-- ══════════════════════════════════
+       SIDEBAR
+       ══════════════════════════════════ -->
+  <aside class="admin-sidebar" id="adminSidebar" role="navigation" aria-label="Admin navigation">
+
+    <!-- Logo -->
+    <div class="admin-sidebar-logo">
+      <div class="logo-mark">
+        <div class="logo-icon" aria-hidden="true">
+          <i class="fas fa-hard-hat"></i>
+        </div>
+        <div class="logo-text">
+          Dr. Jaspal Singh
+          <span>Admin Panel</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="admin-nav" aria-label="Sections">
+      <div class="admin-nav-section">
+        <span class="admin-nav-label">Main</span>
+
+        <button class="admin-nav-link active" data-section="dashboard" aria-current="page">
+          <i class="fas fa-gauge-high" aria-hidden="true"></i>
+          Dashboard
+        </button>
+
+        <button class="admin-nav-link" data-section="resources">
+          <i class="fas fa-file-pdf" aria-hidden="true"></i>
+          Resources
+        </button>
+
+        <button class="admin-nav-link" data-section="blog">
+          <i class="fas fa-pen-to-square" aria-hidden="true"></i>
+          Blog
+        </button>
+
+        <button class="admin-nav-link" data-section="testimonials">
+          <i class="fas fa-star" aria-hidden="true"></i>
+          Testimonials
+        </button>
+      </div>
+
+      <div class="admin-nav-section" style="margin-top:8px;">
+        <span class="admin-nav-label">Community</span>
+
+        <button class="admin-nav-link" data-section="messages" id="navMessages">
+          <i class="fas fa-envelope" aria-hidden="true"></i>
+          Messages
+          <!-- Unread badge injected by JS -->
+        </button>
+
+        <button class="admin-nav-link" data-section="learners">
+          <i class="fas fa-users" aria-hidden="true"></i>
+          Learners
+        </button>
+      </div>
+    </nav>
+
+    <!-- Footer links -->
+    <div class="admin-sidebar-footer">
+      <a href="../index.html" target="_blank" rel="noopener">
+        <i class="fas fa-arrow-up-right-from-square"></i>
+        View Site
+      </a>
+    </div>
+
+  </aside><!-- /.admin-sidebar -->
+
+  <!-- ══════════════════════════════════
+       MAIN CONTENT
+       ══════════════════════════════════ -->
+  <main class="admin-main">
+
+    <!-- Topbar -->
+    <header class="admin-topbar" role="banner">
+      <div class="admin-topbar-left">
+        <h1 class="page-title" id="pageTitle">Dashboard</h1>
+      </div>
+      <div class="admin-topbar-right">
+        <div class="admin-user-info">
+          <div class="admin-user-avatar" aria-hidden="true">A</div>
+          <span class="admin-user-name">Admin</span>
+        </div>
+        <button class="btn-logout" id="btnLogout" type="button">
+          <i class="fas fa-right-from-bracket" aria-hidden="true"></i>
+          <span>Logout</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Content area -->
+    <div class="admin-content" role="main">
+
+      <!-- ══════════════════════════════
+           SECTION: DASHBOARD
+           ══════════════════════════════ -->
+      <section class="admin-section active" id="section-dashboard" aria-label="Dashboard overview">
+
+        <div class="section-header">
+          <h2 class="section-title">Overview</h2>
+          <div class="section-actions">
+            <button class="btn-admin-secondary btn-admin-sm" id="btnRefreshDash" type="button">
+              <i class="fas fa-arrows-rotate"></i> Refresh
+            </button>
+          </div>
+        </div>
+
+        <!-- Stat cards -->
+        <div class="stats-grid" id="statsGrid">
+          <!-- Injected by admin.js -->
+          <div class="stat-card" style="--stat-color:#F0345A;--stat-bg:rgba(240,52,90,0.1);">
+            <div class="stat-card-icon"><i class="fas fa-file-pdf"></i></div>
+            <div class="stat-card-label">Resources</div>
+            <div class="stat-card-value" id="statResources">—</div>
+          </div>
+          <div class="stat-card" style="--stat-color:#67C8E8;--stat-bg:rgba(103,200,232,0.1);">
+            <div class="stat-card-icon"><i class="fas fa-pen-to-square"></i></div>
+            <div class="stat-card-label">Blog Posts</div>
+            <div class="stat-card-value" id="statBlog">—</div>
+          </div>
+          <div class="stat-card" style="--stat-color:#f59e0b;--stat-bg:rgba(245,158,11,0.1);">
+            <div class="stat-card-icon"><i class="fas fa-star"></i></div>
+            <div class="stat-card-label">Testimonials</div>
+            <div class="stat-card-value" id="statTestis">—</div>
+          </div>
+          <div class="stat-card" style="--stat-color:#8b5cf6;--stat-bg:rgba(139,92,246,0.1);">
+            <div class="stat-card-icon"><i class="fas fa-envelope"></i></div>
+            <div class="stat-card-label">Unread Messages</div>
+            <div class="stat-card-value" id="statUnread">—</div>
+          </div>
+          <div class="stat-card" style="--stat-color:#10b981;--stat-bg:rgba(16,185,129,0.1);">
+            <div class="stat-card-icon"><i class="fas fa-users"></i></div>
+            <div class="stat-card-label">Learners</div>
+            <div class="stat-card-value" id="statLearners">—</div>
+          </div>
+          <div class="stat-card" style="--stat-color:#ef4444;--stat-bg:rgba(239,68,68,0.1);">
+            <div class="stat-card-icon"><i class="fas fa-download"></i></div>
+            <div class="stat-card-label">Total Downloads</div>
+            <div class="stat-card-value" id="statDownloads">—</div>
+          </div>
+        </div>
+
+        <!-- Dashboard 2-col cards -->
+        <div class="dashboard-grid">
+          <!-- Recent messages -->
+          <div class="admin-card">
+            <div class="admin-card-title">
+              <i class="fas fa-envelope"></i>
+              Recent Messages
+            </div>
+            <div id="recentMessagesList">
+              <div class="text-muted text-sm">Loading…</div>
+            </div>
+          </div>
+
+          <!-- Learner signups by exam -->
+          <div class="admin-card">
+            <div class="admin-card-title">
+              <i class="fas fa-chart-pie"></i>
+              Learners by Target Exam
+            </div>
+            <div id="quickStats">
+              <div class="text-muted text-sm">Loading…</div>
+            </div>
+            <div style="max-width:280px;margin:12px auto 0;">
+              <canvas id="chartExamDonut" height="220"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Full-width trend charts -->
+        <div class="admin-card" style="margin-top:0;">
+          <div class="admin-card-title" style="justify-content:space-between;">
+            <span><i class="fas fa-chart-line"></i> Downloads Trend</span>
+            <div style="display:flex;gap:8px;">
+              <button class="btn-admin-secondary btn-admin-sm chart-range-btn active" data-days="14">14d</button>
+              <button class="btn-admin-secondary btn-admin-sm chart-range-btn" data-days="30">30d</button>
+            </div>
+          </div>
+          <canvas id="chartDownloads" height="90"></canvas>
+        </div>
+
+        <div class="admin-card">
+          <div class="admin-card-title" style="justify-content:space-between;">
+            <span><i class="fas fa-user-plus"></i> Learner Signups Trend</span>
+            <div style="display:flex;gap:8px;">
+              <button class="btn-admin-secondary btn-admin-sm chart-range-btn-l active" data-days="14">14d</button>
+              <button class="btn-admin-secondary btn-admin-sm chart-range-btn-l" data-days="30">30d</button>
+            </div>
+          </div>
+          <canvas id="chartLearners" height="90"></canvas>
+        </div>
+
+        <!-- Top resources bar chart -->
+        <div class="admin-card">
+          <div class="admin-card-title">
+            <i class="fas fa-trophy"></i>
+            Top 8 Resources by Downloads
+          </div>
+          <canvas id="chartTopResources" height="120"></canvas>
+        </div>
+
+      </section><!-- /#section-dashboard -->
+
+
+      <!-- ══════════════════════════════
+           SECTION: RESOURCES
+           ══════════════════════════════ -->
+      <section class="admin-section" id="section-resources" aria-label="Resources management">
+
+        <div class="section-header">
+          <h2 class="section-title">Resources</h2>
+          <div class="section-actions">
+            <div class="admin-search-wrap">
+              <i class="fas fa-search"></i>
+              <input type="search" class="admin-search-input" id="resourceSearch" placeholder="Search resources…" />
+            </div>
+            <button class="btn-admin-primary" id="btnAddResource" type="button">
+              <i class="fas fa-plus"></i> Add Resource
+            </button>
+          </div>
+        </div>
+
+        <div class="admin-table-wrap">
+          <table class="admin-table" id="resourcesTable" aria-label="Resources table">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Subject</th>
+                <th>Type</th>
+                <th>Exam</th>
+                <th>Downloads</th>
+                <th>Visible</th>
+                <th class="col-actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="resourcesTableBody">
+              <tr>
+                <td colspan="7">
+                  <div class="admin-table-empty">
+                    <i class="fas fa-file-pdf"></i>
+                    <p>Loading resources…</p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </section><!-- /#section-resources -->
+
+
+      <!-- ══════════════════════════════
+           SECTION: BLOG
+           ══════════════════════════════ -->
+      <section class="admin-section" id="section-blog" aria-label="Blog management">
+
+        <div class="section-header">
+          <h2 class="section-title">Blog Posts</h2>
+          <div class="section-actions">
+            <select class="admin-select" id="blogCategoryFilter" style="width:auto;padding:8px 36px 8px 12px;">
+              <option value="">All Categories</option>
+              <option value="exam-updates">Exam Updates</option>
+              <option value="subject-tips">Subject Tips</option>
+              <option value="strategy">Strategy</option>
+              <option value="student-stories">Student Stories</option>
+              <option value="personal-notes">Personal Notes</option>
+            </select>
+            <button class="btn-admin-primary" id="btnAddBlog" type="button">
+              <i class="fas fa-plus"></i> New Post
+            </button>
+          </div>
+        </div>
+
+        <div class="admin-table-wrap">
+          <table class="admin-table" id="blogTable" aria-label="Blog posts table">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Category</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th class="col-actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="blogTableBody">
+              <tr>
+                <td colspan="5">
+                  <div class="admin-table-empty">
+                    <i class="fas fa-pen-to-square"></i>
+                    <p>Loading posts…</p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </section><!-- /#section-blog -->
+
+
+      <!-- ══════════════════════════════
+           SECTION: TESTIMONIALS
+           ══════════════════════════════ -->
+      <section class="admin-section" id="section-testimonials" aria-label="Testimonials management">
+
+        <div class="section-header">
+          <h2 class="section-title">Testimonials</h2>
+          <div class="section-actions">
+            <button class="btn-admin-primary" id="btnAddTesti" type="button">
+              <i class="fas fa-plus"></i> Add Testimonial
+            </button>
+          </div>
+        </div>
+
+        <div class="admin-table-wrap">
+          <table class="admin-table" id="testiTable" aria-label="Testimonials table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Exam</th>
+                <th>Year</th>
+                <th>Rank / Result</th>
+                <th>Featured</th>
+                <th>Visible</th>
+                <th class="col-actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="testiTableBody">
+              <tr>
+                <td colspan="7">
+                  <div class="admin-table-empty">
+                    <i class="fas fa-star"></i>
+                    <p>Loading testimonials…</p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </section><!-- /#section-testimonials -->
+
+
+      <!-- ══════════════════════════════
+           SECTION: MESSAGES
+           ══════════════════════════════ -->
+      <section class="admin-section" id="section-messages" aria-label="Contact messages">
+
+        <div class="section-header">
+          <h2 class="section-title">Messages</h2>
+        </div>
+
+        <div class="filter-tabs" role="tablist" aria-label="Message filter">
+          <button class="filter-tab active" data-filter="all" role="tab" aria-selected="true" id="msgFilterAll">
+            All Messages
+          </button>
+          <button class="filter-tab" data-filter="unread" role="tab" aria-selected="false" id="msgFilterUnread">
+            Unread
+          </button>
+        </div>
+
+        <div id="messagesContainer">
+          <div class="text-muted text-sm">Loading messages…</div>
+        </div>
+
+      </section><!-- /#section-messages -->
+
+
+      <!-- ══════════════════════════════
+           SECTION: LEARNERS
+           ══════════════════════════════ -->
+      <section class="admin-section" id="section-learners" aria-label="Learners management">
+
+        <div class="section-header">
+          <h2 class="section-title">Learners</h2>
+          <div class="section-actions">
+            <div class="admin-search-wrap">
+              <i class="fas fa-search"></i>
+              <input type="search" class="admin-search-input" id="learnerSearch" placeholder="Search learners…" />
+            </div>
+            <button class="btn-admin-secondary" id="btnExportCSV" type="button">
+              <i class="fas fa-download"></i> Export CSV
+            </button>
+          </div>
+        </div>
+
+        <div class="admin-table-wrap">
+          <table class="admin-table" id="learnersTable" aria-label="Learners table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Exam</th>
+                <th>Downloads</th>
+                <th>Joined</th>
+                <th>Last Login</th>
+                <th>Active</th>
+              </tr>
+            </thead>
+            <tbody id="learnersTableBody">
+              <tr>
+                <td colspan="7">
+                  <div class="admin-table-empty">
+                    <i class="fas fa-users"></i>
+                    <p>Loading learners…</p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </section><!-- /#section-learners -->
+
+    </div><!-- /.admin-content -->
+  </main><!-- /.admin-main -->
+
+</div><!-- /.admin-layout -->
+
+
+<!-- ══════════════════════════════════════════
+     MODAL: RESOURCE ADD/EDIT
+     ══════════════════════════════════════════ -->
+<div class="admin-modal-overlay" id="resourceModal" role="dialog" aria-modal="true" aria-labelledby="resourceModalTitle">
+  <div class="admin-modal">
+    <div class="admin-modal-header">
+      <h3 class="admin-modal-title" id="resourceModalTitle">Add Resource</h3>
+      <button class="admin-modal-close" data-modal="resourceModal" type="button" aria-label="Close modal">
+        <i class="fas fa-xmark"></i>
+      </button>
+    </div>
+    <div class="admin-modal-body">
+      <form id="resourceForm" novalidate>
+
+        <!-- Title -->
+        <div class="admin-form-group">
+          <label class="admin-form-label" for="resTitle">Title <span class="required">*</span></label>
+          <input type="text" id="resTitle" class="admin-input" placeholder="e.g. Fluid Mechanics Formula Book" required />
+        </div>
+
+        <div class="admin-form-row">
+          <!-- Subject -->
+          <div class="admin-form-group">
+            <label class="admin-form-label" for="resSubject">Subject <span class="required">*</span></label>
+            <select id="resSubject" class="admin-select" required>
+              <option value="">Select subject…</option>
+              <option value="Environmental Engineering">Environmental Engineering</option>
+              <option value="Geotechnical Engineering">Geotechnical Engineering</option>
+              <option value="Engineering Hydrology">Engineering Hydrology</option>
+              <option value="Irrigation Engineering">Irrigation Engineering</option>
+              <option value="Fluid Mechanics">Fluid Mechanics</option>
+              <option value="Structural Analysis">Structural Analysis</option>
+              <option value="RCC &amp; Steel Design">RCC &amp; Steel Design</option>
+              <option value="Transportation Engineering">Transportation Engineering</option>
+              <option value="Surveying">Surveying</option>
+              <option value="Other Civil Subjects">Other Civil Subjects</option>
+            </select>
+          </div>
+
+          <!-- Type -->
+          <div class="admin-form-group">
+            <label class="admin-form-label" for="resType">Resource Type <span class="required">*</span></label>
+            <select id="resType" class="admin-select" required>
+              <option value="">Select type…</option>
+              <option value="Notes">Notes</option>
+              <option value="Formula Book">Formula Book</option>
+              <option value="Strategy Guide">Strategy Guide</option>
+              <option value="PYQ">PYQ</option>
+              <option value="Exam Update">Exam Update</option>
+              <option value="Handwritten Notes">Handwritten Notes</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="admin-form-row">
+          <!-- Exam tag -->
+          <div class="admin-form-group">
+            <label class="admin-form-label" for="resExamTag">Exam Tag</label>
+            <select id="resExamTag" class="admin-select">
+              <option value="">None</option>
+              <option value="GATE">GATE</option>
+              <option value="ESE">ESE</option>
+              <option value="SSC-JE">SSC-JE</option>
+              <option value="UPPSC-AE">UPPSC-AE</option>
+              <option value="General">General</option>
+            </select>
+          </div>
+
+          <!-- File size (read-only) -->
+          <div class="admin-form-group" id="resFileSizeGroup" style="display:none;">
+            <label class="admin-form-label" for="resFileSize">File Size</label>
+            <input type="text" id="resFileSize" class="admin-input" readonly disabled placeholder="Auto-detected" />
+            <div class="admin-form-hint">Set by Cloudinary on upload.</div>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="admin-form-group">
+          <label class="admin-form-label" for="resDescription">Description</label>
+          <textarea id="resDescription" class="admin-textarea" placeholder="Brief description of the resource…" rows="3"></textarea>
+        </div>
+
+        <!-- PDF upload -->
+        <div class="admin-form-group">
+          <label class="admin-form-label" for="resPdfFile">
+            PDF File <span class="required" id="resPdfRequired">*</span>
+          </label>
+          <div class="admin-file-input-wrap" id="resPdfWrap">
+            <i class="fas fa-cloud-arrow-up" style="font-size:22px;margin-bottom:6px;color:#cbd5e1;"></i>
+            <div class="admin-file-input-text">Click or drag to upload PDF</div>
+            <div class="admin-file-selected" id="resPdfSelected" style="display:none;"></div>
+            <input type="file" id="resPdfFile" accept=".pdf,application/pdf" />
+          </div>
+          <div class="admin-form-hint" id="resPdfHint" style="display:none;">
+            Leave empty to keep the existing file.
+          </div>
+        </div>
+
+        <!-- Visible toggle -->
+        <div class="admin-form-group">
+          <label class="admin-checkbox-group">
+            <input type="checkbox" id="resVisible" class="admin-checkbox" checked />
+            <span class="admin-checkbox-label">Visible to learners</span>
+          </label>
+        </div>
+
+      </form>
+    </div>
+    <div class="admin-modal-footer">
+      <button type="button" class="btn-admin-secondary" data-modal="resourceModal">Cancel</button>
+      <button type="button" class="btn-admin-primary" id="btnSaveResource">
+        <i class="fas fa-floppy-disk"></i> Save Resource
+      </button>
+    </div>
+  </div>
+</div><!-- /#resourceModal -->
+
+
+<!-- ══════════════════════════════════════════
+     MODAL: BLOG ADD/EDIT
+     ══════════════════════════════════════════ -->
+<div class="admin-modal-overlay" id="blogModal" role="dialog" aria-modal="true" aria-labelledby="blogModalTitle">
+  <div class="admin-modal modal-lg">
+    <div class="admin-modal-header">
+      <h3 class="admin-modal-title" id="blogModalTitle">New Blog Post</h3>
+      <button class="admin-modal-close" data-modal="blogModal" type="button" aria-label="Close modal">
+        <i class="fas fa-xmark"></i>
+      </button>
+    </div>
+    <div class="admin-modal-body">
+      <form id="blogForm" novalidate>
+
+        <!-- Title -->
+        <div class="admin-form-group">
+          <label class="admin-form-label" for="blogTitle">Title <span class="required">*</span></label>
+          <input type="text" id="blogTitle" class="admin-input" placeholder="Post title…" required />
+        </div>
+
+        <!-- Slug -->
+        <div class="admin-form-group">
+          <label class="admin-form-label" for="blogSlug">URL Slug <span class="required">*</span></label>
+          <input type="text" id="blogSlug" class="admin-input" placeholder="auto-generated-from-title" required />
+          <div class="admin-form-hint">URL: /blog/<span id="slugPreview">—</span></div>
+        </div>
+
+        <div class="admin-form-row">
+          <!-- Category -->
+          <div class="admin-form-group">
+            <label class="admin-form-label" for="blogCategory">Category <span class="required">*</span></label>
+            <select id="blogCategory" class="admin-select" required>
+              <option value="">Select category…</option>
+              <option value="exam-updates">Exam Updates</option>
+              <option value="subject-tips">Subject Tips</option>
+              <option value="strategy">Strategy</option>
+              <option value="student-stories">Student Stories</option>
+              <option value="personal-notes">Personal Notes</option>
+            </select>
+          </div>
+
+          <!-- Cover image -->
+          <div class="admin-form-group">
+            <label class="admin-form-label" for="blogCover">Cover Image</label>
+            <div class="admin-file-input-wrap">
+              <i class="fas fa-image" style="font-size:18px;margin-bottom:4px;color:#cbd5e1;"></i>
+              <div class="admin-file-input-text">Upload cover image</div>
+              <div class="admin-file-selected" id="blogCoverSelected" style="display:none;"></div>
+              <input type="file" id="blogCover" accept="image/*" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Excerpt -->
+        <div class="admin-form-group">
+          <label class="admin-form-label" for="blogExcerpt">Excerpt</label>
+          <textarea id="blogExcerpt" class="admin-textarea" placeholder="Short summary (shown in post cards)…" rows="2"></textarea>
+        </div>
+
+        <!-- Quill editor -->
+        <div class="admin-form-group">
+          <label class="admin-form-label">Content <span class="required">*</span></label>
+          <div class="quill-wrapper">
+            <div id="quillEditor"></div>
+          </div>
+        </div>
+
+        <!-- Published toggle -->
+        <div class="admin-form-group" style="margin-bottom:0;">
+          <label class="admin-checkbox-group">
+            <input type="checkbox" id="blogPublished" class="admin-checkbox" />
+            <span class="admin-checkbox-label">Publish immediately</span>
+          </label>
+        </div>
+
+      </form>
+    </div>
+    <div class="admin-modal-footer">
+      <button type="button" class="btn-admin-secondary" data-modal="blogModal">Cancel</button>
+      <button type="button" class="btn-admin-primary" id="btnSaveBlog">
+        <i class="fas fa-floppy-disk"></i> Save Post
+      </button>
+    </div>
+  </div>
+</div><!-- /#blogModal -->
+
+
+<!-- ══════════════════════════════════════════
+     MODAL: TESTIMONIAL ADD/EDIT
+     ══════════════════════════════════════════ -->
+<div class="admin-modal-overlay" id="testiModal" role="dialog" aria-modal="true" aria-labelledby="testiModalTitle">
+  <div class="admin-modal">
+    <div class="admin-modal-header">
+      <h3 class="admin-modal-title" id="testiModalTitle">Add Testimonial</h3>
+      <button class="admin-modal-close" data-modal="testiModal" type="button" aria-label="Close modal">
+        <i class="fas fa-xmark"></i>
+      </button>
+    </div>
+    <div class="admin-modal-body">
+      <form id="testiForm" novalidate>
+
+        <!-- Student name -->
+        <div class="admin-form-group">
+          <label class="admin-form-label" for="testiName">Student Name <span class="required">*</span></label>
+          <input type="text" id="testiName" class="admin-input" placeholder="e.g. Rahul Kumar" required />
+        </div>
+
+        <div class="admin-form-row">
+          <!-- Exam type -->
+          <div class="admin-form-group">
+            <label class="admin-form-label" for="testiExam">Exam Type <span class="required">*</span></label>
+            <select id="testiExam" class="admin-select" required>
+              <option value="">Select exam…</option>
+              <option value="GATE">GATE</option>
+              <option value="ESE">ESE (IES)</option>
+              <option value="SSC-JE">SSC-JE</option>
+              <option value="UPPSC-AE">UPPSC-AE</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <!-- Exam year -->
+          <div class="admin-form-group">
+            <label class="admin-form-label" for="testiYear">Exam Year</label>
+            <input type="number" id="testiYear" class="admin-input" placeholder="e.g. 2024" min="2000" max="2100" />
+          </div>
+        </div>
+
+        <!-- Rank / Result -->
+        <div class="admin-form-group">
+          <label class="admin-form-label" for="testiRank">Rank / Result <span class="required">*</span></label>
+          <input type="text" id="testiRank" class="admin-input" placeholder="e.g. AIR 42 or Qualified" required />
+        </div>
+
+        <!-- Quote -->
+        <div class="admin-form-group">
+          <label class="admin-form-label" for="testiQuote">Student Quote <span class="required">*</span></label>
+          <textarea id="testiQuote" class="admin-textarea" placeholder="What the student said about Dr. Jaspal Singh…" rows="4" required></textarea>
+        </div>
+
+        <!-- Photo upload -->
+        <div class="admin-form-group">
+          <label class="admin-form-label" for="testiPhoto">Student Photo</label>
+          <div class="admin-file-input-wrap">
+            <i class="fas fa-user-circle" style="font-size:20px;margin-bottom:5px;color:#cbd5e1;"></i>
+            <div class="admin-file-input-text">Upload photo (optional)</div>
+            <div class="admin-file-selected" id="testiPhotoSelected" style="display:none;"></div>
+            <input type="file" id="testiPhoto" accept="image/*" />
+          </div>
+          <div class="admin-form-hint" id="testiPhotoHint" style="display:none;">Leave empty to keep existing photo.</div>
+        </div>
+
+        <!-- Toggles -->
+        <div class="admin-form-row" style="gap:24px;">
+          <div class="admin-form-group" style="margin-bottom:0;">
+            <label class="admin-checkbox-group">
+              <input type="checkbox" id="testiFeatured" class="admin-checkbox" />
+              <span class="admin-checkbox-label">Featured testimonial</span>
+            </label>
+          </div>
+          <div class="admin-form-group" style="margin-bottom:0;">
+            <label class="admin-checkbox-group">
+              <input type="checkbox" id="testiVisible" class="admin-checkbox" checked />
+              <span class="admin-checkbox-label">Visible on site</span>
+            </label>
+          </div>
+        </div>
+
+      </form>
+    </div>
+    <div class="admin-modal-footer">
+      <button type="button" class="btn-admin-secondary" data-modal="testiModal">Cancel</button>
+      <button type="button" class="btn-admin-primary" id="btnSaveTesti">
+        <i class="fas fa-floppy-disk"></i> Save Testimonial
+      </button>
+    </div>
+  </div>
+</div><!-- /#testiModal -->
+
+
+<!-- Toast container -->
+<div class="admin-toast-container" id="toastContainer" aria-live="polite" aria-atomic="false"></div>
+
+
+<!-- Quill.js 1.3.7 -->
+<script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+
+<!-- Chart.js 4 -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<!-- Admin JS -->
+<script src="js/admin.js"></script>
+
+</body>
+</html>

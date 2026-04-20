@@ -1,0 +1,259 @@
+/* ============================================================
+   learner-auth.css — Learner Login / Register Modal
+   Dr. Jaspal Singh Website — jaspalsingh.in
+   ============================================================ */
+
+/* ── Overlay backdrop ─────────────────────────────────────── */
+.lauth-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 30, 0.72);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.lauth-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ── Modal card ──────────────────────────────────────────── */
+.lauth-modal {
+  background: #fff;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 440px;
+  max-height: 92vh;
+  overflow-y: auto;
+  padding: 36px 32px 28px;
+  position: relative;
+  box-shadow: 0 24px 64px rgba(10, 10, 30, 0.3);
+  transform: translateY(24px);
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+  scrollbar-width: thin;
+}
+.lauth-overlay.active .lauth-modal {
+  transform: translateY(0);
+}
+
+/* ── Close button ────────────────────────────────────────── */
+.lauth-close {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: #f0f0f5;
+  color: #1A1A2E;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+  font-family: sans-serif;
+}
+.lauth-close:hover { background: #e0e0ea; }
+
+/* ── Branding header ─────────────────────────────────────── */
+.lauth-brand {
+  text-align: center;
+  margin-bottom: 22px;
+}
+.lauth-brand-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2.5px solid var(--magenta, #F0345A);
+  margin-bottom: 12px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+.lauth-brand h2 {
+  font-family: var(--font-heading, 'Plus Jakarta Sans', sans-serif);
+  font-size: 20px;
+  font-weight: 800;
+  color: #1A1A2E;
+  margin: 0 0 8px;
+  line-height: 1.3;
+}
+.lauth-brand p {
+  font-size: 13px;
+  color: #5a5a7a;
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* ── Tab bar ─────────────────────────────────────────────── */
+.lauth-tab-bar {
+  display: flex;
+  gap: 4px;
+  background: #f0f0f6;
+  border-radius: 12px;
+  padding: 4px;
+  margin-bottom: 22px;
+}
+.lauth-tab {
+  flex: 1;
+  padding: 9px 10px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  font-family: var(--font-heading, 'Plus Jakarta Sans', sans-serif);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #5a5a7a;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.lauth-tab.active {
+  background: #fff;
+  color: var(--magenta, #F0345A);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.09);
+}
+.lauth-tab:hover:not(.active) { color: #1A1A2E; }
+
+/* ── Error banner ────────────────────────────────────────── */
+.lauth-error {
+  display: none;
+  background: rgba(240, 52, 90, 0.07);
+  color: var(--magenta, #F0345A);
+  border: 1px solid rgba(240, 52, 90, 0.22);
+  border-radius: 9px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  line-height: 1.4;
+}
+.lauth-error.visible { display: block; }
+
+/* ── Form fields ─────────────────────────────────────────── */
+.lauth-field {
+  margin-bottom: 14px;
+}
+.lauth-field label {
+  display: block;
+  font-family: var(--font-heading, 'Plus Jakarta Sans', sans-serif);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #1A1A2E;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.lauth-field input,
+.lauth-field select {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1.5px solid #d8d8ea;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #1A1A2E;
+  background: #fff;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  font-family: var(--font-body, 'Inter', sans-serif);
+  box-sizing: border-box;
+  -webkit-appearance: none;
+}
+.lauth-field input:focus,
+.lauth-field select:focus {
+  border-color: var(--magenta, #F0345A);
+  box-shadow: 0 0 0 3px rgba(240, 52, 90, 0.11);
+}
+.lauth-field input::placeholder { color: #aab0cc; }
+
+/* ── Submit button ───────────────────────────────────────── */
+.lauth-submit {
+  width: 100%;
+  padding: 13px 20px;
+  background: linear-gradient(135deg, var(--magenta, #F0345A) 0%, #c8184a 100%);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-family: var(--font-heading, 'Plus Jakarta Sans', sans-serif);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 6px;
+  transition: opacity 0.15s, transform 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.lauth-submit:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+.lauth-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ── Footer note ─────────────────────────────────────────── */
+.lauth-note {
+  text-align: center;
+  font-size: 12px;
+  color: #8888aa;
+  margin-top: 18px;
+  line-height: 1.6;
+}
+
+/* ── Header learner UI (shown when logged in) ────────────── */
+.learner-header-ui {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: 12px;
+}
+.learner-greeting {
+  font-family: var(--font-heading, 'Plus Jakarta Sans', sans-serif);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--heading-color, #1A1A2E);
+  white-space: nowrap;
+}
+.learner-logout {
+  background: none;
+  border: 1.5px solid rgba(240, 52, 90, 0.35);
+  border-radius: 7px;
+  padding: 5px 11px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--magenta, #F0345A);
+  cursor: pointer;
+  font-family: var(--font-heading, 'Plus Jakarta Sans', sans-serif);
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.learner-logout:hover {
+  background: var(--magenta, #F0345A);
+  color: #fff;
+  border-color: var(--magenta, #F0345A);
+}
+
+/* ── Mobile ──────────────────────────────────────────────── */
+@media (max-width: 500px) {
+  .lauth-modal {
+    padding: 28px 18px 22px;
+    border-radius: 16px;
+  }
+  .lauth-brand h2 { font-size: 17px; }
+  .lauth-tab      { font-size: 12.5px; padding: 8px 6px; }
+  .learner-header-ui { display: none; } /* Hidden on mobile — space constraint */
+}
