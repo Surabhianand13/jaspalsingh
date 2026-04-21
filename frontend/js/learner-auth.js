@@ -364,10 +364,10 @@
     el.className = 'learner-header-ui';
     el.innerHTML =
       '<span class="learner-greeting">' +
-        '<i class="fas fa-user-circle" style="margin-right:4px;color:var(--magenta,#F0345A);"></i>Hi, ' +
-        escHtml(firstName) + '!' +
+        '<i class="fas fa-user-circle"></i>' +
+        escHtml(firstName) +
       '</span>' +
-      '<a href="/profile.html" class="learner-profile-link">My Profile</a>' +
+      '<a href="/profile.html" class="learner-profile-link">Profile</a>' +
       '<button class="learner-logout" id="learnerLogoutBtn">Logout</button>';
 
     var headerInner = document.querySelector('.header-inner');
