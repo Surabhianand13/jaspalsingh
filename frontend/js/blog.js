@@ -109,7 +109,7 @@
       ? '<img src="' + api.utils.esc(post.cover_image_url) + '" alt="' + title + '" class="blog-featured-photo" />'
       : '<i class="fas fa-bullhorn"></i>';
 
-    featured.href = 'blog-post.html?slug=' + slug;
+    featured.href = '/blog-post?slug=' + slug;
     featured.dataset.cat = post.category || '';
     featured.innerHTML =
       '<div class="blog-featured-img" aria-hidden="true">' + imgHtml + '</div>' +
@@ -149,7 +149,7 @@
           (post.read_time ? '<span><i class="fas fa-clock"></i> ' + post.read_time + ' min</span>' : '') +
         '</div>' +
         (excerpt ? '<p class="blog-card-excerpt">' + excerpt + '</p>' : '') +
-        '<a href="blog-post.html?slug=' + slug + '" class="blog-read-more" style="margin-top:auto;">Read More <i class="fas fa-arrow-right"></i></a>' +
+        '<a href="/blog-post?slug=' + slug + '" class="blog-read-more" style="margin-top:auto;">Read More <i class="fas fa-arrow-right"></i></a>' +
       '</div>';
 
     return article;
