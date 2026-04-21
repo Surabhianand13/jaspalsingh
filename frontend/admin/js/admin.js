@@ -790,7 +790,9 @@
     $('resTitle').value       = isEdit ? (resource.title || '') : '';
     $('resSubject').value     = isEdit ? (resource.subject || '') : '';
     $('resType').value        = isEdit ? (resource.resource_type || resource.type || '') : '';
-    $('resExamTag').value     = isEdit ? (resource.exam_tag || '') : '';
+    var examTagEl = $('resExamTag');
+    var savedTags = isEdit ? (resource.exam_tag || '').split(',').map(function(t){ return t.trim(); }) : [];
+    Array.from(examTagEl.options).forEach(function(opt){ opt.selected = savedTags.indexOf(opt.value) !== -1; });
     $('resDescription').value = isEdit ? (resource.description || '') : '';
     $('resVisible').checked   = isEdit ? !!resource.is_visible : true;
 
@@ -834,7 +836,7 @@
     fd.append('title',         title);
     fd.append('subject',       subject);
     fd.append('resource_type', type);
-    fd.append('exam_tag',      $('resExamTag').value);
+    fd.append('exam_tag',      Array.from($('resExamTag').selectedOptions).map(function(o){ return o.value; }).join(','));
     fd.append('description',   $('resDescription').value.trim());
     fd.append('is_visible',    $('resVisible').checked ? 'true' : 'false');
 
