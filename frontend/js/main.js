@@ -55,11 +55,11 @@
   }
 
   /* --- Mark active nav link based on current page --- */
-  const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+  const currentPath = window.location.pathname.replace(/\/$/, '') || '/';
 
   document.querySelectorAll('.nav-link, .drawer-link').forEach(function (link) {
     const href = link.getAttribute('href');
-    if (href === currentPage || (currentPage === '' && href === 'index.html')) {
+    if (href === currentPath || (currentPath === '/' && (href === '/' || href === '/index.html'))) {
       link.classList.add('active');
     } else {
       link.classList.remove('active');

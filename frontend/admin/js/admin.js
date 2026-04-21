@@ -26,7 +26,7 @@
   /** Clear auth and redirect to login page. */
   function logout() {
     localStorage.removeItem(TOKEN_KEY);
-    location.href = 'login.html';
+    location.href = '/admin/login';
   }
 
   /* ══════════════════════════════════════════════
@@ -1636,7 +1636,7 @@
 
     /* ── Auth guard ────────────────────────────── */
     if (!getToken()) {
-      location.href = 'login.html';
+      location.href = '/admin/login';
       return;
     }
 

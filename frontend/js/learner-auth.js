@@ -367,7 +367,7 @@
         '<i class="fas fa-user-circle"></i>' +
         escHtml(firstName) +
       '</span>' +
-      '<a href="/profile.html" class="learner-profile-link">Profile</a>' +
+      '<a href="/profile" class="learner-profile-link">Profile</a>' +
       '<button class="learner-logout" id="learnerLogoutBtn">Logout</button>';
 
     var headerInner = document.querySelector('.header-inner');

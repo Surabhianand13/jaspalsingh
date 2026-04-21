@@ -46,7 +46,7 @@
     document.getElementById('profileLogoutBtn').addEventListener('click', function () {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(USER_KEY);
-      window.location.href = 'index.html';
+      window.location.href = '/';
     });
 
     document.getElementById('profileForm').addEventListener('submit', onSave);
@@ -156,7 +156,7 @@
       if (!downloads.length) {
         body.innerHTML =
           '<p class="profile-empty"><i class="fas fa-inbox"></i> No downloads yet.<br>' +
-          '<a href="resources.html">Browse resources →</a></p>';
+          '<a href="/resources">Browse resources →</a></p>';
         return;
       }
 

@@ -370,7 +370,7 @@
 
     <!-- Back to site -->
     <div class="login-back">
-      <a href="../index.html" rel="noopener">
+      <a href="/" rel="noopener">
         <i class="fas fa-arrow-left" style="margin-right:5px;font-size:11px;"></i>
         Back to main site
       </a>
@@ -388,7 +388,7 @@
 
       /* ── Redirect if already logged in ─── */
       if (localStorage.getItem(TOKEN_KEY)) {
-        location.replace('dashboard.html');
+        location.replace('/admin/dashboard');
       }
 
       /* ── DOM refs ───────────────────────── */
@@ -481,7 +481,7 @@
               throw new Error('No token received. Please try again.');
             }
             localStorage.setItem(TOKEN_KEY, data.token);
-            location.replace('dashboard.html');
+            location.replace('/admin/dashboard');
           })
           .catch(function (err) {
             setLoading(false);
