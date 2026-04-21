@@ -82,14 +82,15 @@
       <!-- Hero strip -->
       <section class="profile-hero">
         <div class="container profile-hero-inner">
-          <div class="profile-avatar-wrap">
-            <i class="fas fa-user-circle profile-avatar-icon"></i>
+          <div class="profile-avatar-circle" id="profileAvatarCircle">
+            <span id="profileInitials">?</span>
           </div>
-          <div>
+          <div class="profile-hero-info">
             <h1 class="profile-name" id="profileDisplayName">Loading…</h1>
             <p class="profile-meta-line" id="profileMetaLine"></p>
+            <div class="profile-hero-stats" id="profileHeroStats"></div>
           </div>
-          <button class="btn btn-outline profile-logout-btn" id="profileLogoutBtn">
+          <button class="btn profile-logout-btn" id="profileLogoutBtn">
             <i class="fas fa-sign-out-alt"></i> Logout
           </button>
         </div>
