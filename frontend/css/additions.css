@@ -36,19 +36,17 @@
 /* ── Nav additions ── */
 .nav-link.nav-programs {
   color: var(--orange);
+  white-space: nowrap;
 }
-.nav-link.nav-programs:hover {
-  color: var(--orange);
-  opacity: .8;
-}
+.nav-link.nav-programs:hover { color: var(--orange); opacity: .8; }
+.nav-link.nav-programs i { display: none; }
 
 .nav-link.nav-alerts {
   color: var(--green);
+  white-space: nowrap;
 }
-.nav-link.nav-alerts:hover {
-  color: var(--green);
-  opacity: .8;
-}
+.nav-link.nav-alerts:hover { color: var(--green); opacity: .8; }
+.nav-link.nav-alerts i { display: none; }
 
 .drawer-link.nav-programs { color: var(--orange); }
 .drawer-link.nav-programs:hover { color: var(--orange); background: rgba(255,107,53,.07); }
