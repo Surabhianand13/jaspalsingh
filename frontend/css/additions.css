@@ -36,22 +36,18 @@
 /* ── Nav additions ── */
 .nav-link.nav-programs {
   color: var(--orange);
-  background: rgba(255,107,53,.07);
-  font-weight: 700;
 }
 .nav-link.nav-programs:hover {
-  background: rgba(255,107,53,.15);
   color: var(--orange);
+  opacity: .8;
 }
 
 .nav-link.nav-alerts {
   color: var(--green);
-  background: rgba(22,163,74,.07);
-  font-weight: 700;
 }
 .nav-link.nav-alerts:hover {
-  background: rgba(22,163,74,.15);
   color: var(--green);
+  opacity: .8;
 }
 
 .drawer-link.nav-programs { color: var(--orange); }
