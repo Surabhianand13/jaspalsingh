@@ -25,8 +25,8 @@
   width: 640px;
   height: 640px;
   background: radial-gradient(circle at center,
-    rgba(103,200,232,0.18) 0%,
-    rgba(240,52,90,0.10) 45%,
+    rgba(222,22,72,0.12) 0%,
+    rgba(222,22,72,0.06) 45%,
     transparent 68%);
   border-radius: 50%;
   pointer-events: none;
@@ -40,7 +40,7 @@
   width: 520px;
   height: 520px;
   background: radial-gradient(circle at center,
-    rgba(240,52,90,0.09) 0%,
+    rgba(222,22,72,0.09) 0%,
     transparent 65%);
   border-radius: 50%;
   pointer-events: none;
@@ -73,8 +73,8 @@
   letter-spacing: 1.6px;
   text-transform: uppercase;
   color: var(--magenta);
-  background: rgba(240,52,90,0.08);
-  border: 1px solid rgba(240,52,90,0.18);
+  background: rgba(222,22,72,0.08);
+  border: 1px solid rgba(222,22,72,0.18);
   padding: 8px 18px;
   border-radius: var(--radius-pill);
   width: fit-content;
@@ -297,11 +297,11 @@
 .why-card.featured {
   background: var(--gradient);
   border-color: transparent;
-  box-shadow: 0 8px 40px rgba(240,52,90,0.30);
+  box-shadow: 0 8px 40px rgba(222,22,72,0.30);
 }
 .why-card.featured:hover {
   transform: translateY(-8px);
-  box-shadow: 0 16px 56px rgba(240,52,90,0.38);
+  box-shadow: 0 16px 56px rgba(222,22,72,0.38);
 }
 
 .why-icon-wrap {
@@ -389,7 +389,7 @@
 .resource-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 12px 40px rgba(26,26,46,0.14);
-  border-color: rgba(240,52,90,0.18);
+  border-color: rgba(222,22,72,0.18);
 }
 
 /* Subject-coloured top accent line */
@@ -400,11 +400,11 @@
   height: 4px;
   border-radius: 18px 18px 0 0;
 }
-.resource-card.tag-env::before { background: linear-gradient(90deg,#F0345A,#ff6b85); }
+.resource-card.tag-env::before { background: linear-gradient(90deg,#DE1648,#ff6b85); }
 .resource-card.tag-geo::before { background: linear-gradient(90deg,#0889b8,#67C8E8); }
 .resource-card.tag-hyd::before { background: linear-gradient(90deg,#0575a0,#38bdf8); }
-.resource-card.tag-irr::before { background: linear-gradient(90deg,#b8264a,#F0345A); }
-.resource-card.tag-gen::before { background: var(--gradient); }
+.resource-card.tag-irr::before { background: linear-gradient(90deg,#AE1040,#DE1648); }
+.resource-card.tag-gen::before { background: linear-gradient(90deg, #AE1040, #DE1648); }
 
 /* ── Top row: PDF icon + type badge ─ */
 .rc-icon-zone {
@@ -428,10 +428,10 @@
 }
 .resource-card:hover .rc-pdf-icon { transform: scale(1.06); }
 
-.rc-pdf-icon.tag-env { background: rgba(240,52,90,0.1);    color: #c4203f; }
+.rc-pdf-icon.tag-env { background: rgba(222,22,72,0.1);    color: #B8123C; }
 .rc-pdf-icon.tag-geo { background: rgba(103,200,232,0.18); color: #0889b8; }
 .rc-pdf-icon.tag-hyd { background: rgba(56,189,248,0.15);  color: #0575a0; }
-.rc-pdf-icon.tag-irr { background: rgba(240,52,90,0.08);   color: #b8264a; }
+.rc-pdf-icon.tag-irr { background: rgba(222,22,72,0.08);   color: #AE1040; }
 .rc-pdf-icon.tag-gen { background: rgba(26,26,46,0.07);    color: var(--body-color); }
 
 /* Type badge */
@@ -451,7 +451,7 @@
 .type-pyq         { background: rgba(245,158,11,0.14);  color: #b57d00; }
 .type-strategy    { background: rgba(139,92,246,0.12);  color: #6d28d9; }
 .type-handwritten { background: rgba(249,115,22,0.12);  color: #c2490c; }
-.type-update      { background: rgba(240,52,90,0.1);    color: #c4203f; }
+.type-update      { background: rgba(222,22,72,0.1);    color: #B8123C; }
 .type-other       { background: rgba(26,26,46,0.07);    color: var(--body-color); }
 
 /* ── Card body ─ */
@@ -474,10 +474,10 @@
   white-space: nowrap;
   width: fit-content;
 }
-.tag-env  { background: rgba(240,52,90,0.08);   color: #c4203f; }
+.tag-env  { background: rgba(222,22,72,0.08);   color: #B8123C; }
 .tag-geo  { background: rgba(103,200,232,0.15); color: #0889b8; }
 .tag-hyd  { background: rgba(56,189,248,0.13);  color: #0575a0; }
-.tag-irr  { background: rgba(240,52,90,0.06);   color: #b8264a; }
+.tag-irr  { background: rgba(222,22,72,0.06);   color: #AE1040; }
 .tag-gen  { background: rgba(26,26,46,0.07);    color: var(--body-color); }
 
 .resource-title {
@@ -593,7 +593,7 @@
 }
 .community-btn.unacademy {
   background: var(--gradient);
-  box-shadow: 0 4px 20px rgba(240,52,90,0.30);
+  box-shadow: 0 4px 20px rgba(222,22,72,0.30);
 }
 
 /* ============================================================
@@ -625,10 +625,10 @@
 .testimonial-card.featured {
   background: var(--gradient);
   border-color: transparent;
-  box-shadow: 0 8px 36px rgba(240,52,90,0.28);
+  box-shadow: 0 8px 36px rgba(222,22,72,0.28);
 }
 .testimonial-card.featured:hover {
-  box-shadow: 0 14px 52px rgba(240,52,90,0.36);
+  box-shadow: 0 14px 52px rgba(222,22,72,0.36);
 }
 
 .testimonial-quote-icon {
