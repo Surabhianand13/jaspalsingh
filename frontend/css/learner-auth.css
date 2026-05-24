@@ -75,7 +75,7 @@
   height: 60px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2.5px solid var(--magenta, #DE1648);
+  border: 2.5px solid var(--magenta, #C81240);
   margin-bottom: 12px;
   display: block;
   margin-left: auto;
@@ -120,7 +120,7 @@
 }
 .lauth-tab.active {
   background: #fff;
-  color: var(--magenta, #DE1648);
+  color: var(--magenta, #C81240);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.09);
 }
 .lauth-tab:hover:not(.active) { color: #1A1A2E; }
@@ -128,9 +128,9 @@
 /* ── Error banner ────────────────────────────────────────── */
 .lauth-error {
   display: none;
-  background: rgba(222, 22, 72, 0.07);
-  color: var(--magenta, #DE1648);
-  border: 1px solid rgba(222, 22, 72, 0.22);
+  background: rgba(200, 18, 64, 0.07);
+  color: var(--magenta, #C81240);
+  border: 1px solid rgba(200, 18, 64, 0.22);
   border-radius: 9px;
   padding: 10px 14px;
   font-size: 13px;
@@ -171,8 +171,8 @@
 }
 .lauth-field input:focus,
 .lauth-field select:focus {
-  border-color: var(--magenta, #DE1648);
-  box-shadow: 0 0 0 3px rgba(222, 22, 72, 0.11);
+  border-color: var(--magenta, #C81240);
+  box-shadow: 0 0 0 3px rgba(200, 18, 64, 0.11);
 }
 .lauth-field input::placeholder { color: #aab0cc; }
 
@@ -180,7 +180,7 @@
 .lauth-submit {
   width: 100%;
   padding: 13px 20px;
-  background: linear-gradient(135deg, var(--magenta, #DE1648) 0%, #B41238 100%);
+  background: linear-gradient(135deg, var(--magenta, #C81240) 0%, #A60F35 100%);
   color: #fff;
   border: none;
   border-radius: 10px;
@@ -230,21 +230,21 @@
 }
 .learner-logout {
   background: none;
-  border: 1.5px solid rgba(222, 22, 72, 0.35);
+  border: 1.5px solid rgba(200, 18, 64, 0.35);
   border-radius: 7px;
   padding: 5px 11px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--magenta, #DE1648);
+  color: var(--magenta, #C81240);
   cursor: pointer;
   font-family: var(--font-heading, 'Plus Jakarta Sans', sans-serif);
   transition: all 0.15s;
   white-space: nowrap;
 }
 .learner-logout:hover {
-  background: var(--magenta, #DE1648);
+  background: var(--magenta, #C81240);
   color: #fff;
-  border-color: var(--magenta, #DE1648);
+  border-color: var(--magenta, #C81240);
 }
 
 /* ── Mobile ──────────────────────────────────────────────── */

@@ -1,12 +1,12 @@
 /* ============================================================
    GLOBAL STYLES — style.css
    Dr. Jaspal Singh Personal Website — jaspalsingh.in
-   Brand: Red #DE1648 | Sky Blue #67C8E8
+   Brand: Red #C81240 | Sky Blue #67C8E8
    ============================================================ */
 
 /* --- Brand Tokens (CSS Variables) --- */
 :root {
-  --magenta:        #DE1648;
+  --magenta:        #C81240;
   --sky-blue:       #67C8E8;
   --white:          #FFFFFF;
   --light-grey:     #F8F8F8;
@@ -14,9 +14,11 @@
   --body-color:     #4A4A68;
   --charcoal:       #1A1A2E;
 
-  --gradient:       linear-gradient(135deg, #DE1648 0%, #B8123C 100%);
-  --gradient-rev:   linear-gradient(135deg, #B8123C 0%, #DE1648 100%);
-  --gradient-soft:  linear-gradient(135deg, rgba(222,22,72,0.08) 0%, rgba(222,22,72,0.14) 100%);
+  --gradient:       linear-gradient(135deg, #C81240 0%, #A60F35 100%);
+  --gradient-rev:   linear-gradient(135deg, #A60F35 0%, #C81240 100%);
+  --gradient-soft:  linear-gradient(135deg, rgba(200,18,64,0.08) 0%, rgba(200,18,64,0.14) 100%);
+  --blue-gradient:  linear-gradient(135deg, #67C8E8 0%, #4bafd0 100%);
+  --blue-soft:      linear-gradient(135deg, rgba(103,200,232,0.10) 0%, rgba(103,200,232,0.18) 100%);
 
   --font-heading:   'Plus Jakarta Sans', sans-serif;
   --font-body:      'Inter', sans-serif;
@@ -148,11 +150,11 @@ ul, ol {
 .btn-primary {
   background: var(--gradient);
   color: var(--white);
-  box-shadow: 0 4px 22px rgba(222,22,72,0.35);
+  box-shadow: 0 4px 22px rgba(200,18,64,0.35);
 }
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 36px rgba(222,22,72,0.45);
+  box-shadow: 0 8px 36px rgba(200,18,64,0.45);
 }
 
 .btn-outline {
@@ -194,12 +196,12 @@ ul, ol {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  box-shadow: 0 4px 18px rgba(222,22,72,0.25);
+  box-shadow: 0 4px 18px rgba(200,18,64,0.25);
   transition: var(--transition);
 }
 .btn-download:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 28px rgba(222,22,72,0.40);
+  box-shadow: 0 8px 28px rgba(200,18,64,0.40);
   color: var(--white);
 }
 
@@ -292,21 +294,21 @@ ul, ol {
 }
 .nav-link:hover {
   color: var(--magenta);
-  background: rgba(222,22,72,0.07);
+  background: rgba(200,18,64,0.07);
 }
 .nav-link.active {
   color: var(--magenta);
-  background: rgba(222,22,72,0.07);
+  background: rgba(200,18,64,0.07);
 }
 .nav-link.nav-cta {
   background: var(--gradient);
   color: var(--white);
-  box-shadow: 0 2px 14px rgba(222,22,72,0.3);
+  box-shadow: 0 2px 14px rgba(200,18,64,0.3);
   margin-left: 4px;
 }
 .nav-link.nav-cta:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 22px rgba(222,22,72,0.4);
+  box-shadow: 0 4px 22px rgba(200,18,64,0.4);
   color: var(--white);
   background: var(--gradient);
 }
@@ -391,7 +393,7 @@ ul, ol {
 }
 .drawer-close:hover {
   color: var(--magenta);
-  background: rgba(222,22,72,0.07);
+  background: rgba(200,18,64,0.07);
 }
 
 .drawer-wordmark {
@@ -436,7 +438,7 @@ ul, ol {
 .drawer-link:hover,
 .drawer-link.active {
   color: var(--magenta);
-  background: rgba(222,22,72,0.07);
+  background: rgba(200,18,64,0.07);
 }
 
 .drawer-social {
