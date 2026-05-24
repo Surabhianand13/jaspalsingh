@@ -1,0 +1,402 @@
+/* ============================================================
+   ADDITIONS.CSS — Offline Programs + Job Alerts sections
+   Dr. Jaspal Singh — jaspalsingh.in
+   ============================================================ */
+
+/* ── New brand tokens ── */
+:root {
+  --orange:       #FF6B35;
+  --green:        #16A34A;
+  --grad-orange:  linear-gradient(135deg, #FF6B35 0%, #F0345A 100%);
+  --grad-green:   linear-gradient(135deg, #16A34A 0%, #22C55E 100%);
+}
+
+/* ── Button additions ── */
+.btn-orange {
+  background: var(--grad-orange);
+  color: var(--white);
+  box-shadow: 0 4px 22px rgba(255,107,53,.35);
+}
+.btn-orange:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 36px rgba(255,107,53,.45);
+  color: var(--white);
+}
+
+.btn-green {
+  background: var(--grad-green);
+  color: var(--white);
+  box-shadow: 0 4px 22px rgba(22,163,74,.3);
+}
+.btn-green:hover {
+  transform: translateY(-2px);
+  color: var(--white);
+}
+
+/* ── Nav additions ── */
+.nav-link.nav-programs {
+  color: var(--orange);
+  background: rgba(255,107,53,.07);
+  font-weight: 700;
+}
+.nav-link.nav-programs:hover {
+  background: rgba(255,107,53,.15);
+  color: var(--orange);
+}
+
+.nav-link.nav-alerts {
+  color: var(--green);
+  background: rgba(22,163,74,.07);
+  font-weight: 700;
+}
+.nav-link.nav-alerts:hover {
+  background: rgba(22,163,74,.15);
+  color: var(--green);
+}
+
+.drawer-link.nav-programs { color: var(--orange); }
+.drawer-link.nav-programs:hover { color: var(--orange); background: rgba(255,107,53,.07); }
+.drawer-link.nav-alerts   { color: var(--green); }
+.drawer-link.nav-alerts:hover { color: var(--green); background: rgba(22,163,74,.07); }
+
+/* ── Section eyebrow tag ── */
+.sec-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 6px 16px;
+  border-radius: var(--radius-pill);
+  margin-bottom: 14px;
+}
+.sec-eyebrow.orange {
+  color: var(--orange);
+  background: rgba(255,107,53,.08);
+  border: 1px solid rgba(255,107,53,.18);
+}
+.sec-eyebrow.green {
+  color: var(--green);
+  background: rgba(22,163,74,.08);
+  border: 1px solid rgba(22,163,74,.18);
+}
+
+/* ============================================================
+   OFFLINE PROGRAMS SECTION
+   ============================================================ */
+
+.offline-progs-section { background: var(--white); }
+
+.progs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px;
+}
+
+.op-card {
+  background: var(--white);
+  border: 1.5px solid rgba(26,26,46,.07);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: var(--transition);
+}
+.op-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--orange);
+}
+
+.op-card-top {
+  padding: 22px 22px 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.op-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.op-icon-orange  { background: rgba(255,107,53,.12); color: var(--orange); }
+.op-icon-magenta { background: rgba(240,52,90,.10);  color: var(--magenta); }
+.op-icon-green   { background: rgba(22,163,74,.10);  color: var(--green); }
+.op-icon-blue    { background: rgba(103,200,232,.15); color: #0EA5E9; }
+
+.op-badges { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+
+.op-badge {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+.op-badge-offline { background: rgba(255,107,53,.10); color: var(--orange);  border: 1px solid rgba(255,107,53,.20); }
+.op-badge-new     { background: rgba(240,52,90,.10);  color: var(--magenta); border: 1px solid rgba(240,52,90,.20); }
+.op-badge-hot     { background: rgba(22,163,74,.10);  color: var(--green);   border: 1px solid rgba(22,163,74,.20); }
+
+.op-card-body {
+  padding: 16px 22px 0;
+  flex: 1;
+}
+
+.op-title {
+  font-family: var(--font-heading);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--heading-color);
+  line-height: 1.3;
+  margin-bottom: 8px;
+}
+
+.op-desc {
+  font-size: 13px;
+  color: var(--body-color);
+  line-height: 1.7;
+  margin-bottom: 14px;
+}
+
+.op-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.op-meta-item { display: flex; flex-direction: column; gap: 2px; }
+.op-meta-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .7px;
+  color: rgba(74,74,104,.45);
+}
+.op-meta-val {
+  font-family: var(--font-heading);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--heading-color);
+}
+.op-meta-val.orange { color: var(--orange); }
+.op-meta-val.green  { color: var(--green); }
+
+.op-card-fee {
+  display: flex;
+  align-items: center;
+  padding: 12px 22px;
+  background: var(--light-grey);
+  border-top: 1.5px solid rgba(26,26,46,.06);
+}
+.op-fee {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--heading-color);
+}
+.op-fee span { font-size: 12px; font-weight: 500; color: var(--body-color); }
+.op-fee-old {
+  font-size: 12px;
+  color: var(--body-color);
+  text-decoration: line-through;
+  margin-left: 6px;
+}
+
+.op-enroll-btn {
+  display: block;
+  background: var(--grad-orange);
+  color: var(--white);
+  text-align: center;
+  padding: 13px;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 14px;
+  transition: var(--transition);
+  cursor: pointer;
+  text-decoration: none;
+}
+.op-enroll-btn:hover { opacity: .9; color: var(--white); }
+
+/* ============================================================
+   JOB ALERTS SECTION
+   ============================================================ */
+
+.job-alerts-section { background: var(--light-grey); }
+
+.ja-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ja-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 32px;
+}
+
+.ja-filter-btn {
+  font-family: var(--font-heading);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 16px;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid rgba(26,26,46,.15);
+  background: var(--white);
+  color: var(--body-color);
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ja-filter-btn:hover { border-color: var(--charcoal); color: var(--charcoal); }
+.ja-filter-btn.active                { background: var(--charcoal); color: var(--white); border-color: var(--charcoal); }
+.ja-filter-btn.active.f-ssc         { background: #1565C0; border-color: #1565C0; }
+.ja-filter-btn.active.f-raj-ae      { background: #7B1FA2; border-color: #7B1FA2; }
+.ja-filter-btn.active.f-raj-je      { background: #E65100; border-color: #E65100; }
+.ja-filter-btn.active.f-ese         { background: #B71C1C; border-color: #B71C1C; }
+.ja-filter-btn.active.f-gate        { background: #1B5E20; border-color: #1B5E20; }
+.ja-filter-btn.active .ja-dot       { filter: brightness(10); }
+
+.ja-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.ja-card {
+  background: var(--white);
+  border: 1.5px solid rgba(26,26,46,.07);
+  border-radius: var(--radius-sm);
+  padding: 22px;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ja-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+
+.ja-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ja-exam-badge {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  color: #fff;
+}
+.jab-ssc    { background: #1565C0; }
+.jab-raj-ae { background: #7B1FA2; }
+.jab-raj-je { background: #E65100; }
+.jab-ese    { background: #B71C1C; }
+.jab-gate   { background: #1B5E20; }
+
+.ja-status {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  letter-spacing: .5px;
+}
+.ja-new      { background: #FEF08A; color: #713F12; }
+.ja-active   { background: #BBF7D0; color: #14532D; }
+.ja-upcoming { background: #BAE6FD; color: #0C4A6E; }
+
+.ja-title {
+  font-family: var(--font-heading);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--heading-color);
+  line-height: 1.4;
+}
+
+.ja-dates { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.ja-date-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--body-color);
+  background: var(--light-grey);
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+.ja-date-chip i { color: var(--magenta); }
+.ja-date-chip.urgent { color: #DC2626; font-weight: 700; background: rgba(220,38,38,.06); }
+.ja-date-chip.urgent i { color: #DC2626; }
+
+.ja-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(26,26,46,.06);
+}
+
+.ja-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid;
+  transition: var(--transition);
+  cursor: pointer;
+  text-decoration: none;
+}
+.ja-btn-pdf      { color: #B71C1C; border-color: rgba(183,28,28,.2); }
+.ja-btn-pdf:hover { background: #B71C1C; color: #fff; }
+.ja-btn-apply    { color: var(--green);   border-color: rgba(22,163,74,.2); }
+.ja-btn-apply:hover  { background: var(--green);   color: #fff; }
+.ja-btn-strategy { color: var(--magenta); border-color: rgba(240,52,90,.2); }
+.ja-btn-strategy:hover { background: var(--magenta); color: #fff; }
+.ja-btn-enroll   { color: var(--orange);  border-color: rgba(255,107,53,.2); }
+.ja-btn-enroll:hover { background: var(--orange);  color: #fff; }
+
+/* ============================================================
+   RESPONSIVE ADDITIONS
+   ============================================================ */
+
+@media (max-width: 768px) {
+  .progs-grid { grid-template-columns: 1fr; }
+  .ja-grid    { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 600px) {
+  .op-meta { grid-template-columns: 1fr; }
+  .ja-filter-bar { gap: 6px; }
+  .ja-filter-btn { font-size: 11px; padding: 5px 12px; }
+}
