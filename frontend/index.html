@@ -115,15 +115,12 @@
 
       <!-- Desktop Navigation -->
       <nav class="main-nav" aria-label="Main navigation">
-        <a href="/"        class="nav-link active">Home</a>
-        <a href="/about"        class="nav-link">About</a>
-        <a href="/resources"    class="nav-link">Resources</a>
-        <a href="/strategy"     class="nav-link">Strategy</a>
-        <a href="/blog"         class="nav-link">Blog</a>
-        <a href="/programs"     class="nav-link nav-programs"><i class="fas fa-chalkboard-teacher"></i> Programs</a>
-        <a href="/job-alerts"   class="nav-link nav-alerts"><i class="fas fa-bell"></i> Job Alerts</a>
-        <a href="/testimonials" class="nav-link">Testimonials</a>
-        <a href="/connect"      class="nav-link nav-cta">Connect</a>
+        <a href="/" class="nav-link active">Home</a>
+        <a href="/programs" class="nav-link nav-programs"><i class="fas fa-chalkboard-teacher"></i> Programs</a>
+        <a href="/resources" class="nav-link">Resources</a>
+        <a href="/job-alerts" class="nav-link nav-alerts"><i class="fas fa-bell"></i> Job Alerts</a>
+        <a href="/about" class="nav-link">About</a>
+        <a href="/connect" class="nav-link nav-cta">Connect</a>
       </nav>
 
       <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false" aria-controls="mobileDrawer">
@@ -138,15 +135,12 @@
     <button class="drawer-close" id="drawerClose" aria-label="Close menu"><i class="fas fa-times"></i></button>
     <a href="/" class="drawer-wordmark">Dr. Jaspal Singh</a>
     <nav class="drawer-nav">
-      <a href="/"        class="drawer-link active">Home</a>
-      <a href="/about"        class="drawer-link">About</a>
-      <a href="/resources"    class="drawer-link">Resources</a>
-      <a href="/strategy"     class="drawer-link">Strategy</a>
-      <a href="/blog"         class="drawer-link">Blog</a>
-      <a href="/programs"     class="drawer-link nav-programs"><i class="fas fa-chalkboard-teacher"></i> Programs</a>
-      <a href="/job-alerts"   class="drawer-link nav-alerts"><i class="fas fa-bell"></i> Job Alerts</a>
-      <a href="/testimonials" class="drawer-link">Testimonials</a>
-      <a href="/connect"      class="drawer-link">Connect</a>
+      <a href="/" class="drawer-link active">Home</a>
+      <a href="/programs" class="drawer-link nav-programs">Programs</a>
+      <a href="/resources" class="drawer-link">Resources</a>
+      <a href="/job-alerts" class="drawer-link nav-alerts">Job Alerts</a>
+      <a href="/about" class="drawer-link">About</a>
+      <a href="/connect" class="drawer-link">Connect</a>
     </nav>
     <div class="drawer-social">
       <a href="https://www.instagram.com/iesjaspalsingh/" target="_blank" rel="noopener" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
@@ -188,6 +182,26 @@
               <i class="fab fa-telegram"></i> Join Telegram Community
             </a>
           </div>
+
+          <!-- Exam chip selector -->
+          <div class="hero-exam-chips">
+            <span class="hero-exam-label">I'm preparing for:</span>
+            <div class="hero-exam-chips-row">
+              <button class="hero-exam-chip chip-sscje" onclick="examSelect('ssc-je')" aria-label="SSC JE preparation resources">
+                SSC JE
+              </button>
+              <button class="hero-exam-chip chip-rajae" onclick="examSelect('raj-ae')" aria-label="Rajasthan AE/JE preparation resources">
+                Rajasthan AE/JE
+              </button>
+              <button class="hero-exam-chip chip-gate" onclick="examSelect('gate')" aria-label="GATE CE preparation resources">
+                GATE CE
+              </button>
+              <button class="hero-exam-chip chip-ese" onclick="examSelect('ese')" aria-label="UPSC ESE preparation resources">
+                UPSC ESE
+              </button>
+            </div>
+          </div>
+
         </div>
 
         <div class="hero-photo-wrap">
@@ -255,15 +269,11 @@
         </div>
       </div>
 
-      <div class="banners-scroll-wrap" id="bannersWrap">
-        <div class="banners-track" id="bannersTrack">
+      <div class="container">
+        <div class="banners-grid">
 
-          <!-- Banner 1 — Live Batch on Unacademy -->
+          <!-- Card 1 — Live Batch on Unacademy -->
           <a href="https://unacademy.com/@jaspallive" target="_blank" rel="noopener" class="banner-card theme-magenta">
-            <!--
-              [UPDATE] Replace with an actual promotional image:
-              <img src="assets/images/banner-gate-batch.jpg" class="banner-bg-img" alt="" loading="lazy" />
-            -->
             <div class="banner-content">
               <span class="banner-tag"><i class="fas fa-circle-dot"></i> Live on Unacademy</span>
               <h3 class="banner-title">GATE CE & ESE Live Classes</h3>
@@ -272,56 +282,37 @@
             <span class="banner-cta">Watch Live <i class="fas fa-arrow-right"></i></span>
           </a>
 
-          <!-- Banner 2 — Strategy Masterclass -->
-          <a href="/strategy" class="banner-card theme-dark">
-            <div class="banner-content">
-              <span class="banner-tag"><i class="fas fa-chess"></i> Exam Strategy</span>
-              <h3 class="banner-title">The Complete ESE & GATE Strategy Guide</h3>
-              <p class="banner-sub">Written personally by Dr. Jaspal Singh — from syllabus approach to exam day. Subject-wise, phase-wise, exam-wise.</p>
-            </div>
-            <span class="banner-cta">Read Strategy <i class="fas fa-arrow-right"></i></span>
-          </a>
-
-          <!-- Banner 3 — Environmental Engineering -->
-          <a href="/resources" class="banner-card theme-blue">
-            <div class="banner-content">
-              <span class="banner-tag"><i class="fas fa-leaf"></i> Signature Subject</span>
-              <h3 class="banner-title">Environmental Engineering — Complete Resource Pack</h3>
-              <p class="banner-sub">Notes, PYQs, formula books and strategy — all in one place. Sir's most loved subject, taught in his signature style.</p>
-            </div>
-            <span class="banner-cta">Access Resources <i class="fas fa-arrow-right"></i></span>
-          </a>
-
-          <!-- Banner 4 — TEDx / Speaker -->
-          <a href="https://www.instagram.com/iesjaspalsingh/" target="_blank" rel="noopener" class="banner-card theme-gradient">
-            <div class="banner-content">
-              <span class="banner-tag"><i class="fas fa-microphone"></i> TEDx · JoshTalks</span>
-              <h3 class="banner-title">Beyond the Classroom — Dr. Jaspal as a Speaker</h3>
-              <p class="banner-sub">TEDx, JoshTalks, National Media — follow along for more than just exam prep. Follow the journey.</p>
-            </div>
-            <span class="banner-cta">Follow on Instagram <i class="fas fa-arrow-right"></i></span>
-          </a>
-
-          <!-- Banner 5 — Personalised Strategy -->
+          <!-- Card 2 — Personalised Study Plan -->
           <a href="/strategy#strategy-maker" class="banner-card theme-green">
             <div class="banner-content">
-              <span class="banner-tag"><i class="fas fa-wand-magic-sparkles"></i> New</span>
+              <span class="banner-tag"><i class="fas fa-wand-magic-sparkles"></i> Free · New</span>
               <h3 class="banner-title">Get Your Personalised Study Plan</h3>
-              <p class="banner-sub">Fill a short form — target exam, available time, current level — and get a customised strategy plan in your inbox.</p>
+              <p class="banner-sub">Fill a short form — target exam, available time, current level — and get a strategy plan built for you.</p>
             </div>
             <span class="banner-cta">Build My Plan <i class="fas fa-arrow-right"></i></span>
           </a>
 
-        </div>
-      </div>
+          <!-- Card 3 — Strategy Guide -->
+          <a href="/strategy" class="banner-card theme-dark">
+            <div class="banner-content">
+              <span class="banner-tag"><i class="fas fa-chess"></i> Exam Strategy</span>
+              <h3 class="banner-title">Complete ESE & GATE Strategy Guide</h3>
+              <p class="banner-sub">From syllabus approach to exam-day tactics — written personally by Dr. Jaspal Singh.</p>
+            </div>
+            <span class="banner-cta">Read Strategy <i class="fas fa-arrow-right"></i></span>
+          </a>
 
-      <!-- Scroll dots -->
-      <div class="banners-dots" id="bannersDots" aria-hidden="true">
-        <button class="banner-dot active"></button>
-        <button class="banner-dot"></button>
-        <button class="banner-dot"></button>
-        <button class="banner-dot"></button>
-        <button class="banner-dot"></button>
+          <!-- Card 4 — Environmental Engineering -->
+          <a href="/resources" class="banner-card theme-blue">
+            <div class="banner-content">
+              <span class="banner-tag"><i class="fas fa-leaf"></i> Signature Subject</span>
+              <h3 class="banner-title">Env. Engineering — Complete Resource Pack</h3>
+              <p class="banner-sub">Notes, PYQs, formula sheets — Sir's most loved subject in his signature teaching style.</p>
+            </div>
+            <span class="banner-cta">Access Resources <i class="fas fa-arrow-right"></i></span>
+          </a>
+
+        </div>
       </div>
     </section>
 
@@ -337,8 +328,16 @@
         <div class="progs-grid">
 
           <article class="op-card">
+            <div class="op-thumb op-thumb-sscje">
+              <span class="op-thumb-exam">SSC JE</span>
+              <i class="fas fa-user-tie op-thumb-icon"></i>
+              <span class="op-thumb-label">Interview Prep</span>
+              <span class="op-thumb-seats">
+                <span class="op-seat-dot seat-ok"></span>12 seats left
+              </span>
+            </div>
+            <div class="op-seats-bar"><div class="op-seats-fill fill-orange" style="width:60%"></div></div>
             <div class="op-card-top">
-              <div class="op-icon op-icon-orange"><i class="fas fa-user-tie"></i></div>
               <div class="op-badges">
                 <span class="op-badge op-badge-offline"><i class="fas fa-building"></i> Offline · Jaipur</span>
                 <span class="op-badge op-badge-new">New Batch</span>
@@ -362,8 +361,16 @@
           </article>
 
           <article class="op-card">
+            <div class="op-thumb op-thumb-rajae">
+              <span class="op-thumb-exam">RPSC AE · RSMSSB JE</span>
+              <i class="fas fa-comments op-thumb-icon"></i>
+              <span class="op-thumb-label">Mock Interview</span>
+              <span class="op-thumb-seats">
+                <span class="op-seat-dot seat-warn"></span>5 seats left!
+              </span>
+            </div>
+            <div class="op-seats-bar"><div class="op-seats-fill fill-red" style="width:75%"></div></div>
             <div class="op-card-top">
-              <div class="op-icon op-icon-magenta"><i class="fas fa-comments"></i></div>
               <div class="op-badges">
                 <span class="op-badge op-badge-offline"><i class="fas fa-building"></i> Offline · Jaipur</span>
                 <span class="op-badge op-badge-hot">Most Popular</span>
@@ -387,8 +394,15 @@
           </article>
 
           <article class="op-card">
+            <div class="op-thumb op-thumb-tests">
+              <span class="op-thumb-exam">SSC JE · Rajasthan AE/JE</span>
+              <i class="fas fa-clipboard-list op-thumb-icon"></i>
+              <span class="op-thumb-label">Weekly Tests</span>
+              <span class="op-thumb-seats">
+                <span class="op-seat-dot seat-open"></span>Open Enrollment
+              </span>
+            </div>
             <div class="op-card-top">
-              <div class="op-icon op-icon-green"><i class="fas fa-pencil-alt"></i></div>
               <div class="op-badges">
                 <span class="op-badge op-badge-offline"><i class="fas fa-building"></i> Offline · Jaipur</span>
               </div>
@@ -410,8 +424,16 @@
           </article>
 
           <article class="op-card">
+            <div class="op-thumb op-thumb-gd">
+              <span class="op-thumb-exam">All Exams</span>
+              <i class="fas fa-users op-thumb-icon"></i>
+              <span class="op-thumb-label">Soft Skills</span>
+              <span class="op-thumb-seats">
+                <span class="op-seat-dot seat-ok"></span>18 seats left
+              </span>
+            </div>
+            <div class="op-seats-bar"><div class="op-seats-fill fill-green" style="width:28%"></div></div>
             <div class="op-card-top">
-              <div class="op-icon op-icon-blue"><i class="fas fa-users"></i></div>
               <div class="op-badges">
                 <span class="op-badge op-badge-offline"><i class="fas fa-building"></i> Offline · Jaipur</span>
                 <span class="op-badge op-badge-new">New</span>
@@ -869,7 +891,7 @@
               <div class="testimonial-avatar" aria-hidden="true">RK</div>
               <div>
                 <span class="testimonial-name">Rohit Kumar</span>
-                <span class="testimonial-exam">UPSC ESE 2024 · Civil Engineering</span>
+                <span class="testi-tag testi-tag-ese"><i class="fas fa-check-circle"></i> UPSC ESE 2024 · Selected</span>
               </div>
             </footer>
           </blockquote>
@@ -881,7 +903,7 @@
               <div class="testimonial-avatar" aria-hidden="true">PS</div>
               <div>
                 <span class="testimonial-name">Priya Sharma</span>
-                <span class="testimonial-exam">GATE CE 2024 · 92 Percentile</span>
+                <span class="testi-tag testi-tag-gate"><i class="fas fa-star"></i> GATE CE 2024 · 92 Percentile</span>
               </div>
             </footer>
           </blockquote>
@@ -893,7 +915,7 @@
               <div class="testimonial-avatar" aria-hidden="true">AM</div>
               <div>
                 <span class="testimonial-name">Aditya Mishra</span>
-                <span class="testimonial-exam">UPSC ESE 2024 · Civil Engineering</span>
+                <span class="testi-tag testi-tag-ese"><i class="fas fa-check-circle"></i> UPSC ESE 2024 · Cleared</span>
               </div>
             </footer>
           </blockquote>
@@ -949,6 +971,35 @@
   <script src="js/main.js"></script>
   <script src="js/home.js"></script>
   <script>
+    /* ── Exam chip selector ────────────────────── */
+    function examSelect(exam) {
+      /* 1. Toggle active chip */
+      document.querySelectorAll('.hero-exam-chip').forEach(function(c) {
+        c.classList.remove('active');
+      });
+      var classMap = { 'ssc-je': 'chip-sscje', 'raj-ae': 'chip-rajae', 'gate': 'chip-gate', 'ese': 'chip-ese' };
+      var chip = document.querySelector('.' + classMap[exam]);
+      if (chip) chip.classList.add('active');
+
+      /* 2. Scroll to the most relevant section */
+      var targetSel = (exam === 'gate' || exam === 'ese')
+        ? '.resources-section'
+        : '.offline-progs-section';
+      var target = document.querySelector(targetSel);
+      if (target) {
+        var y = target.getBoundingClientRect().top + window.scrollY - 84;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+      }
+
+      /* 3. Auto-filter Job Alerts to match */
+      var jaMap = { 'ssc-je': 'ssc', 'raj-ae': 'raj-ae', 'gate': 'gate', 'ese': 'ese' };
+      var jaExam = jaMap[exam];
+      if (jaExam) {
+        var jaBtn = document.querySelector('.ja-filter-btn.f-' + jaExam);
+        if (jaBtn) jaFilter(jaBtn, jaExam);
+      }
+    }
+
     /* ── Job Alerts filter ─────────────────────── */
     function jaFilter(btn, exam) {
       document.querySelectorAll('.ja-filter-btn').forEach(function(b) { b.classList.remove('active'); });
