@@ -107,11 +107,11 @@
 }
 
 .op-card-top {
-  padding: 22px 22px 0;
+  padding: 14px 18px 0;
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
 }
 
 .op-icon {
@@ -129,7 +129,7 @@
 .op-icon-green   { background: rgba(22,163,74,.10);  color: var(--green); }
 .op-icon-blue    { background: rgba(103,200,232,.15); color: #0EA5E9; }
 
-.op-badges { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+.op-badges { display: flex; flex-direction: row; align-items: center; gap: 6px; flex-wrap: wrap; }
 
 .op-badge {
   font-family: var(--font-heading);
@@ -223,6 +223,266 @@
   text-decoration: none;
 }
 .op-enroll-btn:hover { opacity: .9; color: var(--white); }
+
+/* ============================================================
+   PROGRAM CARD VISUAL THUMBNAILS
+   Rich gradient header that replaces the small icon-only top row.
+   Each card gets a unique gradient + dot-grid texture + meta pills.
+   ============================================================ */
+
+@keyframes seat-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: .3; }
+}
+
+/* Thumbnail container */
+.op-thumb {
+  height: 180px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* Dot-grid texture overlay */
+.op-thumb::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(255,255,255,.13) 1px, transparent 1px);
+  background-size: 24px 24px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Bottom vignette for depth */
+.op-thumb::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 52px;
+  background: linear-gradient(to bottom, transparent, rgba(0,0,0,.18));
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Exam target pill — top-left corner */
+.op-thumb-exam {
+  position: absolute;
+  top: 13px;
+  left: 13px;
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .9px;
+  color: rgba(255,255,255,.92);
+  background: rgba(0,0,0,.22);
+  padding: 4px 11px;
+  border-radius: 20px;
+  z-index: 2;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  max-width: calc(100% - 26px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Large centred icon */
+.op-thumb-icon {
+  font-size: 48px;
+  color: rgba(255,255,255,.93);
+  position: relative;
+  z-index: 2;
+  filter: drop-shadow(0 4px 16px rgba(0,0,0,.28));
+  margin-bottom: 8px;
+}
+
+/* Descriptor label below icon */
+.op-thumb-label {
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255,255,255,.62);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  position: relative;
+  z-index: 2;
+}
+
+/* Seats status pill — bottom-right corner */
+.op-thumb-seats {
+  position: absolute;
+  bottom: 13px;
+  right: 13px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255,255,255,.92);
+  background: rgba(0,0,0,.22);
+  padding: 4px 11px;
+  border-radius: 20px;
+  z-index: 2;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Coloured status dot inside the seats pill */
+.op-seat-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.op-seat-dot.seat-ok   { background: #4ADE80; }
+.op-seat-dot.seat-warn { background: #FCA5A5; animation: seat-pulse 1.2s ease infinite; }
+.op-seat-dot.seat-open { background: #67C8E8; }
+
+/* Thin seat-fill bar immediately below the thumbnail */
+.op-seats-bar {
+  height: 3px;
+  background: rgba(26,26,46,.07);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.op-seats-fill {
+  height: 100%;
+  border-radius: 0 2px 2px 0;
+  transition: width .8s cubic-bezier(.4,0,.2,1);
+}
+.fill-orange { background: linear-gradient(90deg, #FF6B35, #f4a66a); }
+.fill-red    { background: linear-gradient(90deg, #DC2626, #f87171); }
+.fill-green  { background: linear-gradient(90deg, #16A34A, #4ADE80); }
+.fill-blue   { background: linear-gradient(90deg, #0284C7, #38BDF8); }
+
+/* Per-program thumbnail gradients */
+.op-thumb-sscje { background: linear-gradient(145deg, #FF6B35 0%, #C81240 100%); }
+.op-thumb-rajae { background: linear-gradient(145deg, #7B1FA2 0%, #C81240 100%); }
+.op-thumb-tests { background: linear-gradient(145deg, #0F2027 0%, #0284C7 100%); }
+.op-thumb-gd    { background: linear-gradient(145deg, #065F46 0%, #16A34A 100%); }
+
+/* ============================================================
+   PROGRAM PAGE VISUAL BANNERS (programs/index.html)
+   Full-width gradient strip spanning both grid columns.
+   ============================================================ */
+
+.prog-banner {
+  grid-column: 1 / -1;
+  height: 116px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 0 36px;
+  gap: 24px;
+  overflow: hidden;
+}
+
+/* Dot-grid texture */
+.prog-banner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(255,255,255,.11) 1px, transparent 1px);
+  background-size: 24px 24px;
+  pointer-events: none;
+}
+
+/* Right-edge vignette */
+.prog-banner::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 160px;
+  height: 100%;
+  background: linear-gradient(to right, transparent, rgba(0,0,0,.12));
+  pointer-events: none;
+}
+
+.prog-banner-icon {
+  font-size: 46px;
+  color: rgba(255,255,255,.88);
+  position: relative;
+  z-index: 1;
+  filter: drop-shadow(0 3px 12px rgba(0,0,0,.25));
+  flex-shrink: 0;
+}
+
+.prog-banner-body {
+  flex: 1;
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+
+.prog-banner-title {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.2;
+  margin-bottom: 9px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.prog-banner-pills {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.prog-banner-pill {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  color: rgba(255,255,255,.88);
+  background: rgba(0,0,0,.2);
+  padding: 3px 10px;
+  border-radius: 20px;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.prog-banner-right {
+  text-align: right;
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+}
+
+.prog-banner-date {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255,255,255,.92);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.prog-banner-seats-txt {
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255,255,255,.65);
+  display: block;
+}
+.prog-banner-seats-txt.urgent-seats { color: #FCA5A5; }
+
+/* Per-program banner gradients */
+.prog-banner-sscje { background: linear-gradient(135deg, #FF6B35 0%, #C81240 100%); }
+.prog-banner-rajae { background: linear-gradient(135deg, #7B1FA2 0%, #C81240 100%); }
+.prog-banner-tests { background: linear-gradient(135deg, #0F2027 0%, #0284C7 100%); }
+.prog-banner-gd    { background: linear-gradient(135deg, #065F46 0%, #16A34A 100%); }
 
 /* ============================================================
    JOB ALERTS SECTION
@@ -387,10 +647,28 @@
 @media (max-width: 768px) {
   .progs-grid { grid-template-columns: 1fr; }
   .ja-grid    { grid-template-columns: 1fr; }
+
+  /* Banner: hide right-side meta on tablet */
+  .prog-banner { height: 100px; padding: 0 24px; gap: 18px; }
+  .prog-banner-icon { font-size: 36px; }
+  .prog-banner-title { font-size: 17px; }
+  .prog-banner-right { display: none; }
 }
 
 @media (max-width: 600px) {
   .op-meta { grid-template-columns: 1fr; }
   .ja-filter-bar { gap: 6px; }
   .ja-filter-btn { font-size: 11px; padding: 5px 12px; }
+
+  /* Thumbnail: tighter on small phones */
+  .op-thumb { height: 160px; }
+  .op-thumb-icon { font-size: 40px; }
+  .op-thumb-exam { font-size: 9px; padding: 3px 9px; }
+  .op-thumb-seats { font-size: 9px; padding: 3px 9px; }
+
+  /* Banner: tighter on small phones */
+  .prog-banner { height: 90px; padding: 0 18px; gap: 14px; }
+  .prog-banner-icon { font-size: 30px; }
+  .prog-banner-title { font-size: 15px; }
+  .prog-banner-pills { display: none; }
 }

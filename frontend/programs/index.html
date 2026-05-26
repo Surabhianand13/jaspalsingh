@@ -145,6 +145,151 @@
       .prog-sidebar { padding: 22px 18px; }
       .progs-hero { padding-top: calc(var(--header-h) + 36px + 36px); }
     }
+
+    /* ── Exam filter bar ── */
+    .prog-filter-wrap { margin-bottom: 52px; }
+    .prog-filter-label {
+      font-family: var(--font-heading);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: rgba(74,74,104,.45);
+      margin-bottom: 14px;
+    }
+    .prog-filter-bar { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .prog-filter-btn {
+      font-family: var(--font-heading);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 9px 22px;
+      border-radius: var(--radius-pill);
+      border: 1.5px solid rgba(26,26,46,.14);
+      background: var(--white);
+      color: var(--body-color);
+      cursor: pointer;
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .prog-filter-btn:hover { border-color: var(--heading-color); color: var(--heading-color); }
+
+    /* Active state — dark default */
+    .prog-filter-btn.active { background: var(--heading-color); color: #fff; border-color: transparent; }
+
+    /* Per-exam accent colours when active */
+    .prog-filter-btn.f-sscje.active { background: #C81240; border-color: #C81240; }
+    .prog-filter-btn.f-rajae.active { background: #7B1FA2; border-color: #7B1FA2; }
+    .prog-filter-btn.f-rajje.active { background: #E65100; border-color: #E65100; }
+
+    .prog-filter-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .prog-filter-btn.active .prog-filter-dot { filter: brightness(10); }
+
+    /* Hide filtered-out rows */
+    .prog-row.hidden-by-filter {
+      display: none;
+    }
+
+    /* No-results message */
+    .prog-filter-empty {
+      display: none;
+      text-align: center;
+      padding: 56px 20px;
+      color: var(--body-color);
+      font-size: 16px;
+      line-height: 1.75;
+    }
+    .prog-filter-empty.visible { display: block; }
+
+    /* ── Urgent Featured Hero Card ── */
+    @keyframes urg-pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+    .prog-urgent-hero {
+      background: linear-gradient(135deg, #5B0FA0 0%, #8B1A9E 40%, #C81240 100%);
+      border-radius: var(--radius-md);
+      padding: 28px 36px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 40px;
+      position: relative;
+      overflow: hidden;
+    }
+    .prog-urgent-hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(circle, rgba(255,255,255,.08) 1px, transparent 1px);
+      background-size: 22px 22px;
+    }
+    .prog-urgent-hero-left { position: relative; z-index: 1; display: flex; align-items: center; gap: 20px; }
+    .prog-urgent-icon {
+      width: 56px; height: 56px;
+      background: rgba(255,255,255,.15);
+      backdrop-filter: blur(6px);
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px; color: #fff;
+      flex-shrink: 0;
+    }
+    .prog-urgent-text {}
+    .prog-urgent-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: var(--font-heading); font-size: 10px; font-weight: 700;
+      letter-spacing: 1.4px; text-transform: uppercase;
+      color: #FCA5A5; margin-bottom: 6px;
+    }
+    .prog-urgent-dot {
+      width: 7px; height: 7px; border-radius: 50%; background: #FCA5A5;
+      animation: urg-pulse 1.2s ease infinite;
+    }
+    .prog-urgent-title {
+      font-family: var(--font-heading); font-size: 20px; font-weight: 800;
+      color: #fff; line-height: 1.2; margin-bottom: 8px;
+    }
+    .prog-urgent-meta {
+      display: flex; flex-wrap: wrap; gap: 10px;
+    }
+    .prog-urgent-pill {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-family: var(--font-heading); font-size: 11px; font-weight: 600;
+      color: rgba(255,255,255,.85);
+      background: rgba(255,255,255,.12); backdrop-filter: blur(4px);
+      border: 1px solid rgba(255,255,255,.2);
+      padding: 4px 12px; border-radius: var(--radius-pill);
+    }
+    .prog-urgent-right { position: relative; z-index: 1; flex-shrink: 0; }
+    .prog-urgent-cta {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-family: var(--font-heading); font-size: 14px; font-weight: 800;
+      color: #7B1FA2;
+      background: #fff;
+      padding: 14px 28px;
+      border-radius: var(--radius-pill);
+      text-decoration: none;
+      transition: var(--transition);
+      white-space: nowrap;
+    }
+    .prog-urgent-cta:hover { background: #f0e7ff; transform: translateY(-2px); }
+    .prog-urgent-seats-bar {
+      position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
+      background: rgba(255,255,255,.12);
+    }
+    .prog-urgent-seats-fill {
+      height: 100%; background: linear-gradient(90deg, #FCA5A5, #f87171);
+      border-radius: 2px;
+    }
+
+    @media (max-width: 700px) {
+      .prog-urgent-hero { flex-direction: column; align-items: flex-start; padding: 22px 20px; }
+      .prog-urgent-cta { width: 100%; justify-content: center; }
+    }
+
+    @media (max-width: 500px) {
+      .prog-filter-btn { font-size: 12px; padding: 7px 16px; }
+    }
   </style>
 </head>
 <body>
@@ -166,14 +311,12 @@
         <span class="wordmark">Dr. Jaspal Singh</span>
       </a>
       <nav class="main-nav" aria-label="Main navigation">
-        <a href="/"            class="nav-link">Home</a>
-        <a href="/about"       class="nav-link">About</a>
-        <a href="/resources"   class="nav-link">Resources</a>
-        <a href="/strategy"    class="nav-link">Strategy</a>
-        <a href="/blog"        class="nav-link">Blog</a>
-        <a href="/programs"    class="nav-link nav-programs active"><i class="fas fa-chalkboard-teacher"></i> Programs</a>
-        <a href="/job-alerts"  class="nav-link nav-alerts"><i class="fas fa-bell"></i> Job Alerts</a>
-        <a href="/connect"     class="nav-link nav-cta">Connect</a>
+        <a href="/" class="nav-link">Home</a>
+        <a href="/programs" class="nav-link nav-programs active"><i class="fas fa-chalkboard-teacher"></i> Programs</a>
+        <a href="/resources" class="nav-link">Resources</a>
+        <a href="/job-alerts" class="nav-link nav-alerts"><i class="fas fa-bell"></i> Job Alerts</a>
+        <a href="/about" class="nav-link">About</a>
+        <a href="/connect" class="nav-link nav-cta">Connect</a>
       </nav>
       <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false" aria-controls="mobileDrawer">
         <span></span><span></span><span></span>
@@ -186,14 +329,12 @@
     <button class="drawer-close" id="drawerClose" aria-label="Close menu"><i class="fas fa-times"></i></button>
     <a href="/" class="drawer-wordmark">Dr. Jaspal Singh</a>
     <nav class="drawer-nav">
-      <a href="/"           class="drawer-link">Home</a>
-      <a href="/about"      class="drawer-link">About</a>
-      <a href="/resources"  class="drawer-link">Resources</a>
-      <a href="/strategy"   class="drawer-link">Strategy</a>
-      <a href="/blog"       class="drawer-link">Blog</a>
-      <a href="/programs"   class="drawer-link nav-programs active">Programs</a>
+      <a href="/" class="drawer-link">Home</a>
+      <a href="/programs" class="drawer-link nav-programs active">Programs</a>
+      <a href="/resources" class="drawer-link">Resources</a>
       <a href="/job-alerts" class="drawer-link nav-alerts">Job Alerts</a>
-      <a href="/connect"    class="drawer-link">Connect</a>
+      <a href="/about" class="drawer-link">About</a>
+      <a href="/connect" class="drawer-link">Connect</a>
     </nav>
     <div class="drawer-social">
       <a href="https://www.instagram.com/iesjaspalsingh/" target="_blank" rel="noopener" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
@@ -224,10 +365,70 @@
     <!-- PROGRAMS LISTING -->
     <section class="progs-listing-section">
       <div class="container">
+        <!-- ── Urgent Batch Hero Card ── -->
+        <div class="prog-urgent-hero" role="region" aria-label="Most urgent batch">
+          <div class="prog-urgent-hero-left">
+            <div class="prog-urgent-icon"><i class="fas fa-user-graduate"></i></div>
+            <div class="prog-urgent-text">
+              <div class="prog-urgent-badge">
+                <span class="prog-urgent-dot"></span> Filling Fast · Only 5 Seats Left
+              </div>
+              <h2 class="prog-urgent-title">Rajasthan AE/JE Mock Interview Program</h2>
+              <div class="prog-urgent-meta">
+                <span class="prog-urgent-pill"><i class="fas fa-calendar"></i> Jun 8, 2026 — Jun 10, 2026</span>
+                <span class="prog-urgent-pill"><i class="fas fa-map-marker-alt"></i> Jaipur, Offline</span>
+                <span class="prog-urgent-pill"><i class="fas fa-users"></i> 20-seat batch</span>
+              </div>
+            </div>
+          </div>
+          <div class="prog-urgent-right">
+            <a href="#prog-rajasthan-ae" class="prog-urgent-cta">
+              <i class="fas fa-bolt"></i> Enroll Before It Fills
+            </a>
+          </div>
+          <div class="prog-urgent-seats-bar">
+            <div class="prog-urgent-seats-fill" style="width:75%;"></div>
+          </div>
+        </div>
+
+        <!-- ── Exam Filter Bar ── -->
+        <div class="prog-filter-wrap">
+          <p class="prog-filter-label">Filter by exam</p>
+          <div class="prog-filter-bar" id="progFilterBar">
+            <button class="prog-filter-btn f-all active" onclick="progFilter(this,'all')">
+              All Programs
+            </button>
+            <button class="prog-filter-btn f-sscje" onclick="progFilter(this,'ssc-je')">
+              <span class="prog-filter-dot" style="background:#C81240;"></span>SSC JE
+            </button>
+            <button class="prog-filter-btn f-rajae" onclick="progFilter(this,'raj-ae')">
+              <span class="prog-filter-dot" style="background:#7B1FA2;"></span>Rajasthan AE
+            </button>
+            <button class="prog-filter-btn f-rajje" onclick="progFilter(this,'raj-je')">
+              <span class="prog-filter-dot" style="background:#E65100;"></span>Rajasthan JE
+            </button>
+          </div>
+        </div>
+
         <div class="prog-list">
 
           <!-- ── Program 1: SSC JE Interview Prep ── -->
-          <div class="prog-row" id="prog-sscje">
+          <div class="prog-row" id="prog-sscje" data-exams="ssc-je">
+            <div class="prog-banner prog-banner-sscje">
+              <i class="fas fa-user-tie prog-banner-icon"></i>
+              <div class="prog-banner-body">
+                <p class="prog-banner-title">SSC JE Interview Prep Workshop</p>
+                <div class="prog-banner-pills">
+                  <span class="prog-banner-pill">SSC JE Civil</span>
+                  <span class="prog-banner-pill">Offline · Jaipur</span>
+                  <span class="prog-banner-pill">3-Day Intensive</span>
+                </div>
+              </div>
+              <div class="prog-banner-right">
+                <span class="prog-banner-date">Jun 15–17, 2026</span>
+                <span class="prog-banner-seats-txt">12 of 30 seats left</span>
+              </div>
+            </div>
             <div class="prog-main">
               <div class="prog-header">
                 <div class="prog-icon pi-orange"><i class="fas fa-user-tie"></i></div>
@@ -312,7 +513,22 @@
           </div>
 
           <!-- ── Program 2: Rajasthan AE/JE Mock Interview ── -->
-          <div class="prog-row" id="prog-rajasthan-ae">
+          <div class="prog-row" id="prog-rajasthan-ae" data-exams="raj-ae raj-je">
+            <div class="prog-banner prog-banner-rajae">
+              <i class="fas fa-comments prog-banner-icon"></i>
+              <div class="prog-banner-body">
+                <p class="prog-banner-title">Rajasthan AE/JE Mock Interview Program</p>
+                <div class="prog-banner-pills">
+                  <span class="prog-banner-pill">RPSC AE</span>
+                  <span class="prog-banner-pill">RSMSSB JE</span>
+                  <span class="prog-banner-pill">Most Popular</span>
+                </div>
+              </div>
+              <div class="prog-banner-right">
+                <span class="prog-banner-date">June 8, 2026</span>
+                <span class="prog-banner-seats-txt urgent-seats">⚠ Only 5 of 20 seats left</span>
+              </div>
+            </div>
             <div class="prog-main">
               <div class="prog-header">
                 <div class="prog-icon pi-magenta"><i class="fas fa-comments"></i></div>
@@ -397,7 +613,22 @@
           </div>
 
           <!-- ── Program 3: Offline Test Series ── -->
-          <div class="prog-row" id="prog-test-series">
+          <div class="prog-row" id="prog-test-series" data-exams="ssc-je raj-ae raj-je">
+            <div class="prog-banner prog-banner-tests">
+              <i class="fas fa-clipboard-list prog-banner-icon"></i>
+              <div class="prog-banner-body">
+                <p class="prog-banner-title">Offline Test Series — SSC JE &amp; Rajasthan AE/JE</p>
+                <div class="prog-banner-pills">
+                  <span class="prog-banner-pill">SSC JE</span>
+                  <span class="prog-banner-pill">Rajasthan AE/JE</span>
+                  <span class="prog-banner-pill">Every Sunday</span>
+                </div>
+              </div>
+              <div class="prog-banner-right">
+                <span class="prog-banner-date">Weekly · 9 AM</span>
+                <span class="prog-banner-seats-txt">Open Enrollment</span>
+              </div>
+            </div>
             <div class="prog-main">
               <div class="prog-header">
                 <div class="prog-icon pi-green"><i class="fas fa-pencil-alt"></i></div>
@@ -474,7 +705,22 @@
           </div>
 
           <!-- ── Program 4: GD + Personality Dev ── -->
-          <div class="prog-row" id="prog-gd">
+          <div class="prog-row" id="prog-gd" data-exams="ssc-je raj-ae raj-je">
+            <div class="prog-banner prog-banner-gd">
+              <i class="fas fa-users prog-banner-icon"></i>
+              <div class="prog-banner-body">
+                <p class="prog-banner-title">GD + Personality Development + Interview Skills</p>
+                <div class="prog-banner-pills">
+                  <span class="prog-banner-pill">All Exams</span>
+                  <span class="prog-banner-pill">Offline · Jaipur</span>
+                  <span class="prog-banner-pill">2-Day Program</span>
+                </div>
+              </div>
+              <div class="prog-banner-right">
+                <span class="prog-banner-date">Jun 22–23, 2026</span>
+                <span class="prog-banner-seats-txt">18 of 25 seats left</span>
+              </div>
+            </div>
             <div class="prog-main">
               <div class="prog-header">
                 <div class="prog-icon pi-blue"><i class="fas fa-users"></i></div>
@@ -555,6 +801,12 @@
           </div>
 
         </div><!-- end prog-list -->
+
+        <p class="prog-filter-empty" id="progFilterEmpty">
+          No programs currently available for this exam filter.<br>
+          <a href="https://wa.me/910000000000?text=I want to know about upcoming programs" target="_blank" rel="noopener" style="color:var(--orange);font-weight:700;">WhatsApp us to know about upcoming batches →</a>
+        </p>
+
       </div>
     </section>
 
@@ -669,7 +921,38 @@
 
   <script src="js/main.js"></script>
   <script>
-    /* FAQ accordion */
+    /* ── Exam filter ─────────────────────────────────────── */
+    function progFilter(btn, exam) {
+      document.querySelectorAll('.prog-filter-btn').forEach(function(b) {
+        b.classList.remove('active');
+      });
+      btn.classList.add('active');
+
+      var anyVisible = false;
+      document.querySelectorAll('.prog-row').forEach(function(row) {
+        var exams = row.getAttribute('data-exams') || '';
+        var show = exam === 'all' || exams.indexOf(exam) !== -1;
+        row.classList.toggle('hidden-by-filter', !show);
+        if (show) anyVisible = true;
+      });
+
+      var empty = document.getElementById('progFilterEmpty');
+      if (empty) empty.classList.toggle('visible', !anyVisible);
+    }
+
+    /* ── URL param auto-filter ───────────────────────────── */
+    (function() {
+      var params = new URLSearchParams(window.location.search);
+      var exam = params.get('exam');
+      if (!exam) return;
+      var map = { 'ssc-je': '.f-sscje', 'raj-ae': '.f-rajae', 'raj-je': '.f-rajje' };
+      var sel = map[exam];
+      if (!sel) return;
+      var btn = document.querySelector(sel);
+      if (btn) progFilter(btn, exam);
+    })();
+
+    /* ── FAQ accordion ───────────────────────────────────── */
     document.querySelectorAll('.faq-q').forEach(function(q) {
       q.addEventListener('click', function() {
         var item = this.closest('.faq-item');
