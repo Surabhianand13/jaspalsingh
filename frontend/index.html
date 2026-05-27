@@ -96,6 +96,7 @@
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/home.css" />
   <link rel="stylesheet" href="css/pages.css" />
+  <link rel="stylesheet" href="css/additions.css" />
 </head>
 <body class="page-home">
   <a href="#main-content" class="skip-to-main">Skip to main content</a>
@@ -175,6 +176,26 @@
               <i class="fab fa-telegram"></i> Join Telegram Community
             </a>
           </div>
+
+          <!-- Exam chip selector -->
+          <div class="hero-exam-chips">
+            <span class="hero-exam-label">I'm preparing for:</span>
+            <div class="hero-exam-chips-row">
+              <button class="hero-exam-chip chip-sscje" onclick="examSelect('ssc-je')" aria-label="SSC JE preparation resources">
+                SSC JE
+              </button>
+              <button class="hero-exam-chip chip-rajae" onclick="examSelect('raj-ae')" aria-label="Rajasthan AE/JE preparation resources">
+                Rajasthan AE/JE
+              </button>
+              <button class="hero-exam-chip chip-gate" onclick="examSelect('gate')" aria-label="GATE CE preparation resources">
+                GATE CE
+              </button>
+              <button class="hero-exam-chip chip-ese" onclick="examSelect('ese')" aria-label="UPSC ESE preparation resources">
+                UPSC ESE
+              </button>
+            </div>
+          </div>
+
         </div>
 
         <div class="hero-photo-wrap">
@@ -242,15 +263,11 @@
         </div>
       </div>
 
-      <div class="banners-scroll-wrap" id="bannersWrap">
-        <div class="banners-track" id="bannersTrack">
+      <div class="container">
+        <div class="banners-grid">
 
-          <!-- Banner 1 — Live Batch on Unacademy -->
+          <!-- Card 1 — Live Batch on Unacademy -->
           <a href="https://unacademy.com/@jaspallive" target="_blank" rel="noopener" class="banner-card theme-magenta">
-            <!--
-              [UPDATE] Replace with an actual promotional image:
-              <img src="assets/images/banner-gate-batch.jpg" class="banner-bg-img" alt="" loading="lazy" />
-            -->
             <div class="banner-content">
               <span class="banner-tag"><i class="fas fa-circle-dot"></i> Live on Unacademy</span>
               <h3 class="banner-title">GATE CE & ESE Live Classes</h3>
@@ -259,56 +276,185 @@
             <span class="banner-cta">Watch Live <i class="fas fa-arrow-right"></i></span>
           </a>
 
-          <!-- Banner 2 — Strategy Masterclass -->
-          <a href="/strategy" class="banner-card theme-dark">
-            <div class="banner-content">
-              <span class="banner-tag"><i class="fas fa-chess"></i> Exam Strategy</span>
-              <h3 class="banner-title">The Complete ESE & GATE Strategy Guide</h3>
-              <p class="banner-sub">Written personally by Dr. Jaspal Singh — from syllabus approach to exam day. Subject-wise, phase-wise, exam-wise.</p>
-            </div>
-            <span class="banner-cta">Read Strategy <i class="fas fa-arrow-right"></i></span>
-          </a>
-
-          <!-- Banner 3 — Environmental Engineering -->
-          <a href="/resources" class="banner-card theme-blue">
-            <div class="banner-content">
-              <span class="banner-tag"><i class="fas fa-leaf"></i> Signature Subject</span>
-              <h3 class="banner-title">Environmental Engineering — Complete Resource Pack</h3>
-              <p class="banner-sub">Notes, PYQs, formula books and strategy — all in one place. Sir's most loved subject, taught in his signature style.</p>
-            </div>
-            <span class="banner-cta">Access Resources <i class="fas fa-arrow-right"></i></span>
-          </a>
-
-          <!-- Banner 4 — TEDx / Speaker -->
-          <a href="https://www.instagram.com/iesjaspalsingh/" target="_blank" rel="noopener" class="banner-card theme-gradient">
-            <div class="banner-content">
-              <span class="banner-tag"><i class="fas fa-microphone"></i> TEDx · JoshTalks</span>
-              <h3 class="banner-title">Beyond the Classroom — Dr. Jaspal as a Speaker</h3>
-              <p class="banner-sub">TEDx, JoshTalks, National Media — follow along for more than just exam prep. Follow the journey.</p>
-            </div>
-            <span class="banner-cta">Follow on Instagram <i class="fas fa-arrow-right"></i></span>
-          </a>
-
-          <!-- Banner 5 — Personalised Strategy -->
+          <!-- Card 2 — Personalised Study Plan -->
           <a href="/strategy#strategy-maker" class="banner-card theme-green">
             <div class="banner-content">
-              <span class="banner-tag"><i class="fas fa-wand-magic-sparkles"></i> New</span>
+              <span class="banner-tag"><i class="fas fa-wand-magic-sparkles"></i> Free · New</span>
               <h3 class="banner-title">Get Your Personalised Study Plan</h3>
-              <p class="banner-sub">Fill a short form — target exam, available time, current level — and get a customised strategy plan in your inbox.</p>
+              <p class="banner-sub">Fill a short form — target exam, available time, current level — and get a strategy plan built for you.</p>
             </div>
             <span class="banner-cta">Build My Plan <i class="fas fa-arrow-right"></i></span>
           </a>
 
+          <!-- Card 3 — Strategy Guide -->
+          <a href="/strategy" class="banner-card theme-dark">
+            <div class="banner-content">
+              <span class="banner-tag"><i class="fas fa-chess"></i> Exam Strategy</span>
+              <h3 class="banner-title">Complete ESE & GATE Strategy Guide</h3>
+              <p class="banner-sub">From syllabus approach to exam-day tactics — written personally by Dr. Jaspal Singh.</p>
+            </div>
+            <span class="banner-cta">Read Strategy <i class="fas fa-arrow-right"></i></span>
+          </a>
+
+          <!-- Card 4 — Environmental Engineering -->
+          <a href="/resources" class="banner-card theme-blue">
+            <div class="banner-content">
+              <span class="banner-tag"><i class="fas fa-leaf"></i> Signature Subject</span>
+              <h3 class="banner-title">Env. Engineering — Complete Resource Pack</h3>
+              <p class="banner-sub">Notes, PYQs, formula sheets — Sir's most loved subject in his signature teaching style.</p>
+            </div>
+            <span class="banner-cta">Access Resources <i class="fas fa-arrow-right"></i></span>
+          </a>
+
         </div>
       </div>
+    </section>
 
-      <!-- Scroll dots -->
-      <div class="banners-dots" id="bannersDots" aria-hidden="true">
-        <button class="banner-dot active"></button>
-        <button class="banner-dot"></button>
-        <button class="banner-dot"></button>
-        <button class="banner-dot"></button>
-        <button class="banner-dot"></button>
+    <!-- ─── OFFLINE PROGRAMS ──────────────────────── -->
+    <section class="offline-progs-section section-pad" aria-labelledby="progs-title">
+      <div class="container">
+        <div class="section-header">
+          <span class="sec-eyebrow orange"><i class="fas fa-map-marker-alt"></i> Offline · Jaipur, Rajasthan</span>
+          <h2 class="section-title" id="progs-title">Offline Programs for <span class="gradient-text">Engineering Aspirants</span></h2>
+          <p class="section-sub">Intensive, small-batch offline programs in Jaipur — Interview Prep, Mock Interviews &amp; Test Series for SSC JE, Rajasthan AE/JE aspirants.</p>
+        </div>
+
+        <div class="progs-grid">
+
+          <article class="op-card">
+            <div class="op-thumb op-thumb-sscje">
+              <span class="op-thumb-exam">SSC JE</span>
+              <i class="fas fa-user-tie op-thumb-icon"></i>
+              <span class="op-thumb-label">Interview Prep</span>
+              <span class="op-thumb-seats">
+                <span class="op-seat-dot seat-ok"></span>12 seats left
+              </span>
+            </div>
+            <div class="op-seats-bar"><div class="op-seats-fill fill-orange" style="width:60%"></div></div>
+            <div class="op-card-top">
+              <div class="op-badges">
+                <span class="op-badge op-badge-offline"><i class="fas fa-building"></i> Offline · Jaipur</span>
+                <span class="op-badge op-badge-new">New Batch</span>
+              </div>
+            </div>
+            <div class="op-card-body">
+              <h3 class="op-title">SSC JE Interview Prep Workshop</h3>
+              <p class="op-desc">3-day intensive offline workshop — technical mock interviews, HR round prep, document verification &amp; personality grooming.</p>
+              <div class="op-meta">
+                <div class="op-meta-item"><span class="op-meta-label">Duration</span><span class="op-meta-val">3 Days</span></div>
+                <div class="op-meta-item"><span class="op-meta-label">Next Batch</span><span class="op-meta-val orange">Jun 15–17</span></div>
+                <div class="op-meta-item"><span class="op-meta-label">Location</span><span class="op-meta-val">Jaipur, Raj.</span></div>
+                <div class="op-meta-item"><span class="op-meta-label">Seats Left</span><span class="op-meta-val green">12 / 30</span></div>
+              </div>
+            </div>
+            <div class="op-card-fee">
+              <span class="op-fee">₹2,999 <span>/ person</span></span>
+              <span class="op-fee-old">₹4,999</span>
+            </div>
+            <a href="/programs" class="op-enroll-btn"><i class="fas fa-arrow-right"></i> Enroll Now</a>
+          </article>
+
+          <article class="op-card">
+            <div class="op-thumb op-thumb-rajae">
+              <span class="op-thumb-exam">RPSC AE · RSMSSB JE</span>
+              <i class="fas fa-comments op-thumb-icon"></i>
+              <span class="op-thumb-label">Mock Interview</span>
+              <span class="op-thumb-seats">
+                <span class="op-seat-dot seat-warn"></span>5 seats left!
+              </span>
+            </div>
+            <div class="op-seats-bar"><div class="op-seats-fill fill-red" style="width:75%"></div></div>
+            <div class="op-card-top">
+              <div class="op-badges">
+                <span class="op-badge op-badge-offline"><i class="fas fa-building"></i> Offline · Jaipur</span>
+                <span class="op-badge op-badge-hot">Most Popular</span>
+              </div>
+            </div>
+            <div class="op-card-body">
+              <h3 class="op-title">Rajasthan AE/JE Mock Interview Program</h3>
+              <p class="op-desc">Full-day simulation of the RPSC/RSMSSB interview — technical + HR rounds, panel discussion, instant feedback by Sir.</p>
+              <div class="op-meta">
+                <div class="op-meta-item"><span class="op-meta-label">Duration</span><span class="op-meta-val">1 Day</span></div>
+                <div class="op-meta-item"><span class="op-meta-label">Next Batch</span><span class="op-meta-val orange">Jun 8, 2026</span></div>
+                <div class="op-meta-item"><span class="op-meta-label">Location</span><span class="op-meta-val">Jaipur, Raj.</span></div>
+                <div class="op-meta-item"><span class="op-meta-val" style="color:#DC2626;">5 / 20 left!</span></div>
+              </div>
+            </div>
+            <div class="op-card-fee">
+              <span class="op-fee">₹1,999 <span>/ person</span></span>
+              <span class="op-fee-old">₹2,999</span>
+            </div>
+            <a href="/programs" class="op-enroll-btn"><i class="fas fa-arrow-right"></i> Enroll Now</a>
+          </article>
+
+          <article class="op-card">
+            <div class="op-thumb op-thumb-tests">
+              <span class="op-thumb-exam">SSC JE · Rajasthan AE/JE</span>
+              <i class="fas fa-clipboard-list op-thumb-icon"></i>
+              <span class="op-thumb-label">Weekly Tests</span>
+              <span class="op-thumb-seats">
+                <span class="op-seat-dot seat-open"></span>Open Enrollment
+              </span>
+            </div>
+            <div class="op-card-top">
+              <div class="op-badges">
+                <span class="op-badge op-badge-offline"><i class="fas fa-building"></i> Offline · Jaipur</span>
+              </div>
+            </div>
+            <div class="op-card-body">
+              <h3 class="op-title">Offline Test Series — SSC JE &amp; Rajasthan AE/JE</h3>
+              <p class="op-desc">Weekly offline tests at Jaipur center covering full syllabus for SSC JE &amp; RPSC/RSMSSB AE/JE with detailed analysis.</p>
+              <div class="op-meta">
+                <div class="op-meta-item"><span class="op-meta-label">Frequency</span><span class="op-meta-val">Weekly</span></div>
+                <div class="op-meta-item"><span class="op-meta-val orange">Ongoing Batches</span></div>
+                <div class="op-meta-item"><span class="op-meta-label">Location</span><span class="op-meta-val">Jaipur, Raj.</span></div>
+                <div class="op-meta-item"><span class="op-meta-val green">Open Enrollment</span></div>
+              </div>
+            </div>
+            <div class="op-card-fee">
+              <span class="op-fee">₹4,999 <span>/ month</span></span>
+            </div>
+            <a href="/programs" class="op-enroll-btn"><i class="fas fa-arrow-right"></i> Enroll Now</a>
+          </article>
+
+          <article class="op-card">
+            <div class="op-thumb op-thumb-gd">
+              <span class="op-thumb-exam">All Exams</span>
+              <i class="fas fa-users op-thumb-icon"></i>
+              <span class="op-thumb-label">Soft Skills</span>
+              <span class="op-thumb-seats">
+                <span class="op-seat-dot seat-ok"></span>18 seats left
+              </span>
+            </div>
+            <div class="op-seats-bar"><div class="op-seats-fill fill-green" style="width:28%"></div></div>
+            <div class="op-card-top">
+              <div class="op-badges">
+                <span class="op-badge op-badge-offline"><i class="fas fa-building"></i> Offline · Jaipur</span>
+                <span class="op-badge op-badge-new">New</span>
+              </div>
+            </div>
+            <div class="op-card-body">
+              <h3 class="op-title">GD + Personality Development + Interview Skills</h3>
+              <p class="op-desc">2-day offline program on Group Discussion, communication skills, confidence &amp; body language for engineering interviews.</p>
+              <div class="op-meta">
+                <div class="op-meta-item"><span class="op-meta-label">Duration</span><span class="op-meta-val">2 Days</span></div>
+                <div class="op-meta-item"><span class="op-meta-val orange">Jun 22–23</span></div>
+                <div class="op-meta-item"><span class="op-meta-label">Location</span><span class="op-meta-val">Jaipur, Raj.</span></div>
+                <div class="op-meta-item"><span class="op-meta-val green">18 / 25 left</span></div>
+              </div>
+            </div>
+            <div class="op-card-fee">
+              <span class="op-fee">₹3,499 <span>/ person</span></span>
+              <span class="op-fee-old">₹5,999</span>
+            </div>
+            <a href="/programs" class="op-enroll-btn"><i class="fas fa-arrow-right"></i> Enroll Now</a>
+          </article>
+
+        </div>
+
+        <div class="section-cta">
+          <a href="/programs" class="btn btn-orange">View All Programs &nbsp;<i class="fas fa-arrow-right"></i></a>
+        </div>
       </div>
     </section>
 
@@ -402,7 +548,7 @@
               <div class="testimonial-avatar" aria-hidden="true">RK</div>
               <div>
                 <span class="testimonial-name">Rohit Kumar</span>
-                <span class="testimonial-exam">UPSC ESE 2024 · Civil Engineering</span>
+                <span class="testi-tag testi-tag-ese"><i class="fas fa-check-circle"></i> UPSC ESE 2024 · Selected</span>
               </div>
             </footer>
           </blockquote>
@@ -414,7 +560,7 @@
               <div class="testimonial-avatar" aria-hidden="true">PS</div>
               <div>
                 <span class="testimonial-name">Priya Sharma</span>
-                <span class="testimonial-exam">GATE CE 2024 · 92 Percentile</span>
+                <span class="testi-tag testi-tag-gate"><i class="fas fa-star"></i> GATE CE 2024 · 92 Percentile</span>
               </div>
             </footer>
           </blockquote>
@@ -426,7 +572,7 @@
               <div class="testimonial-avatar" aria-hidden="true">AM</div>
               <div>
                 <span class="testimonial-name">Aditya Mishra</span>
-                <span class="testimonial-exam">UPSC ESE 2024 · Civil Engineering</span>
+                <span class="testi-tag testi-tag-ese"><i class="fas fa-check-circle"></i> UPSC ESE 2024 · Cleared</span>
               </div>
             </footer>
           </blockquote>
@@ -482,6 +628,44 @@
   <script src="js/main.js"></script>
   <script src="js/home.js"></script>
   <script>
+    /* ── Exam chip selector ────────────────────── */
+    function examSelect(exam) {
+      /* 1. Toggle active chip */
+      document.querySelectorAll('.hero-exam-chip').forEach(function(c) {
+        c.classList.remove('active');
+      });
+      var classMap = { 'ssc-je': 'chip-sscje', 'raj-ae': 'chip-rajae', 'gate': 'chip-gate', 'ese': 'chip-ese' };
+      var chip = document.querySelector('.' + classMap[exam]);
+      if (chip) chip.classList.add('active');
+
+      /* 2. Scroll to the most relevant section */
+      var targetSel = (exam === 'gate' || exam === 'ese')
+        ? '.resources-section'
+        : '.offline-progs-section';
+      var target = document.querySelector(targetSel);
+      if (target) {
+        var y = target.getBoundingClientRect().top + window.scrollY - 84;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+      }
+
+      /* 3. Auto-filter Job Alerts to match */
+      var jaMap = { 'ssc-je': 'ssc', 'raj-ae': 'raj-ae', 'gate': 'gate', 'ese': 'ese' };
+      var jaExam = jaMap[exam];
+      if (jaExam) {
+        var jaBtn = document.querySelector('.ja-filter-btn.f-' + jaExam);
+        if (jaBtn) jaFilter(jaBtn, jaExam);
+      }
+    }
+
+    /* ── Job Alerts filter ─────────────────────── */
+    function jaFilter(btn, exam) {
+      document.querySelectorAll('.ja-filter-btn').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      document.querySelectorAll('.ja-card').forEach(function(card) {
+        card.style.display = (exam === 'all' || card.dataset.exam === exam) ? '' : 'none';
+      });
+    }
+
     /* ── Banner drag-scroll ─────────────────────── */
     (function () {
       var wrap  = document.getElementById('bannersWrap');

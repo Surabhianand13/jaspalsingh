@@ -1055,6 +1055,10 @@
   color: var(--magenta);
   width: fit-content;
 }
+.testi-card[data-tfilter="GATE"] .testi-exam-tag  { background: rgba(2,132,199,.10);  color: #0284C7; }
+.testi-card[data-tfilter="ESE"] .testi-exam-tag   { background: rgba(200,18,64,.08);  color: #C81240; }
+.testi-card[data-tfilter="General"] .testi-exam-tag { background: rgba(123,31,162,.10); color: #7B1FA2; }
+
 .testi-card.highlighted .testi-exam-tag {
   background: rgba(255,255,255,0.2);
   color: var(--white);
@@ -1336,23 +1340,15 @@
   overflow: hidden;
 }
 
-.banners-scroll-wrap {
-  overflow-x: auto;
-  padding: 8px 28px 24px;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  cursor: grab;
-}
-.banners-scroll-wrap::-webkit-scrollbar { display: none; }
-
-.banners-track {
-  display: flex;
+.banners-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
   gap: 20px;
-  width: max-content;
 }
 
 .banner-card {
-  width: 340px;
+  width: 100%;
   min-height: 200px;
   border-radius: var(--radius-lg);
   padding: 32px 28px;
@@ -1360,7 +1356,6 @@
   flex-direction: column;
   justify-content: space-between;
   gap: 16px;
-  flex-shrink: 0;
   position: relative;
   overflow: hidden;
   transition: var(--transition);
@@ -1454,26 +1449,6 @@
 .banner-card.theme-gradient { background: var(--gradient); }
 .banner-card.theme-green    { background: linear-gradient(135deg, #25c354, #128C7E); }
 
-/* Scroll dots indicator */
-.banners-dots {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 4px;
-}
-.banner-dot {
-  width: 7px; height: 7px;
-  border-radius: 50%;
-  background: rgba(26,26,46,0.15);
-  transition: var(--transition);
-  cursor: pointer;
-  border: none;
-}
-.banner-dot.active {
-  background: var(--magenta);
-  width: 22px;
-  border-radius: 4px;
-}
 
 /* ── Exam Notifications (Homepage) ─────────────────────────── */
 
@@ -1827,8 +1802,8 @@
 
 @media (max-width: 640px) {
   .notif-grid { grid-template-columns: 1fr; }
-  .banners-scroll-wrap { padding: 8px 18px 20px; }
-  .banner-card { width: 290px; min-height: 180px; }
+  .banners-grid { grid-template-columns: 1fr; }
+  .banner-card { min-height: 180px; }
   .exam-tab-bar { gap: 7px; }
   .exam-tab-btn { font-size: 12px; padding: 8px 14px; }
 }
