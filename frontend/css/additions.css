@@ -344,6 +344,7 @@
 .op-seat-dot.seat-ok   { background: #4ADE80; }
 .op-seat-dot.seat-warn { background: #FCA5A5; animation: seat-pulse 1.2s ease infinite; }
 .op-seat-dot.seat-open { background: #67C8E8; }
+.op-seat-dot.seat-soon { background: #FCD34D; }
 
 /* Thin seat-fill bar immediately below the thumbnail */
 .op-seats-bar {
@@ -363,7 +364,9 @@
 .fill-blue   { background: linear-gradient(90deg, #0284C7, #38BDF8); }
 
 /* Per-program thumbnail gradients */
+.op-thumb-gate  { background: linear-gradient(145deg, #064E3B 0%, #065F46 50%, #16A34A 100%); }
 .op-thumb-sscje { background: linear-gradient(145deg, #FF6B35 0%, #C81240 100%); }
+.op-thumb-ae    { background: linear-gradient(145deg, #5B21B6 0%, #7B1FA2 50%, #C81240 100%); }
 .op-thumb-rajae { background: linear-gradient(145deg, #7B1FA2 0%, #C81240 100%); }
 .op-thumb-tests { background: linear-gradient(145deg, #0F2027 0%, #0284C7 100%); }
 .op-thumb-gd    { background: linear-gradient(145deg, #065F46 0%, #16A34A 100%); }

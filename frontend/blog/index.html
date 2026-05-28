@@ -90,9 +90,34 @@
         <span class="wordmark">Dr. Jaspal Singh</span>
       </a>
       <nav class="main-nav" aria-label="Main navigation">
-        <a href="/"                  class="nav-link">Home</a>
-        <a href="/offline-programs"  class="nav-link">Offline Programs</a>
-        <a href="/about"             class="nav-link">About</a>
+        <a href="/" class="nav-link">Home</a>
+        <div class="nav-item-dropdown">
+          <button class="nav-dropdown-trigger" aria-haspopup="true" aria-expanded="false">Offline Programs <i class="fas fa-chevron-down dd-caret"></i></button>
+          <div class="nav-dropdown-menu" role="menu">
+            <div class="dd-column">
+              <p class="dd-col-title"><i class="fas fa-chalkboard-teacher dd-col-icon icon-orange"></i>Offline Batches</p>
+              <a href="/programs?type=batch&amp;exam=gate-ies" class="dd-link"><span class="dd-link-icon"><i class="fas fa-graduation-cap"></i></span>GATE / IES</a>
+              <a href="/programs?type=batch&amp;exam=ssc-je"   class="dd-link"><span class="dd-link-icon"><i class="fas fa-hard-hat"></i></span>SSC JE</a>
+              <a href="/programs?type=batch&amp;exam=state-ae" class="dd-link"><span class="dd-link-icon"><i class="fas fa-building"></i></span>State AE</a>
+              <a href="/programs?type=batch&amp;exam=state-je" class="dd-link"><span class="dd-link-icon"><i class="fas fa-drafting-compass"></i></span>State JE</a>
+            </div>
+            <div class="dd-column">
+              <p class="dd-col-title"><i class="fas fa-user-tie dd-col-icon icon-magenta"></i>Interview Programs</p>
+              <a href="/programs?type=interview&amp;exam=gate-ies" class="dd-link"><span class="dd-link-icon"><i class="fas fa-graduation-cap"></i></span>GATE / IES</a>
+              <a href="/programs?type=interview&amp;exam=ssc-je"   class="dd-link"><span class="dd-link-icon"><i class="fas fa-hard-hat"></i></span>SSC JE</a>
+              <a href="/programs?type=interview&amp;exam=state-ae" class="dd-link"><span class="dd-link-icon"><i class="fas fa-building"></i></span>State AE</a>
+              <a href="/programs?type=interview&amp;exam=state-je" class="dd-link"><span class="dd-link-icon"><i class="fas fa-drafting-compass"></i></span>State JE</a>
+            </div>
+            <div class="dd-column">
+              <p class="dd-col-title"><i class="fas fa-clipboard-list dd-col-icon icon-blue"></i>Test Series</p>
+              <a href="/programs?type=test-series&amp;exam=gate-ies" class="dd-link"><span class="dd-link-icon"><i class="fas fa-graduation-cap"></i></span>GATE / IES</a>
+              <a href="/programs?type=test-series&amp;exam=ssc-je"   class="dd-link"><span class="dd-link-icon"><i class="fas fa-hard-hat"></i></span>SSC JE</a>
+              <a href="/programs?type=test-series&amp;exam=state-ae" class="dd-link"><span class="dd-link-icon"><i class="fas fa-building"></i></span>State AE</a>
+              <a href="/programs?type=test-series&amp;exam=state-je" class="dd-link"><span class="dd-link-icon"><i class="fas fa-drafting-compass"></i></span>State JE</a>
+            </div>
+          </div>
+        </div>
+        <a href="/about" class="nav-link">About</a>
       </nav>
       <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false" aria-controls="mobileDrawer">
         <span></span><span></span><span></span>
@@ -105,9 +130,36 @@
     <button class="drawer-close" id="drawerClose" aria-label="Close menu"><i class="fas fa-times"></i></button>
     <a href="/" class="drawer-wordmark">Dr. Jaspal Singh</a>
     <nav class="drawer-nav">
-      <a href="/"                  class="drawer-link">Home</a>
-      <a href="/offline-programs"  class="drawer-link">Offline Programs</a>
-      <a href="/about"             class="drawer-link">About</a>
+      <a href="/" class="drawer-link">Home</a>
+      <div class="drawer-accordion">
+        <button class="drawer-accordion-trigger" aria-expanded="false">
+          Offline Programs <i class="fas fa-chevron-down drawer-acc-caret"></i>
+        </button>
+        <div class="drawer-accordion-body">
+          <div class="drawer-acc-section">
+            <p class="drawer-acc-title"><i class="fas fa-chalkboard-teacher"></i> OFFLINE BATCHES</p>
+            <a href="/programs?type=batch&amp;exam=gate-ies" class="drawer-acc-link">GATE / IES</a>
+            <a href="/programs?type=batch&amp;exam=ssc-je"   class="drawer-acc-link">SSC JE</a>
+            <a href="/programs?type=batch&amp;exam=state-ae" class="drawer-acc-link">State AE</a>
+            <a href="/programs?type=batch&amp;exam=state-je" class="drawer-acc-link">State JE</a>
+          </div>
+          <div class="drawer-acc-section">
+            <p class="drawer-acc-title"><i class="fas fa-user-tie"></i> INTERVIEW PROGRAMS</p>
+            <a href="/programs?type=interview&amp;exam=gate-ies" class="drawer-acc-link">GATE / IES</a>
+            <a href="/programs?type=interview&amp;exam=ssc-je"   class="drawer-acc-link">SSC JE</a>
+            <a href="/programs?type=interview&amp;exam=state-ae" class="drawer-acc-link">State AE</a>
+            <a href="/programs?type=interview&amp;exam=state-je" class="drawer-acc-link">State JE</a>
+          </div>
+          <div class="drawer-acc-section">
+            <p class="drawer-acc-title"><i class="fas fa-clipboard-list"></i> TEST SERIES</p>
+            <a href="/programs?type=test-series&amp;exam=gate-ies" class="drawer-acc-link">GATE / IES</a>
+            <a href="/programs?type=test-series&amp;exam=ssc-je"   class="drawer-acc-link">SSC JE</a>
+            <a href="/programs?type=test-series&amp;exam=state-ae" class="drawer-acc-link">State AE</a>
+            <a href="/programs?type=test-series&amp;exam=state-je" class="drawer-acc-link">State JE</a>
+          </div>
+        </div>
+      </div>
+      <a href="/about" class="drawer-link">About</a>
     </nav>
     <div class="drawer-social">
       <a href="https://www.instagram.com/iesjaspalsingh/" target="_blank" rel="noopener" aria-label="Instagram"><i class="fab fa-instagram"></i></a>

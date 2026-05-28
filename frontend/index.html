@@ -115,9 +115,47 @@
 
       <!-- Desktop Navigation -->
       <nav class="main-nav" aria-label="Main navigation">
-        <a href="/"                  class="nav-link active">Home</a>
-        <a href="/offline-programs"  class="nav-link">Offline Programs</a>
-        <a href="/about"             class="nav-link">About</a>
+        <a href="/" class="nav-link active">Home</a>
+
+        <div class="nav-item-dropdown">
+          <button class="nav-dropdown-trigger" aria-haspopup="true" aria-expanded="false">
+            Offline Programs <i class="fas fa-chevron-down dd-caret"></i>
+          </button>
+          <div class="nav-dropdown-menu" role="menu">
+            <div class="dd-column">
+              <div class="dd-col-title">
+                <span class="dd-col-icon orange"><i class="fas fa-chalkboard-teacher"></i></span>
+                Offline Batches
+              </div>
+              <a href="/programs?type=batch&amp;exam=gate-ies" class="dd-link"><span class="dd-link-icon"><i class="fas fa-graduation-cap"></i></span>GATE / IES</a>
+              <a href="/programs?type=batch&amp;exam=ssc-je"   class="dd-link"><span class="dd-link-icon"><i class="fas fa-hard-hat"></i></span>SSC JE</a>
+              <a href="/programs?type=batch&amp;exam=state-ae" class="dd-link"><span class="dd-link-icon"><i class="fas fa-building"></i></span>State AE</a>
+              <a href="/programs?type=batch&amp;exam=state-je" class="dd-link"><span class="dd-link-icon"><i class="fas fa-drafting-compass"></i></span>State JE</a>
+            </div>
+            <div class="dd-column">
+              <div class="dd-col-title">
+                <span class="dd-col-icon magenta"><i class="fas fa-user-tie"></i></span>
+                Interview Programs
+              </div>
+              <a href="/programs?type=interview&amp;exam=gate-ies" class="dd-link"><span class="dd-link-icon"><i class="fas fa-graduation-cap"></i></span>GATE / IES</a>
+              <a href="/programs?type=interview&amp;exam=ssc-je"   class="dd-link"><span class="dd-link-icon"><i class="fas fa-hard-hat"></i></span>SSC JE</a>
+              <a href="/programs?type=interview&amp;exam=state-ae" class="dd-link"><span class="dd-link-icon"><i class="fas fa-building"></i></span>State AE</a>
+              <a href="/programs?type=interview&amp;exam=state-je" class="dd-link"><span class="dd-link-icon"><i class="fas fa-drafting-compass"></i></span>State JE</a>
+            </div>
+            <div class="dd-column">
+              <div class="dd-col-title">
+                <span class="dd-col-icon blue"><i class="fas fa-clipboard-list"></i></span>
+                Test Series
+              </div>
+              <a href="/programs?type=test-series&amp;exam=gate-ies" class="dd-link"><span class="dd-link-icon"><i class="fas fa-graduation-cap"></i></span>GATE / IES</a>
+              <a href="/programs?type=test-series&amp;exam=ssc-je"   class="dd-link"><span class="dd-link-icon"><i class="fas fa-hard-hat"></i></span>SSC JE</a>
+              <a href="/programs?type=test-series&amp;exam=state-ae" class="dd-link"><span class="dd-link-icon"><i class="fas fa-building"></i></span>State AE</a>
+              <a href="/programs?type=test-series&amp;exam=state-je" class="dd-link"><span class="dd-link-icon"><i class="fas fa-drafting-compass"></i></span>State JE</a>
+            </div>
+          </div>
+        </div>
+
+        <a href="/about" class="nav-link">About</a>
       </nav>
 
       <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false" aria-controls="mobileDrawer">
@@ -132,9 +170,38 @@
     <button class="drawer-close" id="drawerClose" aria-label="Close menu"><i class="fas fa-times"></i></button>
     <a href="/" class="drawer-wordmark">Dr. Jaspal Singh</a>
     <nav class="drawer-nav">
-      <a href="/"                  class="drawer-link active">Home</a>
-      <a href="/offline-programs"  class="drawer-link">Offline Programs</a>
-      <a href="/about"             class="drawer-link">About</a>
+      <a href="/" class="drawer-link active">Home</a>
+
+      <div class="drawer-accordion">
+        <button class="drawer-accordion-trigger" aria-expanded="false">
+          Offline Programs <i class="fas fa-chevron-down drawer-acc-caret"></i>
+        </button>
+        <div class="drawer-accordion-body">
+          <div class="drawer-acc-section">
+            <span class="drawer-acc-title">Offline Batches</span>
+            <a href="/programs?type=batch&amp;exam=gate-ies" class="drawer-acc-link">GATE / IES</a>
+            <a href="/programs?type=batch&amp;exam=ssc-je"   class="drawer-acc-link">SSC JE</a>
+            <a href="/programs?type=batch&amp;exam=state-ae" class="drawer-acc-link">State AE</a>
+            <a href="/programs?type=batch&amp;exam=state-je" class="drawer-acc-link">State JE</a>
+          </div>
+          <div class="drawer-acc-section">
+            <span class="drawer-acc-title">Interview Programs</span>
+            <a href="/programs?type=interview&amp;exam=gate-ies" class="drawer-acc-link">GATE / IES</a>
+            <a href="/programs?type=interview&amp;exam=ssc-je"   class="drawer-acc-link">SSC JE</a>
+            <a href="/programs?type=interview&amp;exam=state-ae" class="drawer-acc-link">State AE</a>
+            <a href="/programs?type=interview&amp;exam=state-je" class="drawer-acc-link">State JE</a>
+          </div>
+          <div class="drawer-acc-section">
+            <span class="drawer-acc-title">Test Series</span>
+            <a href="/programs?type=test-series&amp;exam=gate-ies" class="drawer-acc-link">GATE / IES</a>
+            <a href="/programs?type=test-series&amp;exam=ssc-je"   class="drawer-acc-link">SSC JE</a>
+            <a href="/programs?type=test-series&amp;exam=state-ae" class="drawer-acc-link">State AE</a>
+            <a href="/programs?type=test-series&amp;exam=state-je" class="drawer-acc-link">State JE</a>
+          </div>
+        </div>
+      </div>
+
+      <a href="/about" class="drawer-link">About</a>
     </nav>
     <div class="drawer-social">
       <a href="https://www.instagram.com/iesjaspalsingh/" target="_blank" rel="noopener" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
@@ -254,60 +321,116 @@
       </div>
     </section>
 
-    <!-- ─── PROMOTIONAL BANNERS ──────────────────── -->
-    <section class="banners-section" aria-label="Offerings and announcements">
-      <div class="container">
-        <div class="section-header" style="margin-bottom:32px;">
-          <h2 class="section-title">What Dr. Jaspal Singh Offers</h2>
-          <p class="section-sub">From live classes to masterclasses, strategy sessions to subject deep-dives — everything designed to transform your preparation.</p>
-        </div>
+    <!-- ─── PROMOTIONAL BANNER CAROUSEL ────────────── -->
+    <section class="home-carousel-wrap" id="homeCarousel" aria-label="Announcements and offerings">
+
+      <div class="carousel-track-outer">
+        <div class="carousel-track">
+
+          <!-- Slide 1: New Batch Launch -->
+          <div class="carousel-slide cs-slide-1" role="group" aria-label="Slide 1 of 5">
+            <div class="carousel-slide-inner">
+              <div class="cs-text">
+                <span class="cs-badge"><i class="fas fa-circle-dot"></i> New Launch · June 2026</span>
+                <h2 class="cs-title">GATE CE &amp; IES<br>Offline Batch — Jaipur</h2>
+                <p class="cs-sub">Comprehensive offline batch covering full GATE &amp; ESE syllabus with small-batch personal mentorship by Dr. Jaspal Singh.</p>
+                <div class="cs-ctas">
+                  <a href="/programs?type=batch&amp;exam=gate-ies" class="cs-cta cta-white"><i class="fas fa-graduation-cap"></i> Explore Batch</a>
+                  <a href="https://wa.me/910000000000?text=I want to know about GATE CE offline batch" target="_blank" rel="noopener" class="cs-cta cta-glass"><i class="fab fa-whatsapp"></i> Enquire Now</a>
+                </div>
+              </div>
+              <div class="cs-visual" aria-hidden="true">
+                <i class="fas fa-graduation-cap cs-visual-icon"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Slide 2: Scholarship Test -->
+          <div class="carousel-slide cs-slide-2" role="group" aria-label="Slide 2 of 5">
+            <div class="carousel-slide-inner">
+              <div class="cs-text">
+                <span class="cs-badge"><i class="fas fa-award"></i> Scholarship Test · Register Free</span>
+                <h2 class="cs-title">Win Up to 50% Fee<br>Waiver on Programs</h2>
+                <p class="cs-sub">Appear for our scholarship test and earn up to 50% discount on any offline batch or interview program. Merit-based seats available.</p>
+                <div class="cs-ctas">
+                  <a href="/enroll?prog=scholarship-test" class="cs-cta cta-white"><i class="fas fa-pen-to-square"></i> Register for Test</a>
+                  <a href="/programs" class="cs-cta cta-glass"><i class="fas fa-list"></i> View Programs</a>
+                </div>
+              </div>
+              <div class="cs-visual" aria-hidden="true">
+                <i class="fas fa-award cs-visual-icon"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Slide 3: SSC JE Interview Prep -->
+          <div class="carousel-slide cs-slide-3" role="group" aria-label="Slide 3 of 5">
+            <div class="carousel-slide-inner">
+              <div class="cs-text">
+                <span class="cs-badge"><i class="fas fa-map-marker-alt"></i> Offline · Jaipur · Jun 15–17</span>
+                <h2 class="cs-title">SSC JE Interview<br>Prep Workshop</h2>
+                <p class="cs-sub">3-day intensive workshop — technical mock interviews, HR round prep &amp; personality grooming. Only 12 seats remaining.</p>
+                <div class="cs-ctas">
+                  <a href="/programs?type=interview&amp;exam=ssc-je" class="cs-cta cta-white"><i class="fas fa-user-tie"></i> Enroll Now — ₹2,999</a>
+                </div>
+              </div>
+              <div class="cs-visual" aria-hidden="true">
+                <i class="fas fa-user-tie cs-visual-icon"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Slide 4: Offline Test Series -->
+          <div class="carousel-slide cs-slide-4" role="group" aria-label="Slide 4 of 5">
+            <div class="carousel-slide-inner">
+              <div class="cs-text">
+                <span class="cs-badge"><i class="fas fa-clipboard-list"></i> Every Sunday · Open Enrollment</span>
+                <h2 class="cs-title">Offline Test Series<br>SSC JE &amp; State AE/JE</h2>
+                <p class="cs-sub">Weekly offline tests at Jaipur center — full syllabus, performance reports &amp; doubt sessions. Join anytime.</p>
+                <div class="cs-ctas">
+                  <a href="/programs?type=test-series" class="cs-cta cta-white"><i class="fas fa-clipboard-list"></i> Join Test Series</a>
+                  <a href="https://wa.me/910000000000?text=I want to join offline test series" target="_blank" rel="noopener" class="cs-cta cta-glass"><i class="fab fa-whatsapp"></i> Enquire</a>
+                </div>
+              </div>
+              <div class="cs-visual" aria-hidden="true">
+                <i class="fas fa-clipboard-list cs-visual-icon"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Slide 5: State AE/JE Mock Interview -->
+          <div class="carousel-slide cs-slide-5" role="group" aria-label="Slide 5 of 5">
+            <div class="carousel-slide-inner">
+              <div class="cs-text">
+                <span class="cs-badge"><i class="fas fa-fire"></i> Filling Fast · Only 5 Seats Left</span>
+                <h2 class="cs-title">State AE/JE<br>Mock Interview Program</h2>
+                <p class="cs-sub">Full-day RPSC/RSMSSB interview simulation — panel of 3 experts, video recording &amp; detailed written feedback report.</p>
+                <div class="cs-ctas">
+                  <a href="/programs?type=interview&amp;exam=state-ae" class="cs-cta cta-white"><i class="fas fa-comments"></i> Secure Your Seat</a>
+                </div>
+              </div>
+              <div class="cs-visual" aria-hidden="true">
+                <i class="fas fa-comments cs-visual-icon"></i>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /carousel-track -->
       </div>
 
-      <div class="container">
-        <div class="banners-grid">
+      <!-- Arrows -->
+      <button class="carousel-arrow carousel-prev" aria-label="Previous slide"><i class="fas fa-chevron-left"></i></button>
+      <button class="carousel-arrow carousel-next" aria-label="Next slide"><i class="fas fa-chevron-right"></i></button>
 
-          <!-- Card 1 — Live Batch on Unacademy -->
-          <a href="https://unacademy.com/@jaspallive" target="_blank" rel="noopener" class="banner-card theme-magenta">
-            <div class="banner-content">
-              <span class="banner-tag"><i class="fas fa-circle-dot"></i> Live on Unacademy</span>
-              <h3 class="banner-title">GATE CE & ESE Live Classes</h3>
-              <p class="banner-sub">Join thousands of aspirants in live, interactive sessions by India's top-ranked Civil Engineering educator.</p>
-            </div>
-            <span class="banner-cta">Watch Live <i class="fas fa-arrow-right"></i></span>
-          </a>
-
-          <!-- Card 2 — Personalised Study Plan -->
-          <a href="/strategy#strategy-maker" class="banner-card theme-green">
-            <div class="banner-content">
-              <span class="banner-tag"><i class="fas fa-wand-magic-sparkles"></i> Free · New</span>
-              <h3 class="banner-title">Get Your Personalised Study Plan</h3>
-              <p class="banner-sub">Fill a short form — target exam, available time, current level — and get a strategy plan built for you.</p>
-            </div>
-            <span class="banner-cta">Build My Plan <i class="fas fa-arrow-right"></i></span>
-          </a>
-
-          <!-- Card 3 — Strategy Guide -->
-          <a href="/strategy" class="banner-card theme-dark">
-            <div class="banner-content">
-              <span class="banner-tag"><i class="fas fa-chess"></i> Exam Strategy</span>
-              <h3 class="banner-title">Complete ESE & GATE Strategy Guide</h3>
-              <p class="banner-sub">From syllabus approach to exam-day tactics — written personally by Dr. Jaspal Singh.</p>
-            </div>
-            <span class="banner-cta">Read Strategy <i class="fas fa-arrow-right"></i></span>
-          </a>
-
-          <!-- Card 4 — Environmental Engineering -->
-          <a href="/resources" class="banner-card theme-blue">
-            <div class="banner-content">
-              <span class="banner-tag"><i class="fas fa-leaf"></i> Signature Subject</span>
-              <h3 class="banner-title">Env. Engineering — Complete Resource Pack</h3>
-              <p class="banner-sub">Notes, PYQs, formula sheets — Sir's most loved subject in his signature teaching style.</p>
-            </div>
-            <span class="banner-cta">Access Resources <i class="fas fa-arrow-right"></i></span>
-          </a>
-
-        </div>
+      <!-- Dots -->
+      <div class="carousel-dots-bar" role="tablist" aria-label="Carousel navigation">
+        <button class="carousel-dot-btn active" role="tab" aria-label="Slide 1" aria-selected="true"></button>
+        <button class="carousel-dot-btn" role="tab" aria-label="Slide 2"></button>
+        <button class="carousel-dot-btn" role="tab" aria-label="Slide 3"></button>
+        <button class="carousel-dot-btn" role="tab" aria-label="Slide 4"></button>
+        <button class="carousel-dot-btn" role="tab" aria-label="Slide 5"></button>
       </div>
+
     </section>
 
     <!-- ─── OFFLINE PROGRAMS ──────────────────────── -->
@@ -316,11 +439,44 @@
         <div class="section-header">
           <span class="sec-eyebrow orange"><i class="fas fa-map-marker-alt"></i> Offline · Jaipur, Rajasthan</span>
           <h2 class="section-title" id="progs-title">Offline Programs for <span class="gradient-text">Engineering Aspirants</span></h2>
-          <p class="section-sub">Intensive, small-batch offline programs in Jaipur — Interview Prep, Mock Interviews &amp; Test Series for SSC JE, Rajasthan AE/JE aspirants.</p>
+          <p class="section-sub">Intensive, small-batch offline programs in Jaipur — Batches, Interview Prep &amp; Test Series for GATE/IES, SSC JE, State AE &amp; State JE.</p>
         </div>
 
         <div class="progs-grid">
 
+          <!-- Card 1: GATE/IES Offline Batch -->
+          <article class="op-card">
+            <div class="op-thumb op-thumb-gate">
+              <span class="op-thumb-exam">GATE CE · IES / ESE</span>
+              <i class="fas fa-graduation-cap op-thumb-icon"></i>
+              <span class="op-thumb-label">Offline Batch</span>
+              <span class="op-thumb-seats">
+                <span class="op-seat-dot seat-soon"></span>Coming Soon
+              </span>
+            </div>
+            <div class="op-card-top">
+              <div class="op-badges">
+                <span class="op-badge op-badge-offline"><i class="fas fa-building"></i> Offline · Jaipur</span>
+                <span class="op-badge op-badge-new">New Launch</span>
+              </div>
+            </div>
+            <div class="op-card-body">
+              <h3 class="op-title">GATE CE &amp; IES Offline Batch — Jaipur</h3>
+              <p class="op-desc">Comprehensive offline batch covering full GATE &amp; ESE syllabus with small-batch personal mentorship by Dr. Jaspal Singh.</p>
+              <div class="op-meta">
+                <div class="op-meta-item"><span class="op-meta-label">Batch Size</span><span class="op-meta-val">Max 25</span></div>
+                <div class="op-meta-item"><span class="op-meta-label">Launch</span><span class="op-meta-val orange">June 2026</span></div>
+                <div class="op-meta-item"><span class="op-meta-label">Location</span><span class="op-meta-val">Jaipur, Raj.</span></div>
+                <div class="op-meta-item"><span class="op-meta-val green">Notify Me</span></div>
+              </div>
+            </div>
+            <div class="op-card-fee">
+              <span class="op-fee" style="font-size:1rem;color:#6B7280;">Registrations Opening Soon</span>
+            </div>
+            <a href="https://wa.me/91XXXXXXXXXX?text=Interested+in+GATE+IES+Batch" class="op-enroll-btn" style="background:linear-gradient(135deg,#6B7280,#4B5563);" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> Get Notified</a>
+          </article>
+
+          <!-- Card 2: SSC JE Interview Prep Workshop -->
           <article class="op-card">
             <div class="op-thumb op-thumb-sscje">
               <span class="op-thumb-exam">SSC JE</span>
@@ -334,7 +490,7 @@
             <div class="op-card-top">
               <div class="op-badges">
                 <span class="op-badge op-badge-offline"><i class="fas fa-building"></i> Offline · Jaipur</span>
-                <span class="op-badge op-badge-new">New Batch</span>
+                <span class="op-badge op-badge-new">Enrolling Now</span>
               </div>
             </div>
             <div class="op-card-body">
@@ -351,12 +507,13 @@
               <span class="op-fee">₹2,999 <span>/ person</span></span>
               <span class="op-fee-old">₹4,999</span>
             </div>
-            <a href="/programs" class="op-enroll-btn"><i class="fas fa-arrow-right"></i> Enroll Now</a>
+            <a href="/programs?type=interview&amp;exam=ssc-je" class="op-enroll-btn"><i class="fas fa-arrow-right"></i> Enroll Now</a>
           </article>
 
+          <!-- Card 3: State AE/JE Mock Interview -->
           <article class="op-card">
-            <div class="op-thumb op-thumb-rajae">
-              <span class="op-thumb-exam">RPSC AE · RSMSSB JE</span>
+            <div class="op-thumb op-thumb-ae">
+              <span class="op-thumb-exam">State AE · State JE</span>
               <i class="fas fa-comments op-thumb-icon"></i>
               <span class="op-thumb-label">Mock Interview</span>
               <span class="op-thumb-seats">
@@ -367,29 +524,30 @@
             <div class="op-card-top">
               <div class="op-badges">
                 <span class="op-badge op-badge-offline"><i class="fas fa-building"></i> Offline · Jaipur</span>
-                <span class="op-badge op-badge-hot">Most Popular</span>
+                <span class="op-badge op-badge-hot">Filling Fast</span>
               </div>
             </div>
             <div class="op-card-body">
-              <h3 class="op-title">Rajasthan AE/JE Mock Interview Program</h3>
-              <p class="op-desc">Full-day simulation of the RPSC/RSMSSB interview — technical + HR rounds, panel discussion, instant feedback by Sir.</p>
+              <h3 class="op-title">State AE / JE Mock Interview Program</h3>
+              <p class="op-desc">Full-day simulation of the State PSC/SSB interview — technical + HR rounds, panel discussion, instant feedback by Sir.</p>
               <div class="op-meta">
                 <div class="op-meta-item"><span class="op-meta-label">Duration</span><span class="op-meta-val">1 Day</span></div>
                 <div class="op-meta-item"><span class="op-meta-label">Next Batch</span><span class="op-meta-val orange">Jun 8, 2026</span></div>
                 <div class="op-meta-item"><span class="op-meta-label">Location</span><span class="op-meta-val">Jaipur, Raj.</span></div>
-                <div class="op-meta-item"><span class="op-meta-val" style="color:#DC2626;">5 / 20 left!</span></div>
+                <div class="op-meta-item"><span class="op-meta-val" style="color:#DC2626;">Only 5 / 20 left!</span></div>
               </div>
             </div>
             <div class="op-card-fee">
               <span class="op-fee">₹1,999 <span>/ person</span></span>
               <span class="op-fee-old">₹2,999</span>
             </div>
-            <a href="/programs" class="op-enroll-btn"><i class="fas fa-arrow-right"></i> Enroll Now</a>
+            <a href="/programs?type=interview&amp;exam=state-ae" class="op-enroll-btn"><i class="fas fa-arrow-right"></i> Enroll Now</a>
           </article>
 
+          <!-- Card 4: Offline Test Series — All Exams -->
           <article class="op-card">
             <div class="op-thumb op-thumb-tests">
-              <span class="op-thumb-exam">SSC JE · Rajasthan AE/JE</span>
+              <span class="op-thumb-exam">SSC JE · State AE · State JE</span>
               <i class="fas fa-clipboard-list op-thumb-icon"></i>
               <span class="op-thumb-label">Weekly Tests</span>
               <span class="op-thumb-seats">
@@ -402,8 +560,8 @@
               </div>
             </div>
             <div class="op-card-body">
-              <h3 class="op-title">Offline Test Series — SSC JE &amp; Rajasthan AE/JE</h3>
-              <p class="op-desc">Weekly offline tests at Jaipur center covering full syllabus for SSC JE &amp; RPSC/RSMSSB AE/JE with detailed analysis.</p>
+              <h3 class="op-title">Offline Test Series — SSC JE &amp; State AE/JE</h3>
+              <p class="op-desc">Weekly offline tests at Jaipur center covering full syllabus for SSC JE &amp; State AE/JE with detailed performance analysis.</p>
               <div class="op-meta">
                 <div class="op-meta-item"><span class="op-meta-label">Frequency</span><span class="op-meta-val">Weekly</span></div>
                 <div class="op-meta-item"><span class="op-meta-val orange">Ongoing Batches</span></div>
@@ -414,40 +572,7 @@
             <div class="op-card-fee">
               <span class="op-fee">₹4,999 <span>/ month</span></span>
             </div>
-            <a href="/programs" class="op-enroll-btn"><i class="fas fa-arrow-right"></i> Enroll Now</a>
-          </article>
-
-          <article class="op-card">
-            <div class="op-thumb op-thumb-gd">
-              <span class="op-thumb-exam">All Exams</span>
-              <i class="fas fa-users op-thumb-icon"></i>
-              <span class="op-thumb-label">Soft Skills</span>
-              <span class="op-thumb-seats">
-                <span class="op-seat-dot seat-ok"></span>18 seats left
-              </span>
-            </div>
-            <div class="op-seats-bar"><div class="op-seats-fill fill-green" style="width:28%"></div></div>
-            <div class="op-card-top">
-              <div class="op-badges">
-                <span class="op-badge op-badge-offline"><i class="fas fa-building"></i> Offline · Jaipur</span>
-                <span class="op-badge op-badge-new">New</span>
-              </div>
-            </div>
-            <div class="op-card-body">
-              <h3 class="op-title">GD + Personality Development + Interview Skills</h3>
-              <p class="op-desc">2-day offline program on Group Discussion, communication skills, confidence &amp; body language for engineering interviews.</p>
-              <div class="op-meta">
-                <div class="op-meta-item"><span class="op-meta-label">Duration</span><span class="op-meta-val">2 Days</span></div>
-                <div class="op-meta-item"><span class="op-meta-val orange">Jun 22–23</span></div>
-                <div class="op-meta-item"><span class="op-meta-label">Location</span><span class="op-meta-val">Jaipur, Raj.</span></div>
-                <div class="op-meta-item"><span class="op-meta-val green">18 / 25 left</span></div>
-              </div>
-            </div>
-            <div class="op-card-fee">
-              <span class="op-fee">₹3,499 <span>/ person</span></span>
-              <span class="op-fee-old">₹5,999</span>
-            </div>
-            <a href="/programs" class="op-enroll-btn"><i class="fas fa-arrow-right"></i> Enroll Now</a>
+            <a href="/programs?type=test-series" class="op-enroll-btn"><i class="fas fa-arrow-right"></i> Enroll Now</a>
           </article>
 
         </div>
@@ -666,39 +791,7 @@
       });
     }
 
-    /* ── Banner drag-scroll ─────────────────────── */
-    (function () {
-      var wrap  = document.getElementById('bannersWrap');
-      var dots  = document.querySelectorAll('.banner-dot');
-      var cards = document.querySelectorAll('.banner-card');
-      var isDragging = false, startX, scrollLeft;
-
-      wrap.addEventListener('mousedown', function (e) {
-        isDragging = true; wrap.style.cursor = 'grabbing';
-        startX = e.pageX - wrap.offsetLeft; scrollLeft = wrap.scrollLeft;
-      });
-      wrap.addEventListener('mouseleave', function () { isDragging = false; wrap.style.cursor = 'grab'; });
-      wrap.addEventListener('mouseup',    function () { isDragging = false; wrap.style.cursor = 'grab'; });
-      wrap.addEventListener('mousemove',  function (e) {
-        if (!isDragging) return;
-        e.preventDefault();
-        var x = e.pageX - wrap.offsetLeft;
-        wrap.scrollLeft = scrollLeft - (x - startX) * 1.5;
-      });
-
-      /* Update active dot on scroll */
-      wrap.addEventListener('scroll', function () {
-        var idx = Math.round(wrap.scrollLeft / 360);
-        dots.forEach(function (d, i) { d.classList.toggle('active', i === idx); });
-      }, { passive: true });
-
-      /* Click dot to scroll to banner */
-      dots.forEach(function (dot, i) {
-        dot.addEventListener('click', function () {
-          wrap.scrollTo({ left: i * 360, behavior: 'smooth' });
-        });
-      });
-    })();
+    /* Carousel is handled by main.js */
   </script>
   <a href="https://wa.me/910000000000" target="_blank" rel="noopener" aria-label="Chat on WhatsApp" class="whatsapp-float"><i class="fab fa-whatsapp"></i></a>
 </body>
