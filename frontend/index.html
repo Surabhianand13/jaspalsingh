@@ -93,11 +93,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
-  <link rel="stylesheet" href="css/style.css?v=4" />
-  <link rel="stylesheet" href="css/home.css?v=4" />
-  <link rel="stylesheet" href="css/pages.css?v=4" />
-  <link rel="stylesheet" href="css/additions.css?v=4" />
-  <link rel="stylesheet" href="css/animations.css?v=4" />
+  <link rel="stylesheet" href="css/style.css?v=5" />
+  <link rel="stylesheet" href="css/home.css?v=5" />
+  <link rel="stylesheet" href="css/pages.css?v=5" />
+  <link rel="stylesheet" href="css/additions.css?v=5" />
+  <link rel="stylesheet" href="css/animations.css?v=5" />
 </head>
 <body class="page-home">
   <div id="readingProgress" aria-hidden="true"></div>
@@ -330,42 +330,32 @@
 
     </section>
 
-    <!-- ─── STATS BAR ─────────────────────────────── -->
-    <section class="stats-bar" aria-label="Achievements at a glance" data-reveal="fade">
-      <div class="container stats-inner">
+    <!-- ─── TRUST STATS ──────────────────────────────── -->
+    <section class="trust-stats-strip" aria-label="Credentials at a glance" data-reveal="fade">
+      <div class="container trust-stats-inner">
 
-        <div class="stat-item">
-          <div class="stat-number-row">
-            <span class="stat-num" data-target="15">0</span><span class="stat-sym">+</span>
-          </div>
-          <span class="stat-label">Years of Teaching</span>
+        <div class="ts-card ts-c1">
+          <div class="ts-icon-wrap"><i class="fas fa-chalkboard-teacher"></i></div>
+          <div class="ts-number">15<span>+</span></div>
+          <div class="ts-label">Years of Teaching</div>
         </div>
 
-        <div class="stat-divider" aria-hidden="true"></div>
-
-        <div class="stat-item">
-          <div class="stat-number-row">
-            <span class="stat-static">1L+</span>
-          </div>
-          <span class="stat-label">Students Mentored</span>
+        <div class="ts-card ts-c2">
+          <div class="ts-icon-wrap"><i class="fas fa-users"></i></div>
+          <div class="ts-number">1L<span>+</span></div>
+          <div class="ts-label">Students Mentored</div>
         </div>
 
-        <div class="stat-divider" aria-hidden="true"></div>
-
-        <div class="stat-item">
-          <div class="stat-number-row">
-            <span class="stat-static">AIR-04</span>
-          </div>
-          <span class="stat-label">ESE Rank · GATE AIR-06</span>
+        <div class="ts-card ts-c3">
+          <div class="ts-icon-wrap"><i class="fas fa-trophy"></i></div>
+          <div class="ts-number">AIR&#8209;04</div>
+          <div class="ts-label">ESE Rank · GATE AIR-06</div>
         </div>
 
-        <div class="stat-divider" aria-hidden="true"></div>
-
-        <div class="stat-item">
-          <div class="stat-number-row">
-            <span class="stat-num" data-target="4">0</span>
-          </div>
-          <span class="stat-label">Signature Subjects</span>
+        <div class="ts-card ts-c4">
+          <div class="ts-icon-wrap"><i class="fas fa-book-open"></i></div>
+          <div class="ts-number">4</div>
+          <div class="ts-label">Signature Subjects</div>
         </div>
 
       </div>
@@ -739,7 +729,7 @@
     <div class="sj-traveler" id="sjTraveler">📖</div>
     <div class="sj-stops" id="sjStops">
       <button class="sj-stop" data-section=".home-carousel-wrap"    data-label="Offers">    <span class="sj-dot"></span></button>
-      <button class="sj-stop" data-section=".stats-bar"             data-label="Impact">    <span class="sj-dot"></span></button>
+      <button class="sj-stop" data-section=".trust-stats-strip"     data-label="Impact">    <span class="sj-dot"></span></button>
       <button class="sj-stop" data-section=".offline-progs-section" data-label="Programs">  <span class="sj-dot"></span></button>
       <button class="sj-stop" data-section=".why-section"           data-label="Why Sir?">  <span class="sj-dot"></span></button>
       <button class="sj-stop" data-section=".community-section"     data-label="Community"><span class="sj-dot"></span></button>
