@@ -245,6 +245,76 @@
 
 })();
 
+/* ── Scroll Journey Companion ───────────────────────────── */
+(function () {
+  var journey  = document.getElementById('scrollJourney');
+  var traveler = document.getElementById('sjTraveler');
+  var fill     = document.getElementById('sjFill');
+  if (!journey || !traveler || !fill) return;
+
+  var stops    = Array.from(journey.querySelectorAll('.sj-stop'));
+  var sections = stops.map(function (btn) {
+    return document.querySelector(btn.dataset.section);
+  });
+  var heroSection = document.querySelector('.hero-section');
+
+  /* Click a dot → smooth scroll to that section */
+  stops.forEach(function (btn, i) {
+    btn.addEventListener('click', function () {
+      var target = sections[i];
+      if (target) {
+        var y = target.getBoundingClientRect().top + window.scrollY - 84;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+      }
+    });
+  });
+
+  function update() {
+    var scrollY = window.scrollY;
+    var viewH   = window.innerHeight;
+
+    /* Show only after scrolling past the hero */
+    var heroBottom = heroSection ? (heroSection.offsetTop + heroSection.offsetHeight * 0.6) : 400;
+    if (scrollY < heroBottom) {
+      journey.classList.remove('sj-visible');
+      return;
+    }
+    journey.classList.add('sj-visible');
+
+    /* Find which section is currently active */
+    var current = 0;
+    sections.forEach(function (sec, i) {
+      if (sec && scrollY + viewH * 0.45 >= sec.offsetTop) current = i;
+    });
+
+    /* Update active dot */
+    stops.forEach(function (btn, i) {
+      btn.classList.toggle('sj-active', i === current);
+    });
+
+    /* Move traveler to the active dot's position within the journey element */
+    var activeDot = stops[current] ? stops[current].querySelector('.sj-dot') : null;
+    if (activeDot) {
+      var journeyRect = journey.getBoundingClientRect();
+      var dotRect     = activeDot.getBoundingClientRect();
+      var relativeTop = dotRect.top - journeyRect.top + dotRect.height / 2;
+      traveler.style.top = relativeTop + 'px';
+    }
+
+    /* Fill the track proportionally */
+    var pct = sections.length > 1 ? (current / (sections.length - 1)) * 100 : 0;
+    fill.style.height = pct + '%';
+
+    /* Swap emoji per section for fun */
+    var emojis = ['📊', '🎯', '📚', '❤️', '🤝', '⭐'];
+    traveler.textContent = emojis[current] || '📖';
+  }
+
+  window.addEventListener('scroll', update, { passive: true });
+  window.addEventListener('resize', update, { passive: true });
+  update();
+})();
+
 /* ── Job Alerts filter ──────────────────────────────────── */
 function jaFilter(btn, exam) {
   document.querySelectorAll('.ja-filter-btn').forEach(function (b) { b.classList.remove('active'); });
