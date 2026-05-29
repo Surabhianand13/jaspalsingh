@@ -93,11 +93,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
-  <link rel="stylesheet" href="css/style.css?v=3" />
-  <link rel="stylesheet" href="css/home.css?v=3" />
-  <link rel="stylesheet" href="css/pages.css?v=3" />
-  <link rel="stylesheet" href="css/additions.css?v=3" />
-  <link rel="stylesheet" href="css/animations.css?v=3" />
+  <link rel="stylesheet" href="css/style.css?v=4" />
+  <link rel="stylesheet" href="css/home.css?v=4" />
+  <link rel="stylesheet" href="css/pages.css?v=4" />
+  <link rel="stylesheet" href="css/additions.css?v=4" />
+  <link rel="stylesheet" href="css/animations.css?v=4" />
 </head>
 <body class="page-home">
   <div id="readingProgress" aria-hidden="true"></div>
@@ -216,120 +216,8 @@
 
   <main id="main-content">
 
-    <!-- ─── HERO ─────────────────────────────────── -->
-    <section class="hero-section" aria-label="Introduction">
-      <div class="hero-aurora" aria-hidden="true">
-        <div class="aurora-orb aurora-orb-1"></div>
-        <div class="aurora-orb aurora-orb-2"></div>
-        <div class="aurora-orb aurora-orb-3"></div>
-      </div>
-      <canvas id="heroParticles" aria-hidden="true"></canvas>
-
-      <div class="container hero-inner">
-        <div class="hero-text">
-          <span class="hero-badge">
-            Ex-IES (AIR-04) &nbsp;·&nbsp; GATE AIR-06 &nbsp;·&nbsp; PhD &nbsp;·&nbsp; Unacademy Educator
-          </span>
-
-          <h1 class="hero-name">Dr. Jaspal Singh</h1>
-
-          <p class="hero-tagline">
-            Because Har Aspirant Deserves a<br />
-            <span class="tagline-highlight">Teacher Who Truly Cares.</span>
-          </p>
-
-          <p class="hero-sub">
-            15+ years of transforming how Civil Engineering is taught. World Book of Records holder. Global Teacher Awardee. TEDx Speaker. And most importantly — <em>your Jaspal Sir</em>.
-          </p>
-
-          <div class="hero-ctas">
-            <a href="/resources" class="btn btn-primary">
-              <i class="fas fa-book-open"></i> Explore Study Material
-            </a>
-            <a href="https://t.me/jaspalsirofficial" target="_blank" rel="noopener noreferrer" class="btn btn-outline">
-              <i class="fab fa-telegram"></i> Join Telegram Community
-            </a>
-          </div>
-
-          <!-- Exam chip selector -->
-          <div class="hero-exam-chips">
-            <span class="hero-exam-label">I'm preparing for:</span>
-            <div class="hero-exam-chips-row">
-              <button class="hero-exam-chip chip-sscje" onclick="examSelect('ssc-je')" aria-label="SSC JE preparation resources">
-                SSC JE
-              </button>
-              <button class="hero-exam-chip chip-rajae" onclick="examSelect('raj-ae')" aria-label="Rajasthan AE/JE preparation resources">
-                Rajasthan AE/JE
-              </button>
-              <button class="hero-exam-chip chip-gate" onclick="examSelect('gate')" aria-label="GATE CE preparation resources">
-                GATE CE
-              </button>
-              <button class="hero-exam-chip chip-ese" onclick="examSelect('ese')" aria-label="UPSC ESE preparation resources">
-                UPSC ESE
-              </button>
-            </div>
-          </div>
-
-        </div>
-
-        <div class="hero-photo-wrap">
-          <div class="hero-photo-ring" aria-hidden="true">
-            <div class="hero-photo-inner" id="heroPhotoInner">
-              <img
-                src="assets/images/jaspal-hero.png"
-                alt="Dr. Jaspal Singh — Civil Engineering Educator"
-                class="hero-photo"
-                onerror="document.getElementById('heroPhotoInner').classList.add('photo-missing')"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ─── STATS BAR ─────────────────────────────── -->
-    <section class="stats-bar" aria-label="Achievements at a glance" data-reveal="fade">
-      <div class="container stats-inner">
-
-        <div class="stat-item">
-          <div class="stat-number-row">
-            <span class="stat-num" data-target="15">0</span><span class="stat-sym">+</span>
-          </div>
-          <span class="stat-label">Years of Teaching</span>
-        </div>
-
-        <div class="stat-divider" aria-hidden="true"></div>
-
-        <div class="stat-item">
-          <div class="stat-number-row">
-            <span class="stat-static">1L+</span>
-          </div>
-          <span class="stat-label">Students Mentored</span>
-        </div>
-
-        <div class="stat-divider" aria-hidden="true"></div>
-
-        <div class="stat-item">
-          <div class="stat-number-row">
-            <span class="stat-static">AIR-04</span>
-          </div>
-          <span class="stat-label">ESE Rank · GATE AIR-06</span>
-        </div>
-
-        <div class="stat-divider" aria-hidden="true"></div>
-
-        <div class="stat-item">
-          <div class="stat-number-row">
-            <span class="stat-num" data-target="4">0</span>
-          </div>
-          <span class="stat-label">Signature Subjects</span>
-        </div>
-
-      </div>
-    </section>
-
     <!-- ─── PROMOTIONAL BANNER CAROUSEL ────────────── -->
-    <section class="home-carousel-wrap" id="homeCarousel" aria-label="Announcements and offerings" data-reveal="fade">
+    <section class="home-carousel-wrap" id="homeCarousel" aria-label="Announcements and offerings">
 
       <div class="carousel-track-outer">
         <div class="carousel-track">
@@ -440,6 +328,47 @@
         <button class="carousel-dot-btn" role="tab" aria-label="Slide 5"></button>
       </div>
 
+    </section>
+
+    <!-- ─── STATS BAR ─────────────────────────────── -->
+    <section class="stats-bar" aria-label="Achievements at a glance" data-reveal="fade">
+      <div class="container stats-inner">
+
+        <div class="stat-item">
+          <div class="stat-number-row">
+            <span class="stat-num" data-target="15">0</span><span class="stat-sym">+</span>
+          </div>
+          <span class="stat-label">Years of Teaching</span>
+        </div>
+
+        <div class="stat-divider" aria-hidden="true"></div>
+
+        <div class="stat-item">
+          <div class="stat-number-row">
+            <span class="stat-static">1L+</span>
+          </div>
+          <span class="stat-label">Students Mentored</span>
+        </div>
+
+        <div class="stat-divider" aria-hidden="true"></div>
+
+        <div class="stat-item">
+          <div class="stat-number-row">
+            <span class="stat-static">AIR-04</span>
+          </div>
+          <span class="stat-label">ESE Rank · GATE AIR-06</span>
+        </div>
+
+        <div class="stat-divider" aria-hidden="true"></div>
+
+        <div class="stat-item">
+          <div class="stat-number-row">
+            <span class="stat-num" data-target="4">0</span>
+          </div>
+          <span class="stat-label">Signature Subjects</span>
+        </div>
+
+      </div>
     </section>
 
     <!-- ─── OFFLINE PROGRAMS ──────────────────────── -->
@@ -809,8 +738,8 @@
     <div class="sj-track"><div class="sj-fill" id="sjFill"></div></div>
     <div class="sj-traveler" id="sjTraveler">📖</div>
     <div class="sj-stops" id="sjStops">
-      <button class="sj-stop" data-section=".stats-bar"             data-label="Impact">    <span class="sj-dot"></span></button>
       <button class="sj-stop" data-section=".home-carousel-wrap"    data-label="Offers">    <span class="sj-dot"></span></button>
+      <button class="sj-stop" data-section=".stats-bar"             data-label="Impact">    <span class="sj-dot"></span></button>
       <button class="sj-stop" data-section=".offline-progs-section" data-label="Programs">  <span class="sj-dot"></span></button>
       <button class="sj-stop" data-section=".why-section"           data-label="Why Sir?">  <span class="sj-dot"></span></button>
       <button class="sj-stop" data-section=".community-section"     data-label="Community"><span class="sj-dot"></span></button>

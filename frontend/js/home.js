@@ -17,94 +17,6 @@
     }, { passive: true });
   }
 
-  /* ── Cursor glow (desktop only) ───────────────────────── */
-  var cursorGlow = document.getElementById('cursorGlow');
-  if (cursorGlow && window.innerWidth > 768) {
-    var glowX = 0, glowY = 0;
-    var targetX = 0, targetY = 0;
-    var glowRaf;
-
-    document.addEventListener('mousemove', function (e) {
-      targetX = e.clientX;
-      targetY = e.clientY;
-    }, { passive: true });
-
-    function animateGlow() {
-      glowX += (targetX - glowX) * 0.08;
-      glowY += (targetY - glowY) * 0.08;
-      cursorGlow.style.left = glowX + 'px';
-      cursorGlow.style.top  = glowY + 'px';
-      glowRaf = requestAnimationFrame(animateGlow);
-    }
-    glowRaf = requestAnimationFrame(animateGlow);
-
-    /* Hide glow when mouse leaves */
-    document.addEventListener('mouseleave', function () {
-      cursorGlow.style.opacity = '0';
-    });
-    document.addEventListener('mouseenter', function () {
-      cursorGlow.style.opacity = '1';
-    });
-  }
-
-  /* ── Hero particle canvas ─────────────────────────────── */
-  (function initParticles() {
-    var canvas = document.getElementById('heroParticles');
-    if (!canvas) return;
-    var ctx    = canvas.getContext('2d');
-    var particles = [];
-    var COUNT  = window.innerWidth < 768 ? 28 : 55;
-
-    function resize() {
-      canvas.width  = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
-    }
-    resize();
-    window.addEventListener('resize', resize, { passive: true });
-
-    function rand(min, max) { return Math.random() * (max - min) + min; }
-
-    function Particle() {
-      this.reset();
-    }
-    Particle.prototype.reset = function () {
-      this.x    = rand(0, canvas.width);
-      this.y    = rand(canvas.height * 0.2, canvas.height);
-      this.size = rand(1, 2.5);
-      this.speedY = rand(0.25, 0.75);
-      this.speedX = rand(-0.2, 0.2);
-      this.alpha  = rand(0.2, 0.7);
-      this.hue    = Math.random() > 0.6 ? '200,18,64' : '103,200,232';
-    };
-    Particle.prototype.update = function () {
-      this.y -= this.speedY;
-      this.x += this.speedX;
-      this.alpha -= 0.0018;
-      if (this.alpha <= 0 || this.y < 0) this.reset();
-    };
-    Particle.prototype.draw = function () {
-      ctx.save();
-      ctx.globalAlpha = Math.max(0, this.alpha);
-      ctx.fillStyle   = 'rgba(' + this.hue + ',' + this.alpha + ')';
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    };
-
-    for (var i = 0; i < COUNT; i++) {
-      var p = new Particle();
-      p.y = rand(0, canvas.height); /* distribute initial positions */
-      particles.push(p);
-    }
-
-    function loop() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      particles.forEach(function (p) { p.update(); p.draw(); });
-      requestAnimationFrame(loop);
-    }
-    loop();
-  })();
 
   /* ── Animated Stat Counters ───────────────────────────── */
   var statNums        = document.querySelectorAll('.stat-num[data-target]');
@@ -256,7 +168,6 @@
   var sections = stops.map(function (btn) {
     return document.querySelector(btn.dataset.section);
   });
-  var heroSection = document.querySelector('.hero-section');
 
   /* Click a dot → smooth scroll to that section */
   stops.forEach(function (btn, i) {
@@ -273,9 +184,8 @@
     var scrollY = window.scrollY;
     var viewH   = window.innerHeight;
 
-    /* Show only after scrolling past the hero */
-    var heroBottom = heroSection ? (heroSection.offsetTop + heroSection.offsetHeight * 0.6) : 400;
-    if (scrollY < heroBottom) {
+    /* Show after scrolling down 120px from top */
+    if (scrollY < 120) {
       journey.classList.remove('sj-visible');
       return;
     }
@@ -306,7 +216,7 @@
     fill.style.height = pct + '%';
 
     /* Swap emoji per section for fun */
-    var emojis = ['📊', '🎯', '📚', '❤️', '🤝', '⭐'];
+    var emojis = ['🎯', '📊', '📚', '❤️', '🤝', '⭐'];
     traveler.textContent = emojis[current] || '📖';
   }
 
