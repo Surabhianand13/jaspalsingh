@@ -779,17 +779,10 @@
   overflow: hidden;
   display: flex;
   align-items: center;
-}
-
-/* Subtle wave texture on light slides */
-.carousel-slide::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image: radial-gradient(circle, rgba(0,0,0,0.028) 1px, transparent 1px);
-  background-size: 26px 26px;
-  pointer-events: none;
-  z-index: 1;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: #0d0d1a; /* fallback while image loads */
 }
 
 .carousel-slide-inner {
@@ -807,7 +800,7 @@
 
 .cs-text { flex: 1; min-width: 0; }
 
-/* ── Badge — adapts per slide colour ── */
+/* ── Badge ── */
 .cs-badge {
   display: inline-flex;
   align-items: center;
@@ -822,22 +815,25 @@
   margin-bottom: 14px;
   width: fit-content;
   border: 1.5px solid;
+  /* colours set by .cs-overlay rule below */
 }
 
 .cs-title {
   font-family: var(--font-heading);
-  font-size: clamp(26px, 3vw, 42px);
+  font-size: clamp(26px, 3vw, 46px);
   font-weight: 800;
   line-height: 1.08;
   letter-spacing: -1px;
   margin-bottom: 12px;
+  /* colour set by .cs-overlay rule below */
 }
 
 .cs-sub {
-  font-size: 14.5px;
+  font-size: 15px;
   line-height: 1.68;
-  max-width: 440px;
+  max-width: 520px;
   margin-bottom: 28px;
+  /* colour set by .cs-overlay rule below */
 }
 
 .cs-ctas { display: flex; gap: 12px; flex-wrap: wrap; }
@@ -889,75 +885,60 @@
 }
 .cs-cta.cta-wa:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(37,195,84,0.42); color: #fff; }
 
-/* ── Right visual pill/blob ── */
-.cs-visual {
-  flex-shrink: 0;
-  width: 200px;
-  height: 200px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-}
-
-.cs-visual::before {
-  content: '';
+/* ── Full-slide clickable link overlay ── */
+.cs-slide-link {
   position: absolute;
-  inset: -20px;
-  border-radius: 50%;
-  opacity: 0.18;
+  inset: 0;
+  z-index: 2;
+  cursor: pointer;
 }
 
-.cs-visual-icon {
-  font-size: 80px;
-  position: relative;
+/* ── Dark gradient overlay for text readability over images ── */
+.cs-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(0,0,0,0.72) 0%,
+    rgba(0,0,0,0.50) 50%,
+    rgba(0,0,0,0.18) 100%
+  );
   z-index: 1;
-  filter: drop-shadow(0 6px 20px rgba(0,0,0,0.18));
 }
 
-/* ── Bright slide backgrounds ── */
-.cs-slide-1 { background: linear-gradient(145deg, #E8F4FF 0%, #C8E4FF 60%, #B8D9FF 100%); }
-.cs-slide-2 { background: linear-gradient(145deg, #FFF8E8 0%, #FFEDC4 60%, #FFE4A8 100%); }
-.cs-slide-3 { background: linear-gradient(145deg, #F5EEFF 0%, #E8D5FF 60%, #DBBFFF 100%); }
-.cs-slide-4 { background: linear-gradient(145deg, #E8FFF4 0%, #C4F0DA 60%, #A8E8CA 100%); }
-.cs-slide-5 { background: linear-gradient(145deg, #FFF3E8 0%, #FFE0C0 60%, #FFD0A0 100%); }
+/* ── All text white on image slides ── */
+.cs-title {
+  color: #ffffff;
+}
+.cs-sub {
+  color: rgba(255,255,255,0.88);
+}
+.cs-badge {
+  color: rgba(255,255,255,0.95);
+  background: rgba(255,255,255,0.15);
+  border-color: rgba(255,255,255,0.30);
+  backdrop-filter: blur(4px);
+}
 
-/* Per-slide text + accent colours */
-.cs-slide-1 .cs-title { color: #0A2560; }
-.cs-slide-1 .cs-sub   { color: #2D4A8A; }
-.cs-slide-1 .cs-badge { color: #1565C0; background: rgba(21,101,192,0.10); border-color: rgba(21,101,192,0.25); }
-.cs-slide-1 .cs-visual { background: linear-gradient(135deg, #1565C0, #0284C7); }
-.cs-slide-1 .cs-visual::before { background: #1565C0; }
-.cs-slide-1 .cs-visual-icon { color: #fff; }
+/* CTA buttons sit above the slide-link overlay */
+.cs-ctas {
+  position: relative;
+  z-index: 3;
+}
 
-.cs-slide-2 .cs-title { color: #5C3000; }
-.cs-slide-2 .cs-sub   { color: #8B5000; }
-.cs-slide-2 .cs-badge { color: #C06800; background: rgba(192,104,0,0.10); border-color: rgba(192,104,0,0.25); }
-.cs-slide-2 .cs-visual { background: linear-gradient(135deg, #F97316, #EA580C); }
-.cs-slide-2 .cs-visual::before { background: #F97316; }
-.cs-slide-2 .cs-visual-icon { color: #fff; }
-
-.cs-slide-3 .cs-title { color: #2D0870; }
-.cs-slide-3 .cs-sub   { color: #5A209A; }
-.cs-slide-3 .cs-badge { color: #7C3AED; background: rgba(124,58,237,0.10); border-color: rgba(124,58,237,0.25); }
-.cs-slide-3 .cs-visual { background: linear-gradient(135deg, #7C3AED, #A855F7); }
-.cs-slide-3 .cs-visual::before { background: #7C3AED; }
-.cs-slide-3 .cs-visual-icon { color: #fff; }
-
-.cs-slide-4 .cs-title { color: #053D20; }
-.cs-slide-4 .cs-sub   { color: #0A6030; }
-.cs-slide-4 .cs-badge { color: #16A34A; background: rgba(22,163,74,0.10); border-color: rgba(22,163,74,0.25); }
-.cs-slide-4 .cs-visual { background: linear-gradient(135deg, #16A34A, #22C55E); }
-.cs-slide-4 .cs-visual::before { background: #16A34A; }
-.cs-slide-4 .cs-visual-icon { color: #fff; }
-
-.cs-slide-5 .cs-title { color: #5C2500; }
-.cs-slide-5 .cs-sub   { color: #8B4000; }
-.cs-slide-5 .cs-badge { color: #EA580C; background: rgba(234,88,12,0.10); border-color: rgba(234,88,12,0.25); }
-.cs-slide-5 .cs-visual { background: linear-gradient(135deg, #EA580C, #F97316); }
-.cs-slide-5 .cs-visual::before { background: #EA580C; }
-.cs-slide-5 .cs-visual-icon { color: #fff; }
+/* Outline CTA adapted for dark backgrounds */
+.cs-cta.cta-outline {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.55);
+  color: #fff;
+  backdrop-filter: blur(4px);
+}
+.cs-cta.cta-outline:hover {
+  background: rgba(255,255,255,0.22);
+  border-color: #fff;
+  color: #fff;
+  transform: translateY(-2px);
+}
 
 /* ── Arrow buttons — dark on light slides ── */
 .carousel-arrow {
