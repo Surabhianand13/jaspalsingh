@@ -93,12 +93,15 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
-  <link rel="stylesheet" href="css/style.css" />
-  <link rel="stylesheet" href="css/home.css" />
-  <link rel="stylesheet" href="css/pages.css" />
-  <link rel="stylesheet" href="css/additions.css" />
+  <link rel="stylesheet" href="css/style.css?v=2" />
+  <link rel="stylesheet" href="css/home.css?v=2" />
+  <link rel="stylesheet" href="css/pages.css?v=2" />
+  <link rel="stylesheet" href="css/additions.css?v=2" />
+  <link rel="stylesheet" href="css/animations.css?v=2" />
 </head>
 <body class="page-home">
+  <div id="readingProgress" aria-hidden="true"></div>
+  <div id="cursorGlow" aria-hidden="true"></div>
   <a href="#main-content" class="skip-to-main">Skip to main content</a>
 
   <!-- =============================================
@@ -215,8 +218,12 @@
 
     <!-- ─── HERO ─────────────────────────────────── -->
     <section class="hero-section" aria-label="Introduction">
-      <div class="hero-blob-1" aria-hidden="true"></div>
-      <div class="hero-blob-2" aria-hidden="true"></div>
+      <div class="hero-aurora" aria-hidden="true">
+        <div class="aurora-orb aurora-orb-1"></div>
+        <div class="aurora-orb aurora-orb-2"></div>
+        <div class="aurora-orb aurora-orb-3"></div>
+      </div>
+      <canvas id="heroParticles" aria-hidden="true"></canvas>
 
       <div class="container hero-inner">
         <div class="hero-text">
@@ -281,7 +288,7 @@
     </section>
 
     <!-- ─── STATS BAR ─────────────────────────────── -->
-    <section class="stats-bar" aria-label="Achievements at a glance">
+    <section class="stats-bar" aria-label="Achievements at a glance" data-reveal="fade">
       <div class="container stats-inner">
 
         <div class="stat-item">
@@ -322,7 +329,7 @@
     </section>
 
     <!-- ─── PROMOTIONAL BANNER CAROUSEL ────────────── -->
-    <section class="home-carousel-wrap" id="homeCarousel" aria-label="Announcements and offerings">
+    <section class="home-carousel-wrap" id="homeCarousel" aria-label="Announcements and offerings" data-reveal="fade">
 
       <div class="carousel-track-outer">
         <div class="carousel-track">
@@ -434,7 +441,7 @@
     </section>
 
     <!-- ─── OFFLINE PROGRAMS ──────────────────────── -->
-    <section class="offline-progs-section section-pad" aria-labelledby="progs-title">
+    <section class="offline-progs-section section-pad" aria-labelledby="progs-title" data-reveal>
       <div class="container">
         <div class="section-header">
           <span class="sec-eyebrow orange"><i class="fas fa-map-marker-alt"></i> Offline · Jaipur, Rajasthan</span>
@@ -442,7 +449,7 @@
           <p class="section-sub">Intensive, small-batch offline programs in Jaipur — Batches, Interview Prep &amp; Test Series for GATE/IES, SSC JE, State AE &amp; State JE.</p>
         </div>
 
-        <div class="progs-grid">
+        <div class="progs-grid" data-stagger>
 
           <!-- Card 1: GATE/IES Offline Batch -->
           <article class="op-card">
@@ -584,14 +591,14 @@
     </section>
 
     <!-- ─── WHY STUDENTS LOVE HIM ──────────────────── -->
-    <section class="why-section section-pad bg-light" aria-labelledby="why-title">
+    <section class="why-section section-pad bg-light" aria-labelledby="why-title" data-reveal>
       <div class="container">
         <div class="section-header">
           <h2 class="section-title" id="why-title">Why Students Love Him</h2>
           <p class="section-sub">It's not just what he teaches — it's how he makes you feel about learning.</p>
         </div>
 
-        <div class="why-cards">
+        <div class="why-cards" data-stagger>
           <div class="why-card">
             <div class="why-icon-wrap" aria-hidden="true"><i class="fas fa-graduation-cap why-icon"></i></div>
             <h3 class="why-card-title">Proven Expertise</h3>
@@ -614,14 +621,14 @@
     </section>
 
     <!-- ─── COMMUNITY SECTION ──────────────────────── -->
-    <section class="community-section section-pad" aria-labelledby="community-title">
+    <section class="community-section section-pad" aria-labelledby="community-title" data-reveal>
       <div class="container">
         <div class="section-header">
           <h2 class="section-title" id="community-title">Learn Together, Grow Together</h2>
           <p class="section-sub">A community of serious aspirants, guided by Dr. Jaspal Singh across every platform where he's active.</p>
         </div>
 
-        <div class="community-grid">
+        <div class="community-grid" data-stagger>
           <a href="https://t.me/jaspalsirofficial" target="_blank" rel="noopener noreferrer" class="community-btn telegram" aria-label="Join Telegram Community">
             <i class="fab fa-telegram community-icon" aria-hidden="true"></i>
             <div>
@@ -658,14 +665,14 @@
     </section>
 
     <!-- ─── TESTIMONIALS ───────────────────────────── -->
-    <section class="testimonials-section section-pad bg-light" aria-labelledby="testimonials-title">
+    <section class="testimonials-section section-pad bg-light" aria-labelledby="testimonials-title" data-reveal>
       <div class="container">
         <div class="section-header">
           <h2 class="section-title" id="testimonials-title">What His Baccho Say</h2>
           <p class="section-sub">Real students. Real results. Real love for their Sir.</p>
         </div>
 
-        <div class="testimonials-grid">
+        <div class="testimonials-grid" data-stagger>
           <blockquote class="testimonial-card">
             <div class="testimonial-quote-icon" aria-hidden="true"><i class="fas fa-quote-left"></i></div>
             <p class="testimonial-text">"Sir ne sirf subject nahi padhaya — unhone mujhe believe karna sikhaya ki main kar sakta hoon. ESE 2024 mein select hua. Ye genuinely sir ki wajah se hai."</p>

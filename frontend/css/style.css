@@ -218,12 +218,35 @@ ul, ol {
   height: var(--header-h);
   background: var(--white);
   border-bottom: 2px solid var(--magenta);
-  transition: box-shadow 0.3s ease;
+  transition: background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease, backdrop-filter 0.4s ease;
 }
 
 .site-header.scrolled {
   box-shadow: 0 4px 32px rgba(26,26,46,0.1);
 }
+
+/* ── Home page: transparent glass header until scrolled ── */
+.page-home .site-header:not(.scrolled) {
+  background: rgba(8, 6, 20, 0.35);
+  border-bottom-color: rgba(200,18,64,0.20);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+}
+.page-home .site-header.scrolled {
+  background: rgba(13, 10, 30, 0.96);
+  border-bottom-color: rgba(200,18,64,0.30);
+  backdrop-filter: blur(20px) saturate(1.6);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  box-shadow: 0 4px 32px rgba(0,0,0,0.35);
+}
+.page-home .site-header .wordmark { color: #fff; }
+.page-home .site-header .wordmark::after { background: rgba(103,200,232,0.7); }
+.page-home .site-header .nav-link { color: rgba(255,255,255,0.82); }
+.page-home .site-header .nav-link:hover { color: #fff; background: rgba(255,255,255,0.10); }
+.page-home .site-header .nav-link.active { background: rgba(200,18,64,0.22); color: #fff; }
+.page-home .site-header .nav-dropdown-trigger { color: rgba(255,255,255,0.82); }
+.page-home .site-header .nav-dropdown-trigger:hover { color: #fff; background: rgba(255,255,255,0.10); }
+.page-home .site-header .hamburger span { background: #fff; }
 
 .header-inner {
   display: flex;

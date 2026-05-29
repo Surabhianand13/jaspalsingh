@@ -1,0 +1,346 @@
+/* ============================================================
+   ANIMATIONS — animations.css
+   Gen-Z Premium Education Redesign
+   Dr. Jaspal Singh — jaspalsingh.in
+   ============================================================ */
+
+/* ── Keyframe library ─────────────────────────────────────── */
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(36px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.88); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ── Hero photo ring pulse ────────────────────────────────── */
+@keyframes ringPulse {
+  0%   { box-shadow: 0 0 0 0px rgba(200,18,64,0.40), 0 0 0 0px rgba(200,18,64,0.15); }
+  50%  { box-shadow: 0 0 0 18px rgba(200,18,64,0.10), 0 0 0 40px rgba(200,18,64,0.04); }
+  100% { box-shadow: 0 0 0 0px rgba(200,18,64,0.0),  0 0 0 0px rgba(200,18,64,0.0); }
+}
+
+/* ── Aurora blob drift ────────────────────────────────────── */
+@keyframes blobDrift1 {
+  0%   { transform: translate(0, 0) scale(1); }
+  33%  { transform: translate(40px, -30px) scale(1.08); }
+  66%  { transform: translate(-20px, 20px) scale(0.95); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+@keyframes blobDrift2 {
+  0%   { transform: translate(0, 0) scale(1); }
+  40%  { transform: translate(-35px, 25px) scale(1.06); }
+  75%  { transform: translate(20px, -15px) scale(0.97); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+@keyframes blobDrift3 {
+  0%   { transform: translate(0, 0) scale(1); }
+  50%  { transform: translate(25px, 35px) scale(1.10); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+/* ── Floating particles ───────────────────────────────────── */
+@keyframes floatUp {
+  0%   { transform: translateY(0) scale(1); opacity: 0.6; }
+  50%  { opacity: 1; }
+  100% { transform: translateY(-120px) scale(0.5); opacity: 0; }
+}
+
+/* ── Shimmer text pass ────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+/* ── CTA glow pulse ───────────────────────────────────────── */
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 18px rgba(200,18,64,0.35), 0 4px 20px rgba(200,18,64,0.25); }
+  50%       { box-shadow: 0 0 36px rgba(200,18,64,0.55), 0 6px 32px rgba(200,18,64,0.35); }
+}
+
+/* ── Badge entrance shimmer ───────────────────────────────── */
+@keyframes badgeGlow {
+  0%, 100% { border-color: rgba(255,255,255,0.14); }
+  50%       { border-color: rgba(200,18,64,0.50); box-shadow: 0 0 12px rgba(200,18,64,0.20); }
+}
+
+/* ── Counter tick ─────────────────────────────────────────── */
+@keyframes countTick {
+  0%   { transform: translateY(6px); opacity: 0; }
+  20%  { transform: translateY(0);   opacity: 1; }
+  80%  { transform: translateY(0);   opacity: 1; }
+  100% { transform: translateY(-6px); opacity: 0; }
+}
+
+/* ── Marquee scroll ───────────────────────────────────────── */
+@keyframes marqueeLeft {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* ── Card shine sweep ─────────────────────────────────────── */
+@keyframes cardShine {
+  0%   { left: -80%; }
+  100% { left: 150%; }
+}
+
+/* ── Spin slow ────────────────────────────────────────────── */
+@keyframes spinSlow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ── Scroll reveal classes ────────────────────────────────── */
+
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(32px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+[data-reveal="left"]  { transform: translateX(-32px); }
+[data-reveal="right"] { transform: translateX(32px); }
+[data-reveal="scale"] { transform: scale(0.92) translateY(16px); }
+[data-reveal="fade"]  { transform: none; }
+
+[data-reveal].is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* Stagger delays for child elements */
+[data-stagger] > * { opacity: 0; transform: translateY(28px); transition: opacity 0.6s cubic-bezier(0.16,1,0.3,1), transform 0.6s cubic-bezier(0.16,1,0.3,1); }
+[data-stagger].is-visible > *:nth-child(1) { opacity:1; transform:none; transition-delay:0.00s; }
+[data-stagger].is-visible > *:nth-child(2) { opacity:1; transform:none; transition-delay:0.08s; }
+[data-stagger].is-visible > *:nth-child(3) { opacity:1; transform:none; transition-delay:0.16s; }
+[data-stagger].is-visible > *:nth-child(4) { opacity:1; transform:none; transition-delay:0.24s; }
+[data-stagger].is-visible > *:nth-child(5) { opacity:1; transform:none; transition-delay:0.32s; }
+[data-stagger].is-visible > *:nth-child(6) { opacity:1; transform:none; transition-delay:0.40s; }
+
+/* ── Hero entrance sequence ───────────────────────────────── */
+
+.hero-badge   { animation: fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.10s both; }
+.hero-name    { animation: fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 0.22s both; }
+.hero-tagline { animation: fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 0.36s both; }
+.hero-sub     { animation: fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 0.48s both; }
+.hero-ctas    { animation: fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 0.60s both; }
+.hero-exam-chips { animation: fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 0.72s both; }
+.hero-photo-wrap { animation: scaleIn 0.9s cubic-bezier(0.16,1,0.3,1) 0.25s both; }
+
+/* ── Active blob animations ───────────────────────────────── */
+.hero-blob-1 { animation: blobDrift1 12s ease-in-out infinite; }
+.hero-blob-2 { animation: blobDrift2 16s ease-in-out infinite; }
+.hero-blob-3 { animation: blobDrift3 20s ease-in-out infinite; }
+
+/* ── Photo ring pulse ─────────────────────────────────────── */
+.hero-photo-ring { animation: ringPulse 3.2s ease-out infinite; }
+
+/* ── Badge glow ───────────────────────────────────────────── */
+.hero-badge { animation: fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.10s both, badgeGlow 4s ease-in-out 1.5s infinite; }
+
+/* ── Glow CTA ─────────────────────────────────────────────── */
+.btn-primary { animation: glowPulse 3s ease-in-out infinite; }
+
+/* ── Tagline highlight shimmer ────────────────────────────── */
+.tagline-highlight {
+  background: linear-gradient(90deg, #C81240 0%, #FF6B8A 40%, #C81240 60%, #A60F35 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 3.5s linear infinite;
+}
+
+/* ── Floating particles canvas ────────────────────────────── */
+#heroParticles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Section reveal animations ────────────────────────────── */
+
+.stats-bar { transition: opacity 0.8s ease, transform 0.8s ease; }
+
+/* ── Hover glow on why-cards ──────────────────────────────── */
+.why-card {
+  position: relative;
+  overflow: hidden;
+}
+.why-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 0%, rgba(200,18,64,0.06) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+.why-card:hover::after { opacity: 1; }
+
+/* ── Card shine on hover ──────────────────────────────────── */
+.op-card {
+  position: relative;
+  overflow: hidden;
+}
+.op-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -80%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.08) 50%, transparent 100%);
+  z-index: 1;
+  transition: none;
+  pointer-events: none;
+}
+.op-card:hover::before {
+  animation: cardShine 0.55s ease-in-out forwards;
+}
+
+/* ── Community button glow ────────────────────────────────── */
+.community-btn.telegram:hover  { box-shadow: 0 8px 40px rgba(26,159,216,0.50); }
+.community-btn.whatsapp:hover  { box-shadow: 0 8px 40px rgba(37,195,84,0.48); }
+.community-btn.instagram:hover { box-shadow: 0 8px 40px rgba(220,39,67,0.50); }
+.community-btn.unacademy:hover { box-shadow: 0 8px 40px rgba(200,18,64,0.50); }
+
+/* ── Exam chip active glow ────────────────────────────────── */
+.hero-exam-chip.active {
+  box-shadow: 0 0 0 3px rgba(200,18,64,0.25), 0 0 16px rgba(200,18,64,0.15);
+}
+.chip-sscje.active { border-color: #F97316; box-shadow: 0 0 0 3px rgba(249,115,22,0.25); }
+.chip-gate.active  { border-color: #10B981; box-shadow: 0 0 0 3px rgba(16,185,129,0.25); }
+.chip-ese.active   { border-color: #8B5CF6; box-shadow: 0 0 0 3px rgba(139,92,246,0.25); }
+.chip-rajae.active { border-color: #0284C7; box-shadow: 0 0 0 3px rgba(2,132,199,0.25); }
+
+/* ── Testimonial quote icon pulse ─────────────────────────── */
+@keyframes quotePulse {
+  0%, 100% { opacity: 0.35; transform: scale(1); }
+  50%       { opacity: 0.65; transform: scale(1.15); }
+}
+.testimonial-card:hover .testimonial-quote-icon {
+  animation: quotePulse 1.5s ease-in-out infinite;
+}
+
+/* ── Stat number odometer-style  ──────────────────────────── */
+.stat-num { transition: color 0.3s ease; }
+
+/* ── Nav glassmorphism scroll enhancement ─────────────────── */
+.site-header.scrolled {
+  background: rgba(13,13,28,0.92);
+  backdrop-filter: blur(20px) saturate(1.5);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  border-bottom: 1px solid rgba(200,18,64,0.12);
+  box-shadow: 0 4px 32px rgba(0,0,0,0.28);
+}
+
+/* ── Progress bar on top of page ──────────────────────────── */
+#readingProgress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  width: 0%;
+  background: linear-gradient(90deg, #C81240, #FF6B8A, #C81240);
+  background-size: 200% auto;
+  animation: shimmer 2s linear infinite;
+  z-index: 9999;
+  transition: width 0.1s linear;
+}
+
+/* ── Cursor glow effect ───────────────────────────────────── */
+#cursorGlow {
+  position: fixed;
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(circle, rgba(200,18,64,0.06) 0%, transparent 70%);
+  transform: translate(-50%, -50%);
+  transition: opacity 0.3s ease;
+  mix-blend-mode: screen;
+}
+
+/* ── Aurora mesh behind hero ──────────────────────────────── */
+.hero-aurora {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.aurora-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.45;
+}
+
+.aurora-orb-1 {
+  width: 600px; height: 600px;
+  top: -15%; right: -5%;
+  background: radial-gradient(circle, rgba(200,18,64,0.55) 0%, rgba(150,18,64,0.20) 50%, transparent 70%);
+  animation: blobDrift1 18s ease-in-out infinite;
+}
+
+.aurora-orb-2 {
+  width: 500px; height: 500px;
+  bottom: -20%; left: -8%;
+  background: radial-gradient(circle, rgba(103,200,232,0.30) 0%, rgba(0,100,200,0.15) 50%, transparent 70%);
+  animation: blobDrift2 22s ease-in-out infinite;
+}
+
+.aurora-orb-3 {
+  width: 400px; height: 400px;
+  top: 30%; left: 35%;
+  background: radial-gradient(circle, rgba(139,92,246,0.18) 0%, transparent 65%);
+  animation: blobDrift3 26s ease-in-out infinite;
+}
+
+/* ── Reduce motion ────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  .hero-badge,
+  .hero-name,
+  .hero-tagline,
+  .hero-sub,
+  .hero-ctas,
+  .hero-exam-chips,
+  .hero-photo-wrap,
+  .hero-blob-1,
+  .hero-blob-2,
+  .hero-photo-ring,
+  .btn-primary,
+  .tagline-highlight,
+  .aurora-orb-1,
+  .aurora-orb-2,
+  .aurora-orb-3 {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+  [data-reveal] { opacity: 1; transform: none; }
+}
