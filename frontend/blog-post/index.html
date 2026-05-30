@@ -833,8 +833,8 @@
 
     function renderPdf(url, title) {
       var box = document.getElementById('bpPdfBox');
-      /* Use Google Docs viewer as fallback for cross-origin PDFs */
-      var embedSrc = 'https://docs.google.com/gview?url=' + encodeURIComponent(url) + '&embedded=true';
+      /* Use direct URL — browser's native PDF viewer (Chrome/Firefox/Edge, free) */
+      var embedSrc = url;
 
       box.innerHTML =
         '<div class="bp-pdf-box">' +
