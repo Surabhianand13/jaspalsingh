@@ -144,3 +144,19 @@
   goTo(0);
   startAuto();
 })();
+
+/* ── Programs horizontal carousel arrows ─────────────── */
+(function () {
+  var carousel = document.getElementById('progsCarousel');
+  if (!carousel) return;
+  var prevBtn = document.querySelector('.progs-prev');
+  var nextBtn = document.querySelector('.progs-next');
+  var scrollAmt = 320;
+
+  if (nextBtn) nextBtn.addEventListener('click', function () {
+    carousel.scrollBy({ left: scrollAmt, behavior: 'smooth' });
+  });
+  if (prevBtn) prevBtn.addEventListener('click', function () {
+    carousel.scrollBy({ left: -scrollAmt, behavior: 'smooth' });
+  });
+})();
