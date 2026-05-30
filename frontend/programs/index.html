@@ -3,16 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Offline Programs  -  Dr. Jaspal Singh | Jaipur, Rajasthan</title>
-  <meta name="description" content="Offline programs by Dr. Jaspal Singh in Jaipur  -  Offline Batches, Interview Programs &amp; Test Series for GATE/IES, SSC JE, State AE &amp; State JE. Limited seats." />
-  <meta name="keywords" content="Dr Jaspal Singh offline programs, GATE offline batch Jaipur, SSC JE interview prep, State AE mock interview, civil engineering coaching Jaipur" />
+  <title>Offline Programs — Dr. Jaspal Singh | Jaipur, Rajasthan</title>
+  <meta name="description" content="Offline programs by Dr. Jaspal Singh in Jaipur — Test Series, Interview Guidance and Foundation Courses for RSSB JEN, RPSC AE and GATE/ESE. Limited seats." />
   <meta name="author" content="Dr. Jaspal Singh" />
   <meta name="robots" content="index, follow" />
   <meta name="theme-color" content="#1A1A2E" />
 
   <meta property="og:site_name" content="jaspalsingh.in" />
-  <meta property="og:title" content="Offline Programs  -  Dr. Jaspal Singh | Jaipur" />
-  <meta property="og:description" content="Offline Batches, Interview Programs &amp; Test Series for GATE/IES, SSC JE, State AE &amp; State JE. Taught by Dr. Jaspal Singh in Jaipur." />
+  <meta property="og:title" content="Offline Programs — Dr. Jaspal Singh | Jaipur" />
+  <meta property="og:description" content="Test Series, Interview Guidance and Foundation Courses for RSSB JEN, RPSC AE and GATE/ESE. Taught offline by Dr. Jaspal Singh in Jaipur." />
   <meta property="og:url" content="https://jaspalsingh.in/programs" />
   <meta property="og:type" content="website" />
   <meta property="og:image" content="https://jaspalsingh.in/assets/images/og-cover.png" />
@@ -50,119 +49,36 @@
     .chip-dark { background:rgba(26,26,46,.07); color:var(--heading-color); border:1px solid rgba(26,26,46,.12); }
     .chip-green { background:rgba(22,163,74,.08); color:var(--green); border:1px solid rgba(22,163,74,.18); }
 
-    /* ── Category Tabs ── */
-    .prog-cats-section { padding: 56px 0 0; background: var(--white); }
-
-    .prog-cat-tabs {
-      display: flex;
-      gap: 0;
-      border-bottom: 2px solid rgba(26,26,46,0.08);
-      margin-bottom: 48px;
-      overflow-x: auto;
-      scrollbar-width: none;
-    }
-    .prog-cat-tabs::-webkit-scrollbar { display: none; }
-
-    .prog-cat-tab {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 16px 32px;
-      font-family: var(--font-heading);
-      font-size: 15px;
-      font-weight: 700;
-      color: var(--body-color);
-      border: none;
-      background: none;
-      cursor: pointer;
-      border-bottom: 3px solid transparent;
-      margin-bottom: -2px;
-      transition: color 0.2s, border-color 0.2s;
-      white-space: nowrap;
-    }
-
-    .prog-cat-tab:hover { color: var(--heading-color); }
-
-    .prog-cat-tab.active { color: var(--magenta); border-bottom-color: var(--magenta); }
-
-    .prog-cat-icon {
-      width: 34px;
-      height: 34px;
-      border-radius: 9px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      flex-shrink: 0;
-      transition: background 0.2s;
-    }
-
-    .tab-icon-orange  { background: rgba(255,107,53,0.10); color: #FF6B35; }
-    .tab-icon-magenta { background: rgba(200,18,64,0.09);  color: var(--magenta); }
-    .tab-icon-blue    { background: rgba(103,200,232,0.14); color: #0284C7; }
-
-    .prog-cat-tab.active .tab-icon-orange  { background: rgba(255,107,53,0.18); }
-    .prog-cat-tab.active .tab-icon-magenta { background: rgba(200,18,64,0.16); }
-    .prog-cat-tab.active .tab-icon-blue    { background: rgba(103,200,232,0.22); }
-
-    /* ── Exam filter bar ── */
-    .exam-filter-wrap { margin-bottom: 40px; }
-    .exam-filter-label { font-family:var(--font-heading); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1.2px; color:rgba(74,74,104,.45); margin-bottom:12px; display:block; }
-    .exam-filter-bar { display:flex; gap:8px; flex-wrap:wrap; }
-
-    .exam-filter-btn {
-      font-family:var(--font-heading);
-      font-size:13px;
-      font-weight:600;
-      padding:8px 20px;
-      border-radius:var(--radius-pill);
-      border:1.5px solid rgba(26,26,46,.14);
-      background:var(--white);
-      color:var(--body-color);
-      cursor:pointer;
-      transition:var(--transition);
-      display:inline-flex;
-      align-items:center;
-      gap:7px;
-    }
-    .exam-filter-btn:hover { border-color:var(--heading-color); color:var(--heading-color); }
-    .exam-filter-btn.active { background:var(--heading-color); color:#fff; border-color:transparent; }
-    .exam-filter-btn.f-gate.active  { background:#1B5E20; border-color:#1B5E20; }
-    .exam-filter-btn.f-sscje.active { background:var(--magenta); border-color:var(--magenta); }
-    .exam-filter-btn.f-ae.active    { background:#7B1FA2; border-color:#7B1FA2; }
-    .exam-filter-btn.f-je.active    { background:#E65100; border-color:#E65100; }
-
-    .exam-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
-    .exam-filter-btn.active .exam-dot { filter:brightness(10); }
-
-    /* ── Program cards grid ── */
-    .prog-cards-grid {
+    /* ── Programs grid ── */
+    .progs-section { padding: 72px 0 96px; background: var(--white); }
+    .progs-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 24px;
-      padding-bottom: 72px;
+      grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+      gap: 28px;
     }
 
     /* ── Program card ── */
     .prog-card {
       background: var(--white);
-      border: 1.5px solid rgba(26,26,46,0.07);
+      border: 1.5px solid rgba(26,26,46,0.08);
       border-radius: var(--radius-md);
       box-shadow: var(--shadow-sm);
       overflow: hidden;
       display: flex;
       flex-direction: column;
       transition: var(--transition);
+      text-decoration: none;
+      color: inherit;
     }
     .prog-card:hover {
       transform: translateY(-5px);
       box-shadow: var(--shadow-lg);
-      border-color: rgba(200,18,64,0.22);
+      border-color: rgba(200,18,64,.20);
     }
 
-    /* Thumbnail header */
+    /* Thumbnail */
     .prog-thumb {
-      height: 170px;
+      height: 180px;
       position: relative;
       display: flex;
       flex-direction: column;
@@ -171,12 +87,11 @@
       overflow: hidden;
       flex-shrink: 0;
     }
-
     .prog-thumb::before {
       content:'';
       position:absolute;
       inset:0;
-      background-image:radial-gradient(circle, rgba(255,255,255,.11) 1px, transparent 1px);
+      background-image:radial-gradient(circle, rgba(255,255,255,.10) 1px, transparent 1px);
       background-size:24px 24px;
       pointer-events:none;
       z-index:0;
@@ -185,228 +100,158 @@
       content:'';
       position:absolute;
       bottom:0; left:0; right:0;
-      height:50px;
-      background:linear-gradient(to bottom, transparent, rgba(0,0,0,.20));
+      height:60px;
+      background:linear-gradient(to bottom, transparent, rgba(0,0,0,.22));
       pointer-events:none;
       z-index:1;
     }
-
-    /* Exam pill  -  top-left */
-    .prog-thumb-exam {
-      position:absolute;
-      top:12px; left:12px;
-      font-family:var(--font-heading);
-      font-size:9.5px; font-weight:700;
-      text-transform:uppercase; letter-spacing:.8px;
-      color:rgba(255,255,255,.92);
-      background:rgba(0,0,0,.22);
-      padding:4px 10px; border-radius:20px;
-      z-index:2;
-      backdrop-filter:blur(8px);
+    .prog-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      position: absolute;
+      inset: 0;
+      z-index: 0;
     }
-
+    .prog-thumb-type-label {
+      position: absolute;
+      top: 14px; left: 14px;
+      font-family: var(--font-heading);
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .9px;
+      color: rgba(255,255,255,.92);
+      background: rgba(0,0,0,.25);
+      padding: 4px 11px; border-radius: 20px;
+      z-index: 2;
+      backdrop-filter: blur(8px);
+    }
     .prog-thumb-icon {
-      font-size:52px;
-      color:rgba(255,255,255,.90);
-      position:relative; z-index:2;
-      filter:drop-shadow(0 4px 14px rgba(0,0,0,.28));
-      margin-bottom:6px;
+      font-size: 48px;
+      color: rgba(255,255,255,.90);
+      position: relative; z-index: 2;
+      filter: drop-shadow(0 4px 14px rgba(0,0,0,.28));
     }
-
-    .prog-thumb-type {
-      font-family:var(--font-heading);
-      font-size:10px; font-weight:700;
-      color:rgba(255,255,255,.55);
-      text-transform:uppercase; letter-spacing:1.4px;
-      position:relative; z-index:2;
-    }
-
-    /* Status pill  -  bottom-right */
     .prog-thumb-status {
-      position:absolute;
-      bottom:12px; right:12px;
-      display:flex; align-items:center; gap:5px;
-      font-family:var(--font-heading);
-      font-size:9.5px; font-weight:700;
-      color:rgba(255,255,255,.90);
-      background:rgba(0,0,0,.22);
-      padding:4px 10px; border-radius:20px;
-      z-index:2;
-      backdrop-filter:blur(8px);
+      position: absolute;
+      bottom: 14px; right: 14px;
+      display: flex; align-items: center; gap: 5px;
+      font-family: var(--font-heading);
+      font-size: 9.5px; font-weight: 700;
+      color: rgba(255,255,255,.92);
+      background: rgba(0,0,0,.25);
+      padding: 4px 10px; border-radius: 20px;
+      z-index: 2;
+      backdrop-filter: blur(8px);
     }
-
     .status-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
-    .sd-open   { background:#4ADE80; }
-    .sd-few    { background:#FCA5A5; animation:statusPulse 1.2s ease infinite; }
-    .sd-soon   { background:#FDE68A; }
+    .sd-open { background:#4ADE80; }
+    .sd-soon { background:#FDE68A; }
 
-    @keyframes statusPulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+    /* Thumb color themes */
+    .th-blue   { background: linear-gradient(145deg, #0369A1 0%, #0284C7 100%); }
+    .th-teal   { background: linear-gradient(145deg, #0F766E 0%, #0D9488 100%); }
+    .th-purple { background: linear-gradient(145deg, #6D28D9 0%, #7C3AED 100%); }
+    .th-orange { background: linear-gradient(145deg, #C2410C 0%, #EA580C 100%); }
+    .th-green  { background: linear-gradient(145deg, #15803D 0%, #16A34A 100%); }
 
-    /* Seats bar */
-    .prog-seats-bar { height:3px; background:rgba(26,26,46,.07); flex-shrink:0; overflow:hidden; }
-    .prog-seats-fill { height:100%; border-radius:0 2px 2px 0; transition:width .8s cubic-bezier(.4,0,.2,1); }
-    .sf-red    { background:linear-gradient(90deg, #DC2626, #f87171); }
-    .sf-orange { background:linear-gradient(90deg, #FF6B35, #f4a66a); }
-    .sf-green  { background:linear-gradient(90deg, #16A34A, #4ADE80); }
-    .sf-blue   { background:linear-gradient(90deg, #0284C7, #38BDF8); }
+    /* Seats fill bar */
+    .prog-seats-bar { height: 3px; background: rgba(26,26,46,.07); flex-shrink: 0; }
+    .prog-seats-fill { height: 100%; border-radius: 0 2px 2px 0; }
+    .sf-blue   { background: linear-gradient(90deg, #0284C7, #38BDF8); }
+    .sf-teal   { background: linear-gradient(90deg, #0F766E, #2DD4BF); }
+    .sf-purple { background: linear-gradient(90deg, #6D28D9, #A78BFA); }
+    .sf-orange { background: linear-gradient(90deg, #C2410C, #FB923C); }
+    .sf-green  { background: linear-gradient(90deg, #15803D, #4ADE80); }
 
     /* Card body */
-    .prog-card-badges {
-      display:flex; flex-wrap:wrap; gap:5px;
-      padding:14px 18px 0;
-    }
+    .prog-card-inner { padding: 20px 20px 14px; flex: 1; display: flex; flex-direction: column; gap: 12px; }
 
-    .pc-badge {
-      font-family:var(--font-heading);
-      font-size:9.5px; font-weight:700;
-      padding:3px 9px; border-radius:var(--radius-pill);
-      text-transform:uppercase; letter-spacing:.5px;
+    .prog-card-meta-row {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
     }
-    .pcb-offline  { background:rgba(255,107,53,.10); color:var(--orange);  border:1px solid rgba(255,107,53,.2); }
-    .pcb-popular  { background:rgba(22,163,74,.10);  color:var(--green);   border:1px solid rgba(22,163,74,.2); }
-    .pcb-new      { background:rgba(200,18,64,.10);  color:var(--magenta); border:1px solid rgba(200,18,64,.2); }
-    .pcb-soon     { background:rgba(245,158,11,.12); color:#B45309;        border:1px solid rgba(245,158,11,.22); }
-
-    .prog-card-body {
-      padding: 10px 18px 14px;
-      flex: 1;
+    .prog-badge {
+      font-family: var(--font-heading);
+      font-size: 9.5px; font-weight: 700;
+      padding: 3px 10px; border-radius: var(--radius-pill);
+      text-transform: uppercase; letter-spacing: .5px;
     }
+    .pb-offline { background: rgba(255,107,53,.10); color: var(--orange); border: 1px solid rgba(255,107,53,.22); }
+    .pb-new     { background: rgba(200,18,64,.10); color: var(--magenta); border: 1px solid rgba(200,18,64,.20); }
+    .pb-live    { background: rgba(22,163,74,.10); color: var(--green); border: 1px solid rgba(22,163,74,.20); }
+    .pb-soon    { background: rgba(245,158,11,.12); color: #B45309; border: 1px solid rgba(245,158,11,.22); }
 
     .prog-card-title {
-      font-family:var(--font-heading);
-      font-size:15.5px; font-weight:800;
-      color:var(--heading-color); line-height:1.3;
-      margin-bottom:7px;
+      font-family: var(--font-heading);
+      font-size: 16px; font-weight: 800;
+      color: var(--heading-color); line-height: 1.3;
+      margin: 0;
     }
-
     .prog-card-desc {
-      font-size:12.5px;
-      color:var(--body-color);
-      line-height:1.65;
-      margin-bottom:12px;
-      display:-webkit-box;
-      -webkit-line-clamp:3;
-      -webkit-box-orient:vertical;
-      overflow:hidden;
+      font-size: 13px;
+      color: var(--body-color);
+      line-height: 1.7;
+      margin: 0;
     }
 
-    .prog-card-meta {
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:8px;
-      margin-bottom:0;
+    .prog-card-details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 16px;
+      padding-top: 4px;
     }
-    .pcm-item { display:flex; flex-direction:column; gap:2px; }
-    .pcm-label { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.7px; color:rgba(74,74,104,.45); }
-    .pcm-val   { font-family:var(--font-heading); font-size:11.5px; font-weight:700; color:var(--heading-color); }
-    .pcm-val.red    { color:#DC2626; }
-    .pcm-val.orange { color:var(--orange); }
-    .pcm-val.green  { color:var(--green); }
+    .pcd-item { display: flex; flex-direction: column; gap: 2px; }
+    .pcd-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: rgba(74,74,104,.45); }
+    .pcd-val { font-family: var(--font-heading); font-size: 12px; font-weight: 700; color: var(--heading-color); }
 
     /* Card footer */
     .prog-card-footer {
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      padding:11px 18px 14px;
-      border-top:1.5px solid rgba(26,26,46,.06);
-      background:var(--light-grey);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 13px 20px 16px;
+      border-top: 1.5px solid rgba(26,26,46,.06);
+      background: var(--light-grey);
+      margin-top: auto;
     }
-
-    .prog-card-price {
-      display:flex;
-      align-items:baseline;
-      gap:5px;
+    .prog-card-footer-label {
+      font-family: var(--font-heading);
+      font-size: 11px; font-weight: 700;
+      color: var(--body-color);
+      text-transform: uppercase; letter-spacing: .6px;
     }
-    .pcp-main  { font-family:var(--font-heading); font-size:18px; font-weight:800; color:var(--heading-color); line-height:1; }
-    .pcp-old   { font-size:11px; color:var(--body-color); text-decoration:line-through; }
-    .pcp-free  { font-family:var(--font-heading); font-size:13px; font-weight:700; color:var(--green); }
-
-    .prog-enroll-btn {
-      display:inline-flex;
-      align-items:center;
-      gap:7px;
-      padding:9px 18px;
-      border-radius:var(--radius-pill);
-      font-family:var(--font-heading);
-      font-size:13px; font-weight:700;
-      background:var(--gradient);
-      color:#fff;
-      text-decoration:none;
-      transition:var(--transition);
-      border:none;
-      cursor:pointer;
-      box-shadow:0 3px 14px rgba(200,18,64,.28);
+    .prog-view-btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 9px 20px;
+      border-radius: var(--radius-pill);
+      font-family: var(--font-heading);
+      font-size: 13px; font-weight: 700;
+      background: var(--gradient);
+      color: #fff;
+      text-decoration: none;
+      transition: var(--transition);
+      box-shadow: 0 3px 14px rgba(200,18,64,.26);
     }
-    .prog-enroll-btn:hover { transform:translateY(-2px); box-shadow:0 6px 22px rgba(200,18,64,.40); color:#fff; }
+    .prog-view-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 22px rgba(200,18,64,.40); color: #fff; }
 
-    .prog-enroll-btn.soon-btn {
-      background:rgba(26,26,46,.07);
-      color:var(--body-color);
-      box-shadow:none;
-    }
-    .prog-enroll-btn.soon-btn:hover { background:rgba(26,26,46,.12); transform:none; }
+    /* Section intro */
+    .sec-intro { margin-bottom: 52px; }
+    .sec-tag { display:inline-flex; align-items:center; gap:6px; font-family:var(--font-heading); font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 16px; border-radius:var(--radius-pill); margin-bottom:16px; }
+    .sec-tag-red { color:var(--magenta); background:rgba(200,18,64,.07); border:1px solid rgba(200,18,64,.15); }
+    .sec-heading { font-family:var(--font-heading); font-size:clamp(22px,3vw,32px); font-weight:800; color:var(--heading-color); line-height:1.15; margin-bottom:12px; }
+    .sec-sub { font-size:15px; color:var(--body-color); max-width:540px; line-height:1.75; }
 
-    /* Thumb gradients */
-    .th-gate   { background:linear-gradient(145deg, #1B5E20 0%, #16A34A 100%); }
-    .th-sscje  { background:linear-gradient(145deg, #FF6B35 0%, #C81240 100%); }
-    .th-ae     { background:linear-gradient(145deg, #7B1FA2 0%, #C81240 100%); }
-    .th-je     { background:linear-gradient(145deg, #E65100 0%, #FF6B35 100%); }
-
-    /* Coming soon overlay */
-    .prog-card.coming-soon { opacity:0.82; }
-    .prog-card.coming-soon .prog-thumb { filter:grayscale(15%); }
-
-    /* No results */
-    .prog-empty {
-      display:none;
-      text-align:center;
-      padding:60px 20px;
-      color:var(--body-color);
-      font-size:15px;
-      line-height:1.75;
-      grid-column:1/-1;
-    }
-    .prog-empty.visible { display:block; }
-
-    /* Tab panels */
-    .prog-tab-panel { display:none; }
-    .prog-tab-panel.active { display:block; }
-
-    /* ── Why Section ── */
-    .why-section { padding:80px 0; background:var(--light-grey); }
-    .why-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:24px; }
-    .why-card { background:var(--white); border-radius:var(--radius-md); padding:28px; border:1.5px solid rgba(26,26,46,.07); text-align:center; transition:var(--transition); }
-    .why-card:hover { transform:translateY(-4px); box-shadow:var(--shadow-md); }
-    .why-card-icon { width:56px; height:56px; border-radius:16px; display:flex; align-items:center; justify-content:center; font-size:22px; margin:0 auto 16px; }
-    .why-card h3 { font-family:var(--font-heading); font-size:16px; font-weight:700; color:var(--heading-color); margin-bottom:10px; }
-    .why-card p  { font-size:13px; color:var(--body-color); line-height:1.7; }
-
-    /* ── FAQ ── */
-    .faq-section { padding:80px 0; }
-    .faq-list { max-width:760px; margin:0 auto; display:flex; flex-direction:column; gap:12px; }
-    .faq-item { background:var(--light-grey); border-radius:var(--radius-sm); border:1.5px solid rgba(26,26,46,.07); overflow:hidden; }
-    .faq-q { display:flex; align-items:center; justify-content:space-between; padding:18px 22px; cursor:pointer; gap:12px; }
-    .faq-q-text { font-family:var(--font-heading); font-size:15px; font-weight:700; color:var(--heading-color); line-height:1.4; }
-    .faq-chevron { font-size:13px; color:var(--magenta); flex-shrink:0; transition:var(--transition); }
-    .faq-item.open .faq-chevron { transform:rotate(180deg); }
-    .faq-a { max-height:0; overflow:hidden; transition:max-height .35s ease, padding .3s ease; font-size:14px; color:var(--body-color); line-height:1.75; padding:0 22px; }
-    .faq-item.open .faq-a { max-height:220px; padding-bottom:18px; }
-
-    /* Section header helpers */
-    .sec-center { text-align:center; margin-bottom:52px; }
-    .sec-tag { display:inline-flex; align-items:center; gap:6px; font-family:var(--font-heading); font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 16px; border-radius:var(--radius-pill); margin-bottom:14px; }
-    .sec-tag-red  { color:var(--magenta); background:rgba(200,18,64,.07); border:1px solid rgba(200,18,64,.15); }
-    .sec-heading  { font-family:var(--font-heading); font-size:clamp(24px,3.5vw,36px); font-weight:800; color:var(--heading-color); line-height:1.15; margin-bottom:14px; }
-    .sec-sub-text { font-size:16px; color:var(--body-color); max-width:560px; margin:0 auto; line-height:1.75; }
+    /* Why section */
+    .why-section { padding: 80px 0; background: var(--light-grey); }
+    .why-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 24px; }
+    .why-card { background: var(--white); border-radius: var(--radius-md); padding: 28px; border: 1.5px solid rgba(26,26,46,.07); transition: var(--transition); }
+    .why-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+    .why-card-icon { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 16px; }
+    .why-card h3 { font-family: var(--font-heading); font-size: 15px; font-weight: 700; color: var(--heading-color); margin-bottom: 9px; }
+    .why-card p { font-size: 13px; color: var(--body-color); line-height: 1.7; }
 
     /* Responsive */
-    @media (max-width:900px) { .prog-cat-tab { padding:14px 22px; font-size:14px; } }
-    @media (max-width:600px) {
-      .progs-hero { padding-top:calc(var(--header-h) + 40px + 36px); }
-      .prog-cat-tab { padding:12px 16px; font-size:13px; }
-      .prog-cat-icon { width:28px; height:28px; font-size:12px; }
-      .prog-cards-grid { grid-template-columns:1fr; }
+    @media (max-width: 600px) {
+      .progs-hero { padding-top: calc(var(--header-h) + 40px + 36px); }
+      .progs-grid { grid-template-columns: 1fr; }
+      .prog-card-details { grid-template-columns: 1fr 1fr; }
     }
   </style>
 </head>
@@ -417,7 +262,7 @@
   <div class="announce-bar">
     <div class="container announce-inner">
       <span class="announce-pill"><i class="fas fa-map-marker-alt"></i> Jaipur, Rajasthan</span>
-      <span>All programs held offline in Jaipur · Limited seats per batch · Enroll early</span>
+      <span>All programs held offline in Jaipur &middot; Limited seats per batch &middot; Enroll early</span>
     </div>
   </div>
 
@@ -425,126 +270,22 @@
   <header class="site-header" id="siteHeader" role="banner">
     <div class="container header-inner">
 
-      <!-- Left: Brand -->
       <div class="header-left">
-        <a href="/" class="header-brand" aria-label="Dr. Jaspal Singh  -  Home">
+        <a href="/" class="header-brand" aria-label="Dr. Jaspal Singh — Home">
           <img src="assets/images/jaspal-hero.png" class="header-avatar" alt="Dr. Jaspal Singh" onerror="this.style.display='none'" />
           <span class="wordmark">Dr. Jaspal Singh</span>
         </a>
       </div>
 
-      <!-- Center: Desktop Navigation -->
       <nav class="main-nav" aria-label="Main navigation">
         <a href="/" class="nav-link">Home</a>
-
-        <div class="nav-item-dropdown">
-          <button class="nav-dropdown-trigger" aria-haspopup="true" aria-expanded="false">
-            Offline Programs <i class="fas fa-chevron-down dd-caret"></i>
-          </button>
-          <div class="nav-dropdown-menu" role="menu">
-
-            <!-- Column 1: Offline Batches -->
-            <div class="dd-column">
-              <div class="dd-col-header dd-col-header--orange">
-                <span class="dd-col-header-icon"><i class="fas fa-chalkboard-teacher"></i></span>
-                <span class="dd-col-header-text">Offline Batches</span>
-              </div>
-              <div class="dd-cards">
-                <a href="/programs?type=batch&amp;exam=gate-ese" class="dd-card">
-                  <span class="dd-card-icon" style="--icon-bg:#FFF4ED;--icon-color:#E8580A"><i class="fas fa-graduation-cap"></i></span>
-                  <span class="dd-card-label">GATE / ESE</span>
-                </a>
-                <a href="/programs?type=batch&amp;exam=rajasthan-ae" class="dd-card">
-                  <span class="dd-card-icon" style="--icon-bg:#F0FDF4;--icon-color:#16A34A"><i class="fas fa-building"></i></span>
-                  <span class="dd-card-label">Rajasthan AE</span>
-                </a>
-                <a href="/programs?type=batch&amp;exam=rajasthan-je" class="dd-card">
-                  <span class="dd-card-icon" style="--icon-bg:#F0F9FF;--icon-color:#0284C7"><i class="fas fa-drafting-compass"></i></span>
-                  <span class="dd-card-label">Rajasthan JE</span>
-                </a>
-                <a href="/programs?type=batch&amp;exam=ssc-je" class="dd-card">
-                  <span class="dd-card-icon" style="--icon-bg:#FFF7ED;--icon-color:#D97706"><i class="fas fa-hard-hat"></i></span>
-                  <span class="dd-card-label">SSC JE</span>
-                </a>
-                <a href="/programs?type=batch&amp;exam=rrb-je" class="dd-card">
-                  <span class="dd-card-icon" style="--icon-bg:#F5F3FF;--icon-color:#7C3AED"><i class="fas fa-train"></i></span>
-                  <span class="dd-card-label">RRB JE</span>
-                </a>
-                <a href="/programs?type=batch&amp;exam=psus" class="dd-card">
-                  <span class="dd-card-icon" style="--icon-bg:#FFF1F2;--icon-color:#BE123C"><i class="fas fa-industry"></i></span>
-                  <span class="dd-card-label">PSUs</span>
-                </a>
-              </div>
-            </div>
-
-            <!-- Column 2: Interview Programs -->
-            <div class="dd-column">
-              <div class="dd-col-header dd-col-header--magenta">
-                <span class="dd-col-header-icon"><i class="fas fa-user-tie"></i></span>
-                <span class="dd-col-header-text">Offline Interview Programs</span>
-              </div>
-              <div class="dd-cards">
-                <a href="/programs?type=interview&amp;exam=ese" class="dd-card">
-                  <span class="dd-card-icon" style="--icon-bg:#FFF4ED;--icon-color:#E8580A"><i class="fas fa-graduation-cap"></i></span>
-                  <span class="dd-card-label">ESE</span>
-                </a>
-                <a href="/programs?type=interview&amp;exam=rpsc-ae" class="dd-card">
-                  <span class="dd-card-icon" style="--icon-bg:#F0FDF4;--icon-color:#16A34A"><i class="fas fa-building"></i></span>
-                  <span class="dd-card-label">RPSC AE</span>
-                </a>
-                <a href="/programs?type=interview&amp;exam=psus" class="dd-card">
-                  <span class="dd-card-icon" style="--icon-bg:#FFF1F2;--icon-color:#BE123C"><i class="fas fa-industry"></i></span>
-                  <span class="dd-card-label">PSUs</span>
-                </a>
-              </div>
-            </div>
-
-            <!-- Column 3: Test Series -->
-            <div class="dd-column">
-              <div class="dd-col-header dd-col-header--blue">
-                <span class="dd-col-header-icon"><i class="fas fa-clipboard-list"></i></span>
-                <span class="dd-col-header-text">Offline Test Series</span>
-              </div>
-              <div class="dd-cards">
-                <a href="/programs?type=test-series&amp;exam=gate" class="dd-card">
-                  <span class="dd-card-icon" style="--icon-bg:#FFF4ED;--icon-color:#E8580A"><i class="fas fa-graduation-cap"></i></span>
-                  <span class="dd-card-label">GATE</span>
-                </a>
-                <a href="/programs?type=test-series&amp;exam=ese" class="dd-card">
-                  <span class="dd-card-icon" style="--icon-bg:#F5F3FF;--icon-color:#7C3AED"><i class="fas fa-graduation-cap"></i></span>
-                  <span class="dd-card-label">ESE</span>
-                </a>
-                <a href="/programs?type=test-series&amp;exam=psus" class="dd-card">
-                  <span class="dd-card-icon" style="--icon-bg:#FFF1F2;--icon-color:#BE123C"><i class="fas fa-industry"></i></span>
-                  <span class="dd-card-label">PSUs</span>
-                </a>
-                <a href="/programs?type=test-series&amp;exam=rajasthan-je" class="dd-card">
-                  <span class="dd-card-icon" style="--icon-bg:#F0F9FF;--icon-color:#0284C7"><i class="fas fa-drafting-compass"></i></span>
-                  <span class="dd-card-label">Rajasthan JE</span>
-                </a>
-                <a href="/programs?type=test-series&amp;exam=rajasthan-ae" class="dd-card">
-                  <span class="dd-card-icon" style="--icon-bg:#F0FDF4;--icon-color:#16A34A"><i class="fas fa-building"></i></span>
-                  <span class="dd-card-label">Rajasthan AE</span>
-                </a>
-                <a href="/programs?type=test-series&amp;exam=other-state" class="dd-card">
-                  <span class="dd-card-icon" style="--icon-bg:#FFF7ED;--icon-color:#D97706"><i class="fas fa-map-marker-alt"></i></span>
-                  <span class="dd-card-label">Other State AE/JEs</span>
-                </a>
-              </div>
-            </div>
-
-          </div>
-        </div>
-
+        <a href="/programs" class="nav-link nav-link--active">Offline Programs</a>
         <a href="/about" class="nav-link">About</a>
       </nav>
 
-      <!-- Right: Phone + Hamburger -->
       <div class="header-right">
         <a href="tel:+919999999999" class="header-phone" aria-label="Call us">
-          <span class="phone-ring-wrap">
-            <i class="fas fa-phone phone-icon"></i>
-          </span>
+          <span class="phone-ring-wrap"><i class="fas fa-phone phone-icon"></i></span>
           <span class="phone-text">+91 99999 9999</span>
         </a>
         <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false" aria-controls="mobileDrawer">
@@ -562,39 +303,7 @@
     <a href="/" class="drawer-wordmark">Dr. Jaspal Singh</a>
     <nav class="drawer-nav">
       <a href="/" class="drawer-link">Home</a>
-
-      <div class="drawer-accordion">
-        <button class="drawer-accordion-trigger" aria-expanded="false">
-          Offline Programs <i class="fas fa-chevron-down drawer-acc-caret"></i>
-        </button>
-        <div class="drawer-accordion-body">
-          <div class="drawer-acc-section">
-            <span class="drawer-acc-title">Offline Batches</span>
-            <a href="/programs?type=batch&amp;exam=gate-ese"     class="drawer-acc-link">GATE/ESE</a>
-            <a href="/programs?type=batch&amp;exam=rajasthan-ae" class="drawer-acc-link">Rajasthan AE</a>
-            <a href="/programs?type=batch&amp;exam=rajasthan-je" class="drawer-acc-link">Rajasthan JE</a>
-            <a href="/programs?type=batch&amp;exam=ssc-je"       class="drawer-acc-link">SSC JE</a>
-            <a href="/programs?type=batch&amp;exam=rrb-je"       class="drawer-acc-link">RRB JE</a>
-            <a href="/programs?type=batch&amp;exam=psus"         class="drawer-acc-link">PSUs</a>
-          </div>
-          <div class="drawer-acc-section">
-            <span class="drawer-acc-title">Offline Interview Programs</span>
-            <a href="/programs?type=interview&amp;exam=ese"     class="drawer-acc-link">ESE</a>
-            <a href="/programs?type=interview&amp;exam=rpsc-ae" class="drawer-acc-link">RPSC AE</a>
-            <a href="/programs?type=interview&amp;exam=psus"    class="drawer-acc-link">PSUs</a>
-          </div>
-          <div class="drawer-acc-section">
-            <span class="drawer-acc-title">Offline Test Series</span>
-            <a href="/programs?type=test-series&amp;exam=gate"         class="drawer-acc-link">GATE</a>
-            <a href="/programs?type=test-series&amp;exam=ese"          class="drawer-acc-link">ESE</a>
-            <a href="/programs?type=test-series&amp;exam=psus"         class="drawer-acc-link">PSUs</a>
-            <a href="/programs?type=test-series&amp;exam=rajasthan-je" class="drawer-acc-link">Rajasthan JE</a>
-            <a href="/programs?type=test-series&amp;exam=rajasthan-ae" class="drawer-acc-link">Rajasthan AE</a>
-            <a href="/programs?type=test-series&amp;exam=other-state"  class="drawer-acc-link">Other State AE/JEs</a>
-          </div>
-        </div>
-      </div>
-
+      <a href="/programs" class="drawer-link">Offline Programs</a>
       <a href="/about" class="drawer-link">About</a>
     </nav>
     <div class="drawer-social">
@@ -610,545 +319,197 @@
       <div class="hero-blob-progs" aria-hidden="true"></div>
       <div class="container">
         <p class="breadcrumb"><a href="/">Home</a> / Offline Programs</p>
-        <h1 class="progs-hero-title">Offline Programs  -  <span class="gradient-text">Jaipur, Rajasthan</span></h1>
-        <p class="progs-hero-sub">Offline Batches, Interview Prep &amp; Test Series for GATE/IES, SSC JE, State AE &amp; State JE  -  small batches, personal mentorship by Dr. Jaspal Singh.</p>
+        <h1 class="progs-hero-title">Offline Programs &mdash; <span class="gradient-text">Jaipur, Rajasthan</span></h1>
+        <p class="progs-hero-sub">Test Series, Interview Guidance and Foundation Courses for RSSB JEN, RPSC AE and GATE/ESE &mdash; taught offline, personally by Dr. Jaspal Singh.</p>
         <div class="hero-chips">
           <span class="hero-chip chip-red"><i class="fas fa-map-marker-alt"></i> Jaipur, Rajasthan</span>
-          <span class="hero-chip chip-green"><i class="fas fa-star"></i> By India's Best Educator</span>
-          <span class="hero-chip chip-dark"><i class="fas fa-chalkboard-teacher"></i> Personally by Dr. Jaspal Singh</span>
-          <span class="hero-chip chip-dark"><i class="fas fa-comments"></i> Doubt Sessions Included</span>
+          <span class="hero-chip chip-green"><i class="fas fa-chalkboard-teacher"></i> Personally by Dr. Jaspal Singh</span>
+          <span class="hero-chip chip-dark"><i class="fas fa-users"></i> Limited Seats per Batch</span>
         </div>
       </div>
     </section>
 
-    <!-- PROGRAMS: 3 CATEGORIES -->
-    <section class="prog-cats-section">
+    <!-- ALL PROGRAMS -->
+    <section class="progs-section">
       <div class="container">
 
-        <!-- Category Tabs -->
-        <div class="prog-cat-tabs" role="tablist" aria-label="Program categories">
-          <button class="prog-cat-tab active" id="tab-batch" role="tab" aria-selected="true" aria-controls="panel-batch" onclick="switchTab('batch')">
-            <span class="prog-cat-icon tab-icon-orange"><i class="fas fa-chalkboard-teacher"></i></span>
-            Offline Batches
-          </button>
-          <button class="prog-cat-tab" id="tab-interview" role="tab" aria-selected="false" aria-controls="panel-interview" onclick="switchTab('interview')">
-            <span class="prog-cat-icon tab-icon-magenta"><i class="fas fa-user-tie"></i></span>
-            Offline Interview Programs
-          </button>
-          <button class="prog-cat-tab" id="tab-test" role="tab" aria-selected="false" aria-controls="panel-test" onclick="switchTab('test')">
-            <span class="prog-cat-icon tab-icon-blue"><i class="fas fa-clipboard-list"></i></span>
-            Offline Test Series
-          </button>
+        <div class="sec-intro">
+          <span class="sec-tag sec-tag-red">Current Offerings</span>
+          <h2 class="sec-heading">5 Active Programs &mdash; <span class="gradient-text">Enrolling Now</span></h2>
+          <p class="sec-sub">Each program is structured for a specific exam and cohort. Select a program to view the full syllabus, schedule and enrollment details.</p>
         </div>
 
-        <!-- ══ TAB 1: OFFLINE BATCHES ══ -->
-        <div class="prog-tab-panel active" id="panel-batch" role="tabpanel" aria-labelledby="tab-batch">
+        <div class="progs-grid">
 
-          <div class="exam-filter-wrap">
-            <span class="exam-filter-label">Filter by exam</span>
-            <div class="exam-filter-bar">
-              <button class="exam-filter-btn f-all active" onclick="examFilter(this,'all','batch')">All Exams</button>
-              <button class="exam-filter-btn f-gate"  onclick="examFilter(this,'gate-ies','batch')"><span class="exam-dot" style="background:#16A34A;"></span>GATE / IES</button>
-              <button class="exam-filter-btn f-sscje" onclick="examFilter(this,'ssc-je','batch')"><span class="exam-dot" style="background:#C81240;"></span>SSC JE</button>
-              <button class="exam-filter-btn f-ae"    onclick="examFilter(this,'state-ae','batch')"><span class="exam-dot" style="background:#7B1FA2;"></span>State AE</button>
-              <button class="exam-filter-btn f-je"    onclick="examFilter(this,'state-je','batch')"><span class="exam-dot" style="background:#E65100;"></span>State JE</button>
+          <!-- 1. RSSB JEN Diploma Test Series -->
+          <article class="prog-card">
+            <div class="prog-thumb th-blue">
+              <span class="prog-thumb-type-label">Offline Test Series</span>
+              <i class="fas fa-clipboard-list prog-thumb-icon"></i>
+              <span class="prog-thumb-status"><span class="status-dot sd-open"></span>Enrolling Now</span>
             </div>
-          </div>
-
-          <div class="prog-cards-grid" id="grid-batch">
-
-            <!-- GATE/IES Batch -->
-            <article class="prog-card" data-exam="gate-ies">
-              <div class="prog-thumb th-gate">
-                <span class="prog-thumb-exam">GATE CE · IES / ESE</span>
-                <i class="fas fa-graduation-cap prog-thumb-icon"></i>
-                <span class="prog-thumb-type">Offline Batch</span>
-                <span class="prog-thumb-status"><span class="status-dot sd-soon"></span>Opening Soon</span>
+            <div class="prog-seats-bar"><div class="prog-seats-fill sf-blue" style="width:40%;"></div></div>
+            <div class="prog-card-inner">
+              <div class="prog-card-meta-row">
+                <span class="prog-badge pb-offline">Offline &middot; Jaipur</span>
+                <span class="prog-badge pb-live">Live</span>
               </div>
-              <div class="prog-card-badges">
-                <span class="pc-badge pcb-offline"><i class="fas fa-building"></i> Offline · Jaipur</span>
-                <span class="pc-badge pcb-new">New Batch</span>
+              <h2 class="prog-card-title">RSSB JEN 2026 &mdash; Civil Diploma<br>Offline Test Series</h2>
+              <p class="prog-card-desc">Structured offline mock test series designed for Diploma-level Civil Engineering aspirants appearing in RSSB JEN 2026. Subject-wise and full-length papers with detailed review sessions.</p>
+              <div class="prog-card-details">
+                <div class="pcd-item"><span class="pcd-label">Exam</span><span class="pcd-val">RSSB JEN 2026</span></div>
+                <div class="pcd-item"><span class="pcd-label">Level</span><span class="pcd-val">Diploma (Civil)</span></div>
+                <div class="pcd-item"><span class="pcd-label">Format</span><span class="pcd-val">Offline Test Series</span></div>
+                <div class="pcd-item"><span class="pcd-label">Location</span><span class="pcd-val">Jaipur, Raj.</span></div>
               </div>
-              <div class="prog-card-body">
-                <h2 class="prog-card-title">GATE CE &amp; IES Complete Offline Batch</h2>
-                <p class="prog-card-desc">Comprehensive offline batch covering full GATE CE &amp; ESE syllabus with small-batch personal mentorship, weekly tests &amp; doubt sessions by Dr. Jaspal Singh.</p>
-                <div class="prog-card-meta">
-                  <div class="pcm-item"><span class="pcm-label">Duration</span><span class="pcm-val">6 Months</span></div>
-                  <div class="pcm-item"><span class="pcm-label">Batch Start</span><span class="pcm-val orange">Aug 2026</span></div>
-                  <div class="pcm-item"><span class="pcm-label">Location</span><span class="pcm-val">Jaipur, Raj.</span></div>
-                  <div class="pcm-item"><span class="pcm-label">Seats</span><span class="pcm-val green">Open Soon</span></div>
-                </div>
-              </div>
-              <div class="prog-card-footer">
-                <div class="prog-card-price">
-                  <span class="pcp-main">₹24,999</span>
-                  <span class="pcp-old">₹35,000</span>
-                </div>
-                <a href="https://wa.me/910000000000?text=I want to know about GATE CE offline batch" target="_blank" rel="noopener" class="prog-enroll-btn soon-btn"><i class="fab fa-whatsapp"></i> Notify Me</a>
-              </div>
-            </article>
-
-            <!-- SSC JE Batch -->
-            <article class="prog-card" data-exam="ssc-je">
-              <div class="prog-thumb th-sscje">
-                <span class="prog-thumb-exam">SSC JE Civil</span>
-                <i class="fas fa-hard-hat prog-thumb-icon"></i>
-                <span class="prog-thumb-type">Offline Batch</span>
-                <span class="prog-thumb-status"><span class="status-dot sd-open"></span>Enrolling Now</span>
-              </div>
-              <div class="prog-seats-bar"><div class="prog-seats-fill sf-orange" style="width:45%;"></div></div>
-              <div class="prog-card-badges">
-                <span class="pc-badge pcb-offline"><i class="fas fa-building"></i> Offline · Jaipur</span>
-                <span class="pc-badge pcb-new">Batch Starting Jun</span>
-              </div>
-              <div class="prog-card-body">
-                <h2 class="prog-card-title">SSC JE Civil Engineering Offline Batch</h2>
-                <p class="prog-card-desc">Intensive offline batch for SSC JE Civil  -  Paper I &amp; Paper II coverage, full syllabus practice tests, GK &amp; reasoning sessions included.</p>
-                <div class="prog-card-meta">
-                  <div class="pcm-item"><span class="pcm-label">Duration</span><span class="pcm-val">3 Months</span></div>
-                  <div class="pcm-item"><span class="pcm-label">Batch Start</span><span class="pcm-val orange">Jun 2026</span></div>
-                  <div class="pcm-item"><span class="pcm-label">Location</span><span class="pcm-val">Jaipur, Raj.</span></div>
-                  <div class="pcm-item"><span class="pcm-label">Seats</span><span class="pcm-val orange">18 of 30</span></div>
-                </div>
-              </div>
-              <div class="prog-card-footer">
-                <div class="prog-card-price">
-                  <span class="pcp-main">₹14,999</span>
-                  <span class="pcp-old">₹20,000</span>
-                </div>
-                <a href="/enroll?prog=ssc-je-batch" class="prog-enroll-btn"><i class="fas fa-arrow-right"></i> Enroll Now</a>
-              </div>
-            </article>
-
-            <!-- State AE Batch -->
-            <article class="prog-card" data-exam="state-ae">
-              <div class="prog-thumb th-ae">
-                <span class="prog-thumb-exam">RPSC AE · State AE</span>
-                <i class="fas fa-building prog-thumb-icon"></i>
-                <span class="prog-thumb-type">Offline Batch</span>
-                <span class="prog-thumb-status"><span class="status-dot sd-open"></span>Enrolling Now</span>
-              </div>
-              <div class="prog-seats-bar"><div class="prog-seats-fill sf-red" style="width:60%;"></div></div>
-              <div class="prog-card-badges">
-                <span class="pc-badge pcb-offline"><i class="fas fa-building"></i> Offline · Jaipur</span>
-                <span class="pc-badge pcb-popular">Most Popular</span>
-              </div>
-              <div class="prog-card-body">
-                <h2 class="prog-card-title">State AE (RPSC) Complete Offline Batch</h2>
-                <p class="prog-card-desc">Full-syllabus batch for Rajasthan AE &amp; all State AE exams  -  technical subjects, Rajasthan-specific projects, GK &amp; exam strategy sessions.</p>
-                <div class="prog-card-meta">
-                  <div class="pcm-item"><span class="pcm-label">Duration</span><span class="pcm-val">4 Months</span></div>
-                  <div class="pcm-item"><span class="pcm-label">Batch Start</span><span class="pcm-val orange">Jul 2026</span></div>
-                  <div class="pcm-item"><span class="pcm-label">Location</span><span class="pcm-val">Jaipur, Raj.</span></div>
-                  <div class="pcm-item"><span class="pcm-label">Seats</span><span class="pcm-val red">12 of 30</span></div>
-                </div>
-              </div>
-              <div class="prog-card-footer">
-                <div class="prog-card-price">
-                  <span class="pcp-main">₹18,999</span>
-                  <span class="pcp-old">₹26,000</span>
-                </div>
-                <a href="/enroll?prog=state-ae-batch" class="prog-enroll-btn"><i class="fas fa-arrow-right"></i> Enroll Now</a>
-              </div>
-            </article>
-
-            <!-- State JE Batch -->
-            <article class="prog-card" data-exam="state-je">
-              <div class="prog-thumb th-je">
-                <span class="prog-thumb-exam">RSMSSB JE · State JE</span>
-                <i class="fas fa-drafting-compass prog-thumb-icon"></i>
-                <span class="prog-thumb-type">Offline Batch</span>
-                <span class="prog-thumb-status"><span class="status-dot sd-soon"></span>Opening Soon</span>
-              </div>
-              <div class="prog-card-badges">
-                <span class="pc-badge pcb-offline"><i class="fas fa-building"></i> Offline · Jaipur</span>
-                <span class="pc-badge pcb-soon">Coming Soon</span>
-              </div>
-              <div class="prog-card-body">
-                <h2 class="prog-card-title">State JE (RSMSSB) Complete Offline Batch</h2>
-                <p class="prog-card-desc">Dedicated batch for Rajasthan JE &amp; State JE exams  -  Paper I (Civil) + Paper II coverage, weekly tests, state-specific GK sessions.</p>
-                <div class="prog-card-meta">
-                  <div class="pcm-item"><span class="pcm-label">Duration</span><span class="pcm-val">3 Months</span></div>
-                  <div class="pcm-item"><span class="pcm-label">Batch Start</span><span class="pcm-val orange">Aug 2026</span></div>
-                  <div class="pcm-item"><span class="pcm-label">Location</span><span class="pcm-val">Jaipur, Raj.</span></div>
-                  <div class="pcm-item"><span class="pcm-label">Seats</span><span class="pcm-val green">Open Soon</span></div>
-                </div>
-              </div>
-              <div class="prog-card-footer">
-                <div class="prog-card-price">
-                  <span class="pcp-main">₹12,999</span>
-                  <span class="pcp-old">₹18,000</span>
-                </div>
-                <a href="https://wa.me/910000000000?text=I want to know about State JE offline batch" target="_blank" rel="noopener" class="prog-enroll-btn soon-btn"><i class="fab fa-whatsapp"></i> Notify Me</a>
-              </div>
-            </article>
-
-          </div><!-- /grid-batch -->
-          <p class="prog-empty" id="empty-batch">No batches match this filter. <a href="https://wa.me/910000000000" target="_blank" rel="noopener" style="color:var(--magenta);font-weight:700;">WhatsApp us for upcoming batches →</a></p>
-        </div><!-- /panel-batch -->
-
-
-        <!-- ══ TAB 2: INTERVIEW PROGRAMS ══ -->
-        <div class="prog-tab-panel" id="panel-interview" role="tabpanel" aria-labelledby="tab-interview">
-
-          <div class="exam-filter-wrap">
-            <span class="exam-filter-label">Filter by exam</span>
-            <div class="exam-filter-bar">
-              <button class="exam-filter-btn f-all active" onclick="examFilter(this,'all','interview')">All Exams</button>
-              <button class="exam-filter-btn f-gate"  onclick="examFilter(this,'gate-ies','interview')"><span class="exam-dot" style="background:#16A34A;"></span>GATE / IES</button>
-              <button class="exam-filter-btn f-sscje" onclick="examFilter(this,'ssc-je','interview')"><span class="exam-dot" style="background:#C81240;"></span>SSC JE</button>
-              <button class="exam-filter-btn f-ae"    onclick="examFilter(this,'state-ae','interview')"><span class="exam-dot" style="background:#7B1FA2;"></span>State AE</button>
-              <button class="exam-filter-btn f-je"    onclick="examFilter(this,'state-je','interview')"><span class="exam-dot" style="background:#E65100;"></span>State JE</button>
             </div>
-          </div>
-
-          <div class="prog-cards-grid" id="grid-interview">
-
-            <!-- IES Interview Prep -->
-            <article class="prog-card" data-exam="gate-ies">
-              <div class="prog-thumb th-gate">
-                <span class="prog-thumb-exam">UPSC IES / ESE</span>
-                <i class="fas fa-user-graduate prog-thumb-icon"></i>
-                <span class="prog-thumb-type">Interview Program</span>
-                <span class="prog-thumb-status"><span class="status-dot sd-open"></span>Enrolling Now</span>
-              </div>
-              <div class="prog-seats-bar"><div class="prog-seats-fill sf-green" style="width:30%;"></div></div>
-              <div class="prog-card-badges">
-                <span class="pc-badge pcb-offline"><i class="fas fa-building"></i> Offline · Jaipur</span>
-                <span class="pc-badge pcb-new">New Batch</span>
-              </div>
-              <div class="prog-card-body">
-                <h2 class="prog-card-title">IES / ESE Interview Prep Program</h2>
-                <p class="prog-card-desc">3-day intensive workshop for UPSC ESE Personality Test  -  technical board preparation, mock interview panels, current affairs &amp; presentation skills.</p>
-                <div class="prog-card-meta">
-                  <div class="pcm-item"><span class="pcm-label">Duration</span><span class="pcm-val">3 Days</span></div>
-                  <div class="pcm-item"><span class="pcm-label">Next Batch</span><span class="pcm-val orange">Jul 5–7</span></div>
-                  <div class="pcm-item"><span class="pcm-label">Location</span><span class="pcm-val">Jaipur, Raj.</span></div>
-                  <div class="pcm-item"><span class="pcm-label">Seats</span><span class="pcm-val green">20 of 25</span></div>
-                </div>
-              </div>
-              <div class="prog-card-footer">
-                <div class="prog-card-price">
-                  <span class="pcp-main">₹3,999</span>
-                  <span class="pcp-old">₹5,999</span>
-                </div>
-                <a href="/enroll?prog=ies-interview-prep" class="prog-enroll-btn"><i class="fas fa-arrow-right"></i> Enroll Now</a>
-              </div>
-            </article>
-
-            <!-- SSC JE Interview Prep -->
-            <article class="prog-card" data-exam="ssc-je">
-              <div class="prog-thumb th-sscje">
-                <span class="prog-thumb-exam">SSC JE Civil</span>
-                <i class="fas fa-user-tie prog-thumb-icon"></i>
-                <span class="prog-thumb-type">Interview Program</span>
-                <span class="prog-thumb-status"><span class="status-dot sd-few"></span>12 seats left</span>
-              </div>
-              <div class="prog-seats-bar"><div class="prog-seats-fill sf-orange" style="width:60%;"></div></div>
-              <div class="prog-card-badges">
-                <span class="pc-badge pcb-offline"><i class="fas fa-building"></i> Offline · Jaipur</span>
-                <span class="pc-badge pcb-new">Jun 15–17</span>
-              </div>
-              <div class="prog-card-body">
-                <h2 class="prog-card-title">SSC JE Interview Prep Workshop</h2>
-                <p class="prog-card-desc">3-day intensive workshop  -  technical mock interviews, HR round prep, document verification &amp; personality grooming for SSC JE Civil aspirants.</p>
-                <div class="prog-card-meta">
-                  <div class="pcm-item"><span class="pcm-label">Duration</span><span class="pcm-val">3 Days</span></div>
-                  <div class="pcm-item"><span class="pcm-label">Next Batch</span><span class="pcm-val orange">Jun 15–17</span></div>
-                  <div class="pcm-item"><span class="pcm-label">Location</span><span class="pcm-val">Jaipur, Raj.</span></div>
-                  <div class="pcm-item"><span class="pcm-label">Seats</span><span class="pcm-val red">12 of 30 left</span></div>
-                </div>
-              </div>
-              <div class="prog-card-footer">
-                <div class="prog-card-price">
-                  <span class="pcp-main">₹2,999</span>
-                  <span class="pcp-old">₹4,999</span>
-                </div>
-                <a href="/enroll?prog=ssc-je-interview-prep" class="prog-enroll-btn"><i class="fas fa-arrow-right"></i> Enroll Now</a>
-              </div>
-            </article>
-
-            <!-- State AE Mock Interview -->
-            <article class="prog-card" data-exam="state-ae">
-              <div class="prog-thumb th-ae">
-                <span class="prog-thumb-exam">RPSC AE · RSMSSB JE</span>
-                <i class="fas fa-comments prog-thumb-icon"></i>
-                <span class="prog-thumb-type">Mock Interview</span>
-                <span class="prog-thumb-status"><span class="status-dot sd-few"></span>5 seats left!</span>
-              </div>
-              <div class="prog-seats-bar"><div class="prog-seats-fill sf-red" style="width:75%;"></div></div>
-              <div class="prog-card-badges">
-                <span class="pc-badge pcb-offline"><i class="fas fa-building"></i> Offline · Jaipur</span>
-                <span class="pc-badge pcb-popular">Most Popular</span>
-              </div>
-              <div class="prog-card-body">
-                <h2 class="prog-card-title">Rajasthan AE/JE Mock Interview Program</h2>
-                <p class="prog-card-desc">Full-day RPSC/RSMSSB interview simulation  -  panel of 3 experts, video recording of your mock, detailed written feedback &amp; instant corrections.</p>
-                <div class="prog-card-meta">
-                  <div class="pcm-item"><span class="pcm-label">Duration</span><span class="pcm-val">1 Full Day</span></div>
-                  <div class="pcm-item"><span class="pcm-label">Next Batch</span><span class="pcm-val orange">Jun 8, 2026</span></div>
-                  <div class="pcm-item"><span class="pcm-label">Location</span><span class="pcm-val">Jaipur, Raj.</span></div>
-                  <div class="pcm-item"><span class="pcm-label">Seats</span><span class="pcm-val red">5 of 20 left!</span></div>
-                </div>
-              </div>
-              <div class="prog-card-footer">
-                <div class="prog-card-price">
-                  <span class="pcp-main">₹1,999</span>
-                  <span class="pcp-old">₹2,999</span>
-                </div>
-                <a href="/enroll?prog=raj-ae-mock-interview" class="prog-enroll-btn"><i class="fas fa-arrow-right"></i> Enroll Now</a>
-              </div>
-            </article>
-
-            <!-- State JE Interview -->
-            <article class="prog-card" data-exam="state-je">
-              <div class="prog-thumb th-je">
-                <span class="prog-thumb-exam">State JE · RSMSSB JE</span>
-                <i class="fas fa-drafting-compass prog-thumb-icon"></i>
-                <span class="prog-thumb-type">Interview Program</span>
-                <span class="prog-thumb-status"><span class="status-dot sd-open"></span>Enrolling Now</span>
-              </div>
-              <div class="prog-seats-bar"><div class="prog-seats-fill sf-orange" style="width:40%;"></div></div>
-              <div class="prog-card-badges">
-                <span class="pc-badge pcb-offline"><i class="fas fa-building"></i> Offline · Jaipur</span>
-                <span class="pc-badge pcb-new">New Batch</span>
-              </div>
-              <div class="prog-card-body">
-                <h2 class="prog-card-title">State JE Interview Prep Workshop</h2>
-                <p class="prog-card-desc">2-day workshop focused on State JE (PWD, PHE, RSMSSB) interview pattern  -  technical preparation, state-specific GK, mock interview rounds &amp; feedback.</p>
-                <div class="prog-card-meta">
-                  <div class="pcm-item"><span class="pcm-label">Duration</span><span class="pcm-val">2 Days</span></div>
-                  <div class="pcm-item"><span class="pcm-label">Next Batch</span><span class="pcm-val orange">Jun 28–29</span></div>
-                  <div class="pcm-item"><span class="pcm-label">Location</span><span class="pcm-val">Jaipur, Raj.</span></div>
-                  <div class="pcm-item"><span class="pcm-label">Seats</span><span class="pcm-val green">18 of 30</span></div>
-                </div>
-              </div>
-              <div class="prog-card-footer">
-                <div class="prog-card-price">
-                  <span class="pcp-main">₹1,499</span>
-                  <span class="pcp-old">₹2,499</span>
-                </div>
-                <a href="/enroll?prog=state-je-interview-prep" class="prog-enroll-btn"><i class="fas fa-arrow-right"></i> Enroll Now</a>
-              </div>
-            </article>
-
-          </div><!-- /grid-interview -->
-          <p class="prog-empty" id="empty-interview">No programs match this filter. <a href="https://wa.me/910000000000" target="_blank" rel="noopener" style="color:var(--magenta);font-weight:700;">WhatsApp us →</a></p>
-        </div><!-- /panel-interview -->
-
-
-        <!-- ══ TAB 3: TEST SERIES ══ -->
-        <div class="prog-tab-panel" id="panel-test" role="tabpanel" aria-labelledby="tab-test">
-
-          <div class="exam-filter-wrap">
-            <span class="exam-filter-label">Filter by exam</span>
-            <div class="exam-filter-bar">
-              <button class="exam-filter-btn f-all active" onclick="examFilter(this,'all','test')">All Exams</button>
-              <button class="exam-filter-btn f-gate"  onclick="examFilter(this,'gate-ies','test')"><span class="exam-dot" style="background:#16A34A;"></span>GATE / IES</button>
-              <button class="exam-filter-btn f-sscje" onclick="examFilter(this,'ssc-je','test')"><span class="exam-dot" style="background:#C81240;"></span>SSC JE</button>
-              <button class="exam-filter-btn f-ae"    onclick="examFilter(this,'state-ae','test')"><span class="exam-dot" style="background:#7B1FA2;"></span>State AE</button>
-              <button class="exam-filter-btn f-je"    onclick="examFilter(this,'state-je','test')"><span class="exam-dot" style="background:#E65100;"></span>State JE</button>
+            <div class="prog-card-footer">
+              <span class="prog-card-footer-label">Test Series</span>
+              <a href="/programs/rssb-jen-diploma-test-series/" class="prog-view-btn">View Details <i class="fas fa-arrow-right"></i></a>
             </div>
-          </div>
+          </article>
 
-          <div class="prog-cards-grid" id="grid-test">
+          <!-- 2. RSSB JEN Degree Test Series -->
+          <article class="prog-card">
+            <div class="prog-thumb th-teal">
+              <span class="prog-thumb-type-label">Offline Test Series</span>
+              <i class="fas fa-clipboard-check prog-thumb-icon"></i>
+              <span class="prog-thumb-status"><span class="status-dot sd-open"></span>Enrolling Now</span>
+            </div>
+            <div class="prog-seats-bar"><div class="prog-seats-fill sf-teal" style="width:35%;"></div></div>
+            <div class="prog-card-inner">
+              <div class="prog-card-meta-row">
+                <span class="prog-badge pb-offline">Offline &middot; Jaipur</span>
+                <span class="prog-badge pb-live">Live</span>
+              </div>
+              <h2 class="prog-card-title">RSSB JEN 2026&ndash;27 &mdash; Civil Degree<br>Offline Test Series</h2>
+              <p class="prog-card-desc">Comprehensive offline mock test series for Degree-level Civil Engineering aspirants targeting RSSB JEN 2026&ndash;27. Covers full technical syllabus with performance analysis after each test.</p>
+              <div class="prog-card-details">
+                <div class="pcd-item"><span class="pcd-label">Exam</span><span class="pcd-val">RSSB JEN 2026&ndash;27</span></div>
+                <div class="pcd-item"><span class="pcd-label">Level</span><span class="pcd-val">Degree (Civil)</span></div>
+                <div class="pcd-item"><span class="pcd-label">Format</span><span class="pcd-val">Offline Test Series</span></div>
+                <div class="pcd-item"><span class="pcd-label">Location</span><span class="pcd-val">Jaipur, Raj.</span></div>
+              </div>
+            </div>
+            <div class="prog-card-footer">
+              <span class="prog-card-footer-label">Test Series</span>
+              <a href="/programs/rssb-jen-degree-test-series/" class="prog-view-btn">View Details <i class="fas fa-arrow-right"></i></a>
+            </div>
+          </article>
 
-            <!-- GATE Test Series -->
-            <article class="prog-card" data-exam="gate-ies">
-              <div class="prog-thumb th-gate">
-                <span class="prog-thumb-exam">GATE CE · IES / ESE</span>
-                <i class="fas fa-pencil-alt prog-thumb-icon"></i>
-                <span class="prog-thumb-type">Test Series</span>
-                <span class="prog-thumb-status"><span class="status-dot sd-soon"></span>Opening Soon</span>
+          <!-- 3. RPSC AE Interview Guidance -->
+          <article class="prog-card">
+            <div class="prog-thumb th-purple">
+              <span class="prog-thumb-type-label">Interview Guidance</span>
+              <i class="fas fa-user-tie prog-thumb-icon"></i>
+              <span class="prog-thumb-status"><span class="status-dot sd-open"></span>Enrolling Now</span>
+            </div>
+            <div class="prog-seats-bar"><div class="prog-seats-fill sf-purple" style="width:60%;"></div></div>
+            <div class="prog-card-inner">
+              <div class="prog-card-meta-row">
+                <span class="prog-badge pb-offline">Offline &middot; Jaipur</span>
+                <span class="prog-badge pb-new">High Demand</span>
               </div>
-              <div class="prog-card-badges">
-                <span class="pc-badge pcb-offline"><i class="fas fa-building"></i> Offline · Jaipur</span>
-                <span class="pc-badge pcb-soon">Coming Soon</span>
+              <h2 class="prog-card-title">RPSC AE 2024<br>Interview Guidance Programme</h2>
+              <p class="prog-card-desc">Focused interview preparation programme for candidates who have cleared the RPSC AE 2024 written exam. Covers technical interview rounds, board simulation and personality assessment guidance.</p>
+              <div class="prog-card-details">
+                <div class="pcd-item"><span class="pcd-label">Exam</span><span class="pcd-val">RPSC AE 2024</span></div>
+                <div class="pcd-item"><span class="pcd-label">Stage</span><span class="pcd-val">Interview / Viva</span></div>
+                <div class="pcd-item"><span class="pcd-label">Format</span><span class="pcd-val">Offline Guidance</span></div>
+                <div class="pcd-item"><span class="pcd-label">Location</span><span class="pcd-val">Jaipur, Raj.</span></div>
               </div>
-              <div class="prog-card-body">
-                <h2 class="prog-card-title">GATE CE &amp; ESE Offline Test Series</h2>
-                <p class="prog-card-desc">Weekly offline mock tests for GATE CE &amp; ESE  -  full-length 3-hour papers, detailed analytics, subject-wise analysis &amp; doubt clearing sessions.</p>
-                <div class="prog-card-meta">
-                  <div class="pcm-item"><span class="pcm-label">Frequency</span><span class="pcm-val">Weekly</span></div>
-                  <div class="pcm-item"><span class="pcm-label">Starts</span><span class="pcm-val orange">Aug 2026</span></div>
-                  <div class="pcm-item"><span class="pcm-label">Location</span><span class="pcm-val">Jaipur, Raj.</span></div>
-                  <div class="pcm-item"><span class="pcm-label">Enrollment</span><span class="pcm-val green">Open Soon</span></div>
-                </div>
-              </div>
-              <div class="prog-card-footer">
-                <div class="prog-card-price">
-                  <span class="pcp-main">₹5,999</span>
-                  <span class="pcp-old">₹8,000</span>
-                </div>
-                <a href="https://wa.me/910000000000?text=I want to join GATE offline test series" target="_blank" rel="noopener" class="prog-enroll-btn soon-btn"><i class="fab fa-whatsapp"></i> Notify Me</a>
-              </div>
-            </article>
+            </div>
+            <div class="prog-card-footer">
+              <span class="prog-card-footer-label">Interview Programme</span>
+              <a href="/programs/rpsc-ae-interview/" class="prog-view-btn">View Details <i class="fas fa-arrow-right"></i></a>
+            </div>
+          </article>
 
-            <!-- SSC JE Test Series -->
-            <article class="prog-card" data-exam="ssc-je">
-              <div class="prog-thumb th-sscje">
-                <span class="prog-thumb-exam">SSC JE Civil</span>
-                <i class="fas fa-clipboard-list prog-thumb-icon"></i>
-                <span class="prog-thumb-type">Test Series</span>
-                <span class="prog-thumb-status"><span class="status-dot sd-open"></span>Open Enrollment</span>
+          <!-- 4. RSSB JEN Crash Course -->
+          <article class="prog-card">
+            <div class="prog-thumb th-orange">
+              <span class="prog-thumb-type-label">Offline Crash Course</span>
+              <i class="fas fa-bolt prog-thumb-icon"></i>
+              <span class="prog-thumb-status"><span class="status-dot sd-soon"></span>Batch Starting Soon</span>
+            </div>
+            <div class="prog-card-inner">
+              <div class="prog-card-meta-row">
+                <span class="prog-badge pb-offline">Offline &middot; Jaipur</span>
+                <span class="prog-badge pb-soon">Batch</span>
               </div>
-              <div class="prog-card-badges">
-                <span class="pc-badge pcb-offline"><i class="fas fa-building"></i> Offline · Jaipur</span>
+              <h2 class="prog-card-title">RSSB JEN 2026&ndash;27<br>Offline Crash Course</h2>
+              <p class="prog-card-desc">Intensive offline crash course batch for RSSB JEN 2026&ndash;27 covering the complete Civil Engineering syllabus at an accelerated pace. Designed for aspirants who need focused, time-efficient preparation.</p>
+              <div class="prog-card-details">
+                <div class="pcd-item"><span class="pcd-label">Exam</span><span class="pcd-val">RSSB JEN 2026&ndash;27</span></div>
+                <div class="pcd-item"><span class="pcd-label">Type</span><span class="pcd-val">Crash Course (Batch)</span></div>
+                <div class="pcd-item"><span class="pcd-label">Format</span><span class="pcd-val">Offline Classroom</span></div>
+                <div class="pcd-item"><span class="pcd-label">Location</span><span class="pcd-val">Jaipur, Raj.</span></div>
               </div>
-              <div class="prog-card-body">
-                <h2 class="prog-card-title">SSC JE Offline Test Series</h2>
-                <p class="prog-card-desc">Weekly offline tests every Sunday  -  Paper I &amp; Paper II coverage for SSC JE Civil, detailed performance reports &amp; same-day doubt clearing session.</p>
-                <div class="prog-card-meta">
-                  <div class="pcm-item"><span class="pcm-label">Schedule</span><span class="pcm-val">Every Sunday</span></div>
-                  <div class="pcm-item"><span class="pcm-val orange">Ongoing</span></div>
-                  <div class="pcm-item"><span class="pcm-label">Location</span><span class="pcm-val">Jaipur, Raj.</span></div>
-                  <div class="pcm-item"><span class="pcm-val green">Open Enrollment</span></div>
-                </div>
-              </div>
-              <div class="prog-card-footer">
-                <div class="prog-card-price">
-                  <span class="pcp-main">₹4,999</span>
-                  <span class="pcp-free">&nbsp;/ month</span>
-                </div>
-                <a href="/enroll?prog=ssc-je-test-series" class="prog-enroll-btn"><i class="fas fa-arrow-right"></i> Join Now</a>
-              </div>
-            </article>
+            </div>
+            <div class="prog-card-footer">
+              <span class="prog-card-footer-label">Crash Course</span>
+              <a href="/programs/rssb-jen-crash-course/" class="prog-view-btn">View Details <i class="fas fa-arrow-right"></i></a>
+            </div>
+          </article>
 
-            <!-- State AE Test Series -->
-            <article class="prog-card" data-exam="state-ae">
-              <div class="prog-thumb th-ae">
-                <span class="prog-thumb-exam">RPSC AE · State AE</span>
-                <i class="fas fa-clipboard-check prog-thumb-icon"></i>
-                <span class="prog-thumb-type">Test Series</span>
-                <span class="prog-thumb-status"><span class="status-dot sd-open"></span>Open Enrollment</span>
+          <!-- 5. GATE / ESE Foundation Course -->
+          <article class="prog-card">
+            <div class="prog-thumb th-green">
+              <span class="prog-thumb-type-label">Offline Foundation Course</span>
+              <i class="fas fa-graduation-cap prog-thumb-icon"></i>
+              <span class="prog-thumb-status"><span class="status-dot sd-soon"></span>Admissions Open</span>
+            </div>
+            <div class="prog-card-inner">
+              <div class="prog-card-meta-row">
+                <span class="prog-badge pb-offline">Offline &middot; Jaipur</span>
+                <span class="prog-badge pb-new">New</span>
               </div>
-              <div class="prog-seats-bar"><div class="prog-seats-fill sf-blue" style="width:50%;"></div></div>
-              <div class="prog-card-badges">
-                <span class="pc-badge pcb-offline"><i class="fas fa-building"></i> Offline · Jaipur</span>
-                <span class="pc-badge pcb-popular">Popular</span>
+              <h2 class="prog-card-title">GATE / ESE 2028<br>Offline Foundation Course</h2>
+              <p class="prog-card-desc">Long-duration offline foundation course for Civil Engineering graduates targeting GATE 2028 and UPSC ESE 2028. Builds conceptual depth, problem-solving speed and exam temperament from first principles.</p>
+              <div class="prog-card-details">
+                <div class="pcd-item"><span class="pcd-label">Exam</span><span class="pcd-val">GATE / ESE 2028</span></div>
+                <div class="pcd-item"><span class="pcd-label">Level</span><span class="pcd-val">Degree (Civil)</span></div>
+                <div class="pcd-item"><span class="pcd-label">Format</span><span class="pcd-val">Offline Classroom</span></div>
+                <div class="pcd-item"><span class="pcd-label">Location</span><span class="pcd-val">Jaipur, Raj.</span></div>
               </div>
-              <div class="prog-card-body">
-                <h2 class="prog-card-title">State AE Offline Test Series</h2>
-                <p class="prog-card-desc">Weekly offline tests for RPSC AE &amp; all State AE exams  -  full-syllabus coverage, Rajasthan GK paper, state-specific project questions &amp; analysis.</p>
-                <div class="prog-card-meta">
-                  <div class="pcm-item"><span class="pcm-label">Schedule</span><span class="pcm-val">Every Sunday</span></div>
-                  <div class="pcm-item"><span class="pcm-val orange">Ongoing</span></div>
-                  <div class="pcm-item"><span class="pcm-label">Location</span><span class="pcm-val">Jaipur, Raj.</span></div>
-                  <div class="pcm-item"><span class="pcm-val green">Open Enrollment</span></div>
-                </div>
-              </div>
-              <div class="prog-card-footer">
-                <div class="prog-card-price">
-                  <span class="pcp-main">₹4,999</span>
-                  <span class="pcp-free">&nbsp;/ month</span>
-                </div>
-                <a href="/enroll?prog=state-ae-test-series" class="prog-enroll-btn"><i class="fas fa-arrow-right"></i> Join Now</a>
-              </div>
-            </article>
+            </div>
+            <div class="prog-card-footer">
+              <span class="prog-card-footer-label">Foundation Course</span>
+              <a href="/programs/gate-ese-foundation/" class="prog-view-btn">View Details <i class="fas fa-arrow-right"></i></a>
+            </div>
+          </article>
 
-            <!-- State JE Test Series -->
-            <article class="prog-card" data-exam="state-je">
-              <div class="prog-thumb th-je">
-                <span class="prog-thumb-exam">RSMSSB JE · State JE</span>
-                <i class="fas fa-tasks prog-thumb-icon"></i>
-                <span class="prog-thumb-type">Test Series</span>
-                <span class="prog-thumb-status"><span class="status-dot sd-open"></span>Open Enrollment</span>
-              </div>
-              <div class="prog-card-badges">
-                <span class="pc-badge pcb-offline"><i class="fas fa-building"></i> Offline · Jaipur</span>
-              </div>
-              <div class="prog-card-body">
-                <h2 class="prog-card-title">State JE Offline Test Series</h2>
-                <p class="prog-card-desc">Weekly offline tests for RSMSSB JE &amp; State JE  -  civil engineering syllabus, state GK &amp; reasoning, performance rank among all enrolled students.</p>
-                <div class="prog-card-meta">
-                  <div class="pcm-item"><span class="pcm-label">Schedule</span><span class="pcm-val">Every Sunday</span></div>
-                  <div class="pcm-item"><span class="pcm-val orange">Ongoing</span></div>
-                  <div class="pcm-item"><span class="pcm-label">Location</span><span class="pcm-val">Jaipur, Raj.</span></div>
-                  <div class="pcm-item"><span class="pcm-val green">Open Enrollment</span></div>
-                </div>
-              </div>
-              <div class="prog-card-footer">
-                <div class="prog-card-price">
-                  <span class="pcp-main">₹3,999</span>
-                  <span class="pcp-free">&nbsp;/ month</span>
-                </div>
-                <a href="/enroll?prog=state-je-test-series" class="prog-enroll-btn"><i class="fas fa-arrow-right"></i> Join Now</a>
-              </div>
-            </article>
-
-          </div><!-- /grid-test -->
-          <p class="prog-empty" id="empty-test">No test series match this filter. <a href="https://wa.me/910000000000" target="_blank" rel="noopener" style="color:var(--magenta);font-weight:700;">WhatsApp us →</a></p>
-        </div><!-- /panel-test -->
-
+        </div>
       </div>
     </section>
 
-
-    <!-- WHY THESE PROGRAMS -->
+    <!-- WHY -->
     <section class="why-section">
       <div class="container">
-        <div class="sec-center">
-          <span class="sec-tag sec-tag-red"><i class="fas fa-star"></i> Why Choose Us</span>
-          <h2 class="sec-heading">Why Dr. Jaspal Singh's <span class="gradient-text">Offline Programs?</span></h2>
-          <p class="sec-sub-text">Built from 15+ years of understanding exactly where aspirants succeed  -  and where they fall short.</p>
+        <div class="sec-intro">
+          <span class="sec-tag sec-tag-red">Why These Programs</span>
+          <h2 class="sec-heading">What Makes These Programs <span class="gradient-text">Different</span></h2>
         </div>
         <div class="why-grid">
           <div class="why-card">
             <div class="why-card-icon" style="background:rgba(200,18,64,.09);color:var(--magenta);"><i class="fas fa-user-tie"></i></div>
             <h3>Direct Mentorship</h3>
-            <p>Every program is personally led by Dr. Jaspal Singh  -  ESE AIR-04, GATE AIR-06, PhD. Not an assistant. Not a recorded lecture.</p>
+            <p>Every program is personally led by Dr. Jaspal Singh &mdash; ESE AIR-04, GATE AIR-06, PhD. Not an assistant. Not a recorded lecture.</p>
           </div>
           <div class="why-card">
             <div class="why-card-icon" style="background:rgba(22,163,74,.09);color:var(--green);"><i class="fas fa-users"></i></div>
             <h3>Small Batches</h3>
-            <p>Maximum 25–30 seats per batch. Everyone gets personal attention, correction &amp; face time with the mentor.</p>
+            <p>Strictly limited seats per batch so every aspirant receives personal attention, direct correction and face time with the mentor.</p>
           </div>
           <div class="why-card">
-            <div class="why-card-icon" style="background:rgba(255,107,53,.10);color:var(--orange);"><i class="fas fa-map-marker-alt"></i></div>
+            <div class="why-card-icon" style="background:rgba(2,132,199,.10);color:#0284C7;"><i class="fas fa-map-marker-alt"></i></div>
             <h3>Rajasthan-Focused</h3>
-            <p>Content tailored to RPSC AE, RSMSSB JE &amp; SSC JE. Rajasthan-specific projects, policies &amp; interview patterns covered.</p>
+            <p>Content built specifically for RSSB JEN, RPSC AE, GATE and ESE. State-specific patterns, projects and interview formats included.</p>
           </div>
           <div class="why-card">
-            <div class="why-card-icon" style="background:rgba(103,200,232,.14);color:#0284C7;"><i class="fas fa-trophy"></i></div>
-            <h3>Proven Results</h3>
-            <p>100+ selections in Rajasthan AE/JE and SSC JE from our programs. Students consistently report improved confidence and scores.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-
-    <!-- FAQ -->
-    <section class="faq-section">
-      <div class="container">
-        <div class="sec-center">
-          <span class="sec-tag sec-tag-red"><i class="fas fa-question-circle"></i> FAQ</span>
-          <h2 class="sec-heading">Common <span class="gradient-text">Questions</span></h2>
-        </div>
-        <div class="faq-list">
-          <div class="faq-item">
-            <div class="faq-q"><span class="faq-q-text">Where are these programs held?</span><i class="fas fa-chevron-down faq-chevron"></i></div>
-            <p class="faq-a">All programs are held offline at our Jaipur center. The exact address is shared with confirmed participants 7 days before the program.</p>
-          </div>
-          <div class="faq-item">
-            <div class="faq-q"><span class="faq-q-text">What is the payment process?</span><i class="fas fa-chevron-down faq-chevron"></i></div>
-            <p class="faq-a">We use Razorpay for secure online payment  -  UPI, debit/credit card or net banking. A receipt is emailed automatically. Full refund if a batch is cancelled from our side.</p>
-          </div>
-          <div class="faq-item">
-            <div class="faq-q"><span class="faq-q-text">What if I cannot attend after enrolling?</span><i class="fas fa-chevron-down faq-chevron"></i></div>
-            <p class="faq-a">You can transfer your seat to the next available batch (within 3 months) at no extra charge. Refunds are available up to 7 days before the program start date.</p>
-          </div>
-          <div class="faq-item">
-            <div class="faq-q"><span class="faq-q-text">Is food/accommodation included?</span><i class="fas fa-chevron-down faq-chevron"></i></div>
-            <p class="faq-a">Lunch and tea/snacks are included for all programs. Accommodation is not included but we can suggest budget options near the venue for outstation participants.</p>
-          </div>
-          <div class="faq-item">
-            <div class="faq-q"><span class="faq-q-text">Can I enroll in a combo of programs?</span><i class="fas fa-chevron-down faq-chevron"></i></div>
-            <p class="faq-a">Yes! A 10% combo discount is available when enrolling in more than one program. WhatsApp us to avail it before payment.</p>
-          </div>
-          <div class="faq-item">
-            <div class="faq-q"><span class="faq-q-text">Is there a scholarship test?</span><i class="fas fa-chevron-down faq-chevron"></i></div>
-            <p class="faq-a">Yes  -  we hold periodic scholarship tests where merit-based candidates can earn up to 50% fee waiver on any batch or program. Register via the banner on the home page.</p>
+            <div class="why-card-icon" style="background:rgba(255,107,53,.10);color:var(--orange);"><i class="fas fa-trophy"></i></div>
+            <h3>Proven Track Record</h3>
+            <p>Students from these programs have cleared RPSC AE, RSSB JEN and GATE with consistent results over 15+ years of teaching.</p>
           </div>
         </div>
       </div>
@@ -1157,7 +518,7 @@
   </main>
 
   <!-- FOOTER -->
-    <footer class="site-footer" role="contentinfo">
+  <footer class="site-footer" role="contentinfo">
     <div class="container footer-inner">
       <div class="footer-brand">
         <a href="/" class="footer-wordmark">Dr. Jaspal Singh</a>
@@ -1169,28 +530,18 @@
         </div>
         <div class="footer-programs-grid">
           <div class="footer-prog-col">
-            <span class="footer-link-group-label">Offline Batches</span>
-            <a href="/programs?type=batch&amp;exam=gate-ese" class="footer-link footer-sub-link">GATE / ESE</a>
-            <a href="/programs?type=batch&amp;exam=rajasthan-ae" class="footer-link footer-sub-link">Rajasthan AE</a>
-            <a href="/programs?type=batch&amp;exam=rajasthan-je" class="footer-link footer-sub-link">Rajasthan JE</a>
-            <a href="/programs?type=batch&amp;exam=ssc-je" class="footer-link footer-sub-link">SSC JE</a>
-            <a href="/programs?type=batch&amp;exam=rrb-je" class="footer-link footer-sub-link">RRB JE</a>
-            <a href="/programs?type=batch&amp;exam=psus" class="footer-link footer-sub-link">PSUs</a>
+            <span class="footer-link-group-label">Test Series</span>
+            <a href="/programs/rssb-jen-diploma-test-series/" class="footer-link footer-sub-link">RSSB JEN Diploma</a>
+            <a href="/programs/rssb-jen-degree-test-series/" class="footer-link footer-sub-link">RSSB JEN Degree</a>
           </div>
           <div class="footer-prog-col">
-            <span class="footer-link-group-label">Offline Test Series</span>
-            <a href="/programs?type=test-series&amp;exam=gate" class="footer-link footer-sub-link">GATE</a>
-            <a href="/programs?type=test-series&amp;exam=ese" class="footer-link footer-sub-link">ESE</a>
-            <a href="/programs?type=test-series&amp;exam=psus" class="footer-link footer-sub-link">PSUs</a>
-            <a href="/programs?type=test-series&amp;exam=rajasthan-je" class="footer-link footer-sub-link">Rajasthan JE</a>
-            <a href="/programs?type=test-series&amp;exam=rajasthan-ae" class="footer-link footer-sub-link">Rajasthan AE</a>
-            <a href="/programs?type=test-series&amp;exam=other-state" class="footer-link footer-sub-link">Other State AE/JEs</a>
+            <span class="footer-link-group-label">Interview &amp; Batch</span>
+            <a href="/programs/rpsc-ae-interview/" class="footer-link footer-sub-link">RPSC AE Interview</a>
+            <a href="/programs/rssb-jen-crash-course/" class="footer-link footer-sub-link">RSSB JEN Crash Course</a>
           </div>
           <div class="footer-prog-col">
-            <span class="footer-link-group-label">Interview Programs</span>
-            <a href="/programs?type=interview&amp;exam=ese" class="footer-link footer-sub-link">ESE</a>
-            <a href="/programs?type=interview&amp;exam=rpsc-ae" class="footer-link footer-sub-link">RPSC AE</a>
-            <a href="/programs?type=interview&amp;exam=psus" class="footer-link footer-sub-link">PSUs</a>
+            <span class="footer-link-group-label">Foundation</span>
+            <a href="/programs/gate-ese-foundation/" class="footer-link footer-sub-link">GATE / ESE 2028</a>
           </div>
         </div>
       </div>
@@ -1202,7 +553,7 @@
     </div>
     <div class="footer-bottom">
       <div class="container">
-        <p>© 2026 Dr. Jaspal Singh · jaspalsingh.in · Empowering Civil Engineering aspirants across India. &nbsp;|&nbsp; <a href="/privacy-policy" style="color:inherit;text-decoration:underline;">Privacy Policy</a> &nbsp;|&nbsp; <a href="/terms" style="color:inherit;text-decoration:underline;">Terms &amp; Conditions</a></p>
+        <p>&copy; 2026 Dr. Jaspal Singh &middot; jaspalsingh.in &middot; Empowering Civil Engineering aspirants across India. &nbsp;|&nbsp; <a href="/privacy-policy" style="color:inherit;text-decoration:underline;">Privacy Policy</a> &nbsp;|&nbsp; <a href="/terms" style="color:inherit;text-decoration:underline;">Terms &amp; Conditions</a></p>
       </div>
     </div>
   </footer>
@@ -1210,75 +561,5 @@
   <a href="https://wa.me/910000000000" target="_blank" rel="noopener" aria-label="Chat on WhatsApp" class="whatsapp-float"><i class="fab fa-whatsapp"></i></a>
 
   <script src="js/main.js"></script>
-  <script>
-    /* ── Category tab switch ── */
-    function switchTab(tab) {
-      document.querySelectorAll('.prog-cat-tab').forEach(function(t) {
-        t.classList.remove('active');
-        t.setAttribute('aria-selected', 'false');
-      });
-      document.querySelectorAll('.prog-tab-panel').forEach(function(p) {
-        p.classList.remove('active');
-      });
-
-      var btn = document.getElementById('tab-' + tab);
-      var panel = document.getElementById('panel-' + tab);
-      if (btn)   { btn.classList.add('active'); btn.setAttribute('aria-selected', 'true'); }
-      if (panel) { panel.classList.add('active'); }
-    }
-
-    /* ── Exam filter within a tab ── */
-    function examFilter(btn, exam, tab) {
-      var bar = btn.closest('.exam-filter-bar');
-      bar.querySelectorAll('.exam-filter-btn').forEach(function(b) { b.classList.remove('active'); });
-      btn.classList.add('active');
-
-      var grid = document.getElementById('grid-' + tab);
-      var empty = document.getElementById('empty-' + tab);
-      var anyVisible = false;
-
-      grid.querySelectorAll('.prog-card').forEach(function(card) {
-        var show = exam === 'all' || card.dataset.exam === exam;
-        card.style.display = show ? '' : 'none';
-        if (show) anyVisible = true;
-      });
-
-      if (empty) empty.classList.toggle('visible', !anyVisible);
-    }
-
-    /* ── FAQ accordion ── */
-    document.querySelectorAll('.faq-q').forEach(function(q) {
-      q.addEventListener('click', function() {
-        var item = this.closest('.faq-item');
-        var isOpen = item.classList.contains('open');
-        document.querySelectorAll('.faq-item.open').forEach(function(i) { i.classList.remove('open'); });
-        if (!isOpen) item.classList.add('open');
-      });
-    });
-
-    /* ── URL param auto-select ── */
-    (function() {
-      var params = new URLSearchParams(window.location.search);
-      var type = params.get('type');
-      var exam = params.get('exam');
-
-      if (type && type !== 'batch') {
-        var tabMap = { 'interview': 'interview', 'test-series': 'test' };
-        var tabKey = tabMap[type];
-        if (tabKey) switchTab(tabKey);
-      }
-
-      if (exam) {
-        var activeTab = document.querySelector('.prog-tab-panel.active');
-        if (!activeTab) return;
-        var tabId = activeTab.id.replace('panel-', '');
-        var examMap = { 'gate-ies': 'gate', 'ssc-je': 'sscje', 'state-ae': 'ae', 'state-je': 'je' };
-        var examClass = examMap[exam];
-        if (!examClass) return;
-        var filterBtn = activeTab.querySelector('.exam-filter-btn.f-' + examClass);
-        if (filterBtn) examFilter(filterBtn, exam, tabId);
-      }
-    })();
-  </script>
 </body>
 </html>

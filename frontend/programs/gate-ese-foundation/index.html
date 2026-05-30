@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GATE / ESE 2028 Offline Foundation Course — Dr. Jaspal Singh</title>
+  <meta name="description" content="Offline Foundation Course for GATE 2028 and UPSC ESE 2028 (Civil Engineering) by Dr. Jaspal Singh, Jaipur. Builds conceptual depth and exam temperament from first principles." />
+  <meta name="author" content="Dr. Jaspal Singh" />
+  <meta name="robots" content="index, follow" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon-32.png" />
+  <link rel="canonical" href="https://jaspalsingh.in/programs/gate-ese-foundation/" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/pages.css" />
+  <link rel="stylesheet" href="/css/additions.css" />
+  <style>
+    .prog-detail-hero { padding-top:calc(var(--header-h) + 56px + 36px); padding-bottom:0; background:var(--light-grey); position:relative; overflow:hidden; }
+    .prog-detail-hero::after { content:''; position:absolute; bottom:0; left:0; right:0; height:3px; background:var(--gradient); }
+    .breadcrumb { font-size:13px; color:var(--body-color); opacity:.65; font-weight:500; margin-bottom:18px; }
+    .breadcrumb a { color:var(--magenta); opacity:1; }
+    .hero-layout { display:grid; grid-template-columns:1fr 340px; gap:48px; align-items:start; padding-bottom:56px; }
+    .hero-type-tag { display:inline-flex; align-items:center; gap:8px; font-family:var(--font-heading); font-size:11px; font-weight:700; letter-spacing:1.4px; text-transform:uppercase; padding:6px 16px; border-radius:var(--radius-pill); margin-bottom:18px; background:rgba(21,128,61,.09); color:#15803D; border:1px solid rgba(21,128,61,.22); }
+    .hero-title { font-family:var(--font-heading); font-size:clamp(26px,4vw,40px); font-weight:800; color:var(--heading-color); line-height:1.15; letter-spacing:-.5px; margin-bottom:16px; }
+    .hero-desc { font-size:15px; color:var(--body-color); line-height:1.8; margin-bottom:28px; max-width:560px; }
+    .hero-meta-row { display:flex; flex-wrap:wrap; gap:20px; }
+    .hm-item { display:flex; flex-direction:column; gap:3px; }
+    .hm-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; color:rgba(74,74,104,.45); }
+    .hm-val { font-family:var(--font-heading); font-size:14px; font-weight:700; color:var(--heading-color); }
+    .enroll-card { background:var(--white); border:1.5px solid rgba(26,26,46,.09); border-radius:var(--radius-md); box-shadow:var(--shadow-md); overflow:hidden; position:sticky; top:calc(var(--header-h) + 24px); }
+    .enroll-thumb { height:160px; background:linear-gradient(145deg, #15803D 0%, #16A34A 100%); display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
+    .enroll-thumb::before { content:''; position:absolute; inset:0; background-image:radial-gradient(circle, rgba(255,255,255,.10) 1px, transparent 1px); background-size:22px 22px; }
+    .enroll-thumb img { width:100%; height:100%; object-fit:cover; position:absolute; inset:0; }
+    .enroll-thumb-icon { font-size:52px; color:rgba(255,255,255,.88); position:relative; z-index:1; filter:drop-shadow(0 4px 12px rgba(0,0,0,.28)); }
+    .enroll-body { padding:22px; }
+    .enroll-label { font-family:var(--font-heading); font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:rgba(74,74,104,.45); margin-bottom:6px; }
+    .enroll-program-name { font-family:var(--font-heading); font-size:15px; font-weight:800; color:var(--heading-color); line-height:1.3; margin-bottom:16px; }
+    .enroll-detail-rows { display:flex; flex-direction:column; gap:10px; margin-bottom:20px; }
+    .enroll-row { display:flex; justify-content:space-between; align-items:center; font-size:13px; border-bottom:1px solid rgba(26,26,46,.06); padding-bottom:10px; }
+    .enroll-row:last-child { border-bottom:none; padding-bottom:0; }
+    .er-key { color:var(--body-color); font-weight:500; }
+    .er-val { font-family:var(--font-heading); font-weight:700; color:var(--heading-color); font-size:13px; }
+    .er-val.green { color:var(--green); }
+    .er-val.orange { color:var(--orange); }
+    .enroll-btn { display:block; width:100%; text-align:center; padding:13px 20px; border-radius:var(--radius-pill); font-family:var(--font-heading); font-size:14px; font-weight:800; background:var(--gradient); color:#fff; text-decoration:none; box-shadow:0 4px 18px rgba(200,18,64,.30); transition:var(--transition); }
+    .enroll-btn:hover { transform:translateY(-2px); box-shadow:0 8px 26px rgba(200,18,64,.42); color:#fff; }
+    .enroll-wa { display:flex; align-items:center; justify-content:center; gap:8px; margin-top:10px; padding:11px 20px; border-radius:var(--radius-pill); font-family:var(--font-heading); font-size:13px; font-weight:700; background:rgba(37,211,102,.10); color:#1a7a40; border:1.5px solid rgba(37,211,102,.25); text-decoration:none; transition:var(--transition); }
+    .enroll-wa:hover { background:rgba(37,211,102,.18); color:#1a7a40; }
+    .prog-detail-body { padding:72px 0 96px; }
+    .detail-layout { display:grid; grid-template-columns:1fr 340px; gap:48px; align-items:start; }
+    .detail-main { display:flex; flex-direction:column; gap:48px; }
+    .detail-section-title { font-family:var(--font-heading); font-size:20px; font-weight:800; color:var(--heading-color); line-height:1.2; margin-bottom:20px; padding-bottom:12px; border-bottom:2px solid rgba(26,26,46,.07); }
+    .included-list { display:flex; flex-direction:column; gap:12px; }
+    .included-item { display:flex; gap:14px; align-items:flex-start; padding:14px 16px; background:var(--light-grey); border-radius:var(--radius-sm); border:1.5px solid rgba(26,26,46,.06); }
+    .ii-icon { width:36px; height:36px; flex-shrink:0; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:14px; }
+    .ii-body { display:flex; flex-direction:column; gap:3px; }
+    .ii-title { font-family:var(--font-heading); font-size:14px; font-weight:700; color:var(--heading-color); }
+    .ii-desc { font-size:13px; color:var(--body-color); line-height:1.6; }
+    .schedule-table { width:100%; border-collapse:collapse; }
+    .schedule-table th { font-family:var(--font-heading); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; color:rgba(74,74,104,.55); padding:10px 14px; text-align:left; background:var(--light-grey); border-bottom:1.5px solid rgba(26,26,46,.08); }
+    .schedule-table td { padding:12px 14px; font-size:13.5px; color:var(--heading-color); border-bottom:1px solid rgba(26,26,46,.06); line-height:1.5; }
+    .schedule-table tr:last-child td { border-bottom:none; }
+    .schedule-table tr:hover td { background:rgba(26,26,46,.025); }
+    .td-bold { font-family:var(--font-heading); font-weight:700; }
+    .td-sub { font-size:12px; color:var(--body-color); margin-top:2px; }
+    .for-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .for-item { display:flex; gap:12px; align-items:flex-start; padding:14px; border:1.5px solid rgba(26,26,46,.07); border-radius:var(--radius-sm); background:var(--white); }
+    .for-check { color:var(--green); font-size:14px; margin-top:2px; flex-shrink:0; }
+    .for-text { font-size:13.5px; color:var(--heading-color); line-height:1.55; font-weight:500; }
+    .detail-sidebar { position:sticky; top:calc(var(--header-h) + 24px); }
+    @media (max-width:900px) { .hero-layout, .detail-layout { grid-template-columns:1fr; } .enroll-card { position:static; } .detail-sidebar { position:static; } .for-grid { grid-template-columns:1fr; } }
+    @media (max-width:600px) { .prog-detail-hero { padding-top:calc(var(--header-h) + 36px + 36px); } }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-to-main">Skip to main content</a>
+  <header class="site-header" id="siteHeader" role="banner">
+    <div class="container header-inner">
+      <div class="header-left">
+        <a href="/" class="header-brand" aria-label="Dr. Jaspal Singh — Home">
+          <img src="/assets/images/jaspal-hero.png" class="header-avatar" alt="Dr. Jaspal Singh" onerror="this.style.display='none'" />
+          <span class="wordmark">Dr. Jaspal Singh</span>
+        </a>
+      </div>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="/" class="nav-link">Home</a>
+        <a href="/programs" class="nav-link nav-link--active">Offline Programs</a>
+        <a href="/about" class="nav-link">About</a>
+      </nav>
+      <div class="header-right">
+        <a href="tel:+919999999999" class="header-phone" aria-label="Call us">
+          <span class="phone-ring-wrap"><i class="fas fa-phone phone-icon"></i></span>
+          <span class="phone-text">+91 99999 9999</span>
+        </a>
+        <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false" aria-controls="mobileDrawer">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </header>
+  <div class="drawer-overlay" id="drawerOverlay" aria-hidden="true"></div>
+  <aside class="mobile-drawer" id="mobileDrawer" aria-label="Mobile navigation">
+    <button class="drawer-close" id="drawerClose" aria-label="Close menu"><i class="fas fa-times"></i></button>
+    <a href="/" class="drawer-wordmark">Dr. Jaspal Singh</a>
+    <nav class="drawer-nav">
+      <a href="/" class="drawer-link">Home</a>
+      <a href="/programs" class="drawer-link">Offline Programs</a>
+      <a href="/about" class="drawer-link">About</a>
+    </nav>
+    <div class="drawer-social">
+      <a href="tel:+919999999999" class="drawer-contact-btn"><i class="fas fa-phone"></i> Call Us</a>
+      <a href="https://wa.me/919999999999" target="_blank" rel="noopener" class="drawer-contact-btn drawer-contact-wa"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+    </div>
+  </aside>
+
+  <main id="main-content">
+    <section class="prog-detail-hero">
+      <div class="container">
+        <p class="breadcrumb"><a href="/">Home</a> / <a href="/programs">Offline Programs</a> / GATE &amp; ESE 2028 Foundation Course</p>
+        <div class="hero-layout">
+          <div>
+            <span class="hero-type-tag"><i class="fas fa-graduation-cap"></i> Offline Foundation Course</span>
+            <h1 class="hero-title">GATE / ESE 2028<br>Offline Foundation Course</h1>
+            <p class="hero-desc">A long-duration offline foundation course for Civil Engineering graduates targeting GATE 2028 and UPSC ESE 2028. Taught personally by Dr. Jaspal Singh &mdash; ESE AIR-04, GATE AIR-06 &mdash; this course builds genuine conceptual depth, problem-solving speed and the exam temperament required to rank at the top.</p>
+            <div class="hero-meta-row">
+              <div class="hm-item"><span class="hm-label">Exam</span><span class="hm-val">GATE / ESE 2028</span></div>
+              <div class="hm-item"><span class="hm-label">Level</span><span class="hm-val">Degree (Civil Engg.)</span></div>
+              <div class="hm-item"><span class="hm-label">Format</span><span class="hm-val">Offline &middot; Jaipur</span></div>
+              <div class="hm-item"><span class="hm-label">Admissions</span><span class="hm-val" style="color:var(--green);">Open</span></div>
+            </div>
+          </div>
+          <div class="enroll-card">
+            <div class="enroll-thumb">
+              <i class="fas fa-graduation-cap enroll-thumb-icon"></i>
+            </div>
+            <div class="enroll-body">
+              <p class="enroll-label">You are viewing</p>
+              <p class="enroll-program-name">GATE / ESE 2028 &mdash; Offline Foundation Course</p>
+              <div class="enroll-detail-rows">
+                <div class="enroll-row"><span class="er-key">Exam</span><span class="er-val">GATE / ESE 2028</span></div>
+                <div class="enroll-row"><span class="er-key">Level</span><span class="er-val">Degree (Civil)</span></div>
+                <div class="enroll-row"><span class="er-key">Location</span><span class="er-val">Jaipur, Rajasthan</span></div>
+                <div class="enroll-row"><span class="er-key">Admissions</span><span class="er-val green">Open</span></div>
+              </div>
+              <a href="https://wa.me/919999999999?text=I want to enroll in GATE ESE 2028 Offline Foundation Course" target="_blank" rel="noopener" class="enroll-btn">Enroll Now</a>
+              <a href="https://wa.me/919999999999?text=I want more details about GATE ESE 2028 Offline Foundation Course" target="_blank" rel="noopener" class="enroll-wa"><i class="fab fa-whatsapp"></i> Ask on WhatsApp</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="prog-detail-body">
+      <div class="container">
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block">
+              <h2 class="detail-section-title">What Is Included</h2>
+              <div class="included-list">
+                <div class="included-item">
+                  <div class="ii-icon" style="background:rgba(21,128,61,.10);color:#15803D;"><i class="fas fa-layer-group"></i></div>
+                  <div class="ii-body">
+                    <span class="ii-title">First-Principles Teaching Approach</span>
+                    <span class="ii-desc">Every subject taught from the ground up &mdash; concepts built structurally so aspirants can derive answers rather than memorise them. Dr. Jaspal Singh's trademark approach that produced toppers over 15+ years.</span>
+                  </div>
+                </div>
+                <div class="included-item">
+                  <div class="ii-icon" style="background:rgba(22,163,74,.10);color:var(--green);"><i class="fas fa-tasks"></i></div>
+                  <div class="ii-body">
+                    <span class="ii-title">Weekly Tests and Subject Assessments</span>
+                    <span class="ii-desc">Structured weekly tests after every subject module to assess retention and application. GATE and ESE previous year questions integrated throughout the course.</span>
+                  </div>
+                </div>
+                <div class="included-item">
+                  <div class="ii-icon" style="background:rgba(200,18,64,.09);color:var(--magenta);"><i class="fas fa-question-circle"></i></div>
+                  <div class="ii-body">
+                    <span class="ii-title">Dedicated Doubt Sessions</span>
+                    <span class="ii-desc">Scheduled doubt-clearing sessions separate from teaching hours. Every aspirant gets individual attention to resolve conceptual gaps before moving forward.</span>
+                  </div>
+                </div>
+                <div class="included-item">
+                  <div class="ii-icon" style="background:rgba(2,132,199,.10);color:#0284C7;"><i class="fas fa-clipboard-list"></i></div>
+                  <div class="ii-body">
+                    <span class="ii-title">Full-Length GATE and ESE Mock Tests</span>
+                    <span class="ii-desc">Complete GATE CE and ESE (Paper I + Paper II) mock tests scheduled across the later phase of the course &mdash; timed, reviewed and individually analysed.</span>
+                  </div>
+                </div>
+                <div class="included-item">
+                  <div class="ii-icon" style="background:rgba(245,158,11,.12);color:#B45309;"><i class="fas fa-file-alt"></i></div>
+                  <div class="ii-body">
+                    <span class="ii-title">Subject Notes and Practice Material</span>
+                    <span class="ii-desc">Comprehensive subject-wise notes, formula sheets and curated practice question banks provided throughout the course for structured self-study.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2 class="detail-section-title">Course Structure Overview</h2>
+              <table class="schedule-table">
+                <thead>
+                  <tr><th>Phase</th><th>Duration</th><th>Focus</th></tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="td-bold">Phase 1 &mdash; Foundation</span><div class="td-sub">Months 1&ndash;3</div></td>
+                    <td>3 Months</td>
+                    <td>Engineering Mathematics, General Aptitude, SOM, Structural Analysis, Fluid Mechanics</td>
+                  </tr>
+                  <tr>
+                    <td><span class="td-bold">Phase 2 &mdash; Core Subjects</span><div class="td-sub">Months 4&ndash;7</div></td>
+                    <td>4 Months</td>
+                    <td>Geotechnical, Hydraulics, Transportation, Environmental, RCC and Steel Design, Surveying</td>
+                  </tr>
+                  <tr>
+                    <td><span class="td-bold">Phase 3 &mdash; ESE Specific</span><div class="td-sub">Months 8&ndash;9</div></td>
+                    <td>2 Months</td>
+                    <td>General Studies Paper I (ESE), Engineering Aptitude, Current Affairs, Ethics</td>
+                  </tr>
+                  <tr>
+                    <td><span class="td-bold">Phase 4 &mdash; Revision and Mocks</span><div class="td-sub">Months 10&ndash;12</div></td>
+                    <td>3 Months</td>
+                    <td>Full Revision, Full-Length GATE and ESE Mocks, Performance Analysis, Exam Strategy</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="detail-block">
+              <h2 class="detail-section-title">Who Is This For</h2>
+              <div class="for-grid">
+                <div class="for-item"><i class="fas fa-check for-check"></i><span class="for-text">B.Tech / B.E. Civil Engineering students or graduates targeting GATE 2028 or UPSC ESE 2028</span></div>
+                <div class="for-item"><i class="fas fa-check for-check"></i><span class="for-text">Aspirants who want to build a strong conceptual foundation rather than follow a shortcut-based approach</span></div>
+                <div class="for-item"><i class="fas fa-check for-check"></i><span class="for-text">Those who want to be taught directly by someone who has cleared both GATE and ESE with an all-India rank</span></div>
+                <div class="for-item"><i class="fas fa-check for-check"></i><span class="for-text">Candidates who need structured long-term offline coaching with regular assessment and doubt resolution</span></div>
+              </div>
+            </div>
+
+          </div>
+          <div class="detail-sidebar">
+            <div class="enroll-card">
+              <div class="enroll-thumb">
+                <i class="fas fa-graduation-cap enroll-thumb-icon"></i>
+              </div>
+              <div class="enroll-body">
+                <p class="enroll-label">You are viewing</p>
+                <p class="enroll-program-name">GATE / ESE 2028 &mdash; Offline Foundation Course</p>
+                <div class="enroll-detail-rows">
+                  <div class="enroll-row"><span class="er-key">Exam</span><span class="er-val">GATE / ESE 2028</span></div>
+                  <div class="enroll-row"><span class="er-key">Level</span><span class="er-val">Degree (Civil)</span></div>
+                  <div class="enroll-row"><span class="er-key">Location</span><span class="er-val">Jaipur, Rajasthan</span></div>
+                  <div class="enroll-row"><span class="er-key">Admissions</span><span class="er-val green">Open</span></div>
+                </div>
+                <a href="https://wa.me/919999999999?text=I want to enroll in GATE ESE 2028 Offline Foundation Course" target="_blank" rel="noopener" class="enroll-btn">Enroll Now</a>
+                <a href="https://wa.me/919999999999?text=I want more details about GATE ESE 2028 Offline Foundation Course" target="_blank" rel="noopener" class="enroll-wa"><i class="fab fa-whatsapp"></i> Ask on WhatsApp</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer" role="contentinfo">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <a href="/" class="footer-wordmark">Dr. Jaspal Singh</a>
+        <p class="footer-tagline">Because Har Aspirant Deserves a Teacher Who Truly Cares.</p>
+      </div>
+      <div class="footer-nav-col">
+        <span class="footer-link-group-label">All Programs</span>
+        <a href="/programs/rssb-jen-diploma-test-series/" class="footer-link footer-sub-link">RSSB JEN Diploma Test Series</a>
+        <a href="/programs/rssb-jen-degree-test-series/" class="footer-link footer-sub-link">RSSB JEN Degree Test Series</a>
+        <a href="/programs/rpsc-ae-interview/" class="footer-link footer-sub-link">RPSC AE Interview Programme</a>
+        <a href="/programs/rssb-jen-crash-course/" class="footer-link footer-sub-link">RSSB JEN Crash Course</a>
+        <a href="/programs/gate-ese-foundation/" class="footer-link footer-sub-link">GATE / ESE 2028 Foundation</a>
+      </div>
+      <div class="footer-connect-col">
+        <h3 class="footer-col-title">Contact</h3>
+        <a href="tel:+919999999999" class="footer-contact-link"><i class="fas fa-phone"></i> +91 99999 99999</a>
+        <a href="https://wa.me/919999999999" target="_blank" rel="noopener" class="footer-contact-link footer-contact-wa"><i class="fab fa-whatsapp"></i> WhatsApp Us</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="container">
+        <p>&copy; 2026 Dr. Jaspal Singh &middot; jaspalsingh.in &nbsp;|&nbsp; <a href="/privacy-policy" style="color:inherit;text-decoration:underline;">Privacy Policy</a></p>
+      </div>
+    </div>
+  </footer>
+
+  <a href="https://wa.me/910000000000" target="_blank" rel="noopener" aria-label="Chat on WhatsApp" class="whatsapp-float"><i class="fab fa-whatsapp"></i></a>
+  <script src="/js/main.js"></script>
+</body>
+</html>
