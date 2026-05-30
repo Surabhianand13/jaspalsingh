@@ -18,6 +18,12 @@ Always verify changes on **jaspalsingh.in**, not localhost.
 - `backend/` — Node.js + Express API served by Render
 - `images/` — Static images (banners etc.) served by Express at `/images/`
 
+## Writing Style Rules
+
+- **Never use em dashes (—)** anywhere — in HTML, JS, blog content, comments, or any other file
+- Use ` - ` (space-hyphen-space) instead
+- This applies to all future code, content, and blog posts written by Claude
+
 ## Blog Post Page (`/blog-post`)
 
 - **No author strip** inside the article — do not add it back
