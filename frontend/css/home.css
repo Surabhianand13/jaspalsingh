@@ -293,13 +293,13 @@
   background: var(--white);
   border-radius: var(--radius-md);
   padding: 44px 32px;
-  text-align: center;
+  text-align: left;
   border: 1px solid var(--border-light);
   box-shadow: var(--shadow-sm);
   transition: var(--transition);
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   gap: 20px;
 }
 
@@ -310,20 +310,20 @@
 }
 
 .why-card.featured {
-  background: linear-gradient(135deg, #1A1A2E 0%, #26264a 100%);
+  background: linear-gradient(135deg, #C81240 0%, #7a0c26 100%);
   border-color: transparent;
-  box-shadow: 0 8px 40px rgba(13,13,28,0.30);
+  box-shadow: 0 8px 40px rgba(200,18,64,0.30);
   transform: translateY(-4px);
 }
 .why-card.featured:hover {
   transform: translateY(-10px);
-  box-shadow: 0 20px 60px rgba(13,13,28,0.38);
+  box-shadow: 0 20px 60px rgba(200,18,64,0.38);
 }
 
 .why-icon-wrap {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
   background: var(--gradient-soft);
   display: flex;
   align-items: center;
@@ -331,11 +331,11 @@
   flex-shrink: 0;
 }
 .why-card.featured .why-icon-wrap {
-  background: rgba(200,18,64,0.18);
+  background: rgba(255,255,255,0.18);
 }
 
 .why-icon {
-  font-size: 28px;
+  font-size: 22px;
   background: var(--gradient);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -343,8 +343,8 @@
 }
 .why-card.featured .why-icon {
   background: none;
-  -webkit-text-fill-color: var(--red);
-  color: var(--red);
+  -webkit-text-fill-color: #fff;
+  color: #fff;
 }
 
 .why-card-title {
@@ -361,7 +361,7 @@
   color: var(--slate);
   line-height: 1.78;
 }
-.why-card.featured .why-card-text { color: rgba(255,255,255,0.68); }
+.why-card.featured .why-card-text { color: rgba(255,255,255,0.90); }
 
 /* ============================================================
    FEATURED RESOURCES
