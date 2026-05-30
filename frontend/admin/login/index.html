@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin Login — Dr. Jaspal Singh</title>
+  <title>Admin Login  -  Dr. Jaspal Singh</title>
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -432,7 +432,7 @@
           body:    JSON.stringify({ email: email, password: password })
         }).then(function (res) {
           if (res.status === 503 && !isRetry) {
-            showError('Server is starting up — retrying in 12 seconds…');
+            showError('Server is starting up  -  retrying in 12 seconds…');
             return new Promise(function (resolve, reject) {
               setTimeout(function () {
                 doLogin(email, password, true).then(resolve).catch(reject);
@@ -449,7 +449,7 @@
           return res.json();
         }).catch(function (err) {
           if (err.name === 'TypeError' && !isRetry) {
-            showError('Server is starting up — retrying in 12 seconds…');
+            showError('Server is starting up  -  retrying in 12 seconds…');
             return new Promise(function (resolve, reject) {
               setTimeout(function () {
                 doLogin(email, password, true).then(resolve).catch(reject);

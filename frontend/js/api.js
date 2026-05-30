@@ -1,6 +1,6 @@
 /* ============================================================
-   api.js — Central API Client
-   Dr. Jaspal Singh Website — jaspalsingh.in
+   api.js  -  Central API Client
+   Dr. Jaspal Singh Website  -  jaspalsingh.in
 
    Single source of truth for all backend calls.
    Imported by: resources.js, blog.js, testimonials.js, home.js
@@ -20,7 +20,7 @@
     if (host === 'localhost' || host === '127.0.0.1') {
       return 'http://localhost:5000';
     }
-    /* Production: same origin — Vercel rewrites /api/* to Render */
+    /* Production: same origin  -  Vercel rewrites /api/* to Render */
     return '';
   })();
 
@@ -78,7 +78,7 @@
     resources: {
       /**
        * Fetch visible resources.
-       * @param {Object} filters — { subject, type, exam, search, limit, offset }
+       * @param {Object} filters  -  { subject, type, exam, search, limit, offset }
        */
       getAll: function (filters) {
         return apiFetch('GET', '/api/resources', null, filters);
@@ -102,7 +102,7 @@
     /* ── Blog ───────────────────────────────────── */
     blog: {
       /**
-       * @param {Object} filters — { category, search, limit, offset }
+       * @param {Object} filters  -  { category, search, limit, offset }
        */
       getAll: function (filters) {
         return apiFetch('GET', '/api/blog', null, filters);
@@ -116,7 +116,7 @@
     /* ── Testimonials ───────────────────────────── */
     testimonials: {
       /**
-       * @param {Object} filters — { exam_type, featured }
+       * @param {Object} filters  -  { exam_type, featured }
        */
       getAll: function (filters) {
         return apiFetch('GET', '/api/testimonials', null, filters);
@@ -127,7 +127,7 @@
     contact: {
       /**
        * Submit a contact / strategy request.
-       * @param {Object} data — { name, email, message, subject? }
+       * @param {Object} data  -  { name, email, message, subject? }
        */
       submit: function (data) {
         return apiFetch('POST', '/api/contact', data);
@@ -140,7 +140,7 @@
       register: function (data) {
         return apiFetch('POST', '/api/learners/register', data);
       },
-      /** Login — returns { token, learner } */
+      /** Login  -  returns { token, learner } */
       login: function (data) {
         return apiFetch('POST', '/api/learners/login', data);
       },
@@ -166,7 +166,7 @@
 
     /** Format bytes → "2.4 MB" / "890 KB" / "45 KB" */
     fileSize: function (bytes) {
-      if (!bytes || bytes === 0) return '—';
+      if (!bytes || bytes === 0) return ' - ';
       if (bytes >= 1048576) return (bytes / 1048576).toFixed(1) + ' MB';
       if (bytes >= 1024)    return Math.round(bytes / 1024)    + ' KB';
       return bytes + ' B';

@@ -1,5 +1,5 @@
 /* ============================================================
-   routes/learners.js — Learner Auth & Profile Routes
+   routes/learners.js  -  Learner Auth & Profile Routes
 
    PUBLIC:
      POST /api/learners/register

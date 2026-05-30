@@ -1,6 +1,6 @@
 /* ============================================================
-   controllers/blogController.js — Blog Posts
-   Dr. Jaspal Singh Website — jaspalsingh.in
+   controllers/blogController.js  -  Blog Posts
+   Dr. Jaspal Singh Website  -  jaspalsingh.in
 
    Phase 4: Cloudinary image upload integrated for cover images.
    req.file is set by uploadImage.single('cover_image') in the route.
@@ -71,7 +71,7 @@ const getOne = async (req, res, next) => {
   try {
     const result = await query(
       `SELECT id, title, slug, content, excerpt, category,
-              cover_image_url, published_at, created_at
+              cover_image_url, pdf_url, published_at, created_at
        FROM blog_posts
        WHERE slug = $1 AND is_published = TRUE`,
       [req.params.slug]
@@ -87,7 +87,7 @@ const getOne = async (req, res, next) => {
 
 /* ── ADMIN ONLY ─────────────────────────────────────────────── */
 
-/* GET /api/blog/admin/all — all posts including drafts */
+/* GET /api/blog/admin/all  -  all posts including drafts */
 const adminGetAll = async (req, res, next) => {
   try {
     const result = await query(
@@ -101,13 +101,13 @@ const adminGetAll = async (req, res, next) => {
   }
 };
 
-/* POST /api/blog — create post
+/* POST /api/blog  -  create post
    Cover image uploaded via uploadImage.single('cover_image') middleware.
 */
 const create = async (req, res, next) => {
   try {
     const {
-      title, content, excerpt, category, is_published,
+      title, content, excerpt, category, is_published, pdf_url,
     } = req.body;
 
     if (!title || !content || !category) {
@@ -122,7 +122,7 @@ const create = async (req, res, next) => {
       slug = `${slug}-${Date.now()}`;
     }
 
-    /* Cover image — prefer uploaded file over manual URL */
+    /* Cover image  -  prefer uploaded file over manual URL */
     let cover_image_url       = req.body.cover_image_url       || null;
     let cover_image_public_id = req.body.cover_image_public_id || null;
 
@@ -137,12 +137,12 @@ const create = async (req, res, next) => {
     const result = await query(
       `INSERT INTO blog_posts
          (title, slug, content, excerpt, category,
-          cover_image_url, cover_image_public_id, is_published, published_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+          cover_image_url, cover_image_public_id, pdf_url, is_published, published_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
        RETURNING *`,
       [
         title.trim(), slug, content, excerpt || null, category,
-        cover_image_url, cover_image_public_id,
+        cover_image_url, cover_image_public_id, pdf_url || null,
         pub, publishedAt,
       ]
     );
@@ -154,7 +154,7 @@ const create = async (req, res, next) => {
   }
 };
 
-/* PUT /api/blog/:id — update post
+/* PUT /api/blog/:id  -  update post
    If new cover image uploaded, old one is deleted from Cloudinary.
 */
 const update = async (req, res, next) => {
@@ -169,7 +169,7 @@ const update = async (req, res, next) => {
     }
 
     const {
-      title, content, excerpt, category, is_published,
+      title, content, excerpt, category, is_published, pdf_url,
     } = req.body;
 
     /* Stamp published_at only when first publishing */
@@ -202,14 +202,16 @@ const update = async (req, res, next) => {
          category               = COALESCE($4, category),
          cover_image_url        = COALESCE($5, cover_image_url),
          cover_image_public_id  = COALESCE($6, cover_image_public_id),
-         is_published           = COALESCE($7, is_published),
-         published_at           = COALESCE($8, published_at)
-       WHERE id = $9
+         pdf_url                = $7,
+         is_published           = COALESCE($8, is_published),
+         published_at           = COALESCE($9, published_at)
+       WHERE id = $10
        RETURNING *`,
       [
         title || null, content || null, excerpt || null,
         category || null,
         cover_image_url, cover_image_public_id,
+        pdf_url || null,
         pub,
         publishedAt || null,
         req.params.id,
@@ -226,7 +228,7 @@ const update = async (req, res, next) => {
   }
 };
 
-/* DELETE /api/blog/:id — also removes cover image from Cloudinary */
+/* DELETE /api/blog/:id  -  also removes cover image from Cloudinary */
 const remove = async (req, res, next) => {
   try {
     const result = await query(

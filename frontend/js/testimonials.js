@@ -1,6 +1,6 @@
 /* ============================================================
-   testimonials.js — Testimonials Page API Integration
-   Dr. Jaspal Singh Website — jaspalsingh.in
+   testimonials.js  -  Testimonials Page API Integration
+   Dr. Jaspal Singh Website  -  jaspalsingh.in
 
    Strategy:
      1. Fetch visible testimonials from /api/testimonials on load

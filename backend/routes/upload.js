@@ -1,11 +1,11 @@
 /* ============================================================
-   routes/upload.js — General File Upload Routes
-   Dr. Jaspal Singh Website — jaspalsingh.in
+   routes/upload.js  -  General File Upload Routes
+   Dr. Jaspal Singh Website  -  jaspalsingh.in
 
    ADMIN (JWT required):
-     POST /api/upload/profile    — upload hero/profile photo
-     POST /api/upload/image      — upload a generic image (banner, gallery)
-     DELETE /api/upload          — delete any Cloudinary asset by public_id
+     POST /api/upload/profile     -  upload hero/profile photo
+     POST /api/upload/image       -  upload a generic image (banner, gallery)
+     DELETE /api/upload           -  delete any Cloudinary asset by public_id
 
    The response includes the Cloudinary URL and public_id.
    Store the public_id in your frontend config / .env to use for the

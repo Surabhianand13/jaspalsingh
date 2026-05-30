@@ -1,6 +1,6 @@
 /* ============================================================
-   routes/analytics.js — Analytics Routes
-   Dr. Jaspal Singh Website — jaspalsingh.in
+   routes/analytics.js  -  Analytics Routes
+   Dr. Jaspal Singh Website  -  jaspalsingh.in
 
    PUBLIC:
      GET /api/analytics/public

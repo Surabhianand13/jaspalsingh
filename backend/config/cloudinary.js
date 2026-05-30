@@ -1,6 +1,6 @@
 /* ============================================================
-   config/cloudinary.js — Cloudinary SDK Configuration
-   Dr. Jaspal Singh Website — jaspalsingh.in
+   config/cloudinary.js  -  Cloudinary SDK Configuration
+   Dr. Jaspal Singh Website  -  jaspalsingh.in
 
    Reads credentials from .env:
      CLOUDINARY_CLOUD_NAME
@@ -21,7 +21,7 @@ cloudinary.config({
 if (!process.env.CLOUDINARY_CLOUD_NAME ||
     !process.env.CLOUDINARY_API_KEY    ||
     !process.env.CLOUDINARY_API_SECRET) {
-  console.warn('⚠️  Cloudinary credentials missing in .env — uploads will fail.');
+  console.warn('⚠️  Cloudinary credentials missing in .env  -  uploads will fail.');
 }
 
 module.exports = cloudinary;

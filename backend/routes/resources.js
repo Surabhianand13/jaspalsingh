@@ -1,17 +1,17 @@
 /* ============================================================
-   routes/resources.js — Study Resources Routes
+   routes/resources.js  -  Study Resources Routes
 
    PUBLIC:
-     GET  /api/resources                   — list with filters
-     GET  /api/resources/:id               — single resource
-     POST /api/resources/download/:id      — increment counter + get URL
+     GET  /api/resources                    -  list with filters
+     GET  /api/resources/:id                -  single resource
+     POST /api/resources/download/:id       -  increment counter + get URL
 
    ADMIN (JWT required):
-     GET  /api/resources/admin/all         — all including hidden
-     GET  /api/resources/admin/analytics   — top downloads
-     POST /api/resources                   — create (with optional PDF upload)
-     PUT  /api/resources/:id               — update (with optional PDF upload)
-     DEL  /api/resources/:id               — delete (removes Cloudinary asset)
+     GET  /api/resources/admin/all          -  all including hidden
+     GET  /api/resources/admin/analytics    -  top downloads
+     POST /api/resources                    -  create (with optional PDF upload)
+     PUT  /api/resources/:id                -  update (with optional PDF upload)
+     DEL  /api/resources/:id                -  delete (removes Cloudinary asset)
    ============================================================ */
 
 const express    = require('express');
@@ -28,7 +28,7 @@ router.get('/admin/analytics', protect,  ctrl.analytics);
 router.get('/:id',                       ctrl.getOne);
 router.post('/download/:id', optionalLearner, ctrl.download);
 
-/* Admin — uploadPDF.single('file') processes the PDF if one is attached */
+/* Admin  -  uploadPDF.single('file') processes the PDF if one is attached */
 router.post('/',
   protect,
   uploadPDF.single('file'),

@@ -1,11 +1,11 @@
 /* ============================================================
-   middleware/upload.js — Multer + Cloudinary Storage
-   Dr. Jaspal Singh Website — jaspalsingh.in
+   middleware/upload.js  -  Multer + Cloudinary Storage
+   Dr. Jaspal Singh Website  -  jaspalsingh.in
 
    Exports three ready-to-use multer instances:
-     uploadPDF     — for study resources (PDFs, up to 50 MB)
-     uploadImage   — for blog covers / testimonial photos (images, up to 5 MB)
-     uploadProfile — for hero/header profile photo (image, up to 5 MB)
+     uploadPDF      -  for study resources (PDFs, up to 50 MB)
+     uploadImage    -  for blog covers / testimonial photos (images, up to 5 MB)
+     uploadProfile  -  for hero/header profile photo (image, up to 5 MB)
 
    Usage in a route:
      router.post('/api/resources', uploadPDF.single('file'), ctrl.create);

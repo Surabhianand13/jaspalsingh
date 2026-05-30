@@ -1,5 +1,5 @@
 /* ============================================================
-   routes/auth.js — Authentication Routes
+   routes/auth.js  -  Authentication Routes
    POST /api/auth/login
    GET  /api/auth/me   (protected)
    ============================================================ */

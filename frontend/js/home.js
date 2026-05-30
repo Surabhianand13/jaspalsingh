@@ -1,102 +1,235 @@
 /* ============================================================
-   HOME.JS — Homepage JavaScript
-   Dr. Jaspal Singh Personal Website — jaspalsingh.in
-   Handles: stat counters, scroll fade-in animations
+   HOME.JS  -  Homepage JavaScript (Gen-Z Premium Edition)
+   Dr. Jaspal Singh Personal Website  -  jaspalsingh.in
    ============================================================ */
 
 (function () {
   'use strict';
 
-  /* --- Animated Stat Counters --- */
-
-  function animateCounter(el, target, duration) {
-    var startTime = null;
-
-    function easeOutCubic(t) {
-      return 1 - Math.pow(1 - t, 3);
-    }
-
-    function step(timestamp) {
-      if (!startTime) startTime = timestamp;
-      var elapsed  = timestamp - startTime;
-      var progress = Math.min(elapsed / duration, 1);
-      var value    = Math.floor(easeOutCubic(progress) * target);
-      el.textContent = value;
-      if (progress < 1) requestAnimationFrame(step);
-    }
-
-    requestAnimationFrame(step);
+  /* ── Reading progress bar ─────────────────────────────── */
+  var progressBar = document.getElementById('readingProgress');
+  if (progressBar) {
+    window.addEventListener('scroll', function () {
+      var scrollTop  = window.scrollY;
+      var docHeight  = document.documentElement.scrollHeight - window.innerHeight;
+      var pct        = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+      progressBar.style.width = pct + '%';
+    }, { passive: true });
   }
 
-  /* Observe the stats bar — trigger counters once when it enters view */
+
+  /* ── Animated Stat Counters ───────────────────────────── */
   var statNums        = document.querySelectorAll('.stat-num[data-target]');
   var countersStarted = false;
 
-  if (statNums.length && 'IntersectionObserver' in window) {
-    var statsBar = document.querySelector('.stats-bar');
-
-    var statsObserver = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (entry.isIntersecting && !countersStarted) {
-          countersStarted = true;
-          statNums.forEach(function (el) {
-            animateCounter(el, parseInt(el.dataset.target, 10), 1800);
-          });
-        }
-      });
-    }, { threshold: 0.4 });
-
-    if (statsBar) statsObserver.observe(statsBar);
+  function easeOutExpo(t) {
+    return t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
   }
 
-  /* --- Scroll Fade-in for Cards --- */
+  function animateCounter(el, target, duration) {
+    var startTime = null;
+    function step(ts) {
+      if (!startTime) startTime = ts;
+      var elapsed  = ts - startTime;
+      var progress = Math.min(elapsed / duration, 1);
+      el.textContent = Math.floor(easeOutExpo(progress) * target);
+      if (progress < 1) requestAnimationFrame(step);
+      else el.textContent = target;
+    }
+    requestAnimationFrame(step);
+  }
 
-  var animatables = document.querySelectorAll(
-    '.why-card, .resource-card, .testimonial-card, .community-btn, .stat-item'
-  );
-
-  /* Set initial hidden state */
-  animatables.forEach(function (el) {
-    el.style.opacity  = '0';
-    el.style.transform = el.style.transform
-      ? el.style.transform + ' translateY(22px)'
-      : 'translateY(22px)';
-    el.style.transition = 'opacity 0.55s ease, transform 0.55s ease';
-  });
+  /* ── Scroll-reveal  -  [data-reveal] & [data-stagger] ───── */
+  var revealEls   = document.querySelectorAll('[data-reveal]');
+  var staggerEls  = document.querySelectorAll('[data-stagger]');
+  var statsBar    = document.querySelector('.stats-bar');
 
   if ('IntersectionObserver' in window) {
-    var cardObserver = new IntersectionObserver(function (entries) {
+
+    /* Single-element reveals */
+    var revealObs = new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) {
         if (entry.isIntersecting) {
-          var el    = entry.target;
-          var delay = parseInt(el.dataset.animDelay || '0', 10);
-          setTimeout(function () {
-            el.style.opacity   = '1';
-            el.style.transform = el.style.transform.replace('translateY(22px)', 'translateY(0)');
-          }, delay);
-          cardObserver.unobserve(el);
+          entry.target.classList.add('is-visible');
+          revealObs.unobserve(entry.target);
         }
       });
-    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+    }, { threshold: 0.12, rootMargin: '0px 0px -60px 0px' });
 
-    /* Stagger siblings within the same grid */
-    var grids = ['.why-cards', '.resources-grid', '.testimonials-grid', '.community-grid', '.stats-inner'];
-    grids.forEach(function (selector) {
-      var grid = document.querySelector(selector);
-      if (!grid) return;
-      var children = grid.querySelectorAll('.why-card, .resource-card, .testimonial-card, .community-btn, .stat-item');
-      children.forEach(function (el, i) {
-        el.dataset.animDelay = String(i * 90);
+    revealEls.forEach(function (el) { revealObs.observe(el); });
+
+    /* Staggered child reveals */
+    var staggerObs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          staggerObs.unobserve(entry.target);
+        }
       });
-    });
+    }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
 
-    animatables.forEach(function (el) { cardObserver.observe(el); });
+    staggerEls.forEach(function (el) { staggerObs.observe(el); });
+
+    /* Stat counters */
+    if (statsBar) {
+      var statsObs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting && !countersStarted) {
+            countersStarted = true;
+            statNums.forEach(function (el) {
+              animateCounter(el, parseInt(el.dataset.target, 10), 2000);
+            });
+          }
+        });
+      }, { threshold: 0.4 });
+      statsObs.observe(statsBar);
+    }
+
   } else {
-    /* Fallback for browsers without IntersectionObserver */
-    animatables.forEach(function (el) {
-      el.style.opacity   = '1';
-      el.style.transform = '';
+    /* Fallback: show everything immediately */
+    revealEls.forEach(function (el)  { el.classList.add('is-visible'); });
+    staggerEls.forEach(function (el) { el.classList.add('is-visible'); });
+    statNums.forEach(function (el) {
+      el.textContent = el.dataset.target;
     });
   }
 
+  /* ── Legacy card fade-in (for elements not in data-stagger) */
+  var legacyCards = document.querySelectorAll(
+    '.why-card:not([data-stagger] *), .resource-card:not([data-stagger] *), .testimonial-card:not([data-stagger] *)'
+  );
+  if (legacyCards.length && 'IntersectionObserver' in window) {
+    var legacyObs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          entry.target.style.opacity   = '1';
+          entry.target.style.transform = 'translateY(0)';
+          legacyObs.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1 });
+    legacyCards.forEach(function (el) {
+      el.style.opacity    = '0';
+      el.style.transform  = 'translateY(24px)';
+      el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+      legacyObs.observe(el);
+    });
+  }
+
+  /* ── Magnetic CTA buttons ─────────────────────────────── */
+  if (window.innerWidth > 1024) {
+    document.querySelectorAll('.btn-primary, .cs-cta').forEach(function (btn) {
+      btn.addEventListener('mousemove', function (e) {
+        var rect = btn.getBoundingClientRect();
+        var x = e.clientX - rect.left - rect.width  / 2;
+        var y = e.clientY - rect.top  - rect.height / 2;
+        btn.style.transform = 'translate(' + (x * 0.18) + 'px, ' + (y * 0.18) + 'px) scale(1.04)';
+      });
+      btn.addEventListener('mouseleave', function () {
+        btn.style.transform = '';
+      });
+    });
+  }
+
+  /* ── Exam chip selector ───────────────────────────────── */
+  window.examSelect = function (exam) {
+    document.querySelectorAll('.hero-exam-chip').forEach(function (c) {
+      c.classList.remove('active');
+    });
+    var classMap = { 'ssc-je': 'chip-sscje', 'raj-ae': 'chip-rajae', 'gate': 'chip-gate', 'ese': 'chip-ese' };
+    var chip = document.querySelector('.' + classMap[exam]);
+    if (chip) chip.classList.add('active');
+
+    var targetSel = (exam === 'gate' || exam === 'ese') ? '.resources-section' : '.offline-progs-section';
+    var target = document.querySelector(targetSel);
+    if (target) {
+      var y = target.getBoundingClientRect().top + window.scrollY - 84;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+    }
+
+    var jaMap = { 'ssc-je': 'ssc', 'raj-ae': 'raj-ae', 'gate': 'gate', 'ese': 'ese' };
+    var jaExam = jaMap[exam];
+    if (jaExam) {
+      var jaBtn = document.querySelector('.ja-filter-btn.f-' + jaExam);
+      if (jaBtn) jaFilter(jaBtn, jaExam);
+    }
+  };
+
 })();
+
+/* ── Scroll Journey Companion ───────────────────────────── */
+(function () {
+  var journey  = document.getElementById('scrollJourney');
+  var traveler = document.getElementById('sjTraveler');
+  var fill     = document.getElementById('sjFill');
+  if (!journey || !traveler || !fill) return;
+
+  var stops    = Array.from(journey.querySelectorAll('.sj-stop'));
+  var sections = stops.map(function (btn) {
+    return document.querySelector(btn.dataset.section);
+  });
+
+  /* Click a dot → smooth scroll to that section */
+  stops.forEach(function (btn, i) {
+    btn.addEventListener('click', function () {
+      var target = sections[i];
+      if (target) {
+        var y = target.getBoundingClientRect().top + window.scrollY - 84;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+      }
+    });
+  });
+
+  function update() {
+    var scrollY = window.scrollY;
+    var viewH   = window.innerHeight;
+
+    /* Show after scrolling down 120px from top */
+    if (scrollY < 120) {
+      journey.classList.remove('sj-visible');
+      return;
+    }
+    journey.classList.add('sj-visible');
+
+    /* Find which section is currently active */
+    var current = 0;
+    sections.forEach(function (sec, i) {
+      if (sec && scrollY + viewH * 0.45 >= sec.offsetTop) current = i;
+    });
+
+    /* Update active dot */
+    stops.forEach(function (btn, i) {
+      btn.classList.toggle('sj-active', i === current);
+    });
+
+    /* Move traveler to the active dot's position within the journey element */
+    var activeDot = stops[current] ? stops[current].querySelector('.sj-dot') : null;
+    if (activeDot) {
+      var journeyRect = journey.getBoundingClientRect();
+      var dotRect     = activeDot.getBoundingClientRect();
+      var relativeTop = dotRect.top - journeyRect.top + dotRect.height / 2;
+      traveler.style.top = relativeTop + 'px';
+    }
+
+    /* Fill the track proportionally */
+    var pct = sections.length > 1 ? (current / (sections.length - 1)) * 100 : 0;
+    fill.style.height = pct + '%';
+
+    /* Swap emoji per section for fun */
+    var emojis = ['🎯', '📊', '📚', '❤️', '🤝', '⭐'];
+    traveler.textContent = emojis[current] || '📖';
+  }
+
+  window.addEventListener('scroll', update, { passive: true });
+  window.addEventListener('resize', update, { passive: true });
+  update();
+})();
+
+/* ── Job Alerts filter ──────────────────────────────────── */
+function jaFilter(btn, exam) {
+  document.querySelectorAll('.ja-filter-btn').forEach(function (b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+  document.querySelectorAll('.ja-card').forEach(function (card) {
+    card.style.display = (exam === 'all' || card.dataset.exam === exam) ? '' : 'none';
+  });
+}

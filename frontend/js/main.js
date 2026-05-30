@@ -1,6 +1,6 @@
 /* ============================================================
-   MAIN.JS — Global JavaScript
-   Dr. Jaspal Singh Personal Website — jaspalsingh.in
+   MAIN.JS  -  Global JavaScript
+   Dr. Jaspal Singh Personal Website  -  jaspalsingh.in
    Handles: sticky header, mobile drawer menu
    ============================================================ */
 
@@ -66,4 +66,97 @@
     }
   });
 
+  /* Mark dropdown trigger active when on /programs */
+  if (currentPath === '/programs' || currentPath.startsWith('/programs')) {
+    var trigger = document.querySelector('.nav-dropdown-trigger');
+    if (trigger) trigger.classList.add('active');
+  }
+
+  /* --- Mobile Drawer Accordion --- */
+  document.querySelectorAll('.drawer-accordion-trigger').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var body = this.nextElementSibling;
+      var isOpen = this.classList.contains('acc-open');
+      this.classList.toggle('acc-open', !isOpen);
+      if (body) body.classList.toggle('acc-open', !isOpen);
+    });
+  });
+
+  /* Auto-open accordion if on programs page */
+  if (currentPath.startsWith('/programs')) {
+    var accTrigger = document.querySelector('.drawer-accordion-trigger');
+    var accBody = accTrigger && accTrigger.nextElementSibling;
+    if (accTrigger && accBody) {
+      accTrigger.classList.add('acc-open');
+      accBody.classList.add('acc-open');
+    }
+  }
+
+})();
+
+/* ============================================================
+   HOME BANNER CAROUSEL
+   ============================================================ */
+(function () {
+  var wrap = document.getElementById('homeCarousel');
+  if (!wrap) return;
+
+  var track = wrap.querySelector('.carousel-track');
+  var slides = wrap.querySelectorAll('.carousel-slide');
+  var dots   = wrap.querySelectorAll('.carousel-dot-btn');
+  var prev   = wrap.querySelector('.carousel-prev');
+  var next   = wrap.querySelector('.carousel-next');
+  var total  = slides.length;
+  var current = 0;
+  var timer;
+  var DELAY = 5000;
+
+  function goTo(idx) {
+    current = (idx + total) % total;
+    track.style.transform = 'translateX(-' + (current * 100) + '%)';
+    dots.forEach(function (d, i) { d.classList.toggle('active', i === current); });
+  }
+
+  function startAuto() {
+    clearInterval(timer);
+    timer = setInterval(function () { goTo(current + 1); }, DELAY);
+  }
+
+  if (prev) prev.addEventListener('click', function () { goTo(current - 1); startAuto(); });
+  if (next) next.addEventListener('click', function () { goTo(current + 1); startAuto(); });
+
+  dots.forEach(function (dot, i) {
+    dot.addEventListener('click', function () { goTo(i); startAuto(); });
+  });
+
+  /* Pause on hover */
+  wrap.addEventListener('mouseenter', function () { clearInterval(timer); });
+  wrap.addEventListener('mouseleave', startAuto);
+
+  /* Touch swipe */
+  var touchStartX = 0;
+  wrap.addEventListener('touchstart', function (e) { touchStartX = e.touches[0].clientX; }, { passive: true });
+  wrap.addEventListener('touchend', function (e) {
+    var dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 40) { goTo(dx < 0 ? current + 1 : current - 1); startAuto(); }
+  }, { passive: true });
+
+  goTo(0);
+  startAuto();
+})();
+
+/* ── Programs horizontal carousel arrows ─────────────── */
+(function () {
+  var carousel = document.getElementById('progsCarousel');
+  if (!carousel) return;
+  var prevBtn = document.querySelector('.progs-prev');
+  var nextBtn = document.querySelector('.progs-next');
+  var scrollAmt = 320;
+
+  if (nextBtn) nextBtn.addEventListener('click', function () {
+    carousel.scrollBy({ left: scrollAmt, behavior: 'smooth' });
+  });
+  if (prevBtn) prevBtn.addEventListener('click', function () {
+    carousel.scrollBy({ left: -scrollAmt, behavior: 'smooth' });
+  });
 })();

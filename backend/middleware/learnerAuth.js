@@ -1,5 +1,5 @@
 /* ============================================================
-   middleware/learnerAuth.js — Learner JWT Authentication
+   middleware/learnerAuth.js  -  Learner JWT Authentication
    Protects learner-only routes (profile, downloads).
    Sets req.learner = { id, email, name }
    ============================================================ */
@@ -30,7 +30,7 @@ const protectLearner = (req, res, next) => {
   }
 };
 
-/* Optional learner auth — attaches req.learner if token is valid, never blocks */
+/* Optional learner auth  -  attaches req.learner if token is valid, never blocks */
 const optionalLearner = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   if (!authHeader || !authHeader.startsWith('Bearer ')) return next();

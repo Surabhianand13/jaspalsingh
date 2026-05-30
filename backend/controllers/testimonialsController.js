@@ -1,6 +1,6 @@
 /* ============================================================
-   controllers/testimonialsController.js — Student Testimonials
-   Dr. Jaspal Singh Website — jaspalsingh.in
+   controllers/testimonialsController.js  -  Student Testimonials
+   Dr. Jaspal Singh Website  -  jaspalsingh.in
 
    Phase 4: Cloudinary image upload integrated for student photos.
    req.file is set by uploadImage.single('photo') middleware in the route.
@@ -70,7 +70,7 @@ const adminGetAll = async (req, res, next) => {
   }
 };
 
-/* POST /api/testimonials — add testimonial
+/* POST /api/testimonials  -  add testimonial
    Student photo uploaded via uploadImage.single('photo') middleware.
 */
 const create = async (req, res, next) => {
@@ -88,7 +88,7 @@ const create = async (req, res, next) => {
       });
     }
 
-    /* Photo — prefer uploaded file over manual URL */
+    /* Photo  -  prefer uploaded file over manual URL */
     let photo_url       = req.body.photo_url       || null;
     let photo_public_id = req.body.photo_public_id || null;
 
@@ -186,7 +186,7 @@ const update = async (req, res, next) => {
   }
 };
 
-/* DELETE /api/testimonials/:id — also removes photo from Cloudinary */
+/* DELETE /api/testimonials/:id  -  also removes photo from Cloudinary */
 const remove = async (req, res, next) => {
   try {
     const result = await query(

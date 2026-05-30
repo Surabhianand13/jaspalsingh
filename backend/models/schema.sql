@@ -85,6 +85,7 @@ CREATE TABLE IF NOT EXISTS blog_posts (
   category              VARCHAR(100) NOT NULL,
   cover_image_url       VARCHAR(1000),
   cover_image_public_id VARCHAR(500),
+  pdf_url               VARCHAR(1000),
   is_published          BOOLEAN NOT NULL DEFAULT FALSE,
   published_at          TIMESTAMP WITH TIME ZONE,
   created_at            TIMESTAMP WITH TIME ZONE DEFAULT NOW(),

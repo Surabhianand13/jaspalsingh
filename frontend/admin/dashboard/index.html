@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin Dashboard — Dr. Jaspal Singh</title>
+  <title>Admin Dashboard  -  Dr. Jaspal Singh</title>
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -146,32 +146,32 @@
           <div class="stat-card" style="--stat-color:#F0345A;--stat-bg:rgba(240,52,90,0.1);">
             <div class="stat-card-icon"><i class="fas fa-file-pdf"></i></div>
             <div class="stat-card-label">Resources</div>
-            <div class="stat-card-value" id="statResources">—</div>
+            <div class="stat-card-value" id="statResources"> - </div>
           </div>
           <div class="stat-card" style="--stat-color:#67C8E8;--stat-bg:rgba(103,200,232,0.1);">
             <div class="stat-card-icon"><i class="fas fa-pen-to-square"></i></div>
             <div class="stat-card-label">Blog Posts</div>
-            <div class="stat-card-value" id="statBlog">—</div>
+            <div class="stat-card-value" id="statBlog"> - </div>
           </div>
           <div class="stat-card" style="--stat-color:#f59e0b;--stat-bg:rgba(245,158,11,0.1);">
             <div class="stat-card-icon"><i class="fas fa-star"></i></div>
             <div class="stat-card-label">Testimonials</div>
-            <div class="stat-card-value" id="statTestis">—</div>
+            <div class="stat-card-value" id="statTestis"> - </div>
           </div>
           <div class="stat-card" style="--stat-color:#8b5cf6;--stat-bg:rgba(139,92,246,0.1);">
             <div class="stat-card-icon"><i class="fas fa-envelope"></i></div>
             <div class="stat-card-label">Unread Messages</div>
-            <div class="stat-card-value" id="statUnread">—</div>
+            <div class="stat-card-value" id="statUnread"> - </div>
           </div>
           <div class="stat-card" style="--stat-color:#10b981;--stat-bg:rgba(16,185,129,0.1);">
             <div class="stat-card-icon"><i class="fas fa-users"></i></div>
             <div class="stat-card-label">Learners</div>
-            <div class="stat-card-value" id="statLearners">—</div>
+            <div class="stat-card-value" id="statLearners"> - </div>
           </div>
           <div class="stat-card" style="--stat-color:#ef4444;--stat-bg:rgba(239,68,68,0.1);">
             <div class="stat-card-icon"><i class="fas fa-download"></i></div>
             <div class="stat-card-label">Total Downloads</div>
-            <div class="stat-card-value" id="statDownloads">—</div>
+            <div class="stat-card-value" id="statDownloads"> - </div>
           </div>
         </div>
 
@@ -602,7 +602,7 @@
         <div class="admin-form-group">
           <label class="admin-form-label" for="blogSlug">URL Slug <span class="required">*</span></label>
           <input type="text" id="blogSlug" class="admin-input" placeholder="auto-generated-from-title" required />
-          <div class="admin-form-hint">URL: /blog/<span id="slugPreview">—</span></div>
+          <div class="admin-form-hint">URL: /blog/<span id="slugPreview"> - </span></div>
         </div>
 
         <div class="admin-form-row">
@@ -635,6 +635,13 @@
         <div class="admin-form-group">
           <label class="admin-form-label" for="blogExcerpt">Excerpt</label>
           <textarea id="blogExcerpt" class="admin-textarea" placeholder="Short summary (shown in post cards)…" rows="2"></textarea>
+        </div>
+
+        <!-- PDF URL -->
+        <div class="admin-form-group">
+          <label class="admin-form-label" for="blogPdfUrl">Official Notification PDF URL</label>
+          <input type="url" id="blogPdfUrl" class="admin-input" placeholder="https://… (paste official PDF link for embed preview)" />
+          <div class="admin-form-hint">Optional. Shown as a preview embed in the blog post.</div>
         </div>
 
         <!-- Quill editor -->

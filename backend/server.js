@@ -1,6 +1,6 @@
 /* ============================================================
-   server.js — Main Express Application
-   Dr. Jaspal Singh Website — jaspalsingh.in
+   server.js  -  Main Express Application
+   Dr. Jaspal Singh Website  -  jaspalsingh.in
    ============================================================ */
 
 require('dotenv').config();
@@ -18,7 +18,7 @@ const app = express();
 // Set secure HTTP headers
 app.use(helmet());
 
-// CORS — allow requests from the frontend origin(s)
+// CORS  -  allow requests from the frontend origin(s)
 // FRONTEND_URL can be a single origin or comma-separated list
 const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:5500')
   .split(',')
@@ -38,7 +38,7 @@ app.use(cors({
 
 /* ── Rate Limiting ───────────────────────────────────────── */
 
-// General API limiter — 500 requests per 15 minutes per IP
+// General API limiter  -  500 requests per 15 minutes per IP
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 500,
@@ -47,7 +47,7 @@ const apiLimiter = rateLimit({
   message: { error: 'Too many requests, please try again later.' },
 });
 
-// Stricter limiter for login — 20 attempts per 15 minutes per IP
+// Stricter limiter for login  -  20 attempts per 15 minutes per IP
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
@@ -58,6 +58,11 @@ const loginLimiter = rateLimit({
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+/* ── Static Files ────────────────────────────────────────── */
+
+// Serve banner/gallery images from the project-root images/ folder
+app.use('/images', express.static(path.join(__dirname, '..', 'frontend', 'images')));
 
 /* ── API Routes ──────────────────────────────────────────── */
 
@@ -115,13 +120,24 @@ process.on('uncaughtException', (err) => {
   process.exit(1);
 });
 
-/* ── Start Server ────────────────────────────────────────── */
+/* ── Run DB migrations then start server ─────────────────── */
 
+const { query } = require('./config/db');
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`\n✅ jaspalsingh.in API running on port ${PORT}`);
-  console.log(`   Environment : ${process.env.NODE_ENV || 'development'}`);
-  console.log(`   Health check: http://localhost:${PORT}/api/health\n`);
-});
+
+async function migrate() {
+  await query(`ALTER TABLE blog_posts ADD COLUMN IF NOT EXISTS pdf_url VARCHAR(1000)`);
+  console.log('✅ Migration: pdf_url column ensured');
+}
+
+migrate()
+  .catch(err => console.warn('⚠️  Migration warning:', err.message))
+  .finally(() => {
+    app.listen(PORT, () => {
+      console.log(`\n✅ jaspalsingh.in API running on port ${PORT}`);
+      console.log(`   Environment : ${process.env.NODE_ENV || 'development'}`);
+      console.log(`   Health check: http://localhost:${PORT}/api/health\n`);
+    });
+  });
 
 module.exports = app;
