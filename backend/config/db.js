@@ -1,5 +1,5 @@
 /* ============================================================
-   config/db.js — PostgreSQL Connection Pool
+   config/db.js  -  PostgreSQL Connection Pool
    Uses the pg library. All queries go through this pool.
    ============================================================ */
 

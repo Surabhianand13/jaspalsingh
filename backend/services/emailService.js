@@ -1,15 +1,15 @@
 /* ============================================================
-   services/emailService.js — Email Templates & Sending
-   Dr. Jaspal Singh Website — jaspalsingh.in
+   services/emailService.js  -  Email Templates & Sending
+   Dr. Jaspal Singh Website  -  jaspalsingh.in
 
-   All functions are fire-and-forget — they return a Promise
+   All functions are fire-and-forget  -  they return a Promise
    but callers should .catch() silently so email failures
    never break API responses.
 
    Exported functions:
-     sendContactNotification(msg)   — admin notified of new contact/strategy
-     sendContactAutoReply(msg)      — sender gets "we received your message"
-     sendWelcomeEmail(learner)      — new learner welcome
+     sendContactNotification(msg)    -  admin notified of new contact/strategy
+     sendContactAutoReply(msg)       -  sender gets "we received your message"
+     sendWelcomeEmail(learner)       -  new learner welcome
    ============================================================ */
 
 const { transporter, isConfigured } = require('../config/mailer');
@@ -79,11 +79,11 @@ function baseEmail(content) {
 function infoRow(label, value) {
   return `<tr>
     <td style="padding:6px 0;font-size:13px;color:#6b7280;width:120px;vertical-align:top;">${esc(label)}</td>
-    <td style="padding:6px 0;font-size:14px;color:#1A1A2E;font-weight:600;">${esc(value || '—')}</td>
+    <td style="padding:6px 0;font-size:14px;color:#1A1A2E;font-weight:600;">${esc(value || ' - ')}</td>
   </tr>`;
 }
 
-/* ── 1. Admin — New Contact / Strategy Message ───────────────── */
+/* ── 1. Admin  -  New Contact / Strategy Message ───────────────── */
 
 async function sendContactNotification(msg) {
   if (!isConfigured || !ADMIN_EMAIL) return;
@@ -124,7 +124,7 @@ async function sendContactNotification(msg) {
   return transporter.sendMail({
     from:    FROM_ADDRESS,
     to:      ADMIN_EMAIL,
-    subject: `${alertIcon} ${alertType} from ${msg.name} — jaspalsingh.in`,
+    subject: `${alertIcon} ${alertType} from ${msg.name}  -  jaspalsingh.in`,
     html:    baseEmail(content),
   });
 }
@@ -138,7 +138,7 @@ async function sendContactAutoReply(msg) {
   const firstName  = (msg.name || 'there').split(' ')[0];
   const responseTime = isStrategy
     ? 'within 24–48 hours with your personalised strategy plan'
-    : 'personally — usually within a few days';
+    : 'personally  -  usually within a few days';
 
   const content = `
     <h2 style="margin:0 0 8px;font-size:20px;color:#1A1A2E;font-weight:800;">
@@ -156,7 +156,7 @@ async function sendContactAutoReply(msg) {
     </div>
 
     <p style="font-size:14px;color:#374151;line-height:1.7;margin-bottom:20px;">
-      For the fastest response, join the Telegram community — Dr. Jaspal is most active there daily:
+      For the fastest response, join the Telegram community  -  Dr. Jaspal is most active there daily:
     </p>
     <a href="https://t.me/jaspalsirofficial"
        style="display:inline-block;background:linear-gradient(135deg,#1a9fd8,#28bce8);color:#fff;
@@ -174,7 +174,7 @@ async function sendContactAutoReply(msg) {
   return transporter.sendMail({
     from:    FROM_ADDRESS,
     to:      `"${msg.name}" <${msg.email}>`,
-    subject: `Re: Your message to Dr. Jaspal Singh — we received it!`,
+    subject: `Re: Your message to Dr. Jaspal Singh  -  we received it!`,
     html:    baseEmail(content),
   });
 }
@@ -199,7 +199,7 @@ async function sendWelcomeEmail(learner) {
     </h2>
     <p style="margin:0 0 20px;font-size:15px;color:#374151;line-height:1.75;">
       You're now part of Dr. Jaspal Singh's community of <strong>${examLabel}</strong> aspirants.
-      Your account is ready — everything is free, always.
+      Your account is ready  -  everything is free, always.
     </p>
 
     <div style="background:linear-gradient(135deg,#F0345A1a,#67C8E81a);border-radius:12px;
@@ -208,7 +208,7 @@ async function sendWelcomeEmail(learner) {
       <table cellpadding="0" cellspacing="0">
         <tr><td style="padding:5px 0;font-size:14px;color:#374151;">
           <span style="color:#F0345A;margin-right:8px;">⬇</span>
-          Download all notes, formula books, PYQs — tracked in your account
+          Download all notes, formula books, PYQs  -  tracked in your account
         </td></tr>
         <tr><td style="padding:5px 0;font-size:14px;color:#374151;">
           <span style="color:#F0345A;margin-right:8px;">📋</span>
@@ -245,7 +245,7 @@ async function sendWelcomeEmail(learner) {
         "Har aspirant deserves a teacher who truly cares. I'm glad you're here."
       </p>
       <p style="margin:0;font-size:13px;color:#F0345A;font-weight:700;">
-        — Dr. Jaspal Singh · PhD · Ex-IES Officer (AIR-04)
+         -  Dr. Jaspal Singh · PhD · Ex-IES Officer (AIR-04)
       </p>
     </div>
   `;
@@ -253,12 +253,12 @@ async function sendWelcomeEmail(learner) {
   return transporter.sendMail({
     from:    FROM_ADDRESS,
     to:      `"${learner.name}" <${learner.email}>`,
-    subject: `Welcome to Dr. Jaspal Singh's community — your account is ready 🎉`,
+    subject: `Welcome to Dr. Jaspal Singh's community  -  your account is ready 🎉`,
     html:    baseEmail(content),
   });
 }
 
-/* ── 4. Admin — New Learner Alert ────────────────────────────── */
+/* ── 4. Admin  -  New Learner Alert ────────────────────────────── */
 
 async function sendNewLearnerAlert(learner) {
   if (!isConfigured || !ADMIN_EMAIL) return;
@@ -288,7 +288,7 @@ async function sendNewLearnerAlert(learner) {
   return transporter.sendMail({
     from:    FROM_ADDRESS,
     to:      ADMIN_EMAIL,
-    subject: `👤 New learner: ${learner.name} (${learner.target_exam || 'General'}) — jaspalsingh.in`,
+    subject: `👤 New learner: ${learner.name} (${learner.target_exam || 'General'})  -  jaspalsingh.in`,
     html:    baseEmail(content),
   });
 }

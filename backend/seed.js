@@ -1,6 +1,6 @@
 /* ============================================================
-   seed.js — Create Admin User
-   Dr. Jaspal Singh Website — jaspalsingh.in
+   seed.js  -  Create Admin User
+   Dr. Jaspal Singh Website  -  jaspalsingh.in
 
    Run ONCE after setting up the database:
      cd backend
@@ -27,7 +27,7 @@ async function seed() {
     // Hash the password with bcrypt (12 salt rounds)
     const hash = await bcrypt.hash(password, 12);
 
-    // Insert admin — on conflict (email already exists), update the hash
+    // Insert admin  -  on conflict (email already exists), update the hash
     const result = await pool.query(
       `INSERT INTO admin_users (email, password_hash)
        VALUES ($1, $2)

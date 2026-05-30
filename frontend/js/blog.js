@@ -1,6 +1,6 @@
 /* ============================================================
-   blog.js — Blog Page API Integration
-   Dr. Jaspal Singh Website — jaspalsingh.in
+   blog.js  -  Blog Page API Integration
+   Dr. Jaspal Singh Website  -  jaspalsingh.in
 
    Strategy:
      1. Fetch published posts from /api/blog on page load

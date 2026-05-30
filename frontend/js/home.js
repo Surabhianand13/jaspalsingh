@@ -1,6 +1,6 @@
 /* ============================================================
-   HOME.JS — Homepage JavaScript (Gen-Z Premium Edition)
-   Dr. Jaspal Singh Personal Website — jaspalsingh.in
+   HOME.JS  -  Homepage JavaScript (Gen-Z Premium Edition)
+   Dr. Jaspal Singh Personal Website  -  jaspalsingh.in
    ============================================================ */
 
 (function () {
@@ -39,7 +39,7 @@
     requestAnimationFrame(step);
   }
 
-  /* ── Scroll-reveal — [data-reveal] & [data-stagger] ───── */
+  /* ── Scroll-reveal  -  [data-reveal] & [data-stagger] ───── */
   var revealEls   = document.querySelectorAll('[data-reveal]');
   var staggerEls  = document.querySelectorAll('[data-stagger]');
   var statsBar    = document.querySelector('.stats-bar');

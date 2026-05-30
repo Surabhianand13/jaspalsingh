@@ -1,5 +1,5 @@
 /* ============================================================
-   middleware/auth.js — JWT Authentication Middleware
+   middleware/auth.js  -  JWT Authentication Middleware
    Protects admin-only routes.
    Usage: router.post('/route', protect, controller)
    ============================================================ */

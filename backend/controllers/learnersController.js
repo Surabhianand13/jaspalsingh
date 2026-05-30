@@ -1,6 +1,6 @@
 /* ============================================================
-   controllers/learnersController.js — Learner Auth & Profile
-   Dr. Jaspal Singh Website — jaspalsingh.in
+   controllers/learnersController.js  -  Learner Auth & Profile
+   Dr. Jaspal Singh Website  -  jaspalsingh.in
 
    PUBLIC:
      POST /api/learners/register
@@ -12,8 +12,8 @@
      GET  /api/learners/downloads
 
    ADMIN PROTECTED:
-     GET  /api/learners            — all learners
-     GET  /api/learners/stats      — aggregate stats
+     GET  /api/learners             -  all learners
+     GET  /api/learners/stats       -  aggregate stats
    ============================================================ */
 
 const bcrypt  = require('bcryptjs');
@@ -71,7 +71,7 @@ const register = async (req, res, next) => {
       learner: { id: learner.id, name: learner.name, email: learner.email, target_exam: learner.target_exam },
     });
 
-    /* Fire-and-forget emails — failures must never break the API response */
+    /* Fire-and-forget emails  -  failures must never break the API response */
     sendWelcomeEmail(learner).catch(() => {});
     sendNewLearnerAlert(learner).catch(() => {});
   } catch (err) {
@@ -180,7 +180,7 @@ const getMyDownloads = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-/* ── GET /api/learners — ADMIN ──────────────────────────────── */
+/* ── GET /api/learners  -  ADMIN ──────────────────────────────── */
 const adminGetAll = async (req, res, next) => {
   try {
     const { search, exam, limit = 50, offset = 0 } = req.query;
@@ -221,7 +221,7 @@ const adminGetAll = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-/* ── GET /api/learners/stats — ADMIN ───────────────────────── */
+/* ── GET /api/learners/stats  -  ADMIN ───────────────────────── */
 const adminStats = async (req, res, next) => {
   try {
     const [totalR, last7R, examR] = await Promise.all([

@@ -1,6 +1,6 @@
 /* ============================================================
-   learner-auth.js — Learner Login / Register Modal
-   Dr. Jaspal Singh Website — jaspalsingh.in
+   learner-auth.js  -  Learner Login / Register Modal
+   Dr. Jaspal Singh Website  -  jaspalsingh.in
 
    Exposes: window.LearnerAuth
    Usage (in resources.js):
@@ -59,10 +59,10 @@
       signal:  controller.signal,
     }).then(function (res) {
       clearTimeout(timeoutId);
-      /* 503 = Render cold start — retry once after 12 s */
+      /* 503 = Render cold start  -  retry once after 12 s */
       if (res.status === 503 && !isRetry) {
         return new Promise(function (resolve, reject) {
-          showError('Server is starting up — please wait a moment…');
+          showError('Server is starting up  -  please wait a moment…');
           setTimeout(function () {
             doAuthPost(path, body, true).then(resolve).catch(reject);
           }, 12000);
@@ -77,7 +77,7 @@
       if (err.name === 'AbortError') {
         if (!isRetry) {
           return new Promise(function (resolve, reject) {
-            showError('Server is starting up — retrying in 12 seconds…');
+            showError('Server is starting up  -  retrying in 12 seconds…');
             setTimeout(function () {
               doAuthPost(path, body, true).then(resolve).catch(reject);
             }, 12000);
@@ -103,8 +103,8 @@
           '<div class="lauth-brand">',
             '<img src="assets/images/jaspal-hero.png" class="lauth-brand-avatar"',
                  ' alt="Dr. Jaspal Singh" onerror="this.style.display=\'none\'" />',
-            '<h2 id="lauthHeading">Join Free — Download Everything</h2>',
-            '<p>Create your free account to download all notes, formula books and PYQs — and receive personalised strategy updates.</p>',
+            '<h2 id="lauthHeading">Join Free  -  Download Everything</h2>',
+            '<p>Create your free account to download all notes, formula books and PYQs  -  and receive personalised strategy updates.</p>',
           '</div>',
 
           /* Error */

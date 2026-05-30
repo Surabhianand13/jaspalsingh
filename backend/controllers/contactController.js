@@ -1,11 +1,11 @@
 /* ============================================================
-   controllers/contactController.js — Contact Form Submissions
+   controllers/contactController.js  -  Contact Form Submissions
    ============================================================ */
 
 const { query } = require('../config/db');
 const { sendContactNotification, sendContactAutoReply } = require('../services/emailService');
 
-/* POST /api/contact — submit a contact message (public) */
+/* POST /api/contact  -  submit a contact message (public) */
 const submit = async (req, res, next) => {
   try {
     const { name, email, message, subject } = req.body;
@@ -44,7 +44,7 @@ const submit = async (req, res, next) => {
       id: saved.id,
     });
 
-    /* Fire-and-forget emails — failures must never break the API response */
+    /* Fire-and-forget emails  -  failures must never break the API response */
     const msgPayload = { ...saved, name, email, subject: subject ? subject.trim() : null, message: message.trim() };
     sendContactNotification(msgPayload).catch(() => {});
     sendContactAutoReply(msgPayload).catch(() => {});
@@ -53,7 +53,7 @@ const submit = async (req, res, next) => {
   }
 };
 
-/* GET /api/contact — list all messages (admin only) */
+/* GET /api/contact  -  list all messages (admin only) */
 const getAll = async (req, res, next) => {
   try {
     const { unread } = req.query;
@@ -79,7 +79,7 @@ const getAll = async (req, res, next) => {
   }
 };
 
-/* PUT /api/contact/:id/read — mark message as read (admin only) */
+/* PUT /api/contact/:id/read  -  mark message as read (admin only) */
 const markRead = async (req, res, next) => {
   try {
     const result = await query(

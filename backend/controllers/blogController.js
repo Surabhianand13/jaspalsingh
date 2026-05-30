@@ -1,6 +1,6 @@
 /* ============================================================
-   controllers/blogController.js — Blog Posts
-   Dr. Jaspal Singh Website — jaspalsingh.in
+   controllers/blogController.js  -  Blog Posts
+   Dr. Jaspal Singh Website  -  jaspalsingh.in
 
    Phase 4: Cloudinary image upload integrated for cover images.
    req.file is set by uploadImage.single('cover_image') in the route.
@@ -87,7 +87,7 @@ const getOne = async (req, res, next) => {
 
 /* ── ADMIN ONLY ─────────────────────────────────────────────── */
 
-/* GET /api/blog/admin/all — all posts including drafts */
+/* GET /api/blog/admin/all  -  all posts including drafts */
 const adminGetAll = async (req, res, next) => {
   try {
     const result = await query(
@@ -101,7 +101,7 @@ const adminGetAll = async (req, res, next) => {
   }
 };
 
-/* POST /api/blog — create post
+/* POST /api/blog  -  create post
    Cover image uploaded via uploadImage.single('cover_image') middleware.
 */
 const create = async (req, res, next) => {
@@ -122,7 +122,7 @@ const create = async (req, res, next) => {
       slug = `${slug}-${Date.now()}`;
     }
 
-    /* Cover image — prefer uploaded file over manual URL */
+    /* Cover image  -  prefer uploaded file over manual URL */
     let cover_image_url       = req.body.cover_image_url       || null;
     let cover_image_public_id = req.body.cover_image_public_id || null;
 
@@ -154,7 +154,7 @@ const create = async (req, res, next) => {
   }
 };
 
-/* PUT /api/blog/:id — update post
+/* PUT /api/blog/:id  -  update post
    If new cover image uploaded, old one is deleted from Cloudinary.
 */
 const update = async (req, res, next) => {
@@ -228,7 +228,7 @@ const update = async (req, res, next) => {
   }
 };
 
-/* DELETE /api/blog/:id — also removes cover image from Cloudinary */
+/* DELETE /api/blog/:id  -  also removes cover image from Cloudinary */
 const remove = async (req, res, next) => {
   try {
     const result = await query(

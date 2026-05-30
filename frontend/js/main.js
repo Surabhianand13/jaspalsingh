@@ -1,6 +1,6 @@
 /* ============================================================
-   MAIN.JS — Global JavaScript
-   Dr. Jaspal Singh Personal Website — jaspalsingh.in
+   MAIN.JS  -  Global JavaScript
+   Dr. Jaspal Singh Personal Website  -  jaspalsingh.in
    Handles: sticky header, mobile drawer menu
    ============================================================ */
 

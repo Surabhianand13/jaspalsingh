@@ -1,5 +1,5 @@
 /* ============================================================
-   controllers/authController.js — Admin Authentication
+   controllers/authController.js  -  Admin Authentication
    ============================================================ */
 
 const bcrypt = require('bcryptjs');
@@ -25,7 +25,7 @@ const login = async (req, res, next) => {
     );
 
     if (result.rows.length === 0) {
-      // Generic message — don't reveal whether email exists
+      // Generic message  -  don't reveal whether email exists
       return res.status(401).json({ error: 'Invalid email or password.' });
     }
 
@@ -54,7 +54,7 @@ const login = async (req, res, next) => {
   }
 };
 
-/* GET /api/auth/me — verify token and return current admin */
+/* GET /api/auth/me  -  verify token and return current admin */
 const getMe = async (req, res, next) => {
   try {
     const result = await query(

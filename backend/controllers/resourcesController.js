@@ -1,6 +1,6 @@
 /* ============================================================
-   controllers/resourcesController.js — Study Resources
-   Dr. Jaspal Singh Website — jaspalsingh.in
+   controllers/resourcesController.js  -  Study Resources
+   Dr. Jaspal Singh Website  -  jaspalsingh.in
 
    Phase 4: Cloudinary file upload integrated.
    - create: reads file from req.file (multer) OR req.body.file_url
@@ -99,7 +99,7 @@ const getOne = async (req, res, next) => {
 
 /* POST /api/resources/download/:id
    Increments download counter and returns a short-lived signed Cloudinary URL.
-   Signed URLs bypass access restrictions — works for all files regardless of
+   Signed URLs bypass access restrictions  -  works for all files regardless of
    when they were uploaded or what access_mode they have.
 */
 const download = async (req, res, next) => {
@@ -135,7 +135,7 @@ const download = async (req, res, next) => {
       }
     }
 
-    /* Log to download_events (time-series analytics — fire and forget) */
+    /* Log to download_events (time-series analytics  -  fire and forget) */
     query(
       'INSERT INTO download_events (resource_id, learner_id) VALUES ($1, $2)',
       [resourceId, learnerId]
@@ -159,7 +159,7 @@ const download = async (req, res, next) => {
 
 /* ── ADMIN ONLY ─────────────────────────────────────────────── */
 
-/* GET /api/resources/admin/all — all resources including hidden */
+/* GET /api/resources/admin/all  -  all resources including hidden */
 const adminGetAll = async (req, res, next) => {
   try {
     const result = await query(
@@ -171,7 +171,7 @@ const adminGetAll = async (req, res, next) => {
   }
 };
 
-/* POST /api/resources — create new resource
+/* POST /api/resources  -  create new resource
    Accepts multipart/form-data when a PDF file is uploaded via multer.
    req.file is set by uploadPDF.single('file') middleware in the route.
 */
@@ -192,7 +192,7 @@ const create = async (req, res, next) => {
       });
     }
 
-    /* File URL — prefer uploaded file over manual URL in body */
+    /* File URL  -  prefer uploaded file over manual URL in body */
     let file_url       = req.body.file_url       || null;
     let file_public_id = req.body.file_public_id || null;
     let file_size      = req.body.file_size       || null;
@@ -226,7 +226,7 @@ const create = async (req, res, next) => {
   }
 };
 
-/* PUT /api/resources/:id — update resource
+/* PUT /api/resources/:id  -  update resource
    If a new file is uploaded, deletes the old Cloudinary asset first.
 */
 const update = async (req, res, next) => {
@@ -306,7 +306,7 @@ const remove = async (req, res, next) => {
       return res.status(404).json({ error: 'Resource not found.' });
     }
 
-    /* Async cleanup — don't wait, don't fail the response */
+    /* Async cleanup  -  don't wait, don't fail the response */
     destroyCloudinaryAsset(result.rows[0].file_public_id, 'raw');
 
     res.json({ message: 'Resource deleted.', resource: { id: result.rows[0].id, title: result.rows[0].title } });
@@ -315,7 +315,7 @@ const remove = async (req, res, next) => {
   }
 };
 
-/* GET /api/resources/admin/analytics — top downloaded resources */
+/* GET /api/resources/admin/analytics  -  top downloaded resources */
 const analytics = async (req, res, next) => {
   try {
     const result = await query(

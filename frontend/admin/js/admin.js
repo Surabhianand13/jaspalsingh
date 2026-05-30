@@ -1,6 +1,6 @@
 /**
- * admin.js — Admin Panel JavaScript
- * jaspalsingh.in — Civil Engineering Educator
+ * admin.js  -  Admin Panel JavaScript
+ * jaspalsingh.in  -  Civil Engineering Educator
  *
  * Vanilla JS, no frameworks.
  * All API calls go through adminFetch() which attaches the admin JWT.
@@ -149,7 +149,7 @@
    * e.g. "20 Jan 2024"
    */
   function fmtDate(iso) {
-    if (!iso) return '—';
+    if (!iso) return ' - ';
     try {
       return new Date(iso).toLocaleDateString('en-IN', {
         day:   'numeric',
@@ -157,7 +157,7 @@
         year:  'numeric'
       });
     } catch (e) {
-      return '—';
+      return ' - ';
     }
   }
 
@@ -284,7 +284,7 @@
   }
 
   /* ══════════════════════════════════════════════
-     TOPBAR — LOGOUT
+     TOPBAR  -  LOGOUT
      ══════════════════════════════════════════════ */
 
   function bindTopbarLogout() {
@@ -743,9 +743,9 @@
       return (
         '<tr data-id="' + r.id + '">' +
           '<td><span class="cell-truncate" style="max-width:220px;display:block;" title="' + escapeHtml(r.title) + '">' + escapeHtml(r.title) + '</span></td>' +
-          '<td><span class="text-sm">' + escapeHtml(r.subject || '—') + '</span></td>' +
-          '<td><span class="text-sm">' + escapeHtml(r.resource_type || r.type || '—') + '</span></td>' +
-          '<td><span class="text-sm">' + escapeHtml(r.exam_tag || '—') + '</span></td>' +
+          '<td><span class="text-sm">' + escapeHtml(r.subject || ' - ') + '</span></td>' +
+          '<td><span class="text-sm">' + escapeHtml(r.resource_type || r.type || ' - ') + '</span></td>' +
+          '<td><span class="text-sm">' + escapeHtml(r.exam_tag || ' - ') + '</span></td>' +
           '<td><span class="fw-600">' + (r.download_count || 0) + '</span></td>' +
           '<td>' + (r.is_visible ? '<span class="badge badge-visible"><i class="fas fa-eye"></i>Yes</span>' : '<span class="badge badge-hidden"><i class="fas fa-eye-slash"></i>No</span>') + '</td>' +
           '<td class="col-actions">' +
@@ -970,7 +970,7 @@
 
     tbody.innerHTML = items.map(function (p) {
       var status    = p.is_published ? '<span class="badge badge-published"><i class="fas fa-circle-dot"></i>Published</span>' : '<span class="badge badge-draft"><i class="fas fa-clock"></i>Draft</span>';
-      var catLabel  = blogCategoryLabels[p.category] || escapeHtml(p.category) || '—';
+      var catLabel  = blogCategoryLabels[p.category] || escapeHtml(p.category) || ' - ';
       var dateStr   = fmtDate(p.published_at || p.created_at || p.createdAt);
 
       return (
@@ -1016,7 +1016,7 @@
     $('blogModalTitle').textContent  = isEdit ? 'Edit Post' : 'New Blog Post';
     $('blogTitle').value             = isEdit ? (post.title || '') : '';
     $('blogSlug').value              = isEdit ? (post.slug  || '') : '';
-    $('slugPreview').textContent     = isEdit ? (post.slug  || '—') : '—';
+    $('slugPreview').textContent     = isEdit ? (post.slug  || ' - ') : ' - ';
     $('blogCategory').value          = isEdit ? (post.category || '') : '';
     $('blogExcerpt').value           = isEdit ? (post.excerpt || '') : '';
     $('blogPdfUrl').value            = isEdit ? (post.pdf_url || '') : '';
@@ -1142,12 +1142,12 @@
         if (!blogState.editing || !slugInput.value.trim()) {
           var s = autoSlug(this.value);
           slugInput.value = s;
-          if (slugPrev) slugPrev.textContent = s || '—';
+          if (slugPrev) slugPrev.textContent = s || ' - ';
         }
       });
 
       slugInput.addEventListener('input', function () {
-        if (slugPrev) slugPrev.textContent = this.value.trim() || '—';
+        if (slugPrev) slugPrev.textContent = this.value.trim() || ' - ';
       });
     }
 
@@ -1210,11 +1210,11 @@
     tbody.innerHTML = items.map(function (t) {
       return (
         '<tr data-id="' + t.id + '">' +
-          '<td><span class="fw-600">' + escapeHtml(t.student_name || t.name || '—') + '</span></td>' +
-          '<td><span class="text-sm">' + escapeHtml(t.exam_type || t.exam || '—') + '</span></td>' +
-          '<td><span class="text-sm text-muted">' + escapeHtml(String(t.exam_year || '—')) + '</span></td>' +
-          '<td><span class="text-sm">' + escapeHtml(t.rank_or_result || t.rank || '—') + '</span></td>' +
-          '<td>' + (t.is_featured ? '<span class="badge badge-featured"><i class="fas fa-star"></i>Yes</span>' : '<span class="text-muted text-sm">—</span>') + '</td>' +
+          '<td><span class="fw-600">' + escapeHtml(t.student_name || t.name || ' - ') + '</span></td>' +
+          '<td><span class="text-sm">' + escapeHtml(t.exam_type || t.exam || ' - ') + '</span></td>' +
+          '<td><span class="text-sm text-muted">' + escapeHtml(String(t.exam_year || ' - ')) + '</span></td>' +
+          '<td><span class="text-sm">' + escapeHtml(t.rank_or_result || t.rank || ' - ') + '</span></td>' +
+          '<td>' + (t.is_featured ? '<span class="badge badge-featured"><i class="fas fa-star"></i>Yes</span>' : '<span class="text-muted text-sm"> - </span>') + '</td>' +
           '<td>' + (t.is_visible ? '<span class="badge badge-visible"><i class="fas fa-eye"></i>Yes</span>' : '<span class="badge badge-hidden"><i class="fas fa-eye-slash"></i>No</span>') + '</td>' +
           '<td class="col-actions">' +
             '<button class="btn-icon primary btn-admin-sm testi-edit-btn" data-id="' + t.id + '" title="Edit" aria-label="Edit testimonial">' +
@@ -1543,9 +1543,9 @@
       var isActive = l.is_active !== undefined ? l.is_active : true;
       return (
         '<tr data-id="' + (l.id || l.id) + '">' +
-          '<td><span class="fw-600">' + escapeHtml(l.name || l.full_name || '—') + '</span></td>' +
-          '<td><span class="text-sm">' + escapeHtml(l.email || '—') + '</span></td>' +
-          '<td><span class="text-sm">' + escapeHtml(l.exam_target || l.exam || '—') + '</span></td>' +
+          '<td><span class="fw-600">' + escapeHtml(l.name || l.full_name || ' - ') + '</span></td>' +
+          '<td><span class="text-sm">' + escapeHtml(l.email || ' - ') + '</span></td>' +
+          '<td><span class="text-sm">' + escapeHtml(l.exam_target || l.exam || ' - ') + '</span></td>' +
           '<td><span class="fw-600">' + (l.download_count || 0) + '</span></td>' +
           '<td><span class="text-sm text-muted">' + fmtDate(l.created_at || l.createdAt) + '</span></td>' +
           '<td><span class="text-sm text-muted">' + fmtDate(l.last_login || l.lastLogin) + '</span></td>' +

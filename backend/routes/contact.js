@@ -1,13 +1,13 @@
 /* ============================================================
-   routes/contact.js — Contact Form Routes
+   routes/contact.js  -  Contact Form Routes
 
    PUBLIC:
-     POST /api/contact              — submit message
+     POST /api/contact               -  submit message
 
    ADMIN (JWT required):
-     GET  /api/contact              — all messages
-     PUT  /api/contact/:id/read     — mark as read
-     DEL  /api/contact/:id          — delete message
+     GET  /api/contact               -  all messages
+     PUT  /api/contact/:id/read      -  mark as read
+     DEL  /api/contact/:id           -  delete message
    ============================================================ */
 
 const express = require('express');

@@ -1,15 +1,15 @@
 /* ============================================================
-   controllers/analyticsController.js — Analytics API
-   Dr. Jaspal Singh Website — jaspalsingh.in
+   controllers/analyticsController.js  -  Analytics API
+   Dr. Jaspal Singh Website  -  jaspalsingh.in
 
    PUBLIC:
-     GET /api/analytics/public       — total resources, downloads, learners
+     GET /api/analytics/public        -  total resources, downloads, learners
 
    ADMIN PROTECTED:
-     GET /api/analytics/downloads/trend   — downloads per day (last N days)
-     GET /api/analytics/learners/trend    — signups per day (last N days)
-     GET /api/analytics/subjects          — resources + downloads by subject
-     GET /api/analytics/top-resources     — top 10 most downloaded
+     GET /api/analytics/downloads/trend    -  downloads per day (last N days)
+     GET /api/analytics/learners/trend     -  signups per day (last N days)
+     GET /api/analytics/subjects           -  resources + downloads by subject
+     GET /api/analytics/top-resources      -  top 10 most downloaded
    ============================================================ */
 
 const { query } = require('../config/db');
@@ -37,7 +37,7 @@ const downloadsTrend = async (req, res, next) => {
     const days = Math.min(parseInt(req.query.days || '30', 10), 90);
 
     /* Build a date series so days with zero downloads still appear.
-       Use make_interval() so days is a typed integer parameter — no string interpolation. */
+       Use make_interval() so days is a typed integer parameter  -  no string interpolation. */
     const result = await query(
       `SELECT
          gs.day::date AS date,

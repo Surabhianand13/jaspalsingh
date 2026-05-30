@@ -1,6 +1,6 @@
 /* ============================================================
-   profile.js — My Profile Page Logic
-   Dr. Jaspal Singh Website — jaspalsingh.in
+   profile.js  -  My Profile Page Logic
+   Dr. Jaspal Singh Website  -  jaspalsingh.in
    ============================================================ */
 
 (function () {

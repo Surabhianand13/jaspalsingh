@@ -1,6 +1,6 @@
 /* ============================================================
-   config/mailer.js — Nodemailer Gmail SMTP Transporter
-   Dr. Jaspal Singh Website — jaspalsingh.in
+   config/mailer.js  -  Nodemailer Gmail SMTP Transporter
+   Dr. Jaspal Singh Website  -  jaspalsingh.in
 
    Requires in .env:
      GMAIL_USER=your_gmail@gmail.com
@@ -25,10 +25,10 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-/* Verify connection on startup — non-fatal */
+/* Verify connection on startup  -  non-fatal */
 if (isConfigured) {
   transporter.verify()
-    .then(()  => console.log('✅ Gmail SMTP connected — email notifications active'))
+    .then(()  => console.log('✅ Gmail SMTP connected  -  email notifications active'))
     .catch(e  => console.warn('⚠️  Gmail SMTP error:', e.message));
 } else {
   console.warn('⚠️  Email not configured. Set GMAIL_USER + GMAIL_APP_PASSWORD in .env');

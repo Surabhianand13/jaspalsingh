@@ -1,6 +1,6 @@
 /* ============================================================
-   resources.js — Resources Page API Integration
-   Dr. Jaspal Singh Website — jaspalsingh.in
+   resources.js  -  Resources Page API Integration
+   Dr. Jaspal Singh Website  -  jaspalsingh.in
 
    Strategy:
      1. Capture existing static cards as fallback
@@ -180,7 +180,7 @@
     });
   }
 
-  /* ── Simple toast (public page — no admin.js dependency) ─────── */
+  /* ── Simple toast (public page  -  no admin.js dependency) ─────── */
 
   function showToast(msg, type) {
     var t = document.createElement('div');
@@ -355,7 +355,7 @@
         if (elLrn)  elLrn.textContent  = api.utils.count(data.total_learners  || 0);
         strip.style.opacity = '1';
       })
-      .catch(function () { /* silently skip — strip stays hidden */ });
+      .catch(function () { /* silently skip  -  strip stays hidden */ });
   }
 
   /* ── Initialise ───────────────────────────────────────────── */
