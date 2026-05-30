@@ -289,118 +289,16 @@
           <button class="filter-btn" data-cat="personal-notes">Personal Notes</button>
         </div>
 
-        <!--
-          NOTE FOR PHASE 5/6: Blog posts below are placeholder content.
-          They will be replaced with real posts from the backend API (/api/blog).
-          The admin panel (Phase 6) will let Dr. Jaspal publish posts via Quill.js editor.
-        -->
-
-        <!-- Featured Post -->
-        <a href="#" class="blog-featured" data-cat="exam-updates" style="text-decoration:none;color:inherit;">
-          <div class="blog-featured-img" aria-hidden="true">
-            <i class="fas fa-bullhorn"></i>
-          </div>
-          <div class="blog-featured-content">
-            <span class="blog-cat-badge cat-exam">Exam Update</span>
-            <h2 class="blog-featured-title">ESE 2025 Notification Out — Key Dates, Eligibility & What's Changed</h2>
-            <div class="blog-featured-meta">
-              <span><i class="fas fa-calendar-alt"></i> April 10, 2025</span>
-              <span><i class="fas fa-clock"></i> 5 min read</span>
-            </div>
-            <p class="blog-featured-excerpt">
-              UPSC has officially released the ESE 2025 notification. Here's a complete breakdown of all key dates, eligibility criteria, syllabus changes (if any), and my personal advice on how to plan your remaining preparation time before the exam.
-            </p>
-            <span class="blog-read-more">Read Full Post <i class="fas fa-arrow-right"></i></span>
-          </div>
+        <!-- Featured Post (populated by blog.js from API) -->
+        <a href="#" class="blog-featured" data-cat="" style="text-decoration:none;color:inherit;display:none;">
+          <div class="blog-featured-img" aria-hidden="true"></div>
+          <div class="blog-featured-content"></div>
         </a>
 
-        <!-- Blog Grid -->
+        <!-- Blog Grid (populated by blog.js from API) -->
         <div class="blog-grid" id="blogGrid">
 
           <article class="blog-card" data-cat="subject-tips">
-            <div class="blog-card-img" aria-hidden="true"><i class="fas fa-water"></i></div>
-            <div class="blog-card-body">
-              <span class="blog-cat-badge cat-subject" style="font-size:10px;">Subject Tips</span>
-              <h3 class="blog-card-title">Why Most Students Struggle with Unit Hydrograph — And How to Fix It</h3>
-              <div class="blog-card-meta">
-                <span><i class="fas fa-calendar-alt"></i> Mar 28, 2025</span>
-                <span><i class="fas fa-clock"></i> 4 min</span>
-              </div>
-              <p class="blog-card-excerpt">Unit Hydrograph is the most examined topic in Engineering Hydrology. Here's the conceptual shift that changes everything.</p>
-              <a href="#" class="blog-read-more" style="margin-top:auto;">Read More <i class="fas fa-arrow-right"></i></a>
-            </div>
-          </article>
-
-          <article class="blog-card" data-cat="strategy">
-            <div class="blog-card-img" aria-hidden="true"><i class="fas fa-chess-king"></i></div>
-            <div class="blog-card-body">
-              <span class="blog-cat-badge cat-strategy" style="font-size:10px;">Strategy</span>
-              <h3 class="blog-card-title">The Real Difference Between GATE Toppers and Everyone Else</h3>
-              <div class="blog-card-meta">
-                <span><i class="fas fa-calendar-alt"></i> Mar 15, 2025</span>
-                <span><i class="fas fa-clock"></i> 6 min</span>
-              </div>
-              <p class="blog-card-excerpt">After 15+ years of teaching, I've noticed a pattern. It has nothing to do with intelligence and everything to do with one habit.</p>
-              <a href="#" class="blog-read-more" style="margin-top:auto;">Read More <i class="fas fa-arrow-right"></i></a>
-            </div>
-          </article>
-
-          <article class="blog-card" data-cat="student-stories">
-            <div class="blog-card-img" aria-hidden="true"><i class="fas fa-star"></i></div>
-            <div class="blog-card-body">
-              <span class="blog-cat-badge cat-student" style="font-size:10px;">Student Stories</span>
-              <h3 class="blog-card-title">"Environmental Engineering Was My Weakest Subject" — Priya's ESE Journey</h3>
-              <div class="blog-card-meta">
-                <span><i class="fas fa-calendar-alt"></i> Mar 5, 2025</span>
-                <span><i class="fas fa-clock"></i> 3 min</span>
-              </div>
-              <p class="blog-card-excerpt">Priya Sharma went from dreading Environmental Engineering to making it her highest-scoring subject. In her own words.</p>
-              <a href="#" class="blog-read-more" style="margin-top:auto;">Read More <i class="fas fa-arrow-right"></i></a>
-            </div>
-          </article>
-
-          <article class="blog-card" data-cat="subject-tips">
-            <div class="blog-card-img" aria-hidden="true"><i class="fas fa-layer-group"></i></div>
-            <div class="blog-card-body">
-              <span class="blog-cat-badge cat-subject" style="font-size:10px;">Subject Tips</span>
-              <h3 class="blog-card-title">Soil Mechanics Numericals: The Setup Mistakes That Cost You Marks</h3>
-              <div class="blog-card-meta">
-                <span><i class="fas fa-calendar-alt"></i> Feb 20, 2025</span>
-                <span><i class="fas fa-clock"></i> 5 min</span>
-              </div>
-              <p class="blog-card-excerpt">Most students know the Terzaghi bearing capacity formula. Very few know how to set up the problem correctly. Here's what to watch.</p>
-              <a href="#" class="blog-read-more" style="margin-top:auto;">Read More <i class="fas fa-arrow-right"></i></a>
-            </div>
-          </article>
-
-          <article class="blog-card" data-cat="exam-updates">
-            <div class="blog-card-img" aria-hidden="true"><i class="fas fa-file-alt"></i></div>
-            <div class="blog-card-body">
-              <span class="blog-cat-badge cat-exam" style="font-size:10px;">Exam Update</span>
-              <h3 class="blog-card-title">GATE CE 2025 Paper Analysis — Subject-Wise Marks Distribution</h3>
-              <div class="blog-card-meta">
-                <span><i class="fas fa-calendar-alt"></i> Feb 10, 2025</span>
-                <span><i class="fas fa-clock"></i> 4 min</span>
-              </div>
-              <p class="blog-card-excerpt">Full breakdown of GATE CE 2025 — which subjects carried the most weight, what type of questions appeared, and what it means for 2026 prep.</p>
-              <a href="#" class="blog-read-more" style="margin-top:auto;">Read More <i class="fas fa-arrow-right"></i></a>
-            </div>
-          </article>
-
-          <article class="blog-card" data-cat="personal-notes">
-            <div class="blog-card-img" aria-hidden="true"><i class="fas fa-pen-nib"></i></div>
-            <div class="blog-card-body">
-              <span class="blog-cat-badge cat-personal" style="font-size:10px;">Personal Notes</span>
-              <h3 class="blog-card-title">Why I Started This Website — A Personal Note</h3>
-              <div class="blog-card-meta">
-                <span><i class="fas fa-calendar-alt"></i> Jan 15, 2025</span>
-                <span><i class="fas fa-clock"></i> 3 min</span>
-              </div>
-              <p class="blog-card-excerpt">This website has no courses for sale, no paid membership, no login required. Here's exactly why — in my own words.</p>
-              <a href="#" class="blog-read-more" style="margin-top:auto;">Read More <i class="fas fa-arrow-right"></i></a>
-            </div>
-          </article>
-
         </div>
 
         <!-- No results -->
