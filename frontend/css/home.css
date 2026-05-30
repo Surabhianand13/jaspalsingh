@@ -779,10 +779,6 @@
   overflow: hidden;
   display: flex;
   align-items: center;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-color: #0d0d1a; /* fallback while image loads */
 }
 
 .carousel-slide-inner {
@@ -815,7 +811,7 @@
   margin-bottom: 14px;
   width: fit-content;
   border: 1.5px solid;
-  /* colours set by .cs-overlay rule below */
+  /* colours set per-slide below */
 }
 
 .cs-title {
@@ -825,7 +821,6 @@
   line-height: 1.08;
   letter-spacing: -1px;
   margin-bottom: 12px;
-  /* colour set by .cs-overlay rule below */
 }
 
 .cs-sub {
@@ -833,7 +828,6 @@
   line-height: 1.68;
   max-width: 520px;
   margin-bottom: 28px;
-  /* colour set by .cs-overlay rule below */
 }
 
 .cs-ctas { display: flex; gap: 12px; flex-wrap: wrap; }
@@ -885,59 +879,67 @@
 }
 .cs-cta.cta-wa:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(37,195,84,0.42); color: #fff; }
 
-/* ── Full-slide clickable link overlay ── */
-.cs-slide-link {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  cursor: pointer;
+/* ── Per-slide light backgrounds ── */
+.cs-slide-1 { background: linear-gradient(135deg, #EBF4FF 0%, #D6EAFF 100%); }
+.cs-slide-2 { background: linear-gradient(135deg, #FFF8EC 0%, #FFEFD0 100%); }
+.cs-slide-3 { background: linear-gradient(135deg, #F5EEFF 0%, #E8D6FF 100%); }
+.cs-slide-4 { background: linear-gradient(135deg, #EDFFF5 0%, #CCF0DF 100%); }
+.cs-slide-5 { background: linear-gradient(135deg, #FFF4EE 0%, #FFE2D0 100%); }
+
+/* ── Per-slide text colours ── */
+.cs-slide-1 .cs-title { color: #0A2560; }
+.cs-slide-1 .cs-sub   { color: #2D4A8A; }
+.cs-slide-1 .cs-badge { color: #1565C0; background: rgba(21,101,192,0.10); border-color: rgba(21,101,192,0.25); }
+
+.cs-slide-2 .cs-title { color: #5C3000; }
+.cs-slide-2 .cs-sub   { color: #8B5000; }
+.cs-slide-2 .cs-badge { color: #C06800; background: rgba(192,104,0,0.10); border-color: rgba(192,104,0,0.25); }
+
+.cs-slide-3 .cs-title { color: #2D0870; }
+.cs-slide-3 .cs-sub   { color: #5A209A; }
+.cs-slide-3 .cs-badge { color: #7C3AED; background: rgba(124,58,237,0.10); border-color: rgba(124,58,237,0.25); }
+
+.cs-slide-4 .cs-title { color: #053D20; }
+.cs-slide-4 .cs-sub   { color: #0A6030; }
+.cs-slide-4 .cs-badge { color: #16A34A; background: rgba(22,163,74,0.10); border-color: rgba(22,163,74,0.25); }
+
+.cs-slide-5 .cs-title { color: #5C2500; }
+.cs-slide-5 .cs-sub   { color: #8B4000; }
+.cs-slide-5 .cs-badge { color: #EA580C; background: rgba(234,88,12,0.10); border-color: rgba(234,88,12,0.25); }
+
+/* ── Banner image — right column ── */
+.cs-banner-img-wrap {
+  flex-shrink: 0;
+  width: 520px;
+  display: block;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  text-decoration: none;
+}
+.cs-banner-img-wrap:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 28px 72px rgba(0,0,0,0.24);
+}
+.cs-banner-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
-/* ── Dark gradient overlay for text readability over images ── */
-.cs-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    90deg,
-    rgba(0,0,0,0.72) 0%,
-    rgba(0,0,0,0.50) 50%,
-    rgba(0,0,0,0.18) 100%
-  );
-  z-index: 1;
-}
-
-/* ── All text white on image slides ── */
-.cs-title {
-  color: #ffffff;
-}
-.cs-sub {
-  color: rgba(255,255,255,0.88);
-}
-.cs-badge {
-  color: rgba(255,255,255,0.95);
-  background: rgba(255,255,255,0.15);
-  border-color: rgba(255,255,255,0.30);
-  backdrop-filter: blur(4px);
-}
-
-/* CTA buttons sit above the slide-link overlay */
-.cs-ctas {
-  position: relative;
-  z-index: 3;
-}
-
-/* Outline CTA adapted for dark backgrounds */
+/* Outline CTA — dark border for light slides */
 .cs-cta.cta-outline {
-  background: rgba(255,255,255,0.12);
-  border-color: rgba(255,255,255,0.55);
-  color: #fff;
-  backdrop-filter: blur(4px);
+  background: transparent;
+  border-color: rgba(26,26,46,0.28);
+  color: var(--heading-color);
 }
 .cs-cta.cta-outline:hover {
-  background: rgba(255,255,255,0.22);
-  border-color: #fff;
-  color: #fff;
+  background: rgba(26,26,46,0.06);
+  border-color: rgba(26,26,46,0.5);
   transform: translateY(-2px);
+  color: var(--heading-color);
 }
 
 /* ── Arrow buttons — dark on light slides ── */
