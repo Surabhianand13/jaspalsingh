@@ -62,7 +62,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 /* ── Static Files ────────────────────────────────────────── */
 
 // Serve banner/gallery images from the project-root images/ folder
-app.use('/images', express.static(path.join(__dirname, '..', 'images')));
+app.use('/images', express.static(path.join(__dirname, '..', 'frontend', 'images')));
 
 /* ── API Routes ──────────────────────────────────────────── */
 
