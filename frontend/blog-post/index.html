@@ -477,87 +477,182 @@
   <!-- HEADER -->
   <header class="site-header" id="siteHeader" role="banner">
     <div class="container header-inner">
-      <a href="/" class="header-brand" aria-label="Dr. Jaspal Singh — Home">
-        <img src="/assets/images/jaspal-hero.png" class="header-avatar" alt="Dr. Jaspal Singh" onerror="this.style.display='none'" />
-        <span class="wordmark">Dr. Jaspal Singh</span>
-      </a>
+
+      <!-- Left: Brand -->
+      <div class="header-left">
+        <a href="/" class="header-brand" aria-label="Dr. Jaspal Singh — Home">
+          <img src="assets/images/jaspal-hero.png" class="header-avatar" alt="Dr. Jaspal Singh" onerror="this.style.display='none'" />
+          <span class="wordmark">Dr. Jaspal Singh</span>
+        </a>
+      </div>
+
+      <!-- Center: Desktop Navigation -->
       <nav class="main-nav" aria-label="Main navigation">
         <a href="/" class="nav-link">Home</a>
+
         <div class="nav-item-dropdown">
-          <button class="nav-dropdown-trigger" aria-haspopup="true" aria-expanded="false">Offline Programs <i class="fas fa-chevron-down dd-caret"></i></button>
+          <button class="nav-dropdown-trigger" aria-haspopup="true" aria-expanded="false">
+            Offline Programs <i class="fas fa-chevron-down dd-caret"></i>
+          </button>
           <div class="nav-dropdown-menu" role="menu">
+
+            <!-- Column 1: Offline Batches -->
             <div class="dd-column">
-              <p class="dd-col-title"><i class="fas fa-chalkboard-teacher dd-col-icon icon-orange"></i>Offline Batches</p>
-              <a href="/programs?type=batch&amp;exam=gate-ies" class="dd-link"><span class="dd-link-icon"><i class="fas fa-graduation-cap"></i></span>GATE / IES</a>
-              <a href="/programs?type=batch&amp;exam=ssc-je"   class="dd-link"><span class="dd-link-icon"><i class="fas fa-hard-hat"></i></span>SSC JE</a>
-              <a href="/programs?type=batch&amp;exam=state-ae" class="dd-link"><span class="dd-link-icon"><i class="fas fa-building"></i></span>State AE</a>
-              <a href="/programs?type=batch&amp;exam=state-je" class="dd-link"><span class="dd-link-icon"><i class="fas fa-drafting-compass"></i></span>State JE</a>
+              <div class="dd-col-header dd-col-header--orange">
+                <span class="dd-col-header-icon"><i class="fas fa-chalkboard-teacher"></i></span>
+                <span class="dd-col-header-text">Offline Batches</span>
+              </div>
+              <div class="dd-cards">
+                <a href="/programs?type=batch&amp;exam=gate-ese" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#FFF4ED;--icon-color:#E8580A"><i class="fas fa-graduation-cap"></i></span>
+                  <span class="dd-card-label">GATE / ESE</span>
+                </a>
+                <a href="/programs?type=batch&amp;exam=rajasthan-ae" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#F0FDF4;--icon-color:#16A34A"><i class="fas fa-building"></i></span>
+                  <span class="dd-card-label">Rajasthan AE</span>
+                </a>
+                <a href="/programs?type=batch&amp;exam=rajasthan-je" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#F0F9FF;--icon-color:#0284C7"><i class="fas fa-drafting-compass"></i></span>
+                  <span class="dd-card-label">Rajasthan JE</span>
+                </a>
+                <a href="/programs?type=batch&amp;exam=ssc-je" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#FFF7ED;--icon-color:#D97706"><i class="fas fa-hard-hat"></i></span>
+                  <span class="dd-card-label">SSC JE</span>
+                </a>
+                <a href="/programs?type=batch&amp;exam=rrb-je" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#F5F3FF;--icon-color:#7C3AED"><i class="fas fa-train"></i></span>
+                  <span class="dd-card-label">RRB JE</span>
+                </a>
+                <a href="/programs?type=batch&amp;exam=psus" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#FFF1F2;--icon-color:#BE123C"><i class="fas fa-industry"></i></span>
+                  <span class="dd-card-label">PSUs</span>
+                </a>
+              </div>
             </div>
+
+            <!-- Column 2: Interview Programs -->
             <div class="dd-column">
-              <p class="dd-col-title"><i class="fas fa-user-tie dd-col-icon icon-magenta"></i>Interview Programs</p>
-              <a href="/programs?type=interview&amp;exam=gate-ies" class="dd-link"><span class="dd-link-icon"><i class="fas fa-graduation-cap"></i></span>GATE / IES</a>
-              <a href="/programs?type=interview&amp;exam=ssc-je"   class="dd-link"><span class="dd-link-icon"><i class="fas fa-hard-hat"></i></span>SSC JE</a>
-              <a href="/programs?type=interview&amp;exam=state-ae" class="dd-link"><span class="dd-link-icon"><i class="fas fa-building"></i></span>State AE</a>
-              <a href="/programs?type=interview&amp;exam=state-je" class="dd-link"><span class="dd-link-icon"><i class="fas fa-drafting-compass"></i></span>State JE</a>
+              <div class="dd-col-header dd-col-header--magenta">
+                <span class="dd-col-header-icon"><i class="fas fa-user-tie"></i></span>
+                <span class="dd-col-header-text">Interview Programs</span>
+              </div>
+              <div class="dd-cards">
+                <a href="/programs?type=interview&amp;exam=ese" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#FFF4ED;--icon-color:#E8580A"><i class="fas fa-graduation-cap"></i></span>
+                  <span class="dd-card-label">ESE</span>
+                </a>
+                <a href="/programs?type=interview&amp;exam=rpsc-ae" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#F0FDF4;--icon-color:#16A34A"><i class="fas fa-building"></i></span>
+                  <span class="dd-card-label">RPSC AE</span>
+                </a>
+                <a href="/programs?type=interview&amp;exam=psus" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#FFF1F2;--icon-color:#BE123C"><i class="fas fa-industry"></i></span>
+                  <span class="dd-card-label">PSUs</span>
+                </a>
+              </div>
             </div>
+
+            <!-- Column 3: Test Series -->
             <div class="dd-column">
-              <p class="dd-col-title"><i class="fas fa-clipboard-list dd-col-icon icon-blue"></i>Test Series</p>
-              <a href="/programs?type=test-series&amp;exam=gate-ies" class="dd-link"><span class="dd-link-icon"><i class="fas fa-graduation-cap"></i></span>GATE / IES</a>
-              <a href="/programs?type=test-series&amp;exam=ssc-je"   class="dd-link"><span class="dd-link-icon"><i class="fas fa-hard-hat"></i></span>SSC JE</a>
-              <a href="/programs?type=test-series&amp;exam=state-ae" class="dd-link"><span class="dd-link-icon"><i class="fas fa-building"></i></span>State AE</a>
-              <a href="/programs?type=test-series&amp;exam=state-je" class="dd-link"><span class="dd-link-icon"><i class="fas fa-drafting-compass"></i></span>State JE</a>
+              <div class="dd-col-header dd-col-header--blue">
+                <span class="dd-col-header-icon"><i class="fas fa-clipboard-list"></i></span>
+                <span class="dd-col-header-text">Test Series</span>
+              </div>
+              <div class="dd-cards">
+                <a href="/programs?type=test-series&amp;exam=gate" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#FFF4ED;--icon-color:#E8580A"><i class="fas fa-graduation-cap"></i></span>
+                  <span class="dd-card-label">GATE</span>
+                </a>
+                <a href="/programs?type=test-series&amp;exam=ese" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#F5F3FF;--icon-color:#7C3AED"><i class="fas fa-graduation-cap"></i></span>
+                  <span class="dd-card-label">ESE</span>
+                </a>
+                <a href="/programs?type=test-series&amp;exam=psus" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#FFF1F2;--icon-color:#BE123C"><i class="fas fa-industry"></i></span>
+                  <span class="dd-card-label">PSUs</span>
+                </a>
+                <a href="/programs?type=test-series&amp;exam=rajasthan-je" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#F0F9FF;--icon-color:#0284C7"><i class="fas fa-drafting-compass"></i></span>
+                  <span class="dd-card-label">Rajasthan JE</span>
+                </a>
+                <a href="/programs?type=test-series&amp;exam=rajasthan-ae" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#F0FDF4;--icon-color:#16A34A"><i class="fas fa-building"></i></span>
+                  <span class="dd-card-label">Rajasthan AE</span>
+                </a>
+                <a href="/programs?type=test-series&amp;exam=other-state" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#FFF7ED;--icon-color:#D97706"><i class="fas fa-map-marker-alt"></i></span>
+                  <span class="dd-card-label">Other State AE/JEs</span>
+                </a>
+              </div>
             </div>
+
           </div>
         </div>
+
         <a href="/about" class="nav-link">About</a>
       </nav>
-      <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false" aria-controls="mobileDrawer">
-        <span></span><span></span><span></span>
-      </button>
+
+      <!-- Right: Phone + Hamburger -->
+      <div class="header-right">
+        <a href="tel:+919999999999" class="header-phone" aria-label="Call us">
+          <span class="phone-ring-wrap">
+            <i class="fas fa-phone phone-icon"></i>
+          </span>
+          <span class="phone-text">+91 99999 9999</span>
+        </a>
+        <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false" aria-controls="mobileDrawer">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+
     </div>
   </header>
 
-  <div class="drawer-overlay" id="drawerOverlay"></div>
+  <!-- Mobile Drawer -->
+  <div class="drawer-overlay" id="drawerOverlay" aria-hidden="true"></div>
   <aside class="mobile-drawer" id="mobileDrawer" aria-label="Mobile navigation">
     <button class="drawer-close" id="drawerClose" aria-label="Close menu"><i class="fas fa-times"></i></button>
     <a href="/" class="drawer-wordmark">Dr. Jaspal Singh</a>
     <nav class="drawer-nav">
       <a href="/" class="drawer-link">Home</a>
+
       <div class="drawer-accordion">
         <button class="drawer-accordion-trigger" aria-expanded="false">
           Offline Programs <i class="fas fa-chevron-down drawer-acc-caret"></i>
         </button>
         <div class="drawer-accordion-body">
           <div class="drawer-acc-section">
-            <p class="drawer-acc-title"><i class="fas fa-chalkboard-teacher"></i> OFFLINE BATCHES</p>
-            <a href="/programs?type=batch&amp;exam=gate-ies" class="drawer-acc-link">GATE / IES</a>
-            <a href="/programs?type=batch&amp;exam=ssc-je"   class="drawer-acc-link">SSC JE</a>
-            <a href="/programs?type=batch&amp;exam=state-ae" class="drawer-acc-link">State AE</a>
-            <a href="/programs?type=batch&amp;exam=state-je" class="drawer-acc-link">State JE</a>
+            <span class="drawer-acc-title">Offline Batches</span>
+            <a href="/programs?type=batch&amp;exam=gate-ese"     class="drawer-acc-link">GATE/ESE</a>
+            <a href="/programs?type=batch&amp;exam=rajasthan-ae" class="drawer-acc-link">Rajasthan AE</a>
+            <a href="/programs?type=batch&amp;exam=rajasthan-je" class="drawer-acc-link">Rajasthan JE</a>
+            <a href="/programs?type=batch&amp;exam=ssc-je"       class="drawer-acc-link">SSC JE</a>
+            <a href="/programs?type=batch&amp;exam=rrb-je"       class="drawer-acc-link">RRB JE</a>
+            <a href="/programs?type=batch&amp;exam=psus"         class="drawer-acc-link">PSUs</a>
           </div>
           <div class="drawer-acc-section">
-            <p class="drawer-acc-title"><i class="fas fa-user-tie"></i> INTERVIEW PROGRAMS</p>
-            <a href="/programs?type=interview&amp;exam=gate-ies" class="drawer-acc-link">GATE / IES</a>
-            <a href="/programs?type=interview&amp;exam=ssc-je"   class="drawer-acc-link">SSC JE</a>
-            <a href="/programs?type=interview&amp;exam=state-ae" class="drawer-acc-link">State AE</a>
-            <a href="/programs?type=interview&amp;exam=state-je" class="drawer-acc-link">State JE</a>
+            <span class="drawer-acc-title">Interview Programs</span>
+            <a href="/programs?type=interview&amp;exam=ese"     class="drawer-acc-link">ESE</a>
+            <a href="/programs?type=interview&amp;exam=rpsc-ae" class="drawer-acc-link">RPSC AE</a>
+            <a href="/programs?type=interview&amp;exam=psus"    class="drawer-acc-link">PSUs</a>
           </div>
           <div class="drawer-acc-section">
-            <p class="drawer-acc-title"><i class="fas fa-clipboard-list"></i> TEST SERIES</p>
-            <a href="/programs?type=test-series&amp;exam=gate-ies" class="drawer-acc-link">GATE / IES</a>
-            <a href="/programs?type=test-series&amp;exam=ssc-je"   class="drawer-acc-link">SSC JE</a>
-            <a href="/programs?type=test-series&amp;exam=state-ae" class="drawer-acc-link">State AE</a>
-            <a href="/programs?type=test-series&amp;exam=state-je" class="drawer-acc-link">State JE</a>
+            <span class="drawer-acc-title">Test Series</span>
+            <a href="/programs?type=test-series&amp;exam=gate"         class="drawer-acc-link">GATE</a>
+            <a href="/programs?type=test-series&amp;exam=ese"          class="drawer-acc-link">ESE</a>
+            <a href="/programs?type=test-series&amp;exam=psus"         class="drawer-acc-link">PSUs</a>
+            <a href="/programs?type=test-series&amp;exam=rajasthan-je" class="drawer-acc-link">Rajasthan JE</a>
+            <a href="/programs?type=test-series&amp;exam=rajasthan-ae" class="drawer-acc-link">Rajasthan AE</a>
+            <a href="/programs?type=test-series&amp;exam=other-state"  class="drawer-acc-link">Other State AE/JEs</a>
           </div>
         </div>
       </div>
+
       <a href="/about" class="drawer-link">About</a>
     </nav>
     <div class="drawer-social">
-      <a href="https://www.instagram.com/iesjaspalsingh/" target="_blank" rel="noopener" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
-      <a href="https://t.me/jaspalsirofficial"            target="_blank" rel="noopener" aria-label="Telegram"><i class="fab fa-telegram"></i></a>
-      <a href="https://whatsapp.com/channel/0029VaBBx7u8PgsF7Y4KZv06" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a>
-      <a href="https://unacademy.com/@jaspallive"         target="_blank" rel="noopener" aria-label="Unacademy"><i class="fas fa-play-circle"></i></a>
+      <a href="tel:+919999999999" class="drawer-contact-btn"><i class="fas fa-phone"></i> Call Us</a>
+      <a href="https://wa.me/919999999999" target="_blank" rel="noopener" class="drawer-contact-btn drawer-contact-wa"><i class="fab fa-whatsapp"></i> WhatsApp</a>
     </div>
   </aside>
 

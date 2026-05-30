@@ -13,149 +13,186 @@
   <link rel="stylesheet" href="/css/style.css?v=8" /><link rel="stylesheet" href="/css/pages.css?v=8" /><link rel="stylesheet" href="/css/program-detail.css?v=1" />
 </head>
 <body>
-  <header class="site-header" id="siteHeader">
+  <header class="site-header" id="siteHeader" role="banner">
     <div class="container header-inner">
-      <div class="header-left"><a href="/" class="header-brand"><img src="/assets/images/jaspal-hero.png" class="header-avatar" alt="Dr. Jaspal Singh" onerror="this.style.display='none'" /><span class="wordmark">Dr. Jaspal Singh</span></a></div>
-      <nav class="main-nav"><a href="/" class="nav-link">Home</a><a href="/programs" class="nav-link active">Offline Programs</a><a href="/about" class="nav-link">About</a></nav>
-      <div class="header-right"><a href="tel:+919999999999" class="header-phone"><span class="phone-ring-wrap"><i class="fas fa-phone phone-icon"></i></span><span class="phone-text">+91 99999 9999</span></a></div>
+
+      <!-- Left: Brand -->
+      <div class="header-left">
+        <a href="/" class="header-brand" aria-label="Dr. Jaspal Singh — Home">
+          <img src="assets/images/jaspal-hero.png" class="header-avatar" alt="Dr. Jaspal Singh" onerror="this.style.display='none'" />
+          <span class="wordmark">Dr. Jaspal Singh</span>
+        </a>
+      </div>
+
+      <!-- Center: Desktop Navigation -->
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="/" class="nav-link">Home</a>
+
+        <div class="nav-item-dropdown">
+          <button class="nav-dropdown-trigger" aria-haspopup="true" aria-expanded="false">
+            Offline Programs <i class="fas fa-chevron-down dd-caret"></i>
+          </button>
+          <div class="nav-dropdown-menu" role="menu">
+
+            <!-- Column 1: Offline Batches -->
+            <div class="dd-column">
+              <div class="dd-col-header dd-col-header--orange">
+                <span class="dd-col-header-icon"><i class="fas fa-chalkboard-teacher"></i></span>
+                <span class="dd-col-header-text">Offline Batches</span>
+              </div>
+              <div class="dd-cards">
+                <a href="/programs?type=batch&amp;exam=gate-ese" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#FFF4ED;--icon-color:#E8580A"><i class="fas fa-graduation-cap"></i></span>
+                  <span class="dd-card-label">GATE / ESE</span>
+                </a>
+                <a href="/programs?type=batch&amp;exam=rajasthan-ae" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#F0FDF4;--icon-color:#16A34A"><i class="fas fa-building"></i></span>
+                  <span class="dd-card-label">Rajasthan AE</span>
+                </a>
+                <a href="/programs?type=batch&amp;exam=rajasthan-je" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#F0F9FF;--icon-color:#0284C7"><i class="fas fa-drafting-compass"></i></span>
+                  <span class="dd-card-label">Rajasthan JE</span>
+                </a>
+                <a href="/programs?type=batch&amp;exam=ssc-je" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#FFF7ED;--icon-color:#D97706"><i class="fas fa-hard-hat"></i></span>
+                  <span class="dd-card-label">SSC JE</span>
+                </a>
+                <a href="/programs?type=batch&amp;exam=rrb-je" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#F5F3FF;--icon-color:#7C3AED"><i class="fas fa-train"></i></span>
+                  <span class="dd-card-label">RRB JE</span>
+                </a>
+                <a href="/programs?type=batch&amp;exam=psus" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#FFF1F2;--icon-color:#BE123C"><i class="fas fa-industry"></i></span>
+                  <span class="dd-card-label">PSUs</span>
+                </a>
+              </div>
+            </div>
+
+            <!-- Column 2: Interview Programs -->
+            <div class="dd-column">
+              <div class="dd-col-header dd-col-header--magenta">
+                <span class="dd-col-header-icon"><i class="fas fa-user-tie"></i></span>
+                <span class="dd-col-header-text">Interview Programs</span>
+              </div>
+              <div class="dd-cards">
+                <a href="/programs?type=interview&amp;exam=ese" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#FFF4ED;--icon-color:#E8580A"><i class="fas fa-graduation-cap"></i></span>
+                  <span class="dd-card-label">ESE</span>
+                </a>
+                <a href="/programs?type=interview&amp;exam=rpsc-ae" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#F0FDF4;--icon-color:#16A34A"><i class="fas fa-building"></i></span>
+                  <span class="dd-card-label">RPSC AE</span>
+                </a>
+                <a href="/programs?type=interview&amp;exam=psus" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#FFF1F2;--icon-color:#BE123C"><i class="fas fa-industry"></i></span>
+                  <span class="dd-card-label">PSUs</span>
+                </a>
+              </div>
+            </div>
+
+            <!-- Column 3: Test Series -->
+            <div class="dd-column">
+              <div class="dd-col-header dd-col-header--blue">
+                <span class="dd-col-header-icon"><i class="fas fa-clipboard-list"></i></span>
+                <span class="dd-col-header-text">Test Series</span>
+              </div>
+              <div class="dd-cards">
+                <a href="/programs?type=test-series&amp;exam=gate" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#FFF4ED;--icon-color:#E8580A"><i class="fas fa-graduation-cap"></i></span>
+                  <span class="dd-card-label">GATE</span>
+                </a>
+                <a href="/programs?type=test-series&amp;exam=ese" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#F5F3FF;--icon-color:#7C3AED"><i class="fas fa-graduation-cap"></i></span>
+                  <span class="dd-card-label">ESE</span>
+                </a>
+                <a href="/programs?type=test-series&amp;exam=psus" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#FFF1F2;--icon-color:#BE123C"><i class="fas fa-industry"></i></span>
+                  <span class="dd-card-label">PSUs</span>
+                </a>
+                <a href="/programs?type=test-series&amp;exam=rajasthan-je" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#F0F9FF;--icon-color:#0284C7"><i class="fas fa-drafting-compass"></i></span>
+                  <span class="dd-card-label">Rajasthan JE</span>
+                </a>
+                <a href="/programs?type=test-series&amp;exam=rajasthan-ae" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#F0FDF4;--icon-color:#16A34A"><i class="fas fa-building"></i></span>
+                  <span class="dd-card-label">Rajasthan AE</span>
+                </a>
+                <a href="/programs?type=test-series&amp;exam=other-state" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#FFF7ED;--icon-color:#D97706"><i class="fas fa-map-marker-alt"></i></span>
+                  <span class="dd-card-label">Other State AE/JEs</span>
+                </a>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <a href="/about" class="nav-link">About</a>
+      </nav>
+
+      <!-- Right: Phone + Hamburger -->
+      <div class="header-right">
+        <a href="tel:+919999999999" class="header-phone" aria-label="Call us">
+          <span class="phone-ring-wrap">
+            <i class="fas fa-phone phone-icon"></i>
+          </span>
+          <span class="phone-text">+91 99999 9999</span>
+        </a>
+        <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false" aria-controls="mobileDrawer">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+
     </div>
   </header>
 
-  <section class="pd-hero" style="background: linear-gradient(135deg, #1e3a5f 0%, #0284C7 100%);">
-    <div class="container">
-      <nav class="pd-breadcrumb"><a href="/">Home</a><i class="fas fa-chevron-right"></i><a href="/programs">Programs</a><i class="fas fa-chevron-right"></i><span>IES Interview Program</span></nav>
-      <div class="pd-hero-inner">
-        <div>
-          <div class="pd-eyebrow">
-            <span class="pd-badge pd-badge-type"><i class="fas fa-trophy"></i> IES / ESE Interview</span>
-            <span class="pd-badge pd-badge-status pd-badge-live">Enrolling Now</span>
+  <!-- Mobile Drawer -->
+  <div class="drawer-overlay" id="drawerOverlay" aria-hidden="true"></div>
+  <aside class="mobile-drawer" id="mobileDrawer" aria-label="Mobile navigation">
+    <button class="drawer-close" id="drawerClose" aria-label="Close menu"><i class="fas fa-times"></i></button>
+    <a href="/" class="drawer-wordmark">Dr. Jaspal Singh</a>
+    <nav class="drawer-nav">
+      <a href="/" class="drawer-link">Home</a>
+
+      <div class="drawer-accordion">
+        <button class="drawer-accordion-trigger" aria-expanded="false">
+          Offline Programs <i class="fas fa-chevron-down drawer-acc-caret"></i>
+        </button>
+        <div class="drawer-accordion-body">
+          <div class="drawer-acc-section">
+            <span class="drawer-acc-title">Offline Batches</span>
+            <a href="/programs?type=batch&amp;exam=gate-ese"     class="drawer-acc-link">GATE/ESE</a>
+            <a href="/programs?type=batch&amp;exam=rajasthan-ae" class="drawer-acc-link">Rajasthan AE</a>
+            <a href="/programs?type=batch&amp;exam=rajasthan-je" class="drawer-acc-link">Rajasthan JE</a>
+            <a href="/programs?type=batch&amp;exam=ssc-je"       class="drawer-acc-link">SSC JE</a>
+            <a href="/programs?type=batch&amp;exam=rrb-je"       class="drawer-acc-link">RRB JE</a>
+            <a href="/programs?type=batch&amp;exam=psus"         class="drawer-acc-link">PSUs</a>
           </div>
-          <h1 class="pd-hero-title">IES / ESE Interview<br>Program</h1>
-          <p class="pd-hero-sub">Dedicated interview preparation for the UPSC Engineering Services Examination — conducted by Dr. Jaspal Singh, the only active mentor who himself cleared ESE at AIR-04 and has mentored 1396+ ESE selections.</p>
-          <div class="pd-hero-ctas">
-            <a href="https://wa.me/919999999999?text=I want to enroll in IES ESE Interview Program" target="_blank" rel="noopener" class="pd-cta-primary"><i class="fas fa-arrow-right"></i> Enquire & Enroll</a>
-            <a href="tel:+919999999999" class="pd-cta-wa" style="background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.4)"><i class="fas fa-phone"></i> Call Us</a>
+          <div class="drawer-acc-section">
+            <span class="drawer-acc-title">Interview Programs</span>
+            <a href="/programs?type=interview&amp;exam=ese"     class="drawer-acc-link">ESE</a>
+            <a href="/programs?type=interview&amp;exam=rpsc-ae" class="drawer-acc-link">RPSC AE</a>
+            <a href="/programs?type=interview&amp;exam=psus"    class="drawer-acc-link">PSUs</a>
           </div>
-        </div>
-        <div class="pd-hero-stats">
-          <div class="pd-hero-stat"><span class="pd-hero-stat-val">AIR-04</span><span class="pd-hero-stat-label">Faculty ESE Rank</span></div>
-          <div class="pd-hero-stat"><span class="pd-hero-stat-val">1396+</span><span class="pd-hero-stat-label">ESE Selections</span></div>
-          <div class="pd-hero-stat"><span class="pd-hero-stat-val">Jaipur</span><span class="pd-hero-stat-label">Location</span></div>
-          <div class="pd-hero-stat"><span class="pd-hero-stat-val">Limited</span><span class="pd-hero-stat-label">Seats</span></div>
+          <div class="drawer-acc-section">
+            <span class="drawer-acc-title">Test Series</span>
+            <a href="/programs?type=test-series&amp;exam=gate"         class="drawer-acc-link">GATE</a>
+            <a href="/programs?type=test-series&amp;exam=ese"          class="drawer-acc-link">ESE</a>
+            <a href="/programs?type=test-series&amp;exam=psus"         class="drawer-acc-link">PSUs</a>
+            <a href="/programs?type=test-series&amp;exam=rajasthan-je" class="drawer-acc-link">Rajasthan JE</a>
+            <a href="/programs?type=test-series&amp;exam=rajasthan-ae" class="drawer-acc-link">Rajasthan AE</a>
+            <a href="/programs?type=test-series&amp;exam=other-state"  class="drawer-acc-link">Other State AE/JEs</a>
+          </div>
         </div>
       </div>
+
+      <a href="/about" class="drawer-link">About</a>
+    </nav>
+    <div class="drawer-social">
+      <a href="tel:+919999999999" class="drawer-contact-btn"><i class="fas fa-phone"></i> Call Us</a>
+      <a href="https://wa.me/919999999999" target="_blank" rel="noopener" class="drawer-contact-btn drawer-contact-wa"><i class="fab fa-whatsapp"></i> WhatsApp</a>
     </div>
-  </section>
-
-  <main class="container">
-    <div class="pd-layout">
-      <div>
-        <div class="pd-section">
-          <h2 class="pd-section-title">Why This Program Is Different</h2>
-          <p>The IES/ESE Interview is one of the most challenging and high-stakes interviews in India — a small panel of UPSC-appointed experts probing your technical depth, communication, and personality. Most coaching institutes guess what the panel asks. <strong>Dr. Jaspal Singh lived it — he cleared it at AIR-04.</strong></p>
-          <p>This program is the only offline IES interview prep in Jaipur conducted by a faculty member who personally holds an AIR-04 ESE rank and has guided over 1396 candidates to ESE selection — a record recognised by the Asian Book of Records.</p>
-          <div class="pd-highlights">
-            <div class="pd-highlight-item">
-              <div class="pd-highlight-icon" style="background:#DBEAFE;color:#1D4ED8"><i class="fas fa-medal"></i></div>
-              <div class="pd-highlight-text"><strong>Taught by AIR-04</strong><span>Dr. Jaspal Singh cleared ESE at AIR-04 himself</span></div>
-            </div>
-            <div class="pd-highlight-item">
-              <div class="pd-highlight-icon" style="background:#DBEAFE;color:#1D4ED8"><i class="fas fa-users"></i></div>
-              <div class="pd-highlight-text"><strong>1396+ ESE Selections</strong><span>Asian Book of Records — most ESE qualifiers by one mentor</span></div>
-            </div>
-            <div class="pd-highlight-item">
-              <div class="pd-highlight-icon" style="background:#DBEAFE;color:#1D4ED8"><i class="fas fa-comments"></i></div>
-              <div class="pd-highlight-text"><strong>Mock Interview Panel</strong><span>Real UPSC-style mock interview with expert evaluators</span></div>
-            </div>
-            <div class="pd-highlight-item">
-              <div class="pd-highlight-icon" style="background:#DBEAFE;color:#1D4ED8"><i class="fas fa-book-open"></i></div>
-              <div class="pd-highlight-text"><strong>DAF-Based Prep</strong><span>Detailed Application Form (DAF) review and mock based on your profile</span></div>
-            </div>
-            <div class="pd-highlight-item">
-              <div class="pd-highlight-icon" style="background:#DBEAFE;color:#1D4ED8"><i class="fas fa-file-alt"></i></div>
-              <div class="pd-highlight-text"><strong>Written Evaluation</strong><span>Detailed written feedback report after every mock</span></div>
-            </div>
-            <div class="pd-highlight-item">
-              <div class="pd-highlight-icon" style="background:#DBEAFE;color:#1D4ED8"><i class="fas fa-video"></i></div>
-              <div class="pd-highlight-text"><strong>Video Recording</strong><span>Your mock recorded for self-review and improvement</span></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="pd-section">
-          <h2 class="pd-section-title">What's Covered</h2>
-          <ul class="pd-curriculum-list">
-            <li><i class="fas fa-check-circle"></i> DAF (Detailed Application Form) analysis — identifying likely interview areas based on your background</li>
-            <li><i class="fas fa-check-circle"></i> Technical depth — Civil Engineering concepts at ESE Mains level, likely panel questions</li>
-            <li><i class="fas fa-check-circle"></i> Current affairs & general awareness — nation-building, infrastructure projects, policy questions</li>
-            <li><i class="fas fa-check-circle"></i> Personality & communication — confidence, articulation, body language, handling uncomfortable questions</li>
-            <li><i class="fas fa-check-circle"></i> Full mock interview panel (UPSC-style) with immediate verbal feedback</li>
-            <li><i class="fas fa-check-circle"></i> Post-mock individual coaching session with Dr. Jaspal Singh</li>
-            <li><i class="fas fa-check-circle"></i> Written evaluation report covering all dimensions</li>
-          </ul>
-        </div>
-
-        <div class="pd-section">
-          <h2 class="pd-section-title">Program Details</h2>
-          <div class="pd-schedule-grid">
-            <div class="pd-schedule-item"><div class="pd-schedule-label">Mode</div><div class="pd-schedule-val">Offline — Jaipur, Rajasthan</div></div>
-            <div class="pd-schedule-item"><div class="pd-schedule-label">Format</div><div class="pd-schedule-val">1–2 Days (Intensive)</div></div>
-            <div class="pd-schedule-item"><div class="pd-schedule-label">Batches</div><div class="pd-schedule-val orange">Conducted periodically</div></div>
-            <div class="pd-schedule-item"><div class="pd-schedule-label">Seats</div><div class="pd-schedule-val">Very Limited — 10–15 per batch</div></div>
-            <div class="pd-schedule-item"><div class="pd-schedule-label">Eligible</div><div class="pd-schedule-val">ESE Mains cleared candidates</div></div>
-            <div class="pd-schedule-item"><div class="pd-schedule-label">Fee</div><div class="pd-schedule-val green">Contact for pricing</div></div>
-          </div>
-        </div>
-
-        <div class="pd-section">
-          <h2 class="pd-section-title">Frequently Asked Questions</h2>
-          <div class="pd-faq-item">
-            <button class="pd-faq-q" onclick="toggleFaq(this)">Who is eligible for this program? <i class="fas fa-chevron-down"></i></button>
-            <div class="pd-faq-a">This program is exclusively for candidates who have cleared the ESE (Engineering Services Examination) Mains and have received an interview call from UPSC. It is not for Prelims preparation.</div>
-          </div>
-          <div class="pd-faq-item">
-            <button class="pd-faq-q" onclick="toggleFaq(this)">What makes Dr. Jaspal Singh uniquely qualified for ESE interview prep? <i class="fas fa-chevron-down"></i></button>
-            <div class="pd-faq-a">Dr. Jaspal Singh personally cleared the ESE at AIR-04 and served as an IES Officer. He has first-hand knowledge of exactly what the UPSC panel looks for, what questions they ask, and how to present yourself. His 1396+ ESE selections speak for themselves.</div>
-          </div>
-          <div class="pd-faq-item">
-            <button class="pd-faq-q" onclick="toggleFaq(this)">How do I know the next batch date? <i class="fas fa-chevron-down"></i></button>
-            <div class="pd-faq-a">Batches are scheduled around UPSC interview announcements. WhatsApp us at +91 99999 99999 or call us to be added to the notification list. We will inform you as soon as the next batch is announced.</div>
-          </div>
-          <div class="pd-faq-item">
-            <button class="pd-faq-q" onclick="toggleFaq(this)">Is online participation possible? <i class="fas fa-chevron-down"></i></button>
-            <div class="pd-faq-a">Currently, this program is conducted offline only in Jaipur to maintain the authenticity of the mock interview experience. We may offer online options in the future — contact us for the latest update.</div>
-          </div>
-        </div>
-      </div>
-
-      <aside class="pd-sidebar">
-        <div class="pd-enroll-card">
-          <div class="pd-enroll-card-top">
-            <div class="pd-price-row"><span class="pd-price" style="font-size:22px;">Contact for Pricing</span></div>
-            <p class="pd-price-note">Fee varies by batch size and schedule. WhatsApp or call us to get current pricing and the next batch date.</p>
-          </div>
-          <div class="pd-enroll-card-divider"></div>
-          <div class="pd-quick-facts">
-            <div class="pd-quick-fact"><span class="pd-quick-fact-label"><i class="fas fa-map-marker-alt"></i> Location</span><span class="pd-quick-fact-val">Jaipur, Raj.</span></div>
-            <div class="pd-quick-fact"><span class="pd-quick-fact-label"><i class="fas fa-users"></i> Batch Size</span><span class="pd-quick-fact-val">10–15 students</span></div>
-            <div class="pd-quick-fact"><span class="pd-quick-fact-label"><i class="fas fa-graduation-cap"></i> For</span><span class="pd-quick-fact-val">ESE Mains Cleared</span></div>
-            <div class="pd-quick-fact"><span class="pd-quick-fact-label"><i class="fas fa-medal"></i> Faculty</span><span class="pd-quick-fact-val orange">ESE AIR-04</span></div>
-          </div>
-          <div class="pd-enroll-card-divider"></div>
-          <div class="pd-enroll-card-btns">
-            <a href="https://wa.me/919999999999?text=I want to enroll in IES ESE Interview Program. Please share details." target="_blank" rel="noopener" class="pd-enroll-btn pd-enroll-btn-primary"><i class="fab fa-whatsapp"></i> WhatsApp to Enroll</a>
-            <a href="tel:+919999999999" class="pd-enroll-btn pd-enroll-btn-wa" style="background:linear-gradient(135deg,#C81240,#8B0A2E)"><i class="fas fa-phone"></i> Call Us Now</a>
-          </div>
-        </div>
-        <div class="pd-instructor-card">
-          <h4>Conducted By</h4>
-          <div class="pd-instructor-inner">
-            <img src="/assets/images/jaspal-hero.png" class="pd-instructor-img" alt="Dr. Jaspal Singh" onerror="this.style.display='none'" />
-            <div><div class="pd-instructor-name">Dr. Jaspal Singh</div><div class="pd-instructor-cred">Ex-IES Officer (AIR-04)<br>GATE AIR-06 · PhD</div></div>
-          </div>
-          <div class="pd-instructor-tags"><span class="pd-instructor-tag">ESE AIR-04</span><span class="pd-instructor-tag">1396+ Selections</span><span class="pd-instructor-tag">Asian Book of Records</span></div>
-        </div>
-      </aside>
+  </aside>
     </div>
   </main>
 

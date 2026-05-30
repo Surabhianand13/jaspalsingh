@@ -13,149 +13,186 @@
   <link rel="stylesheet" href="/css/style.css?v=8" /><link rel="stylesheet" href="/css/pages.css?v=8" /><link rel="stylesheet" href="/css/program-detail.css?v=1" />
 </head>
 <body>
-  <header class="site-header" id="siteHeader">
+  <header class="site-header" id="siteHeader" role="banner">
     <div class="container header-inner">
-      <div class="header-left"><a href="/" class="header-brand"><img src="/assets/images/jaspal-hero.png" class="header-avatar" alt="Dr. Jaspal Singh" onerror="this.style.display='none'" /><span class="wordmark">Dr. Jaspal Singh</span></a></div>
-      <nav class="main-nav"><a href="/" class="nav-link">Home</a><a href="/programs" class="nav-link active">Offline Programs</a><a href="/about" class="nav-link">About</a></nav>
-      <div class="header-right"><a href="tel:+919999999999" class="header-phone"><span class="phone-ring-wrap"><i class="fas fa-phone phone-icon"></i></span><span class="phone-text">+91 99999 9999</span></a></div>
+
+      <!-- Left: Brand -->
+      <div class="header-left">
+        <a href="/" class="header-brand" aria-label="Dr. Jaspal Singh — Home">
+          <img src="assets/images/jaspal-hero.png" class="header-avatar" alt="Dr. Jaspal Singh" onerror="this.style.display='none'" />
+          <span class="wordmark">Dr. Jaspal Singh</span>
+        </a>
+      </div>
+
+      <!-- Center: Desktop Navigation -->
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="/" class="nav-link">Home</a>
+
+        <div class="nav-item-dropdown">
+          <button class="nav-dropdown-trigger" aria-haspopup="true" aria-expanded="false">
+            Offline Programs <i class="fas fa-chevron-down dd-caret"></i>
+          </button>
+          <div class="nav-dropdown-menu" role="menu">
+
+            <!-- Column 1: Offline Batches -->
+            <div class="dd-column">
+              <div class="dd-col-header dd-col-header--orange">
+                <span class="dd-col-header-icon"><i class="fas fa-chalkboard-teacher"></i></span>
+                <span class="dd-col-header-text">Offline Batches</span>
+              </div>
+              <div class="dd-cards">
+                <a href="/programs?type=batch&amp;exam=gate-ese" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#FFF4ED;--icon-color:#E8580A"><i class="fas fa-graduation-cap"></i></span>
+                  <span class="dd-card-label">GATE / ESE</span>
+                </a>
+                <a href="/programs?type=batch&amp;exam=rajasthan-ae" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#F0FDF4;--icon-color:#16A34A"><i class="fas fa-building"></i></span>
+                  <span class="dd-card-label">Rajasthan AE</span>
+                </a>
+                <a href="/programs?type=batch&amp;exam=rajasthan-je" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#F0F9FF;--icon-color:#0284C7"><i class="fas fa-drafting-compass"></i></span>
+                  <span class="dd-card-label">Rajasthan JE</span>
+                </a>
+                <a href="/programs?type=batch&amp;exam=ssc-je" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#FFF7ED;--icon-color:#D97706"><i class="fas fa-hard-hat"></i></span>
+                  <span class="dd-card-label">SSC JE</span>
+                </a>
+                <a href="/programs?type=batch&amp;exam=rrb-je" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#F5F3FF;--icon-color:#7C3AED"><i class="fas fa-train"></i></span>
+                  <span class="dd-card-label">RRB JE</span>
+                </a>
+                <a href="/programs?type=batch&amp;exam=psus" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#FFF1F2;--icon-color:#BE123C"><i class="fas fa-industry"></i></span>
+                  <span class="dd-card-label">PSUs</span>
+                </a>
+              </div>
+            </div>
+
+            <!-- Column 2: Interview Programs -->
+            <div class="dd-column">
+              <div class="dd-col-header dd-col-header--magenta">
+                <span class="dd-col-header-icon"><i class="fas fa-user-tie"></i></span>
+                <span class="dd-col-header-text">Interview Programs</span>
+              </div>
+              <div class="dd-cards">
+                <a href="/programs?type=interview&amp;exam=ese" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#FFF4ED;--icon-color:#E8580A"><i class="fas fa-graduation-cap"></i></span>
+                  <span class="dd-card-label">ESE</span>
+                </a>
+                <a href="/programs?type=interview&amp;exam=rpsc-ae" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#F0FDF4;--icon-color:#16A34A"><i class="fas fa-building"></i></span>
+                  <span class="dd-card-label">RPSC AE</span>
+                </a>
+                <a href="/programs?type=interview&amp;exam=psus" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#FFF1F2;--icon-color:#BE123C"><i class="fas fa-industry"></i></span>
+                  <span class="dd-card-label">PSUs</span>
+                </a>
+              </div>
+            </div>
+
+            <!-- Column 3: Test Series -->
+            <div class="dd-column">
+              <div class="dd-col-header dd-col-header--blue">
+                <span class="dd-col-header-icon"><i class="fas fa-clipboard-list"></i></span>
+                <span class="dd-col-header-text">Test Series</span>
+              </div>
+              <div class="dd-cards">
+                <a href="/programs?type=test-series&amp;exam=gate" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#FFF4ED;--icon-color:#E8580A"><i class="fas fa-graduation-cap"></i></span>
+                  <span class="dd-card-label">GATE</span>
+                </a>
+                <a href="/programs?type=test-series&amp;exam=ese" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#F5F3FF;--icon-color:#7C3AED"><i class="fas fa-graduation-cap"></i></span>
+                  <span class="dd-card-label">ESE</span>
+                </a>
+                <a href="/programs?type=test-series&amp;exam=psus" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#FFF1F2;--icon-color:#BE123C"><i class="fas fa-industry"></i></span>
+                  <span class="dd-card-label">PSUs</span>
+                </a>
+                <a href="/programs?type=test-series&amp;exam=rajasthan-je" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#F0F9FF;--icon-color:#0284C7"><i class="fas fa-drafting-compass"></i></span>
+                  <span class="dd-card-label">Rajasthan JE</span>
+                </a>
+                <a href="/programs?type=test-series&amp;exam=rajasthan-ae" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#F0FDF4;--icon-color:#16A34A"><i class="fas fa-building"></i></span>
+                  <span class="dd-card-label">Rajasthan AE</span>
+                </a>
+                <a href="/programs?type=test-series&amp;exam=other-state" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#FFF7ED;--icon-color:#D97706"><i class="fas fa-map-marker-alt"></i></span>
+                  <span class="dd-card-label">Other State AE/JEs</span>
+                </a>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <a href="/about" class="nav-link">About</a>
+      </nav>
+
+      <!-- Right: Phone + Hamburger -->
+      <div class="header-right">
+        <a href="tel:+919999999999" class="header-phone" aria-label="Call us">
+          <span class="phone-ring-wrap">
+            <i class="fas fa-phone phone-icon"></i>
+          </span>
+          <span class="phone-text">+91 99999 9999</span>
+        </a>
+        <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false" aria-controls="mobileDrawer">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+
     </div>
   </header>
 
-  <section class="pd-hero" style="background: linear-gradient(135deg, #0F2027 0%, #0284C7 100%);">
-    <div class="container">
-      <nav class="pd-breadcrumb"><a href="/">Home</a><i class="fas fa-chevron-right"></i><a href="/programs">Programs</a><i class="fas fa-chevron-right"></i><span>Offline Test Series</span></nav>
-      <div class="pd-hero-inner">
-        <div>
-          <div class="pd-eyebrow">
-            <span class="pd-badge pd-badge-type"><i class="fas fa-clipboard-list"></i> Weekly Test Series</span>
-            <span class="pd-badge pd-badge-status pd-badge-open">Open Enrollment</span>
+  <!-- Mobile Drawer -->
+  <div class="drawer-overlay" id="drawerOverlay" aria-hidden="true"></div>
+  <aside class="mobile-drawer" id="mobileDrawer" aria-label="Mobile navigation">
+    <button class="drawer-close" id="drawerClose" aria-label="Close menu"><i class="fas fa-times"></i></button>
+    <a href="/" class="drawer-wordmark">Dr. Jaspal Singh</a>
+    <nav class="drawer-nav">
+      <a href="/" class="drawer-link">Home</a>
+
+      <div class="drawer-accordion">
+        <button class="drawer-accordion-trigger" aria-expanded="false">
+          Offline Programs <i class="fas fa-chevron-down drawer-acc-caret"></i>
+        </button>
+        <div class="drawer-accordion-body">
+          <div class="drawer-acc-section">
+            <span class="drawer-acc-title">Offline Batches</span>
+            <a href="/programs?type=batch&amp;exam=gate-ese"     class="drawer-acc-link">GATE/ESE</a>
+            <a href="/programs?type=batch&amp;exam=rajasthan-ae" class="drawer-acc-link">Rajasthan AE</a>
+            <a href="/programs?type=batch&amp;exam=rajasthan-je" class="drawer-acc-link">Rajasthan JE</a>
+            <a href="/programs?type=batch&amp;exam=ssc-je"       class="drawer-acc-link">SSC JE</a>
+            <a href="/programs?type=batch&amp;exam=rrb-je"       class="drawer-acc-link">RRB JE</a>
+            <a href="/programs?type=batch&amp;exam=psus"         class="drawer-acc-link">PSUs</a>
           </div>
-          <h1 class="pd-hero-title">Offline Test Series<br>SSC JE & State AE/JE</h1>
-          <p class="pd-hero-sub">Master-curated weekly offline tests at our Jaipur centre covering the full syllabus for SSC JE, Rajasthan AE/JE, GATE, and other State exams — with detailed performance analysis and doubt sessions.</p>
-          <div class="pd-hero-ctas">
-            <a href="/enroll?prog=offline-test-series" class="pd-cta-primary"><i class="fas fa-arrow-right"></i> Join Test Series</a>
-            <a href="https://wa.me/919999999999?text=I want to join the Offline Test Series" target="_blank" rel="noopener" class="pd-cta-wa"><i class="fab fa-whatsapp"></i> WhatsApp Us</a>
+          <div class="drawer-acc-section">
+            <span class="drawer-acc-title">Interview Programs</span>
+            <a href="/programs?type=interview&amp;exam=ese"     class="drawer-acc-link">ESE</a>
+            <a href="/programs?type=interview&amp;exam=rpsc-ae" class="drawer-acc-link">RPSC AE</a>
+            <a href="/programs?type=interview&amp;exam=psus"    class="drawer-acc-link">PSUs</a>
           </div>
-        </div>
-        <div class="pd-hero-stats">
-          <div class="pd-hero-stat"><span class="pd-hero-stat-val">Every Sunday</span><span class="pd-hero-stat-label">Test Day</span></div>
-          <div class="pd-hero-stat"><span class="pd-hero-stat-val">Open</span><span class="pd-hero-stat-label">Enrollment</span></div>
-          <div class="pd-hero-stat"><span class="pd-hero-stat-val">₹4,999</span><span class="pd-hero-stat-label">Per Month</span></div>
-          <div class="pd-hero-stat"><span class="pd-hero-stat-val">Jaipur</span><span class="pd-hero-stat-label">Location</span></div>
+          <div class="drawer-acc-section">
+            <span class="drawer-acc-title">Test Series</span>
+            <a href="/programs?type=test-series&amp;exam=gate"         class="drawer-acc-link">GATE</a>
+            <a href="/programs?type=test-series&amp;exam=ese"          class="drawer-acc-link">ESE</a>
+            <a href="/programs?type=test-series&amp;exam=psus"         class="drawer-acc-link">PSUs</a>
+            <a href="/programs?type=test-series&amp;exam=rajasthan-je" class="drawer-acc-link">Rajasthan JE</a>
+            <a href="/programs?type=test-series&amp;exam=rajasthan-ae" class="drawer-acc-link">Rajasthan AE</a>
+            <a href="/programs?type=test-series&amp;exam=other-state"  class="drawer-acc-link">Other State AE/JEs</a>
+          </div>
         </div>
       </div>
+
+      <a href="/about" class="drawer-link">About</a>
+    </nav>
+    <div class="drawer-social">
+      <a href="tel:+919999999999" class="drawer-contact-btn"><i class="fas fa-phone"></i> Call Us</a>
+      <a href="https://wa.me/919999999999" target="_blank" rel="noopener" class="drawer-contact-btn drawer-contact-wa"><i class="fab fa-whatsapp"></i> WhatsApp</a>
     </div>
-  </section>
-
-  <main class="container">
-    <div class="pd-layout">
-      <div>
-        <div class="pd-section">
-          <h2 class="pd-section-title">Program Overview</h2>
-          <p>The Offline Test Series is a continuous weekly testing program held every Sunday at our Jaipur centre. Questions are personally curated by Dr. Jaspal Singh and his team, covering the exact pattern, difficulty level, and topic distribution of the target exams.</p>
-          <p>Students get a full performance report after every test — subject-wise marks, rank within the batch, time analysis, and common mistake identification. A doubt-clearing session follows every test.</p>
-          <div class="pd-highlights">
-            <div class="pd-highlight-item">
-              <div class="pd-highlight-icon" style="background:#DBEAFE;color:#1D4ED8"><i class="fas fa-pen-to-square"></i></div>
-              <div class="pd-highlight-text"><strong>Weekly Tests</strong><span>New test every Sunday — full syllabus or subject-wise</span></div>
-            </div>
-            <div class="pd-highlight-item">
-              <div class="pd-highlight-icon" style="background:#DBEAFE;color:#1D4ED8"><i class="fas fa-chart-bar"></i></div>
-              <div class="pd-highlight-text"><strong>Performance Reports</strong><span>Detailed analysis with rank, accuracy & time breakdown</span></div>
-            </div>
-            <div class="pd-highlight-item">
-              <div class="pd-highlight-icon" style="background:#DBEAFE;color:#1D4ED8"><i class="fas fa-comments"></i></div>
-              <div class="pd-highlight-text"><strong>Doubt Sessions</strong><span>Post-test doubt clearing session with faculty</span></div>
-            </div>
-            <div class="pd-highlight-item">
-              <div class="pd-highlight-icon" style="background:#DBEAFE;color:#1D4ED8"><i class="fas fa-graduation-cap"></i></div>
-              <div class="pd-highlight-text"><strong>Expert Curation</strong><span>Questions curated directly by Dr. Jaspal Singh</span></div>
-            </div>
-            <div class="pd-highlight-item">
-              <div class="pd-highlight-icon" style="background:#DBEAFE;color:#1D4ED8"><i class="fas fa-calendar-check"></i></div>
-              <div class="pd-highlight-text"><strong>Join Anytime</strong><span>Open enrollment — no fixed start date</span></div>
-            </div>
-            <div class="pd-highlight-item">
-              <div class="pd-highlight-icon" style="background:#DBEAFE;color:#1D4ED8"><i class="fas fa-list-ol"></i></div>
-              <div class="pd-highlight-text"><strong>Previous Year Papers</strong><span>PYQ-based tests included every month</span></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="pd-section">
-          <h2 class="pd-section-title">Exams Covered</h2>
-          <ul class="pd-curriculum-list">
-            <li><i class="fas fa-check-circle"></i> SSC JE (Civil & Structural) — Paper I & Paper II pattern</li>
-            <li><i class="fas fa-check-circle"></i> Rajasthan AE (RPSC) — Technical + General Studies</li>
-            <li><i class="fas fa-check-circle"></i> Rajasthan JE (RSMSSB) — Full syllabus coverage</li>
-            <li><i class="fas fa-check-circle"></i> GATE CE — Concept-application and numerical tests</li>
-            <li><i class="fas fa-check-circle"></i> IES/ESE — Objective Paper II standard</li>
-            <li><i class="fas fa-check-circle"></i> Other State AE/JEs — Haryana, UP, MP, Gujarat patterns</li>
-          </ul>
-        </div>
-
-        <div class="pd-section">
-          <h2 class="pd-section-title">Schedule & Logistics</h2>
-          <div class="pd-schedule-grid">
-            <div class="pd-schedule-item"><div class="pd-schedule-label">Mode</div><div class="pd-schedule-val">Offline — Jaipur, Rajasthan</div></div>
-            <div class="pd-schedule-item"><div class="pd-schedule-label">Test Day</div><div class="pd-schedule-val green">Every Sunday</div></div>
-            <div class="pd-schedule-item"><div class="pd-schedule-label">Test Timing</div><div class="pd-schedule-val">9:00 AM – 12:00 PM</div></div>
-            <div class="pd-schedule-item"><div class="pd-schedule-label">Doubt Session</div><div class="pd-schedule-val">12:30 PM – 2:00 PM</div></div>
-            <div class="pd-schedule-item"><div class="pd-schedule-label">Fee</div><div class="pd-schedule-val orange">₹4,999 / month</div></div>
-            <div class="pd-schedule-item"><div class="pd-schedule-label">Enrollment</div><div class="pd-schedule-val green">Open — Join Anytime</div></div>
-          </div>
-        </div>
-
-        <div class="pd-section">
-          <h2 class="pd-section-title">Frequently Asked Questions</h2>
-          <div class="pd-faq-item">
-            <button class="pd-faq-q" onclick="toggleFaq(this)">Can I join in the middle of the month? <i class="fas fa-chevron-down"></i></button>
-            <div class="pd-faq-a">Yes. Enrollment is open at any point. Your monthly subscription starts from the Sunday after your enrollment is confirmed. Pro-rated fees apply if you join mid-month.</div>
-          </div>
-          <div class="pd-faq-item">
-            <button class="pd-faq-q" onclick="toggleFaq(this)">What if I miss a Sunday test? <i class="fas fa-chevron-down"></i></button>
-            <div class="pd-faq-a">Missed tests are not refunded, but the question paper and answer key will be provided to enrolled students for self-study. We encourage regular attendance for maximum benefit.</div>
-          </div>
-          <div class="pd-faq-item">
-            <button class="pd-faq-q" onclick="toggleFaq(this)">How many questions are there per test? <i class="fas fa-chevron-down"></i></button>
-            <div class="pd-faq-a">Each test has 100–120 questions (objective type) based on the target exam pattern. Some tests are full-length (3 hours) and some are subject-specific (1.5 hours). The monthly schedule is shared in advance.</div>
-          </div>
-          <div class="pd-faq-item">
-            <button class="pd-faq-q" onclick="toggleFaq(this)">Is this test series suitable for GATE preparation? <i class="fas fa-chevron-down"></i></button>
-            <div class="pd-faq-a">Yes. We include GATE-standard tests covering concept application, numericals, and MCQ format. However, the primary focus is SSC JE and State AE/JE patterns.</div>
-          </div>
-        </div>
-      </div>
-
-      <aside class="pd-sidebar">
-        <div class="pd-enroll-card">
-          <div class="pd-enroll-card-top">
-            <div class="pd-price-row"><span class="pd-price">₹4,999</span><span class="pd-price-per">/ month</span></div>
-            <p class="pd-price-note">Includes all Sunday tests, performance reports, and doubt sessions. Open enrollment — join any week.</p>
-          </div>
-          <div class="pd-enroll-card-divider"></div>
-          <div class="pd-quick-facts">
-            <div class="pd-quick-fact"><span class="pd-quick-fact-label"><i class="fas fa-map-marker-alt"></i> Location</span><span class="pd-quick-fact-val">Jaipur, Raj.</span></div>
-            <div class="pd-quick-fact"><span class="pd-quick-fact-label"><i class="fas fa-calendar-alt"></i> Test Day</span><span class="pd-quick-fact-val green">Every Sunday</span></div>
-            <div class="pd-quick-fact"><span class="pd-quick-fact-label"><i class="fas fa-clock"></i> Timing</span><span class="pd-quick-fact-val">9 AM – 2 PM</span></div>
-            <div class="pd-quick-fact"><span class="pd-quick-fact-label"><i class="fas fa-door-open"></i> Enrollment</span><span class="pd-quick-fact-val green">Open</span></div>
-          </div>
-          <div class="pd-enroll-card-divider"></div>
-          <div class="pd-enroll-card-btns">
-            <a href="/enroll?prog=offline-test-series" class="pd-enroll-btn pd-enroll-btn-primary"><i class="fas fa-arrow-right"></i> Enroll Now</a>
-            <a href="https://wa.me/919999999999?text=I want to join the Offline Test Series" target="_blank" rel="noopener" class="pd-enroll-btn pd-enroll-btn-wa"><i class="fab fa-whatsapp"></i> WhatsApp to Join</a>
-            <a href="tel:+919999999999" class="pd-enroll-btn" style="background:#F3F4F6;color:var(--heading-color);justify-content:center;display:flex;align-items:center;gap:8px;padding:12px;border-radius:12px;font-family:var(--font-heading);font-weight:700;text-decoration:none;"><i class="fas fa-phone" style="color:var(--magenta)"></i> Call Us</a>
-          </div>
-        </div>
-        <div class="pd-instructor-card">
-          <h4>Questions Curated By</h4>
-          <div class="pd-instructor-inner">
-            <img src="/assets/images/jaspal-hero.png" class="pd-instructor-img" alt="Dr. Jaspal Singh" onerror="this.style.display='none'" />
-            <div><div class="pd-instructor-name">Dr. Jaspal Singh</div><div class="pd-instructor-cred">Ex-IES Officer (AIR-04)<br>GATE AIR-06 · PhD</div></div>
-          </div>
-          <div class="pd-instructor-tags"><span class="pd-instructor-tag">ESE AIR-04</span><span class="pd-instructor-tag">GATE AIR-06</span><span class="pd-instructor-tag">5L+ Students</span></div>
-        </div>
-      </aside>
+  </aside>
     </div>
   </main>
 
