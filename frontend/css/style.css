@@ -280,8 +280,6 @@ ul, ol {
   animation-delay: 0.7s;
 }
 
-.phone-icon i { transform: scaleX(-1); display: inline-block; }
-
 .phone-icon {
   position: relative;
   z-index: 1;
