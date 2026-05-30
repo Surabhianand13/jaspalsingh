@@ -1019,6 +1019,7 @@
     $('slugPreview').textContent     = isEdit ? (post.slug  || '—') : '—';
     $('blogCategory').value          = isEdit ? (post.category || '') : '';
     $('blogExcerpt').value           = isEdit ? (post.excerpt || '') : '';
+    $('blogPdfUrl').value            = isEdit ? (post.pdf_url || '') : '';
     $('blogPublished').checked       = isEdit ? !!post.is_published : false;
 
     var coverSel = $('blogCoverSelected');
@@ -1078,6 +1079,7 @@
     fd.append('slug',         slug);
     fd.append('category',     category);
     fd.append('excerpt',      $('blogExcerpt').value.trim());
+    fd.append('pdf_url',      $('blogPdfUrl').value.trim());
     fd.append('content',      content);
     fd.append('is_published', $('blogPublished').checked ? 'true' : 'false');
 
