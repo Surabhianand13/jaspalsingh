@@ -701,15 +701,6 @@
             <span id="bpReadTime"></span>
           </div>
 
-          <!-- Author -->
-          <div class="bp-author">
-            <img src="/assets/images/jaspal-hero.png" class="bp-author-avatar" alt="Dr. Jaspal Singh" onerror="this.style.display='none'" />
-            <div>
-              <div class="bp-author-name">Dr. Jaspal Singh</div>
-              <div class="bp-author-sub">Ex-IES Officer (AIR-04) · PhD · Unacademy Educator</div>
-            </div>
-          </div>
-
           <div class="bp-divider"></div>
 
           <!-- Article body -->
@@ -721,13 +712,6 @@
           <!-- Tags -->
           <div id="bpTags" class="bp-tags" style="display:none;"></div>
 
-          <!-- Share -->
-          <div class="bp-share">
-            <span class="bp-share-label">Share:</span>
-            <a id="bpShareWa"  class="bp-share-btn bp-share-btn--wa"  href="#" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> WhatsApp</a>
-            <a id="bpShareTg"  class="bp-share-btn bp-share-btn--tg"  href="#" target="_blank" rel="noopener"><i class="fab fa-telegram"></i> Telegram</a>
-            <button id="bpShareCopy" class="bp-share-btn bp-share-btn--copy"><i class="fas fa-link"></i> Copy Link</button>
-          </div>
 
         </article>
 
@@ -743,20 +727,6 @@
 
       <!-- ── SIDEBAR ── -->
       <aside class="bp-sidebar" id="bpSidebar" style="display:none;">
-
-        <!-- Author card -->
-        <div class="bp-sidebar-card">
-          <div class="bp-sidebar-title">About the Author</div>
-          <img src="/assets/images/jaspal-hero.png" class="bp-sidebar-author-img" alt="Dr. Jaspal Singh" onerror="this.style.display='none'" />
-          <div class="bp-sidebar-author-name">Dr. Jaspal Singh</div>
-          <div class="bp-sidebar-author-role">Ex-IES Officer (AIR-04) · PhD IIT Delhi · 15+ years teaching GATE &amp; ESE Civil Engineering</div>
-          <a href="/connect" class="bp-sidebar-cta bp-sidebar-cta--primary" style="margin-top:16px;">
-            <i class="fas fa-user-tie"></i> Connect with Dr. Jaspal
-          </a>
-          <a href="https://t.me/jaspalsirofficial" target="_blank" rel="noopener" class="bp-sidebar-cta bp-sidebar-cta--tg">
-            <i class="fab fa-telegram"></i> Join Telegram Channel
-          </a>
-        </div>
 
         <!-- Programs CTA card -->
         <div class="bp-sidebar-card">
@@ -903,18 +873,7 @@
       /* Tags from category */
       renderTags(post.category);
 
-      /* Share links */
       var pageUrl = window.location.href;
-      var shareText = encodeURIComponent((post.title || '') + ' — jaspalsingh.in');
-      document.getElementById('bpShareWa').href  = 'https://wa.me/?text=' + shareText + '%20' + encodeURIComponent(pageUrl);
-      document.getElementById('bpShareTg').href  = 'https://t.me/share/url?url=' + encodeURIComponent(pageUrl) + '&text=' + shareText;
-      document.getElementById('bpShareCopy').addEventListener('click', function () {
-        navigator.clipboard.writeText(pageUrl).then(function () {
-          var btn = document.getElementById('bpShareCopy');
-          btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-          setTimeout(function () { btn.innerHTML = '<i class="fas fa-link"></i> Copy Link'; }, 2000);
-        });
-      });
 
       /* Page meta */
       document.title = (post.title || 'Blog Post') + ' — Dr. Jaspal Singh';

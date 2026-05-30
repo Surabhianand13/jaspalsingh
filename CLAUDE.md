@@ -17,3 +17,11 @@ Always verify changes on **jaspalsingh.in**, not localhost.
 - `frontend/` — HTML/CSS/JS pages served by Vercel
 - `backend/` — Node.js + Express API served by Render
 - `images/` — Static images (banners etc.) served by Express at `/images/`
+
+## Blog Post Page (`/blog-post`)
+
+- **No author strip** inside the article — do not add it back
+- **No share buttons** (WhatsApp / Telegram / Copy Link) — do not add them back
+- **No "About the Author" sidebar card** — sidebar only shows the Offline Programs CTA card
+- Blog posts are hidden from nav/footer (unlisted) but indexable by Google via sitemap
+- Admin credentials: email `biz@solvvai.com` — stored in Render env vars
