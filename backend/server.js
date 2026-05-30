@@ -120,13 +120,24 @@ process.on('uncaughtException', (err) => {
   process.exit(1);
 });
 
-/* ── Start Server ────────────────────────────────────────── */
+/* ── Run DB migrations then start server ─────────────────── */
 
+const { query } = require('./config/db');
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`\n✅ jaspalsingh.in API running on port ${PORT}`);
-  console.log(`   Environment : ${process.env.NODE_ENV || 'development'}`);
-  console.log(`   Health check: http://localhost:${PORT}/api/health\n`);
-});
+
+async function migrate() {
+  await query(`ALTER TABLE blog_posts ADD COLUMN IF NOT EXISTS pdf_url VARCHAR(1000)`);
+  console.log('✅ Migration: pdf_url column ensured');
+}
+
+migrate()
+  .catch(err => console.warn('⚠️  Migration warning:', err.message))
+  .finally(() => {
+    app.listen(PORT, () => {
+      console.log(`\n✅ jaspalsingh.in API running on port ${PORT}`);
+      console.log(`   Environment : ${process.env.NODE_ENV || 'development'}`);
+      console.log(`   Health check: http://localhost:${PORT}/api/health\n`);
+    });
+  });
 
 module.exports = app;
