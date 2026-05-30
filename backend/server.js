@@ -59,6 +59,11 @@ const loginLimiter = rateLimit({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+/* ── Static Files ────────────────────────────────────────── */
+
+// Serve banner/gallery images from the project-root images/ folder
+app.use('/images', express.static(path.join(__dirname, '..', 'images')));
+
 /* ── API Routes ──────────────────────────────────────────── */
 
 app.use('/api', apiLimiter);
