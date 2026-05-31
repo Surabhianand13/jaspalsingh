@@ -1033,3 +1033,89 @@
   .instructor-card { flex-direction: column; align-items: center; text-align: center; }
   .instructor-tags { justify-content: center; }
 }
+
+/* ============================================================
+   RECOGNITION & MEDIA SECTION
+   ============================================================ */
+.recognition-section { background: var(--white); }
+
+.recog-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 48px;
+}
+.recog-card {
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1.5px solid rgba(26,26,46,.07);
+  background: var(--light-grey);
+}
+.recog-card img {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  object-position: top center;
+  display: block;
+  transition: transform .3s ease;
+}
+.recog-card:hover img { transform: scale(1.03); }
+.recog-caption {
+  font-family: var(--font-heading);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--body-color);
+  text-align: center;
+  padding: 10px 12px;
+}
+
+.media-strip {
+  border-top: 1.5px solid rgba(26,26,46,.07);
+  padding-top: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+.media-strip-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: rgba(74,74,104,.45);
+}
+.media-strip-items {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.media-item {
+  width: 200px;
+  height: 120px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1.5px solid rgba(26,26,46,.07);
+  flex-shrink: 0;
+}
+.media-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  filter: grayscale(20%);
+  transition: filter .3s;
+}
+.media-item:hover img { filter: grayscale(0%); }
+
+@media (max-width: 900px) {
+  .recog-grid { grid-template-columns: repeat(2, 1fr); }
+  .media-strip-items { gap: 12px; }
+  .media-item { width: 160px; height: 100px; }
+}
+@media (max-width: 560px) {
+  .recog-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .recog-card img { height: 160px; }
+  .media-item { width: 140px; height: 88px; }
+}
