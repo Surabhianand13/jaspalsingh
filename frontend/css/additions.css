@@ -835,3 +835,201 @@
   .prog-banner-title { font-size: 15px; }
   .prog-banner-pills { display: none; }
 }
+
+/* ============================================================
+   PROGRAM DETAIL PAGES - shared components
+   ============================================================ */
+
+/* Highlights strip */
+.prog-highlights {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  background: var(--white);
+  border: 1.5px solid rgba(26,26,46,.08);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin: 28px 0 0;
+}
+.ph-item {
+  flex: 1;
+  min-width: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 18px 12px;
+  border-right: 1px solid rgba(26,26,46,.07);
+  text-align: center;
+}
+.ph-item:last-child { border-right: none; }
+.ph-item i { font-size: 18px; margin-bottom: 4px; }
+.ph-num {
+  font-family: var(--font-heading);
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--heading-color);
+  line-height: 1;
+}
+.ph-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--body-color);
+  text-transform: uppercase;
+  letter-spacing: .6px;
+}
+
+/* Pricing block inside enroll card */
+.price-block {
+  background: linear-gradient(135deg, rgba(200,18,64,.05) 0%, rgba(200,18,64,.02) 100%);
+  border: 1.5px solid rgba(200,18,64,.15);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+.price-mrp {
+  font-size: 12px;
+  color: var(--body-color);
+  margin-bottom: 4px;
+}
+.price-mrp span {
+  text-decoration: line-through;
+  color: rgba(74,74,104,.5);
+  font-weight: 600;
+}
+.price-offer {
+  font-family: var(--font-heading);
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--heading-color);
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.price-gst {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--body-color);
+  margin-left: 4px;
+}
+.price-save {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--green);
+  background: rgba(22,163,74,.10);
+  border-radius: 20px;
+  padding: 3px 10px;
+}
+
+/* Instructor section */
+.instructor-card {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  padding: 22px;
+  background: var(--light-grey);
+  border: 1.5px solid rgba(26,26,46,.07);
+  border-radius: var(--radius-sm);
+}
+.instructor-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 3px solid var(--white);
+  box-shadow: 0 2px 12px rgba(26,26,46,.12);
+}
+.instructor-avatar-placeholder {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--gradient);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  color: #fff;
+  font-weight: 800;
+  font-family: var(--font-heading);
+}
+.instructor-info { flex: 1; }
+.instructor-name {
+  font-family: var(--font-heading);
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--heading-color);
+  margin-bottom: 4px;
+}
+.instructor-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.inst-tag {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: var(--white);
+  border: 1.5px solid rgba(26,26,46,.10);
+  color: var(--heading-color);
+}
+.instructor-bio {
+  font-size: 13.5px;
+  color: var(--body-color);
+  line-height: 1.7;
+}
+
+/* FAQ */
+.faq-list { display: flex; flex-direction: column; gap: 8px; }
+.faq-item {
+  border: 1.5px solid rgba(26,26,46,.08);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  overflow: hidden;
+}
+.faq-item summary {
+  font-family: var(--font-heading);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--heading-color);
+  padding: 16px 18px;
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-item summary::after {
+  content: '\f107';
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 900;
+  font-size: 13px;
+  color: var(--body-color);
+  flex-shrink: 0;
+  transition: transform .2s;
+}
+.faq-item[open] summary::after { transform: rotate(180deg); }
+.faq-item[open] summary { border-bottom: 1px solid rgba(26,26,46,.07); }
+.faq-body {
+  font-size: 13.5px;
+  color: var(--body-color);
+  line-height: 1.75;
+  padding: 14px 18px;
+}
+
+/* Responsive for new components */
+@media (max-width: 600px) {
+  .prog-highlights { gap: 0; }
+  .ph-item { min-width: 80px; padding: 14px 8px; }
+  .ph-num { font-size: 18px; }
+  .instructor-card { flex-direction: column; align-items: center; text-align: center; }
+  .instructor-tags { justify-content: center; }
+}

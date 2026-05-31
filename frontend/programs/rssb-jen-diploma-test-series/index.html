@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RSSB JEN 2026 Civil Diploma Offline Test Series — Dr. Jaspal Singh</title>
+  <title>RSSB JEN 2026 Civil Diploma Offline Test Series - Dr. Jaspal Singh</title>
   <meta name="description" content="Offline Test Series for RSSB JEN 2026 (Civil Diploma) by Dr. Jaspal Singh, Jaipur. Subject-wise and full-length mock tests with detailed analysis sessions." />
   <meta name="author" content="Dr. Jaspal Singh" />
   <meta name="robots" content="index, follow" />
@@ -17,182 +17,68 @@
   <link rel="stylesheet" href="/css/pages.css" />
   <link rel="stylesheet" href="/css/additions.css" />
   <style>
-    /* ── Detail page shared styles ── */
-    .prog-detail-hero {
-      padding-top: calc(var(--header-h) + 56px + 36px);
-      padding-bottom: 0;
-      background: var(--light-grey);
-      position: relative;
-      overflow: hidden;
-    }
+    .prog-detail-hero { padding-top:calc(var(--header-h) + 56px + 36px); padding-bottom:0; background:var(--light-grey); position:relative; overflow:hidden; }
     .prog-detail-hero::after { content:''; position:absolute; bottom:0; left:0; right:0; height:3px; background:var(--gradient); }
     .breadcrumb { font-size:13px; color:var(--body-color); opacity:.65; font-weight:500; margin-bottom:18px; }
     .breadcrumb a { color:var(--magenta); opacity:1; }
-
     .hero-layout { display:grid; grid-template-columns:1fr 340px; gap:48px; align-items:start; padding-bottom:56px; }
-
-    .hero-type-tag {
-      display:inline-flex; align-items:center; gap:8px;
-      font-family:var(--font-heading); font-size:11px; font-weight:700;
-      letter-spacing:1.4px; text-transform:uppercase;
-      padding:6px 16px; border-radius:var(--radius-pill);
-      margin-bottom:18px;
-      background:rgba(2,132,199,.09); color:#0284C7; border:1px solid rgba(2,132,199,.20);
-    }
+    .hero-type-tag { display:inline-flex; align-items:center; gap:8px; font-family:var(--font-heading); font-size:11px; font-weight:700; letter-spacing:1.4px; text-transform:uppercase; padding:6px 16px; border-radius:var(--radius-pill); margin-bottom:18px; background:rgba(2,132,199,.09); color:#0284C7; border:1px solid rgba(2,132,199,.20); }
     .hero-title { font-family:var(--font-heading); font-size:clamp(26px,4vw,40px); font-weight:800; color:var(--heading-color); line-height:1.15; letter-spacing:-.5px; margin-bottom:16px; }
     .hero-desc { font-size:15px; color:var(--body-color); line-height:1.8; margin-bottom:28px; max-width:560px; }
-
     .hero-meta-row { display:flex; flex-wrap:wrap; gap:20px; margin-bottom:0; }
     .hm-item { display:flex; flex-direction:column; gap:3px; }
     .hm-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; color:rgba(74,74,104,.45); }
     .hm-val { font-family:var(--font-heading); font-size:14px; font-weight:700; color:var(--heading-color); }
-
-    /* Sticky enroll card */
-    .enroll-card {
-      background:var(--white);
-      border:1.5px solid rgba(26,26,46,.09);
-      border-radius:var(--radius-md);
-      box-shadow:var(--shadow-md);
-      overflow:hidden;
-      position:sticky;
-      top:calc(var(--header-h) + 24px);
-    }
-    .enroll-thumb {
-      height:160px;
-      background:linear-gradient(145deg, #0369A1 0%, #0284C7 100%);
-      display:flex; align-items:center; justify-content:center;
-      position:relative; overflow:hidden;
-    }
-    .enroll-thumb::before {
-      content:'';
-      position:absolute; inset:0;
-      background-image:radial-gradient(circle, rgba(255,255,255,.10) 1px, transparent 1px);
-      background-size:22px 22px;
-    }
-    .enroll-thumb img { width:100%; height:100%; object-fit:cover; position:absolute; inset:0; }
+    .ph-item i { color:#0284C7; }
+    .enroll-card { background:var(--white); border:1.5px solid rgba(26,26,46,.09); border-radius:var(--radius-md); box-shadow:var(--shadow-md); overflow:hidden; position:sticky; top:calc(var(--header-h) + 24px); }
+    .enroll-thumb { height:160px; background:linear-gradient(145deg,#0369A1 0%,#0284C7 100%); display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
+    .enroll-thumb::before { content:''; position:absolute; inset:0; background-image:radial-gradient(circle,rgba(255,255,255,.10) 1px,transparent 1px); background-size:22px 22px; }
     .enroll-thumb-icon { font-size:52px; color:rgba(255,255,255,.88); position:relative; z-index:1; filter:drop-shadow(0 4px 12px rgba(0,0,0,.28)); }
     .enroll-body { padding:22px; }
     .enroll-label { font-family:var(--font-heading); font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:rgba(74,74,104,.45); margin-bottom:6px; }
     .enroll-program-name { font-family:var(--font-heading); font-size:15px; font-weight:800; color:var(--heading-color); line-height:1.3; margin-bottom:16px; }
-    .enroll-detail-rows { display:flex; flex-direction:column; gap:10px; margin-bottom:20px; }
+    .enroll-detail-rows { display:flex; flex-direction:column; gap:10px; margin-bottom:16px; }
     .enroll-row { display:flex; justify-content:space-between; align-items:center; font-size:13px; border-bottom:1px solid rgba(26,26,46,.06); padding-bottom:10px; }
     .enroll-row:last-child { border-bottom:none; padding-bottom:0; }
     .er-key { color:var(--body-color); font-weight:500; }
     .er-val { font-family:var(--font-heading); font-weight:700; color:var(--heading-color); font-size:13px; }
     .er-val.green { color:var(--green); }
-    .er-val.orange { color:var(--orange); }
-    .enroll-btn {
-      display:block; width:100%; text-align:center;
-      padding:13px 20px;
-      border-radius:var(--radius-pill);
-      font-family:var(--font-heading); font-size:14px; font-weight:800;
-      background:var(--gradient); color:#fff;
-      text-decoration:none;
-      box-shadow:0 4px 18px rgba(200,18,64,.30);
-      transition:var(--transition);
-    }
+    .enroll-btn { display:block; width:100%; text-align:center; padding:13px 20px; border-radius:var(--radius-pill); font-family:var(--font-heading); font-size:14px; font-weight:800; background:var(--gradient); color:#fff; text-decoration:none; box-shadow:0 4px 18px rgba(200,18,64,.30); transition:var(--transition); }
     .enroll-btn:hover { transform:translateY(-2px); box-shadow:0 8px 26px rgba(200,18,64,.42); color:#fff; }
-    .enroll-wa {
-      display:flex; align-items:center; justify-content:center; gap:8px;
-      margin-top:10px;
-      padding:11px 20px;
-      border-radius:var(--radius-pill);
-      font-family:var(--font-heading); font-size:13px; font-weight:700;
-      background:rgba(37,211,102,.10); color:#1a7a40;
-      border:1.5px solid rgba(37,211,102,.25);
-      text-decoration:none; transition:var(--transition);
-    }
+    .enroll-wa { display:flex; align-items:center; justify-content:center; gap:8px; margin-top:10px; padding:11px 20px; border-radius:var(--radius-pill); font-family:var(--font-heading); font-size:13px; font-weight:700; background:rgba(37,211,102,.10); color:#1a7a40; border:1.5px solid rgba(37,211,102,.25); text-decoration:none; transition:var(--transition); }
     .enroll-wa:hover { background:rgba(37,211,102,.18); color:#1a7a40; }
-
-    /* Content sections */
     .prog-detail-body { padding:72px 0 96px; }
     .detail-layout { display:grid; grid-template-columns:1fr 340px; gap:48px; align-items:start; }
     .detail-main { display:flex; flex-direction:column; gap:48px; }
-
-    .detail-section-title {
-      font-family:var(--font-heading); font-size:20px; font-weight:800;
-      color:var(--heading-color); line-height:1.2;
-      margin-bottom:20px;
-      padding-bottom:12px;
-      border-bottom:2px solid rgba(26,26,46,.07);
-    }
-
-    .detail-block { }
-
-    /* What's included list */
+    .detail-section-title { font-family:var(--font-heading); font-size:20px; font-weight:800; color:var(--heading-color); line-height:1.2; margin-bottom:20px; padding-bottom:12px; border-bottom:2px solid rgba(26,26,46,.07); }
     .included-list { display:flex; flex-direction:column; gap:12px; }
-    .included-item {
-      display:flex; gap:14px; align-items:flex-start;
-      padding:14px 16px;
-      background:var(--light-grey);
-      border-radius:var(--radius-sm);
-      border:1.5px solid rgba(26,26,46,.06);
-    }
-    .ii-icon {
-      width:36px; height:36px; flex-shrink:0;
-      border-radius:10px; display:flex; align-items:center; justify-content:center;
-      font-size:14px;
-    }
+    .included-item { display:flex; gap:14px; align-items:flex-start; padding:14px 16px; background:var(--light-grey); border-radius:var(--radius-sm); border:1.5px solid rgba(26,26,46,.06); }
+    .ii-icon { width:36px; height:36px; flex-shrink:0; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:14px; }
     .ii-body { display:flex; flex-direction:column; gap:3px; }
     .ii-title { font-family:var(--font-heading); font-size:14px; font-weight:700; color:var(--heading-color); }
     .ii-desc { font-size:13px; color:var(--body-color); line-height:1.6; }
-
-    /* Schedule table */
     .schedule-table { width:100%; border-collapse:collapse; }
-    .schedule-table th {
-      font-family:var(--font-heading); font-size:11px; font-weight:700;
-      text-transform:uppercase; letter-spacing:.8px;
-      color:rgba(74,74,104,.55);
-      padding:10px 14px; text-align:left;
-      background:var(--light-grey);
-      border-bottom:1.5px solid rgba(26,26,46,.08);
-    }
-    .schedule-table td {
-      padding:12px 14px; font-size:13.5px; color:var(--heading-color);
-      border-bottom:1px solid rgba(26,26,46,.06);
-      line-height:1.5;
-    }
+    .schedule-table th { font-family:var(--font-heading); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; color:rgba(74,74,104,.55); padding:10px 14px; text-align:left; background:var(--light-grey); border-bottom:1.5px solid rgba(26,26,46,.08); }
+    .schedule-table td { padding:12px 14px; font-size:13.5px; color:var(--heading-color); border-bottom:1px solid rgba(26,26,46,.06); line-height:1.5; }
     .schedule-table tr:last-child td { border-bottom:none; }
     .schedule-table tr:hover td { background:rgba(26,26,46,.025); }
     .td-bold { font-family:var(--font-heading); font-weight:700; }
     .td-sub { font-size:12px; color:var(--body-color); margin-top:2px; }
-
-    /* Who is this for */
     .for-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-    .for-item {
-      display:flex; gap:12px; align-items:flex-start;
-      padding:14px;
-      border:1.5px solid rgba(26,26,46,.07);
-      border-radius:var(--radius-sm);
-      background:var(--white);
-    }
+    .for-item { display:flex; gap:12px; align-items:flex-start; padding:14px; border:1.5px solid rgba(26,26,46,.07); border-radius:var(--radius-sm); background:var(--white); }
     .for-check { color:var(--green); font-size:14px; margin-top:2px; flex-shrink:0; }
     .for-text { font-size:13.5px; color:var(--heading-color); line-height:1.55; font-weight:500; }
-
-    /* Sidebar sticky */
     .detail-sidebar { position:sticky; top:calc(var(--header-h) + 24px); }
-
-    /* Responsive */
-    @media (max-width:900px) {
-      .hero-layout, .detail-layout { grid-template-columns:1fr; }
-      .enroll-card { position:static; }
-      .detail-sidebar { position:static; }
-      .for-grid { grid-template-columns:1fr; }
-    }
-    @media (max-width:600px) {
-      .prog-detail-hero { padding-top:calc(var(--header-h) + 36px + 36px); }
-      .hero-meta-row { gap:14px; }
-    }
+    @media (max-width:900px) { .hero-layout,.detail-layout { grid-template-columns:1fr; } .enroll-card { position:static; } .detail-sidebar { position:static; } .for-grid { grid-template-columns:1fr; } }
+    @media (max-width:600px) { .prog-detail-hero { padding-top:calc(var(--header-h) + 36px + 36px); } }
   </style>
 </head>
 <body>
   <a href="#main-content" class="skip-to-main">Skip to main content</a>
-
-  <!-- HEADER -->
   <header class="site-header" id="siteHeader" role="banner">
     <div class="container header-inner">
       <div class="header-left">
-        <a href="/" class="header-brand" aria-label="Dr. Jaspal Singh — Home">
+        <a href="/" class="header-brand" aria-label="Dr. Jaspal Singh - Home">
           <img src="/assets/images/jaspal-hero.png" class="header-avatar" alt="Dr. Jaspal Singh" onerror="this.style.display='none'" />
           <span class="wordmark">Dr. Jaspal Singh</span>
         </a>
@@ -213,7 +99,6 @@
       </div>
     </div>
   </header>
-
   <div class="drawer-overlay" id="drawerOverlay" aria-hidden="true"></div>
   <aside class="mobile-drawer" id="mobileDrawer" aria-label="Mobile navigation">
     <button class="drawer-close" id="drawerClose" aria-label="Close menu"><i class="fas fa-times"></i></button>
@@ -230,15 +115,13 @@
   </aside>
 
   <main id="main-content">
-
-    <!-- HERO -->
     <section class="prog-detail-hero">
       <div class="container">
         <p class="breadcrumb"><a href="/">Home</a> / <a href="/programs">Offline Programs</a> / RSSB JEN 2026 Diploma Test Series</p>
         <div class="hero-layout">
           <div>
             <span class="hero-type-tag"><i class="fas fa-clipboard-list"></i> Offline Test Series</span>
-            <h1 class="hero-title">RSSB JEN 2026<br>Civil Diploma &mdash; Offline Test Series</h1>
+            <h1 class="hero-title">RSSB JEN 2026<br>Civil Diploma - Offline Test Series</h1>
             <p class="hero-desc">A structured offline mock test series built specifically for Diploma-level Civil Engineering aspirants preparing for RSSB JEN 2026. Each test is followed by a detailed review session to identify weak areas and correct approach.</p>
             <div class="hero-meta-row">
               <div class="hm-item"><span class="hm-label">Exam</span><span class="hm-val">RSSB JEN 2026</span></div>
@@ -246,20 +129,30 @@
               <div class="hm-item"><span class="hm-label">Format</span><span class="hm-val">Offline &middot; Jaipur</span></div>
               <div class="hm-item"><span class="hm-label">Status</span><span class="hm-val" style="color:var(--green);">Enrolling Now</span></div>
             </div>
+            <div class="prog-highlights">
+              <div class="ph-item"><i class="fas fa-file-alt"></i><span class="ph-num">12</span><span class="ph-label">Tests</span></div>
+              <div class="ph-item"><i class="fas fa-calendar-alt"></i><span class="ph-num">3</span><span class="ph-label">Months</span></div>
+              <div class="ph-item"><i class="fas fa-users"></i><span class="ph-num">20</span><span class="ph-label">Max Batch</span></div>
+              <div class="ph-item"><i class="fas fa-map-marker-alt"></i><span class="ph-num" style="font-size:14px;">Jaipur</span><span class="ph-label">Offline Only</span></div>
+            </div>
           </div>
-          <!-- Enroll card -->
           <div class="enroll-card">
             <div class="enroll-thumb">
               <i class="fas fa-clipboard-list enroll-thumb-icon"></i>
             </div>
             <div class="enroll-body">
               <p class="enroll-label">You are viewing</p>
-              <p class="enroll-program-name">RSSB JEN 2026 &mdash; Civil Diploma Offline Test Series</p>
+              <p class="enroll-program-name">RSSB JEN 2026 - Civil Diploma Offline Test Series</p>
               <div class="enroll-detail-rows">
                 <div class="enroll-row"><span class="er-key">Exam</span><span class="er-val">RSSB JEN 2026</span></div>
                 <div class="enroll-row"><span class="er-key">Level</span><span class="er-val">Diploma (Civil)</span></div>
                 <div class="enroll-row"><span class="er-key">Location</span><span class="er-val">Jaipur, Rajasthan</span></div>
                 <div class="enroll-row"><span class="er-key">Enrollment</span><span class="er-val green">Open</span></div>
+              </div>
+              <div class="price-block">
+                <div class="price-mrp">MRP <span>&#8377;19,999</span></div>
+                <div class="price-offer">&#8377;9,999 <span class="price-gst">+ GST</span></div>
+                <div class="price-save"><i class="fas fa-tag"></i> You save &#8377;10,000</div>
               </div>
               <a href="https://wa.me/919999999999?text=I want to enroll in RSSB JEN 2026 Civil Diploma Offline Test Series" target="_blank" rel="noopener" class="enroll-btn">Enroll Now</a>
               <a href="https://wa.me/919999999999?text=I want more details about RSSB JEN 2026 Civil Diploma Offline Test Series" target="_blank" rel="noopener" class="enroll-wa"><i class="fab fa-whatsapp"></i> Ask on WhatsApp</a>
@@ -269,14 +162,11 @@
       </div>
     </section>
 
-    <!-- BODY -->
     <section class="prog-detail-body">
       <div class="container">
         <div class="detail-layout">
-
           <div class="detail-main">
 
-            <!-- What's included -->
             <div class="detail-block">
               <h2 class="detail-section-title">What Is Included</h2>
               <div class="included-list">
@@ -284,7 +174,7 @@
                   <div class="ii-icon" style="background:rgba(2,132,199,.10);color:#0284C7;"><i class="fas fa-file-alt"></i></div>
                   <div class="ii-body">
                     <span class="ii-title">Subject-Wise Mock Tests</span>
-                    <span class="ii-desc">Individual tests covering each core Civil Engineering subject in the RSSB JEN diploma syllabus &mdash; Strength of Materials, Fluid Mechanics, Soil Mechanics, Surveying, RCC Design, and more.</span>
+                    <span class="ii-desc">Individual tests covering each core Civil Engineering subject in the RSSB JEN diploma syllabus - Strength of Materials, Fluid Mechanics, Soil Mechanics, Surveying, RCC Design, and more.</span>
                   </div>
                 </div>
                 <div class="included-item">
@@ -311,7 +201,6 @@
               </div>
             </div>
 
-            <!-- Test Schedule -->
             <div class="detail-block">
               <h2 class="detail-section-title">Test Schedule Overview</h2>
               <table class="schedule-table">
@@ -320,22 +209,22 @@
                 </thead>
                 <tbody>
                   <tr>
-                    <td><span class="td-bold">Phase 1</span><div class="td-sub">Weeks 1&ndash;3</div></td>
+                    <td><span class="td-bold">Phase 1</span><div class="td-sub">Weeks 1-3</div></td>
                     <td>Strength of Materials, Building Materials, Surveying</td>
                     <td>Subject-Wise Tests</td>
                   </tr>
                   <tr>
-                    <td><span class="td-bold">Phase 2</span><div class="td-sub">Weeks 4&ndash;6</div></td>
+                    <td><span class="td-bold">Phase 2</span><div class="td-sub">Weeks 4-6</div></td>
                     <td>Fluid Mechanics, Soil Mechanics, Transportation Engg.</td>
                     <td>Subject-Wise Tests</td>
                   </tr>
                   <tr>
-                    <td><span class="td-bold">Phase 3</span><div class="td-sub">Weeks 7&ndash;9</div></td>
+                    <td><span class="td-bold">Phase 3</span><div class="td-sub">Weeks 7-9</div></td>
                     <td>RCC Design, Irrigation, Environmental Engg.</td>
                     <td>Subject-Wise Tests</td>
                   </tr>
                   <tr>
-                    <td><span class="td-bold">Phase 4</span><div class="td-sub">Weeks 10&ndash;12</div></td>
+                    <td><span class="td-bold">Phase 4</span><div class="td-sub">Weeks 10-12</div></td>
                     <td>Full Syllabus</td>
                     <td>Full-Length Mock Papers</td>
                   </tr>
@@ -343,7 +232,6 @@
               </table>
             </div>
 
-            <!-- Who is this for -->
             <div class="detail-block">
               <h2 class="detail-section-title">Who Is This For</h2>
               <div class="for-grid">
@@ -354,9 +242,51 @@
               </div>
             </div>
 
+            <div class="detail-block">
+              <h2 class="detail-section-title">About the Instructor</h2>
+              <div class="instructor-card">
+                <img src="/assets/images/jaspal-hero.png" alt="Dr. Jaspal Singh" class="instructor-avatar" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+                <div class="instructor-avatar-placeholder" style="display:none;">JS</div>
+                <div class="instructor-info">
+                  <div class="instructor-name">Dr. Jaspal Singh</div>
+                  <div class="instructor-tags">
+                    <span class="inst-tag">AIR-04 - GATE Civil</span>
+                    <span class="inst-tag">IES / ESE Selected</span>
+                    <span class="inst-tag">15+ Years Teaching</span>
+                  </div>
+                  <p class="instructor-bio">Dr. Jaspal Singh secured All India Rank 4 in GATE Civil Engineering and was selected for the Indian Engineering Services (IES/ESE). He has been coaching Civil Engineering aspirants offline in Jaipur for over 15 years, with a track record of producing state-level toppers in RSSB JEN, RPSC AE and GATE. His approach focuses on building deep conceptual clarity rather than shortcut-based preparation.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2 class="detail-section-title">Frequently Asked Questions</h2>
+              <div class="faq-list">
+                <details class="faq-item">
+                  <summary>What is the batch size for this test series?</summary>
+                  <p class="faq-body">Batches are kept small - maximum 20 students - so every candidate gets individual attention during review sessions and performance tracking is meaningful.</p>
+                </details>
+                <details class="faq-item">
+                  <summary>Are the tests conducted offline or online?</summary>
+                  <p class="faq-body">All tests are conducted fully offline at the Jaipur center in a real exam hall environment. There is no online component to this test series.</p>
+                </details>
+                <details class="faq-item">
+                  <summary>What happens if I miss a test?</summary>
+                  <p class="faq-body">Missed tests can be taken at the next available slot at the center. However, attending on the scheduled date is strongly recommended to benefit from the same-day review session.</p>
+                </details>
+                <details class="faq-item">
+                  <summary>Is this test series for Diploma or Degree level?</summary>
+                  <p class="faq-body">This test series is specifically designed for Diploma-level Civil Engineering candidates. If you are a Degree-level candidate, please see the RSSB JEN Degree Test Series.</p>
+                </details>
+                <details class="faq-item">
+                  <summary>How do I enroll?</summary>
+                  <p class="faq-body">Click the Enroll Now button or message on WhatsApp. Seat confirmation is done after a brief counselling call to ensure this program is the right fit for your preparation stage.</p>
+                </details>
+              </div>
+            </div>
+
           </div>
 
-          <!-- Sidebar (sticky repeat of enroll card on desktop) -->
           <div class="detail-sidebar">
             <div class="enroll-card">
               <div class="enroll-thumb">
@@ -364,12 +294,17 @@
               </div>
               <div class="enroll-body">
                 <p class="enroll-label">You are viewing</p>
-                <p class="enroll-program-name">RSSB JEN 2026 &mdash; Civil Diploma Offline Test Series</p>
+                <p class="enroll-program-name">RSSB JEN 2026 - Civil Diploma Offline Test Series</p>
                 <div class="enroll-detail-rows">
                   <div class="enroll-row"><span class="er-key">Exam</span><span class="er-val">RSSB JEN 2026</span></div>
                   <div class="enroll-row"><span class="er-key">Level</span><span class="er-val">Diploma (Civil)</span></div>
                   <div class="enroll-row"><span class="er-key">Location</span><span class="er-val">Jaipur, Rajasthan</span></div>
                   <div class="enroll-row"><span class="er-key">Enrollment</span><span class="er-val green">Open</span></div>
+                </div>
+                <div class="price-block">
+                  <div class="price-mrp">MRP <span>&#8377;19,999</span></div>
+                  <div class="price-offer">&#8377;9,999 <span class="price-gst">+ GST</span></div>
+                  <div class="price-save"><i class="fas fa-tag"></i> You save &#8377;10,000</div>
                 </div>
                 <a href="https://wa.me/919999999999?text=I want to enroll in RSSB JEN 2026 Civil Diploma Offline Test Series" target="_blank" rel="noopener" class="enroll-btn">Enroll Now</a>
                 <a href="https://wa.me/919999999999?text=I want more details about RSSB JEN 2026 Civil Diploma Offline Test Series" target="_blank" rel="noopener" class="enroll-wa"><i class="fab fa-whatsapp"></i> Ask on WhatsApp</a>
@@ -380,7 +315,6 @@
         </div>
       </div>
     </section>
-
   </main>
 
   <footer class="site-footer" role="contentinfo">
@@ -410,7 +344,7 @@
     </div>
   </footer>
 
-  <a href="https://wa.me/910000000000" target="_blank" rel="noopener" aria-label="Chat on WhatsApp" class="whatsapp-float"><i class="fab fa-whatsapp"></i></a>
+  <a href="https://wa.me/919999999999" target="_blank" rel="noopener" aria-label="Chat on WhatsApp" class="whatsapp-float"><i class="fab fa-whatsapp"></i></a>
   <script src="/js/main.js"></script>
 </body>
 </html>
