@@ -165,73 +165,117 @@
 
 /* ── Card content area ── */
 .op-card-content {
-  padding: 18px 20px 16px;
+  padding: 18px 20px 14px;
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0;
 }
 
-/* Program type label (small coloured eyebrow) */
+/* Program type label — coloured eyebrow */
 .op-type-label {
   font-family: var(--font-heading);
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 1.2px;
+  letter-spacing: 1.3px;
   color: var(--magenta);
+  margin-bottom: 6px;
 }
 
 .op-title {
   font-family: var(--font-heading);
-  font-size: 15.5px;
+  font-size: 16px;
   font-weight: 800;
   color: var(--heading-color);
-  line-height: 1.3;
-  margin: 0;
+  line-height: 1.28;
+  margin: 0 0 14px;
 }
 
-.op-desc {
+/* ── Feature list with icons ── */
+.op-features {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.op-features li {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12.5px;
+  color: var(--body-color);
+  line-height: 1.4;
+  font-weight: 500;
+}
+.op-features li .op-fi {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+/* Icon background colours — one accent per card (set inline) */
+.op-fi-blue   { background: rgba(2,132,199,.12);   color: #0284C7; }
+.op-fi-teal   { background: rgba(13,148,136,.12);  color: #0D9488; }
+.op-fi-purple { background: rgba(109,40,217,.12);  color: #6D28D9; }
+.op-fi-orange { background: rgba(194,65,12,.12);   color: #C2410C; }
+.op-fi-green  { background: rgba(21,128,61,.12);   color: #15803D; }
+
+/* ── Divider before price ── */
+.op-price-divider {
+  height: 1px;
+  background: rgba(26,26,46,.07);
+  margin: 0 0 14px;
+}
+
+/* ── Price block ── */
+.op-price-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 0;
+}
+.op-price-offer {
+  font-family: var(--font-heading);
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--heading-color);
+  line-height: 1;
+}
+.op-price-mrp {
   font-size: 13px;
   color: var(--body-color);
-  line-height: 1.65;
-  margin: 0;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  text-decoration: line-through;
+  opacity: .65;
 }
-
-/* Key info chips row */
-.op-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 2px;
-}
-.op-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
+.op-price-save {
+  margin-left: auto;
   font-family: var(--font-heading);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
-  padding: 4px 11px;
+  padding: 3px 9px;
   border-radius: var(--radius-pill);
-  background: rgba(26,26,46,.05);
-  color: var(--heading-color);
-  border: 1.5px solid rgba(26,26,46,.09);
+  background: rgba(22,163,74,.10);
+  color: #15803D;
+  border: 1px solid rgba(22,163,74,.20);
+  letter-spacing: .4px;
+  text-transform: uppercase;
 }
-.op-chip i { font-size: 10px; opacity: .6; }
 
-/* Full-width CTA button at bottom */
+/* ── Full-width CTA ── */
 .op-card-cta {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  margin: 0 16px 16px;
-  padding: 12px 20px;
+  margin: 14px 16px 16px;
+  padding: 13px 20px;
   border-radius: 12px;
   font-family: var(--font-heading);
   font-size: 13.5px;
@@ -240,19 +284,27 @@
   color: #fff;
   text-decoration: none;
   transition: var(--transition);
-  box-shadow: 0 3px 14px rgba(200,18,64,.24);
+  box-shadow: 0 4px 16px rgba(200,18,64,.26);
   letter-spacing: .2px;
 }
-.op-card-cta:hover { opacity: .92; color: #fff; transform: translateY(-1px); box-shadow: 0 6px 22px rgba(200,18,64,.36); }
+.op-card-cta:hover {
+  opacity: .92;
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 26px rgba(200,18,64,.38);
+}
 
-/* Legacy classes — kept for backward compat */
+/* Legacy classes — hidden */
 .op-card-top { display: none; }
-.op-badges { display: none; }
-.op-badge { display: none; }
+.op-badges   { display: none; }
+.op-badge    { display: none; }
 .op-card-body { padding: 0; }
-.op-meta { display: none; }
+.op-meta     { display: none; }
 .op-card-footer { display: none; }
-.op-btn { display: none; }
+.op-btn      { display: none; }
+.op-chips    { display: none; }
+.op-chip     { display: none; }
+.op-desc     { display: none; }
 
 /* Legacy enroll btn kept for programs page */
 .op-enroll-btn {
