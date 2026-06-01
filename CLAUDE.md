@@ -4,13 +4,16 @@
 
 **Never use localhost.** This site is live on:
 
-- **Frontend** → Vercel (auto-deploys from `main` branch)
+- **Frontend** → Cloudflare Pages (auto-deploys from `main` branch)
 - **Backend** → Render (auto-deploys from `main` branch)
 - **GitHub repo** → https://github.com/Surabhianand13/jaspalsingh
 
-To deploy any change: commit → merge to `main` → `git push origin main`.
-Both Vercel and Render pick it up automatically within ~1-2 minutes.
-Always verify changes on **jaspalsingh.in**, not localhost.
+## Branch Workflow
+
+- **All changes go to `develop` branch first** - never commit directly to `main`
+- At the end of each session, open a PR from `develop` → `main`
+- Once the PR is merged, Cloudflare and Render pick it up automatically within ~1-2 minutes
+- Always verify changes on **jaspalsingh.in** after merge, not localhost
 
 ## Project Structure
 
