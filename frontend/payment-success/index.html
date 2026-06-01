@@ -251,6 +251,9 @@
 
         if (res.ok && data.success) {
           localStorage.setItem('jaspal_learner_token', data.token);
+          // Store user object so the header profile pill renders site-wide
+          var learnerObj = data.learner || { name: (successData && successData.student_name) || 'Student' };
+          localStorage.setItem('jaspal_learner', JSON.stringify(learnerObj));
           document.getElementById('accountBox').style.display = 'none';
           document.getElementById('accountDone').style.display = 'block';
           // Set WA link

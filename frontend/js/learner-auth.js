@@ -358,16 +358,19 @@
     if (!user) return;
 
     var firstName = (user.name || 'Friend').split(' ')[0];
+    var initials  = (user.name || 'U').split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();
+    var avatarInner = user.photo_url
+      ? '<img src="' + escHtml(user.photo_url) + '" alt="" />'
+      : escHtml(initials);
 
     var el = document.createElement('div');
     el.id        = 'learnerHeaderUI';
     el.className = 'learner-header-ui';
     el.innerHTML =
-      '<span class="learner-greeting">' +
-        '<i class="fas fa-user-circle"></i>' +
-        escHtml(firstName) +
-      '</span>' +
-      '<a href="/profile" class="learner-profile-link">Profile</a>' +
+      '<a href="/profile" class="learner-avatar" title="' + escHtml(user.name || 'My Profile') + '">' +
+        avatarInner +
+      '</a>' +
+      '<a href="/profile" class="learner-profile-link">Hi, ' + escHtml(firstName) + '</a>' +
       '<button class="learner-logout" id="learnerLogoutBtn">Logout</button>';
 
     var headerInner = document.querySelector('.header-inner');
