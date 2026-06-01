@@ -208,13 +208,152 @@
 
     <!-- Not-logged-in guard (hidden when JS runs) -->
     <div id="profileNotLoggedIn" class="profile-guard" style="display:none;">
-      <div class="container" style="text-align:center;padding:80px 16px;">
-        <i class="fas fa-lock" style="font-size:48px;color:var(--magenta);margin-bottom:20px;display:block;"></i>
-        <h2 style="font-family:var(--font-heading);margin-bottom:12px;">Please sign in to view your profile</h2>
-        <p style="color:var(--body-color);margin-bottom:28px;">Create a free account to download resources and track your progress.</p>
-        <a href="/resources" class="btn"><i class="fas fa-sign-in-alt"></i> Go to Resources &amp; Sign In</a>
+      <div class="container" style="max-width:460px;padding:60px 16px;">
+
+        <!-- Tab switcher -->
+        <div class="auth-tabs">
+          <button class="auth-tab active" id="tabLogin" onclick="showTab('login')">Log In</button>
+          <button class="auth-tab" id="tabRegister" onclick="showTab('register')">Create Account</button>
+        </div>
+
+        <!-- Login form -->
+        <div id="authLogin" class="auth-box">
+          <h2 class="auth-title"><i class="fas fa-sign-in-alt"></i> Log In to Your Account</h2>
+          <div id="loginMsg" class="auth-msg" style="display:none;"></div>
+          <div class="auth-field">
+            <label>Email ID</label>
+            <input type="email" id="loginEmail" class="auth-input" placeholder="your@email.com" autocomplete="email" />
+          </div>
+          <div class="auth-field">
+            <label>Password</label>
+            <input type="password" id="loginPassword" class="auth-input" placeholder="Your password" autocomplete="current-password" />
+          </div>
+          <button class="auth-btn" id="loginBtn" onclick="doLogin()">
+            <i class="fas fa-sign-in-alt"></i> Log In
+          </button>
+          <p class="auth-switch">Don't have an account? <span onclick="showTab('register')">Create one &rarr;</span></p>
+        </div>
+
+        <!-- Register form -->
+        <div id="authRegister" class="auth-box" style="display:none;">
+          <h2 class="auth-title"><i class="fas fa-user-plus"></i> Create Free Account</h2>
+          <div id="registerMsg" class="auth-msg" style="display:none;"></div>
+          <div class="auth-field">
+            <label>Full Name</label>
+            <input type="text" id="regName" class="auth-input" placeholder="Your name" autocomplete="name" />
+          </div>
+          <div class="auth-field">
+            <label>Email ID</label>
+            <input type="email" id="regEmail" class="auth-input" placeholder="your@email.com" autocomplete="email" />
+          </div>
+          <div class="auth-field">
+            <label>Password</label>
+            <input type="password" id="regPassword" class="auth-input" placeholder="Min 6 characters" autocomplete="new-password" />
+          </div>
+          <button class="auth-btn" id="registerBtn" onclick="doRegister()">
+            <i class="fas fa-user-plus"></i> Create Account
+          </button>
+          <p class="auth-switch">Already have an account? <span onclick="showTab('login')">Log in &rarr;</span></p>
+        </div>
+
       </div>
     </div>
+
+    <style>
+      .auth-tabs { display:flex; gap:0; margin-bottom:28px; border-bottom:2px solid rgba(26,26,46,.08); }
+      .auth-tab { flex:1; padding:12px; background:none; border:none; font-family:var(--font-heading); font-size:15px; font-weight:700; color:#9999b0; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-2px; transition:all .2s; }
+      .auth-tab.active { color:#C81240; border-bottom-color:#C81240; }
+      .auth-box { }
+      .auth-title { font-family:var(--font-heading); font-size:20px; font-weight:800; color:#1A1A2E; margin-bottom:20px; }
+      .auth-field { margin-bottom:16px; }
+      .auth-field label { display:block; font-size:13px; font-weight:700; color:#1A1A2E; margin-bottom:6px; }
+      .auth-input { width:100%; padding:12px 16px; border:1.5px solid rgba(26,26,46,.14); border-radius:10px; font-family:inherit; font-size:15px; color:#1A1A2E; outline:none; transition:border-color .2s; }
+      .auth-input:focus { border-color:#C81240; }
+      .auth-btn { width:100%; padding:14px; background:linear-gradient(135deg,#C81240,#9B1230); color:#fff; border:none; border-radius:50px; font-family:var(--font-heading); font-size:15px; font-weight:800; cursor:pointer; box-shadow:0 6px 20px rgba(200,18,64,.3); transition:opacity .2s; margin-top:4px; }
+      .auth-btn:hover { opacity:.9; }
+      .auth-btn:disabled { opacity:.6; cursor:not-allowed; }
+      .auth-msg { padding:10px 14px; border-radius:8px; font-size:13px; font-weight:600; margin-bottom:14px; }
+      .auth-msg.error { background:rgba(200,18,64,.08); color:#C81240; }
+      .auth-msg.success { background:rgba(22,163,74,.08); color:#15803d; }
+      .auth-switch { font-size:13px; color:#9999b0; text-align:center; margin-top:14px; }
+      .auth-switch span { color:#C81240; font-weight:700; cursor:pointer; text-decoration:underline; }
+    </style>
+
+    <script>
+      var AUTH_API = 'https://jaspalsingh.onrender.com';
+
+      function showTab(tab) {
+        document.getElementById('authLogin').style.display    = tab === 'login'    ? 'block' : 'none';
+        document.getElementById('authRegister').style.display = tab === 'register' ? 'block' : 'none';
+        document.getElementById('tabLogin').classList.toggle('active',    tab === 'login');
+        document.getElementById('tabRegister').classList.toggle('active', tab === 'register');
+      }
+
+      // Auto-switch to login if ?tab=login
+      if (new URLSearchParams(window.location.search).get('tab') === 'login') showTab('login');
+
+      function showAuthMsg(id, msg, type) {
+        var el = document.getElementById(id);
+        el.textContent = msg; el.className = 'auth-msg ' + type; el.style.display = 'block';
+      }
+
+      function doLogin() {
+        var email = document.getElementById('loginEmail').value.trim();
+        var password = document.getElementById('loginPassword').value;
+        var btn = document.getElementById('loginBtn');
+        if (!email || !password) { showAuthMsg('loginMsg','Please enter your email and password.','error'); return; }
+        btn.disabled = true; btn.textContent = 'Logging in...';
+        fetch(AUTH_API + '/api/learners/login', {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({email, password})
+        }).then(r => r.json()).then(data => {
+          if (data.token) {
+            localStorage.setItem('jaspal_learner_token', data.token);
+            localStorage.setItem('jaspal_learner', JSON.stringify(data.learner));
+            window.location.reload();
+          } else {
+            showAuthMsg('loginMsg', data.error || 'Login failed.', 'error');
+            btn.disabled = false; btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Log In';
+          }
+        }).catch(() => {
+          showAuthMsg('loginMsg','Network error. Try again.','error');
+          btn.disabled = false; btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Log In';
+        });
+      }
+
+      function doRegister() {
+        var name = document.getElementById('regName').value.trim();
+        var email = document.getElementById('regEmail').value.trim();
+        var password = document.getElementById('regPassword').value;
+        var btn = document.getElementById('registerBtn');
+        if (!name || !email || !password) { showAuthMsg('registerMsg','All fields are required.','error'); return; }
+        if (password.length < 6) { showAuthMsg('registerMsg','Password must be at least 6 characters.','error'); return; }
+        btn.disabled = true; btn.textContent = 'Creating account...';
+        fetch(AUTH_API + '/api/learners/register', {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({name, email, password})
+        }).then(r => r.json()).then(data => {
+          if (data.token) {
+            localStorage.setItem('jaspal_learner_token', data.token);
+            localStorage.setItem('jaspal_learner', JSON.stringify(data.learner));
+            window.location.reload();
+          } else {
+            showAuthMsg('registerMsg', data.error || 'Registration failed.', 'error');
+            btn.disabled = false; btn.innerHTML = '<i class="fas fa-user-plus"></i> Create Account';
+          }
+        }).catch(() => {
+          showAuthMsg('registerMsg','Network error. Try again.','error');
+          btn.disabled = false; btn.innerHTML = '<i class="fas fa-user-plus"></i> Create Account';
+        });
+      }
+
+      // Allow Enter key
+      document.addEventListener('keydown', function(e) {
+        if (e.key !== 'Enter') return;
+        var loginVisible = document.getElementById('authLogin').style.display !== 'none';
+        if (loginVisible) doLogin(); else doRegister();
+      });
+    </script>
 
     <!-- Profile content (shown when logged in) -->
     <div id="profileContent" style="display:none;">
