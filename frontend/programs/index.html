@@ -50,7 +50,84 @@
     .chip-green { background:rgba(22,163,74,.08); color:var(--green); border:1px solid rgba(22,163,74,.18); }
 
     /* ── Programs grid ── */
-    .progs-section { padding-top: calc(var(--header-h) + 56px); padding-bottom: 96px; background: var(--white); }
+    .progs-section { padding-top: 64px; padding-bottom: 96px; background: var(--white); }
+
+    /* Promo banner */
+    .progs-banner-wrap {
+      margin-top: var(--header-h);
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 60%, #1A1A2E 100%);
+      position: relative;
+      overflow: hidden;
+    }
+    .progs-banner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 56px 40px 48px;
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 40px;
+      align-items: center;
+    }
+    .pb-eyebrow {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1.4px; color: rgba(255,255,255,.55);
+      margin-bottom: 16px; display: block;
+    }
+    .pb-title {
+      font-family: var(--font-heading);
+      font-size: clamp(28px, 4vw, 48px);
+      font-weight: 800; color: #fff;
+      line-height: 1.15; letter-spacing: -.5px;
+      margin-bottom: 16px;
+    }
+    .pb-title-accent { color: #f87171; }
+    .pb-sub {
+      font-size: 15px; color: rgba(255,255,255,.65);
+      line-height: 1.75; margin-bottom: 28px; max-width: 500px;
+    }
+    .pb-cta {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: linear-gradient(135deg, #C81240, #9B1230);
+      color: #fff; padding: 13px 26px;
+      border-radius: 50px;
+      font-family: var(--font-heading); font-size: 14px; font-weight: 800;
+      text-decoration: none;
+      box-shadow: 0 6px 24px rgba(200,18,64,.4);
+      transition: transform .2s, box-shadow .2s;
+    }
+    .pb-cta:hover { transform: translateY(-2px); box-shadow: 0 10px 32px rgba(200,18,64,.5); color: #fff; }
+    .pb-right {
+      display: flex; align-items: flex-end; justify-content: center;
+      height: 280px; overflow: hidden; border-radius: 16px;
+      background: rgba(255,255,255,.06);
+    }
+    .pb-img {
+      height: 100%; width: 100%;
+      object-fit: cover; object-position: top center;
+      border-radius: 16px;
+    }
+    /* Trust bar */
+    .pb-trust-bar {
+      background: rgba(0,0,0,.25);
+      border-top: 1px solid rgba(255,255,255,.08);
+      padding: 14px 40px;
+      display: flex; align-items: center; justify-content: center;
+      gap: 16px; flex-wrap: wrap;
+    }
+    .pb-trust-item {
+      font-size: 13px; font-weight: 600; color: rgba(255,255,255,.75);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .pb-trust-item i { color: #f87171; }
+    .pb-trust-sep { color: rgba(255,255,255,.2); font-size: 16px; }
+
+    @media (max-width: 768px) {
+      .progs-banner { grid-template-columns: 1fr; padding: 40px 24px 32px; }
+      .pb-right { height: 200px; }
+      .pb-trust-bar { padding: 12px 20px; gap: 10px; }
+      .pb-trust-sep { display: none; }
+    }
     .progs-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
@@ -361,9 +438,32 @@
 
   <main id="main-content">
 
+    <!-- PROMO BANNER -->
+    <section class="progs-banner-wrap">
+      <div class="progs-banner">
+        <div class="pb-left">
+          <span class="pb-eyebrow"><i class="fas fa-map-marker-alt"></i> Offline &middot; Jaipur, Rajasthan</span>
+          <h2 class="pb-title">Offline Programs for<br><span class="pb-title-accent">Engineering Aspirants</span></h2>
+          <p class="pb-sub">Test Series, Interview Guidance and Foundation Courses for RSSB JEN, RPSC AE and GATE/ESE - taught personally by Dr. Jaspal Singh.</p>
+          <a href="#programs-grid" class="pb-cta">View All Programs <i class="fas fa-arrow-down"></i></a>
+        </div>
+        <div class="pb-right">
+          <img src="/assets/images/jaspal-portrait.jpg" alt="Dr. Jaspal Singh" class="pb-img" />
+        </div>
+      </div>
+      <div class="pb-trust-bar">
+        <span class="pb-trust-item"><i class="fas fa-star"></i> AIR-04 GATE &middot; IES Selected</span>
+        <span class="pb-trust-sep">|</span>
+        <span class="pb-trust-item"><i class="fas fa-users"></i> 15+ Years Teaching</span>
+        <span class="pb-trust-sep">|</span>
+        <span class="pb-trust-item"><i class="fas fa-user-graduate"></i> 1 Lakh+ Aspirants Mentored</span>
+        <span class="pb-trust-sep">|</span>
+        <span class="pb-trust-item"><i class="fas fa-map-marker-alt"></i> Offline Only &middot; Jaipur</span>
+      </div>
+    </section>
 
     <!-- ALL PROGRAMS -->
-    <section class="progs-section">
+    <section class="progs-section" id="programs-grid">
       <div class="container">
 
         <div class="sec-intro">
