@@ -75,8 +75,10 @@ app.use('/api/blog',         require('./routes/blog'));
 app.use('/api/testimonials', require('./routes/testimonials'));
 app.use('/api/contact',      require('./routes/contact'));
 app.use('/api/learners',     require('./routes/learners'));
-app.use('/api/analytics',    require('./routes/analytics')); // Phase 7: Analytics
-app.use('/api/upload',       require('./routes/upload'));    // Phase 4: Cloudinary uploads
+app.use('/api/analytics',    require('./routes/analytics'));
+app.use('/api/upload',       require('./routes/upload'));
+app.use('/api/payment',      require('./routes/payment'));
+app.use('/api/leads',        require('./routes/leads'));
 
 /* ── Health Check ────────────────────────────────────────── */
 
@@ -127,7 +129,37 @@ const PORT = process.env.PORT || 5000;
 
 async function migrate() {
   await query(`ALTER TABLE blog_posts ADD COLUMN IF NOT EXISTS pdf_url VARCHAR(1000)`);
-  console.log('✅ Migration: pdf_url column ensured');
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS enrollments (
+      id              SERIAL PRIMARY KEY,
+      order_id        VARCHAR(100) UNIQUE NOT NULL,
+      program_slug    VARCHAR(100) NOT NULL,
+      program_name    VARCHAR(300) NOT NULL,
+      amount          INTEGER NOT NULL,
+      student_name    VARCHAR(255) NOT NULL,
+      student_email   VARCHAR(255),
+      student_phone   VARCHAR(20) NOT NULL,
+      status          VARCHAR(20) NOT NULL DEFAULT 'pending',
+      cf_payment_id   VARCHAR(100),
+      paid_at         TIMESTAMP WITH TIME ZONE,
+      created_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    )
+  `);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS leads (
+      id            SERIAL PRIMARY KEY,
+      program_slug  VARCHAR(100) NOT NULL,
+      program_name  VARCHAR(300) NOT NULL,
+      name          VARCHAR(255) NOT NULL,
+      email         VARCHAR(255),
+      phone         VARCHAR(20) NOT NULL,
+      created_at    TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    )
+  `);
+
+  console.log('✅ Migration: enrollments + leads tables ensured');
 }
 
 migrate()

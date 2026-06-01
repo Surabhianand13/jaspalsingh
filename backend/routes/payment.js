@@ -1,0 +1,190 @@
+/* ============================================================
+   routes/payment.js  -  Cashfree Payment Gateway
+   Dr. Jaspal Singh Website  -  jaspalsingh.in
+   ============================================================ */
+
+const express = require('express');
+const router  = express.Router();
+const { query } = require('../config/db');
+const https   = require('https');
+
+/* ── Program catalogue ───────────────────────────────────── */
+const PROGRAMS = {
+  'rssb-jen-diploma-test-series': {
+    name:      'RSSB JEN 2026 - Civil Diploma Offline Test Series',
+    shortName: 'RSSB JEN Diploma Test Series',
+    price:     2999,
+    mrp:       4999,
+  },
+  'rssb-jen-degree-test-series': {
+    name:      'RSSB JEN 2026-27 - Civil Degree Offline Test Series',
+    shortName: 'RSSB JEN Degree Test Series',
+    price:     2999,
+    mrp:       4999,
+  },
+  'rpsc-ae-interview': {
+    name:      'RPSC AE 2024 - Interview Guidance Programme',
+    shortName: 'RPSC AE Interview Guidance',
+    price:     4999,
+    mrp:       8999,
+  },
+};
+
+/* ── Cashfree API helper ─────────────────────────────────── */
+function cashfreeRequest(method, path, body = null) {
+  return new Promise((resolve, reject) => {
+    const options = {
+      hostname: 'api.cashfree.com',
+      path,
+      method,
+      headers: {
+        'x-client-id':     process.env.CASHFREE_APP_ID,
+        'x-client-secret': process.env.CASHFREE_SECRET_KEY,
+        'x-api-version':   '2023-08-01',
+        'Content-Type':    'application/json',
+      },
+    };
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try { resolve({ status: res.statusCode, body: JSON.parse(data) }); }
+        catch (e) { reject(new Error('Invalid JSON from Cashfree')); }
+      });
+    });
+    req.on('error', reject);
+    if (body) req.write(JSON.stringify(body));
+    req.end();
+  });
+}
+
+/* ── POST /api/payment/create-order ─────────────────────── */
+router.post('/create-order', async (req, res) => {
+  try {
+    const { program_slug, name, email, phone } = req.body;
+
+    if (!program_slug || !name || !email || !phone) {
+      return res.status(400).json({ error: 'name, email, phone and program_slug are required.' });
+    }
+
+    const program = PROGRAMS[program_slug];
+    if (!program) return res.status(400).json({ error: 'Invalid program.' });
+
+    // Unique order ID
+    const order_id = `JSP-${program_slug.slice(0,6).toUpperCase()}-${Date.now()}`;
+
+    const frontendUrl = (process.env.FRONTEND_URL || 'https://www.jaspalsingh.in').split(',')[0].trim();
+
+    const payload = {
+      order_id,
+      order_amount:   program.price,
+      order_currency: 'INR',
+      customer_details: {
+        customer_id:    `CUST-${Date.now()}`,
+        customer_name:  name,
+        customer_email: email,
+        customer_phone: phone.replace(/\D/g, '').slice(-10),
+      },
+      order_meta: {
+        return_url: `${frontendUrl}/payment-success/?order_id={order_id}`,
+        notify_url: `${process.env.BACKEND_URL || 'https://jaspalsingh-backend.onrender.com'}/api/payment/webhook`,
+      },
+      order_note: program.shortName,
+    };
+
+    const cf = await cashfreeRequest('POST', '/pg/orders', payload);
+
+    if (cf.status !== 200) {
+      console.error('[Cashfree create-order error]', cf.body);
+      return res.status(502).json({ error: 'Payment gateway error. Please try again.' });
+    }
+
+    // Store enrollment record as pending
+    await query(
+      `INSERT INTO enrollments (order_id, program_slug, program_name, amount, student_name, student_email, student_phone, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')
+       ON CONFLICT (order_id) DO NOTHING`,
+      [order_id, program_slug, program.name, program.price, name, email, phone]
+    );
+
+    res.json({
+      order_id,
+      payment_session_id: cf.body.payment_session_id,
+      program_name: program.name,
+      amount: program.price,
+    });
+
+  } catch (err) {
+    console.error('[create-order]', err);
+    res.status(500).json({ error: 'Server error. Please try again.' });
+  }
+});
+
+/* ── GET /api/payment/verify ─────────────────────────────── */
+router.get('/verify', async (req, res) => {
+  try {
+    const { order_id } = req.query;
+    if (!order_id) return res.status(400).json({ error: 'order_id required.' });
+
+    const cf = await cashfreeRequest('GET', `/pg/orders/${order_id}`);
+
+    if (cf.status !== 200) {
+      return res.status(502).json({ error: 'Could not verify payment.' });
+    }
+
+    const order = cf.body;
+    const paid  = order.order_status === 'PAID';
+
+    if (paid) {
+      await query(
+        `UPDATE enrollments SET status = 'paid', paid_at = NOW(), cf_payment_id = $1 WHERE order_id = $2`,
+        [order.cf_order_id || order_id, order_id]
+      );
+    }
+
+    // Fetch enrollment details
+    const enr = await query(
+      `SELECT * FROM enrollments WHERE order_id = $1`,
+      [order_id]
+    );
+
+    res.json({
+      paid,
+      order_status:  order.order_status,
+      order_id,
+      program_name:  enr.rows[0]?.program_name || '',
+      amount:        enr.rows[0]?.amount || 0,
+      student_name:  enr.rows[0]?.student_name || '',
+      student_phone: enr.rows[0]?.student_phone || '',
+    });
+
+  } catch (err) {
+    console.error('[verify]', err);
+    res.status(500).json({ error: 'Server error.' });
+  }
+});
+
+/* ── POST /api/payment/webhook ───────────────────────────── */
+router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  try {
+    const event = JSON.parse(req.body);
+    if (event?.data?.order?.order_status === 'PAID') {
+      const order_id = event.data.order.order_id;
+      await query(
+        `UPDATE enrollments SET status = 'paid', paid_at = NOW() WHERE order_id = $1`,
+        [order_id]
+      );
+    }
+    res.json({ status: 'ok' });
+  } catch (err) {
+    console.error('[webhook]', err);
+    res.status(500).json({ error: 'Webhook error.' });
+  }
+});
+
+/* ── GET /api/payment/programs ───────────────────────────── */
+router.get('/programs', (req, res) => {
+  res.json(PROGRAMS);
+});
+
+module.exports = router;

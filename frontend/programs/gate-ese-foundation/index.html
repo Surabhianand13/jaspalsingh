@@ -147,15 +147,18 @@
                 <div class="enroll-row"><span class="er-key">Exam</span><span class="er-val">GATE / ESE 2028</span></div>
                 <div class="enroll-row"><span class="er-key">Level</span><span class="er-val">Degree (Civil)</span></div>
                 <div class="enroll-row"><span class="er-key">Location</span><span class="er-val">Jaipur, Rajasthan</span></div>
-                <div class="enroll-row"><span class="er-key">Admissions</span><span class="er-val green">Open</span></div>
+                <div class="enroll-row"><span class="er-key">Admissions</span><span class="er-val orange">Launching Soon</span></div>
               </div>
-              <div class="price-block">
-                <div class="price-mrp">MRP <span>&#8377;19,999</span></div>
-                <div class="price-offer">&#8377;9,999 <span class="price-gst">+ GST</span></div>
-                <div class="price-save"><i class="fas fa-tag"></i> You save &#8377;10,000</div>
+              <div style="background:rgba(245,158,11,.08);border:1.5px solid rgba(245,158,11,.25);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:#92400e;font-weight:600;text-align:center;">
+                <i class="fas fa-bell"></i> Batch dates being finalised - Register your interest below
               </div>
-              <a href="https://wa.me/919999999999?text=I want to enroll in GATE ESE 2028 Offline Foundation Course" target="_blank" rel="noopener" class="enroll-btn">Enroll Now</a>
-              <a href="https://wa.me/919999999999?text=I want more details about GATE ESE 2028 Offline Foundation Course" target="_blank" rel="noopener" class="enroll-wa"><i class="fab fa-whatsapp"></i> Ask on WhatsApp</a>
+              <form class="lead-form" id="leadFormGate" data-slug="gate-ese-foundation">
+                <input class="lead-input" type="text" name="name" placeholder="Your full name *" required />
+                <input class="lead-input" type="tel" name="phone" placeholder="WhatsApp number *" required maxlength="10" />
+                <input class="lead-input" type="email" name="email" placeholder="Email (optional)" />
+                <button type="submit" class="enroll-btn" style="border:none;cursor:pointer;width:100%;"><i class="fas fa-bell"></i> Notify Me When Batch Opens</button>
+                <div class="lead-msg" style="display:none;"></div>
+              </form>
             </div>
           </div>
         </div>
@@ -306,15 +309,18 @@
                   <div class="enroll-row"><span class="er-key">Exam</span><span class="er-val">GATE / ESE 2028</span></div>
                   <div class="enroll-row"><span class="er-key">Level</span><span class="er-val">Degree (Civil)</span></div>
                   <div class="enroll-row"><span class="er-key">Location</span><span class="er-val">Jaipur, Rajasthan</span></div>
-                  <div class="enroll-row"><span class="er-key">Admissions</span><span class="er-val green">Open</span></div>
+                  <div class="enroll-row"><span class="er-key">Admissions</span><span class="er-val orange">Launching Soon</span></div>
                 </div>
-                <div class="price-block">
-                  <div class="price-mrp">MRP <span>&#8377;19,999</span></div>
-                  <div class="price-offer">&#8377;9,999 <span class="price-gst">+ GST</span></div>
-                  <div class="price-save"><i class="fas fa-tag"></i> You save &#8377;10,000</div>
+                <div style="background:rgba(245,158,11,.08);border:1.5px solid rgba(245,158,11,.25);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:#92400e;font-weight:600;text-align:center;">
+                  <i class="fas fa-bell"></i> Register your interest
                 </div>
-                <a href="https://wa.me/919999999999?text=I want to enroll in GATE ESE 2028 Offline Foundation Course" target="_blank" rel="noopener" class="enroll-btn">Enroll Now</a>
-                <a href="https://wa.me/919999999999?text=I want more details about GATE ESE 2028 Offline Foundation Course" target="_blank" rel="noopener" class="enroll-wa"><i class="fab fa-whatsapp"></i> Ask on WhatsApp</a>
+                <form class="lead-form" id="leadFormGate2" data-slug="gate-ese-foundation">
+                  <input class="lead-input" type="text" name="name" placeholder="Your full name *" required />
+                  <input class="lead-input" type="tel" name="phone" placeholder="WhatsApp number *" required maxlength="10" />
+                  <input class="lead-input" type="email" name="email" placeholder="Email (optional)" />
+                  <button type="submit" class="enroll-btn" style="border:none;cursor:pointer;width:100%;"><i class="fas fa-bell"></i> Notify Me</button>
+                  <div class="lead-msg" style="display:none;"></div>
+                </form>
               </div>
             </div>
           </div>
@@ -353,5 +359,32 @@
 
   <a href="https://wa.me/919999999999" target="_blank" rel="noopener" aria-label="Chat on WhatsApp" class="whatsapp-float"><i class="fab fa-whatsapp"></i></a>
   <script src="/js/main.js"></script>
+
+<script>
+(function() {
+  var API = "https://jaspalsingh-backend.onrender.com";
+  document.querySelectorAll(".lead-form").forEach(function(form) {
+    form.addEventListener("submit", async function(e) {
+      e.preventDefault();
+      var btn  = form.querySelector("button[type=submit]");
+      var msg  = form.querySelector(".lead-msg");
+      var slug = form.dataset.slug;
+      var name  = form.querySelector("[name=name]").value.trim();
+      var phone = form.querySelector("[name=phone]").value.trim().replace(/\D/g,"");
+      var email = form.querySelector("[name=email]") ? form.querySelector("[name=email]").value.trim() : "";
+      if (!name) { showMsg(msg,"error","Please enter your name."); return; }
+      if (phone.length !== 10) { showMsg(msg,"error","Please enter a valid 10-digit WhatsApp number."); return; }
+      btn.disabled = true; btn.textContent = "Submitting...";
+      try {
+        var res  = await fetch(API + "/api/leads/capture", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({program_slug:slug,name:name,phone:phone,email:email})});
+        var data = await res.json();
+        if (res.ok) { form.innerHTML = "<p class=\"lead-msg success\" style=\"display:block;\">&#10003; You are on the list! We will reach out on WhatsApp when the batch opens.</p>"; }
+        else { showMsg(msg,"error",data.error||"Something went wrong."); btn.disabled=false; btn.textContent="Notify Me"; }
+      } catch(err) { showMsg(msg,"error","Network error. Try again."); btn.disabled=false; btn.textContent="Notify Me"; }
+    });
+  });
+  function showMsg(el,type,text){el.className="lead-msg "+type;el.textContent=text;el.style.display="block";}
+})();
+</script>
 </body>
 </html>

@@ -1132,3 +1132,22 @@
   .recog-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
   .media-strip-items { grid-template-columns: repeat(2, 1fr); gap: 12px; }
 }
+
+/* ── Lead capture form (coming soon programs) ── */
+.lead-form { display: flex; flex-direction: column; gap: 10px; }
+.lead-input {
+  width: 100%; padding: 11px 14px;
+  border: 1.5px solid rgba(26,26,46,.14);
+  border-radius: 10px;
+  font-family: var(--font-heading); font-size: 13.5px;
+  color: var(--heading-color); background: var(--white);
+  outline: none; transition: border-color .2s;
+}
+.lead-input:focus { border-color: var(--magenta); }
+.lead-input::placeholder { color: rgba(74,74,104,.45); }
+.lead-msg {
+  font-size: 13px; font-weight: 600; text-align: center;
+  padding: 10px 14px; border-radius: 8px; margin-top: 4px;
+}
+.lead-msg.success { background: rgba(22,163,74,.10); color: #15803d; }
+.lead-msg.error   { background: rgba(200,18,64,.08);  color: var(--magenta); }

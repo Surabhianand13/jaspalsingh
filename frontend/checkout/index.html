@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Enroll - Dr. Jaspal Singh</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon-32.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" />
+  <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f5f5f8; min-height: 100vh; }
+
+    .co-header {
+      background: #fff;
+      border-bottom: 1px solid rgba(26,26,46,.09);
+      padding: 16px 0;
+    }
+    .co-header-inner {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .co-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .co-brand img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
+    .co-brand-name { font-weight: 800; font-size: 16px; color: #1A1A2E; }
+    .co-secure { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 12px; color: #16a34a; font-weight: 600; }
+
+    .co-body { max-width: 900px; margin: 40px auto; padding: 0 24px 60px; }
+
+    .co-grid { display: grid; grid-template-columns: 1fr 380px; gap: 32px; align-items: start; }
+
+    /* Left - Form */
+    .co-form-card {
+      background: #fff;
+      border-radius: 16px;
+      border: 1.5px solid rgba(26,26,46,.08);
+      padding: 32px;
+    }
+    .co-form-title { font-size: 22px; font-weight: 800; color: #1A1A2E; margin-bottom: 6px; }
+    .co-form-sub { font-size: 14px; color: #6b6b8a; margin-bottom: 28px; }
+
+    .form-group { margin-bottom: 18px; }
+    .form-label { display: block; font-size: 13px; font-weight: 700; color: #1A1A2E; margin-bottom: 6px; }
+    .form-input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1.5px solid rgba(26,26,46,.14);
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 15px;
+      color: #1A1A2E;
+      background: #fff;
+      transition: border-color .2s;
+      outline: none;
+    }
+    .form-input:focus { border-color: #C81240; }
+    .form-input::placeholder { color: #9999b0; }
+
+    .pay-btn {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #C81240 0%, #9B1230 100%);
+      color: #fff;
+      border: none;
+      border-radius: 50px;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: opacity .2s, transform .2s;
+      box-shadow: 0 6px 24px rgba(200,18,64,.35);
+    }
+    .pay-btn:hover { opacity: .92; transform: translateY(-1px); }
+    .pay-btn:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+
+    .pay-trust {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 14px;
+      font-size: 12px;
+      color: #9999b0;
+    }
+
+    /* Right - Summary */
+    .co-summary {
+      background: #fff;
+      border-radius: 16px;
+      border: 1.5px solid rgba(26,26,46,.08);
+      overflow: hidden;
+      position: sticky;
+      top: 24px;
+    }
+    .co-summary-thumb {
+      height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 42px;
+      color: rgba(255,255,255,.9);
+      position: relative;
+    }
+    .co-summary-thumb::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(circle, rgba(255,255,255,.10) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+    .co-summary-thumb i { position: relative; z-index: 1; filter: drop-shadow(0 4px 12px rgba(0,0,0,.2)); }
+    .co-summary-body { padding: 22px; }
+    .co-summary-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #9999b0; margin-bottom: 6px; }
+    .co-summary-program { font-size: 15px; font-weight: 800; color: #1A1A2E; line-height: 1.35; margin-bottom: 20px; }
+
+    .co-price-block {
+      background: linear-gradient(135deg, rgba(200,18,64,.05), rgba(200,18,64,.02));
+      border: 1.5px solid rgba(200,18,64,.15);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 18px;
+    }
+    .co-price-mrp { font-size: 12px; color: #9999b0; margin-bottom: 4px; }
+    .co-price-mrp span { text-decoration: line-through; }
+    .co-price-offer { font-size: 30px; font-weight: 800; color: #1A1A2E; line-height: 1; margin-bottom: 6px; }
+    .co-price-save {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px; font-weight: 700; color: #16a34a;
+      background: rgba(22,163,74,.10); border-radius: 20px; padding: 3px 10px;
+    }
+
+    .co-rows { display: flex; flex-direction: column; gap: 10px; }
+    .co-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; padding-bottom: 10px; border-bottom: 1px solid rgba(26,26,46,.06); }
+    .co-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .co-row-key { color: #6b6b8a; }
+    .co-row-val { font-weight: 700; color: #1A1A2E; }
+
+    /* Loading state */
+    .co-loading {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 60vh; gap: 16px;
+    }
+    .co-spinner {
+      width: 40px; height: 40px;
+      border: 3px solid rgba(200,18,64,.15);
+      border-top-color: #C81240;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Error */
+    .co-error {
+      background: #fff5f7; border: 1.5px solid rgba(200,18,64,.2);
+      border-radius: 10px; padding: 16px 18px;
+      font-size: 14px; color: #C81240; margin-top: 14px;
+      display: none;
+    }
+
+    @media (max-width: 700px) {
+      .co-grid { grid-template-columns: 1fr; }
+      .co-summary { position: static; }
+      .co-form-card { padding: 24px 20px; }
+      .co-body { margin-top: 24px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="co-header">
+    <div class="co-header-inner">
+      <a href="/" class="co-brand">
+        <img src="/assets/images/jaspal-hero.png" alt="Dr. Jaspal Singh" />
+        <span class="co-brand-name">Dr. Jaspal Singh</span>
+      </a>
+      <span class="co-secure"><i class="fas fa-lock"></i> Secure Checkout</span>
+    </div>
+  </header>
+
+  <div class="co-body">
+    <div id="loadingState" class="co-loading">
+      <div class="co-spinner"></div>
+      <p style="color:#6b6b8a;font-size:14px;">Loading program details...</p>
+    </div>
+
+    <div id="checkoutGrid" class="co-grid" style="display:none;">
+
+      <!-- Left: Form -->
+      <div class="co-form-card">
+        <h1 class="co-form-title">Complete Your Enrollment</h1>
+        <p class="co-form-sub">Fill in your details to proceed to payment</p>
+
+        <form id="enrollForm" autocomplete="on">
+          <div class="form-group">
+            <label class="form-label" for="inp-name">Full Name *</label>
+            <input class="form-input" type="text" id="inp-name" name="name" placeholder="Your full name" required autocomplete="name" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="inp-phone">WhatsApp Number *</label>
+            <input class="form-input" type="tel" id="inp-phone" name="phone" placeholder="10-digit mobile number" required autocomplete="tel" maxlength="10" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="inp-email">Email Address</label>
+            <input class="form-input" type="email" id="inp-email" name="email" placeholder="your@email.com (optional)" autocomplete="email" />
+          </div>
+
+          <div id="formError" class="co-error"></div>
+
+          <button type="submit" class="pay-btn" id="payBtn">
+            <i class="fas fa-lock"></i>
+            <span id="payBtnText">Pay Now</span>
+          </button>
+
+          <div class="pay-trust">
+            <i class="fas fa-shield-alt"></i> 100% Secure &nbsp;|&nbsp;
+            <i class="fab fa-cc-visa"></i>&nbsp;<i class="fab fa-cc-mastercard"></i>&nbsp;UPI &nbsp;|&nbsp;
+            Powered by Cashfree
+          </div>
+        </form>
+      </div>
+
+      <!-- Right: Summary -->
+      <div class="co-summary">
+        <div class="co-summary-thumb" id="summaryThumb">
+          <i class="fas fa-graduation-cap" id="summaryIcon"></i>
+        </div>
+        <div class="co-summary-body">
+          <div class="co-summary-label">You are enrolling in</div>
+          <div class="co-summary-program" id="summaryName">-</div>
+          <div class="co-price-block">
+            <div class="co-price-mrp">MRP <span id="summaryMrp">-</span></div>
+            <div class="co-price-offer" id="summaryPrice">-</div>
+            <div class="co-price-save"><i class="fas fa-tag"></i> <span id="summarySave">-</span></div>
+          </div>
+          <div class="co-rows">
+            <div class="co-row"><span class="co-row-key">Format</span><span class="co-row-val">Offline &middot; Jaipur</span></div>
+            <div class="co-row"><span class="co-row-key">Location</span><span class="co-row-val">Jaipur, Rajasthan</span></div>
+            <div class="co-row"><span class="co-row-key">Instructor</span><span class="co-row-val">Dr. Jaspal Singh</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div id="errorState" style="display:none; text-align:center; padding:60px 24px;">
+      <i class="fas fa-exclamation-triangle" style="font-size:48px;color:#C81240;margin-bottom:16px;display:block;"></i>
+      <h2 style="font-size:20px;font-weight:800;color:#1A1A2E;margin-bottom:8px;">Program Not Found</h2>
+      <p style="color:#6b6b8a;margin-bottom:24px;">The program you're looking for doesn't exist.</p>
+      <a href="/programs" style="background:linear-gradient(135deg,#C81240,#9B1230);color:#fff;padding:12px 28px;border-radius:50px;text-decoration:none;font-weight:700;">View All Programs</a>
+    </div>
+  </div>
+
+  <script>
+    const API = 'https://jaspalsingh-backend.onrender.com';
+
+    const PROGRAMS = {
+      'rssb-jen-diploma-test-series': {
+        name: 'RSSB JEN 2026 - Civil Diploma Offline Test Series',
+        price: 2999, mrp: 4999,
+        icon: 'fa-clipboard-list',
+        color: 'linear-gradient(145deg,#0369A1,#0284C7)'
+      },
+      'rssb-jen-degree-test-series': {
+        name: 'RSSB JEN 2026-27 - Civil Degree Offline Test Series',
+        price: 2999, mrp: 4999,
+        icon: 'fa-clipboard-check',
+        color: 'linear-gradient(145deg,#0F766E,#0D9488)'
+      },
+      'rpsc-ae-interview': {
+        name: 'RPSC AE 2024 - Interview Guidance Programme',
+        price: 4999, mrp: 8999,
+        icon: 'fa-user-tie',
+        color: 'linear-gradient(145deg,#6D28D9,#7C3AED)'
+      },
+    };
+
+    const params  = new URLSearchParams(window.location.search);
+    const slug    = params.get('program');
+    const program = PROGRAMS[slug];
+
+    if (!program) {
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('errorState').style.display   = 'block';
+    } else {
+      // Populate summary
+      document.getElementById('summaryName').textContent  = program.name;
+      document.getElementById('summaryMrp').textContent   = '₹' + program.mrp.toLocaleString('en-IN');
+      document.getElementById('summaryPrice').textContent = '₹' + program.price.toLocaleString('en-IN');
+      document.getElementById('summarySave').textContent  = 'You save ₹' + (program.mrp - program.price).toLocaleString('en-IN');
+      document.getElementById('payBtnText').textContent   = 'Pay ₹' + program.price.toLocaleString('en-IN');
+      document.getElementById('summaryThumb').style.background = program.color;
+      document.getElementById('summaryIcon').className    = 'fas ' + program.icon;
+      document.title = 'Enroll - ' + program.name;
+
+      document.getElementById('loadingState').style.display  = 'none';
+      document.getElementById('checkoutGrid').style.display  = 'grid';
+    }
+
+    // Form submit
+    document.getElementById('enrollForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const btn      = document.getElementById('payBtn');
+      const errEl    = document.getElementById('formError');
+      const name     = document.getElementById('inp-name').value.trim();
+      const phone    = document.getElementById('inp-phone').value.trim().replace(/\D/g,'');
+      const email    = document.getElementById('inp-email').value.trim();
+
+      errEl.style.display = 'none';
+
+      if (!name) { showError('Please enter your full name.'); return; }
+      if (phone.length !== 10) { showError('Please enter a valid 10-digit WhatsApp number.'); return; }
+
+      btn.disabled = true;
+      document.getElementById('payBtnText').textContent = 'Please wait...';
+
+      try {
+        const res  = await fetch(API + '/api/payment/create-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ program_slug: slug, name, email, phone }),
+        });
+        const data = await res.json();
+
+        if (!res.ok || !data.payment_session_id) {
+          showError(data.error || 'Payment setup failed. Please try again.');
+          btn.disabled = false;
+          document.getElementById('payBtnText').textContent = 'Pay ₹' + program.price.toLocaleString('en-IN');
+          return;
+        }
+
+        // Launch Cashfree
+        const cashfree = Cashfree({ mode: 'production' });
+        cashfree.checkout({
+          paymentSessionId: data.payment_session_id,
+          redirectTarget:   '_self',
+        });
+
+      } catch (err) {
+        showError('Network error. Please check your connection and try again.');
+        btn.disabled = false;
+        document.getElementById('payBtnText').textContent = 'Pay ₹' + program.price.toLocaleString('en-IN');
+      }
+    });
+
+    function showError(msg) {
+      const el = document.getElementById('formError');
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+  </script>
+</body>
+</html>
