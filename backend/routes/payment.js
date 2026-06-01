@@ -87,7 +87,7 @@ router.post('/create-order', async (req, res) => {
       },
       order_meta: {
         return_url: `${frontendUrl}/payment-success/?order_id={order_id}`,
-        notify_url: `${process.env.BACKEND_URL || 'https://jaspalsingh-backend.onrender.com'}/api/payment/webhook`,
+        notify_url: `${process.env.BACKEND_URL || 'https://jaspalsingh.onrender.com'}/api/payment/webhook`,
       },
       order_note: program.shortName,
     };
