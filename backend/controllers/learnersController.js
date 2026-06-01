@@ -126,7 +126,7 @@ const getMe = async (req, res, next) => {
   try {
     const result = await query(
       `SELECT id, name, email, target_exam, phone, dob, gender, graduation_college,
-              notify_strategy, created_at, last_login
+              notify_strategy, city, photo_url, created_at, last_login
        FROM learners WHERE id = $1`,
       [req.learner.id]
     );
@@ -138,7 +138,7 @@ const getMe = async (req, res, next) => {
 /* ── PUT /api/learners/me ───────────────────────────────────── */
 const updateMe = async (req, res, next) => {
   try {
-    const { name, target_exam, phone, dob, gender, graduation_college, notify_strategy } = req.body;
+    const { name, target_exam, phone, dob, gender, graduation_college, notify_strategy, city, photo_url } = req.body;
     const result = await query(
       `UPDATE learners
        SET name               = COALESCE($1, name),
@@ -147,9 +147,11 @@ const updateMe = async (req, res, next) => {
            dob                = COALESCE($4, dob),
            gender             = COALESCE($5, gender),
            graduation_college = COALESCE($6, graduation_college),
-           notify_strategy    = COALESCE($7, notify_strategy)
-       WHERE id = $8
-       RETURNING id, name, email, target_exam, phone, dob, gender, graduation_college, notify_strategy`,
+           notify_strategy    = COALESCE($7, notify_strategy),
+           city               = COALESCE($8, city),
+           photo_url          = COALESCE($9, photo_url)
+       WHERE id = $10
+       RETURNING id, name, email, target_exam, phone, dob, gender, graduation_college, notify_strategy, city, photo_url`,
       [
         name               || null,
         target_exam        || null,
@@ -158,6 +160,8 @@ const updateMe = async (req, res, next) => {
         gender             || null,
         graduation_college || null,
         notify_strategy !== undefined ? notify_strategy : null,
+        city               || null,
+        photo_url          || null,
         req.learner.id,
       ]
     );
