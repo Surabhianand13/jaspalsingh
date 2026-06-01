@@ -79,6 +79,29 @@
     @media (max-width: 768px) {
       .progs-banner-placeholder { height: 180px; }
     }
+    /* Category filter bar */
+    .prog-filters {
+      display: flex; flex-wrap: wrap; gap: 10px;
+      margin-bottom: 36px;
+    }
+    .prog-filter-btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 9px 20px;
+      border-radius: var(--radius-pill);
+      font-family: var(--font-heading); font-size: 13px; font-weight: 700;
+      border: 1.5px solid rgba(26,26,46,.12);
+      background: var(--white); color: var(--heading-color);
+      cursor: pointer; transition: all .18s;
+    }
+    .prog-filter-btn:hover { border-color: var(--magenta); color: var(--magenta); }
+    .prog-filter-btn.active {
+      background: var(--gradient); color: #fff;
+      border-color: transparent;
+      box-shadow: 0 4px 14px rgba(200,18,64,.28);
+    }
+    .prog-filter-btn i { font-size: 12px; }
+    .prog-card.hidden { display: none; }
+
     .progs-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
@@ -409,10 +432,18 @@
           <p class="sec-sub">Each program is structured for a specific exam and cohort. Select a program to view the full syllabus, schedule and enrollment details.</p>
         </div>
 
+        <!-- Category filters -->
+        <div class="prog-filters" id="progFilters">
+          <button class="prog-filter-btn active" data-filter="all">All Programs</button>
+          <button class="prog-filter-btn" data-filter="test-series"><i class="fas fa-clipboard-list"></i> Offline Test Series</button>
+          <button class="prog-filter-btn" data-filter="interview"><i class="fas fa-user-tie"></i> Interview Guidance</button>
+          <button class="prog-filter-btn" data-filter="course"><i class="fas fa-graduation-cap"></i> Courses &amp; Batches</button>
+        </div>
+
         <div class="progs-grid">
 
           <!-- 1. RSSB JEN Diploma Test Series -->
-          <article class="prog-card">
+          <article class="prog-card" data-cat="test-series">
             <div class="prog-thumb th-blue">
               <span class="prog-thumb-type-label">Offline Test Series</span>
               <i class="fas fa-clipboard-list prog-thumb-icon"></i>
@@ -440,7 +471,7 @@
           </article>
 
           <!-- 2. RSSB JEN Degree Test Series -->
-          <article class="prog-card">
+          <article class="prog-card" data-cat="test-series">
             <div class="prog-thumb th-teal">
               <span class="prog-thumb-type-label">Offline Test Series</span>
               <i class="fas fa-clipboard-check prog-thumb-icon"></i>
@@ -468,7 +499,7 @@
           </article>
 
           <!-- 3. RPSC AE Interview Guidance -->
-          <article class="prog-card">
+          <article class="prog-card" data-cat="interview">
             <div class="prog-thumb th-purple">
               <span class="prog-thumb-type-label">Interview Guidance</span>
               <i class="fas fa-user-tie prog-thumb-icon"></i>
@@ -496,7 +527,7 @@
           </article>
 
           <!-- 4. RSSB JEN Crash Course -->
-          <article class="prog-card">
+          <article class="prog-card" data-cat="course">
             <div class="prog-thumb th-orange">
               <span class="prog-thumb-type-label">Offline Crash Course</span>
               <i class="fas fa-bolt prog-thumb-icon"></i>
@@ -631,5 +662,21 @@
   <a href="https://wa.me/910000000000" target="_blank" rel="noopener" aria-label="Chat on WhatsApp" class="whatsapp-float"><i class="fab fa-whatsapp"></i></a>
 
   <script src="/js/main.js"></script>
+  <script>
+    document.querySelectorAll('.prog-filter-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.prog-filter-btn').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        var filter = btn.dataset.filter;
+        document.querySelectorAll('.prog-card').forEach(function(card) {
+          if (filter === 'all' || card.dataset.cat === filter) {
+            card.classList.remove('hidden');
+          } else {
+            card.classList.add('hidden');
+          }
+        });
+      });
+    });
+  </script>
 </body>
 </html>
