@@ -221,6 +221,35 @@
   gap: 10px;
   margin-left: 12px;
 }
+.learner-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #C81240, #9B1230);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-heading, 'Plus Jakarta Sans', sans-serif);
+  font-size: 14px;
+  font-weight: 800;
+  text-decoration: none;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: 0 2px 10px rgba(200,18,64,0.3);
+  transition: transform 0.15s;
+}
+.learner-avatar:hover { transform: scale(1.06); }
+.learner-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.learner-profile-link {
+  font-family: var(--font-heading, 'Plus Jakarta Sans', sans-serif);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--heading-color, #1A1A2E);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.learner-profile-link:hover { color: var(--magenta, #C81240); }
 .learner-greeting {
   font-family: var(--font-heading, 'Plus Jakarta Sans', sans-serif);
   font-size: 13px;
