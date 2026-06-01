@@ -111,7 +111,8 @@ router.post('/create-order', async (req, res) => {
     // Unique order ID
     const order_id = `JSP-${program_slug.slice(0,6).toUpperCase()}-${Date.now()}`;
 
-    const frontendUrl = (process.env.FRONTEND_URL || 'https://www.jaspalsingh.in').split(',')[0].trim();
+    // Always use www version for return URL to avoid DNS issues with root domain
+    const frontendUrl = 'https://www.jaspalsingh.in';
 
     const payload = {
       order_id,
