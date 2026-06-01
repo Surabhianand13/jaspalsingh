@@ -79,6 +79,7 @@ app.use('/api/analytics',    require('./routes/analytics'));
 app.use('/api/upload',       require('./routes/upload'));
 app.use('/api/payment',      require('./routes/payment'));
 app.use('/api/leads',        require('./routes/leads'));
+app.use('/api/enrollment',   require('./routes/enrollment-account'));
 
 /* ── Health Check ────────────────────────────────────────── */
 
@@ -148,6 +149,7 @@ async function migrate() {
     )
   `);
   await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS coupon_code VARCHAR(50)`);
+  await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS learner_id INTEGER`);
 
   await query(`
     CREATE TABLE IF NOT EXISTS leads (

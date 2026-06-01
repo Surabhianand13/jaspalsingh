@@ -114,6 +114,17 @@
       box-shadow: 0 8px 24px rgba(200,18,64,.3);
     }
 
+    .ps-account-box { text-align: left; margin-bottom: 16px; }
+    .ps-account-label { font-size: 13px; font-weight: 700; color: #1A1A2E; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+    .ps-input {
+      width: 100%; padding: 12px 16px; margin-bottom: 10px;
+      border: 1.5px solid rgba(26,26,46,.14); border-radius: 10px;
+      font-family: inherit; font-size: 14px; color: #1A1A2E;
+      outline: none; transition: border-color .2s;
+    }
+    .ps-input:focus { border-color: #C81240; }
+    .ps-account-err { font-size: 12px; color: #C81240; background: rgba(200,18,64,.07); padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; }
+
     @media (max-width: 560px) {
       .ps-card { padding: 36px 24px; }
       .ps-title { font-size: 22px; }
@@ -136,17 +147,35 @@
         <p style="color:#6b6b8a;font-size:15px;">Verifying your payment...</p>
       </div>
 
-      <!-- Success -->
+      <!-- Success Step 1: Confirmation -->
       <div id="stateSuccess" style="display:none;">
         <div class="ps-tick"><i class="fas fa-check"></i></div>
-        <h1 class="ps-title">Enrollment Confirmed!</h1>
-        <p class="ps-sub">Your payment was successful. Dr. Jaspal Singh's team will contact you on WhatsApp with batch details and next steps.</p>
+        <h1 class="ps-title">Payment Confirmed!</h1>
+        <p class="ps-sub">Your enrollment is confirmed. Now set a password to create your student account.</p>
         <div class="ps-details" id="successDetails"></div>
-        <a href="#" class="ps-wa-btn" id="waConfirmBtn">
-          <i class="fab fa-whatsapp" style="font-size:20px;"></i>
-          Send Confirmation on WhatsApp
-        </a>
-        <a href="/" class="ps-home-btn">Back to Home</a>
+
+        <!-- Account creation -->
+        <div class="ps-account-box" id="accountBox">
+          <p class="ps-account-label"><i class="fas fa-user-circle"></i> Create Your Student Account</p>
+          <input type="password" id="inp-password" class="ps-input" placeholder="Set a password (min 6 chars)" minlength="6" />
+          <input type="password" id="inp-password2" class="ps-input" placeholder="Confirm password" minlength="6" />
+          <div class="ps-account-err" id="accountErr" style="display:none;"></div>
+          <button class="ps-wa-btn" id="createAccountBtn" style="background:linear-gradient(135deg,#C81240,#9B1230);box-shadow:0 6px 20px rgba(200,18,64,.35);border:none;cursor:pointer;margin-top:8px;">
+            <i class="fas fa-user-plus"></i> Create Account &amp; Continue
+          </button>
+        </div>
+
+        <!-- After account created -->
+        <div id="accountDone" style="display:none;">
+          <div style="background:rgba(22,163,74,.08);border:1.5px solid rgba(22,163,74,.2);border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#15803d;font-weight:600;">
+            <i class="fas fa-check-circle"></i> Account created! You can now log in at any time.
+          </div>
+          <a href="#" class="ps-wa-btn" id="waConfirmBtn">
+            <i class="fab fa-whatsapp" style="font-size:20px;"></i>
+            Send Confirmation on WhatsApp
+          </a>
+          <a href="/" class="ps-home-btn" style="margin-top:10px;">Back to Home</a>
+        </div>
       </div>
 
       <!-- Failed -->
@@ -184,23 +213,64 @@
       }
     }
 
+    let successData = null;
+
     function showSuccess(data) {
+      successData = data;
       document.getElementById('stateLoading').style.display = 'none';
       document.getElementById('stateSuccess').style.display = 'block';
 
       const details = document.getElementById('successDetails');
       details.innerHTML = `
+        <div class="ps-detail-row"><span class="ps-dk">Name</span><span class="ps-dv">${data.student_name || '-'}</span></div>
         <div class="ps-detail-row"><span class="ps-dk">Program</span><span class="ps-dv">${data.program_name || '-'}</span></div>
-        <div class="ps-detail-row"><span class="ps-dk">Amount Paid</span><span class="ps-dv green">₹${Number(data.amount || 0).toLocaleString('en-IN')}</span></div>
+        <div class="ps-detail-row"><span class="ps-dk">Amount Paid</span><span class="ps-dv green">&#8377;${Number(data.amount || 0).toLocaleString('en-IN')}</span></div>
         <div class="ps-detail-row"><span class="ps-dk">Order ID</span><span class="ps-dv" style="font-size:11px;">${data.order_id}</span></div>
         <div class="ps-detail-row"><span class="ps-dk">Status</span><span class="ps-dv green"><i class="fas fa-check-circle"></i> Confirmed</span></div>
       `;
-
-      const msg = encodeURIComponent(
-        `Hi Dr. Jaspal Singh, I have successfully enrolled in "${data.program_name}". My Order ID is ${data.order_id}. Please share the batch details.`
-      );
-      document.getElementById('waConfirmBtn').href = `https://wa.me/919999999999?text=${msg}`;
     }
+
+    // Create account button
+    document.getElementById('createAccountBtn').addEventListener('click', async function() {
+      const pw1 = document.getElementById('inp-password').value;
+      const pw2 = document.getElementById('inp-password2').value;
+      const err = document.getElementById('accountErr');
+      err.style.display = 'none';
+
+      if (pw1.length < 6)  { err.textContent = 'Password must be at least 6 characters.'; err.style.display='block'; return; }
+      if (pw1 !== pw2)     { err.textContent = 'Passwords do not match.'; err.style.display='block'; return; }
+
+      this.disabled = true; this.textContent = 'Creating account...';
+
+      try {
+        const res  = await fetch(API + '/api/enrollment/create-account', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ order_id, password: pw1 }),
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          localStorage.setItem('learner_token', data.token);
+          document.getElementById('accountBox').style.display = 'none';
+          document.getElementById('accountDone').style.display = 'block';
+          // Set WA link
+          if (successData) {
+            const msg = encodeURIComponent(
+              `Hi Dr. Jaspal Singh, I have enrolled in "${successData.program_name}". My Order ID is ${order_id}. Please share the batch details.`
+            );
+            document.getElementById('waConfirmBtn').href = `https://wa.me/919999999999?text=${msg}`;
+          }
+        } else {
+          err.textContent = data.error || 'Account creation failed. Please try again.';
+          err.style.display = 'block';
+          this.disabled = false; this.innerHTML = '<i class="fas fa-user-plus"></i> Create Account & Continue';
+        }
+      } catch(e) {
+        err.textContent = 'Network error. Try again.';
+        err.style.display = 'block';
+        this.disabled = false; this.innerHTML = '<i class="fas fa-user-plus"></i> Create Account & Continue';
+      }
+    });
 
     function showFailed(orderId) {
       document.getElementById('stateLoading').style.display = 'none';
