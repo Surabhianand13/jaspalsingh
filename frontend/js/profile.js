@@ -8,11 +8,7 @@
 
   var TOKEN_KEY = 'jaspal_learner_token';
   var USER_KEY  = 'jaspal_learner';
-
-  var API_BASE = (function () {
-    var h = window.location.hostname;
-    return (h === 'localhost' || h === '127.0.0.1') ? 'http://localhost:5000' : '';
-  })();
+  var API_BASE  = 'https://jaspalsingh.onrender.com';
 
   function getToken() { return localStorage.getItem(TOKEN_KEY); }
   function getUser()  {
@@ -33,7 +29,6 @@
   }
 
   /* ── Guard: redirect if not logged in ───────────────────── */
-
   function init() {
     if (!getToken()) {
       document.getElementById('profileNotLoggedIn').style.display = 'block';
@@ -41,7 +36,9 @@
     }
     document.getElementById('profileContent').style.display = 'block';
     loadProfile();
+    loadEnrolledPrograms();
     loadDownloads();
+    setupPhotoUpload();
 
     document.getElementById('profileLogoutBtn').addEventListener('click', function () {
       localStorage.removeItem(TOKEN_KEY);
@@ -52,47 +49,85 @@
     document.getElementById('profileForm').addEventListener('submit', onSave);
   }
 
-  /* ── Load profile from API ───────────────────────────────── */
+  /* ── Photo upload ────────────────────────────────────────── */
+  function setupPhotoUpload() {
+    var input = document.getElementById('profilePhotoInput');
+    if (!input) return;
+    input.addEventListener('change', function () {
+      var file = input.files[0];
+      if (!file) return;
+      if (file.size > 2 * 1024 * 1024) { showMsg('Photo must be under 2MB.', 'error'); return; }
 
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        var dataUrl = e.target.result;
+        // Show preview
+        var img = document.getElementById('profileAvatarImg');
+        var initials = document.getElementById('profileInitials');
+        img.src = dataUrl;
+        img.style.display = 'block';
+        initials.style.display = 'none';
+        // Save to profile as data URL (or use Cloudinary upload if available)
+        authFetch('/api/learners/me', {
+          method: 'PUT',
+          body: JSON.stringify({ photo_url: dataUrl }),
+        }).then(function () {
+          showMsg('Photo updated!', 'success');
+        }).catch(function () {
+          showMsg('Could not save photo. Try again.', 'error');
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  /* ── Load profile from API ───────────────────────────────── */
   function loadProfile() {
     authFetch('/api/learners/me').then(function (data) {
       var l = data.learner;
 
-      /* Header */
+      // Avatar
+      if (l.photo_url) {
+        var img = document.getElementById('profileAvatarImg');
+        img.src = l.photo_url;
+        img.style.display = 'block';
+        document.getElementById('profileInitials').style.display = 'none';
+      } else {
+        var initials = (l.name || '?').split(' ').map(function(w) { return w[0]; }).slice(0,2).join('').toUpperCase();
+        document.getElementById('profileInitials').textContent = initials;
+      }
+
+      // Header
       document.getElementById('profileDisplayName').textContent = l.name || 'My Profile';
       var meta = [];
       if (l.target_exam && l.target_exam !== 'General') meta.push(l.target_exam + ' Aspirant');
+      if (l.city) meta.push(l.city);
       if (l.email) meta.push(l.email);
       document.getElementById('profileMetaLine').textContent = meta.join(' · ');
 
-      /* Form */
+      // Form fields
       document.getElementById('pfName').value    = l.name    || '';
       document.getElementById('pfEmail').value   = l.email   || '';
       document.getElementById('pfPhone').value   = l.phone   || '';
+      document.getElementById('pfCity').value    = l.city    || '';
       document.getElementById('pfCollege').value = l.graduation_college || '';
       if (l.dob) document.getElementById('pfDob').value = l.dob.split('T')[0];
 
       var genderSel = document.getElementById('pfGender');
       if (l.gender) {
         for (var i = 0; i < genderSel.options.length; i++) {
-          if (genderSel.options[i].value === l.gender) {
-            genderSel.selectedIndex = i;
-            break;
-          }
+          if (genderSel.options[i].value === l.gender) { genderSel.selectedIndex = i; break; }
         }
       }
 
       var examSel = document.getElementById('pfExam');
       if (l.target_exam) {
         for (var j = 0; j < examSel.options.length; j++) {
-          if (examSel.options[j].value === l.target_exam) {
-            examSel.selectedIndex = j;
-            break;
-          }
+          if (examSel.options[j].value === l.target_exam) { examSel.selectedIndex = j; break; }
         }
       }
 
-      /* Update cached user name */
+      // Cache
       var cached = getUser() || {};
       cached.name = l.name;
       localStorage.setItem(USER_KEY, JSON.stringify(cached));
@@ -102,17 +137,63 @@
     });
   }
 
-  /* ── Save profile ────────────────────────────────────────── */
+  /* ── Load enrolled programs ──────────────────────────────── */
+  function loadEnrolledPrograms() {
+    var body = document.getElementById('enrolledBody');
+    authFetch('/api/enrollment/my-enrollments').then(function (data) {
+      var enrollments = data.enrollments || [];
+      if (!enrollments.length) {
+        body.innerHTML = '<p class="profile-empty"><i class="fas fa-graduation-cap"></i> No enrolled programs yet.<br>' +
+          '<a href="/programs">Browse programs &rarr;</a></p>';
+        return;
+      }
 
+      var PROGRAM_COLORS = {
+        'rssb-jen-diploma-test-series':  { bg: 'linear-gradient(135deg,#0369A1,#0284C7)', icon: 'fa-clipboard-list' },
+        'rssb-jen-degree-test-series':   { bg: 'linear-gradient(135deg,#0F766E,#0D9488)', icon: 'fa-clipboard-check' },
+        'rpsc-ae-interview':             { bg: 'linear-gradient(135deg,#6D28D9,#7C3AED)', icon: 'fa-user-tie' },
+        'rssb-jen-crash-course':         { bg: 'linear-gradient(135deg,#B45309,#C2410C)', icon: 'fa-bolt' },
+        'gate-ese-foundation':           { bg: 'linear-gradient(135deg,#166534,#15803D)', icon: 'fa-graduation-cap' },
+      };
+
+      var html = '<div class="enrolled-grid">';
+      enrollments.forEach(function(e) {
+        var style = PROGRAM_COLORS[e.program_slug] || { bg: 'linear-gradient(135deg,#1A1A2E,#2d2d4e)', icon: 'fa-book' };
+        var paid_at = e.paid_at ? new Date(e.paid_at).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' }) : '';
+        html += '<div class="enrolled-card">' +
+          '<div class="enrolled-thumb" style="background:' + style.bg + '">' +
+            '<i class="fas ' + style.icon + '"></i>' +
+          '</div>' +
+          '<div class="enrolled-info">' +
+            '<div class="enrolled-name">' + esc(e.program_name) + '</div>' +
+            '<div class="enrolled-meta">' +
+              '<span class="enrolled-status enrolled-status--paid"><i class="fas fa-check-circle"></i> Enrolled</span>' +
+              (paid_at ? '<span class="enrolled-date">Joined ' + paid_at + '</span>' : '') +
+              '<span class="enrolled-amount">&#8377;' + Number(e.amount).toLocaleString('en-IN') + ' paid</span>' +
+            '</div>' +
+            '<a href="/programs/' + esc(e.program_slug) + '/" class="enrolled-link">View Program &rarr;</a>' +
+          '</div>' +
+        '</div>';
+      });
+      html += '</div>';
+      body.innerHTML = html;
+
+    }).catch(function () {
+      body.innerHTML = '<p class="profile-empty">Could not load enrolled programs.</p>';
+    });
+  }
+
+  /* ── Save profile ────────────────────────────────────────── */
   function onSave(e) {
     e.preventDefault();
     clearMsg();
 
-    var name   = document.getElementById('pfName').value.trim();
-    var phone  = document.getElementById('pfPhone').value.trim();
-    var dob    = document.getElementById('pfDob').value;
-    var gender = document.getElementById('pfGender').value;
-    var exam   = document.getElementById('pfExam').value;
+    var name    = document.getElementById('pfName').value.trim();
+    var phone   = document.getElementById('pfPhone').value.trim();
+    var city    = document.getElementById('pfCity').value.trim();
+    var dob     = document.getElementById('pfDob').value;
+    var gender  = document.getElementById('pfGender').value;
+    var exam    = document.getElementById('pfExam').value;
     var college = document.getElementById('pfCollege').value.trim();
 
     if (!name) { showMsg('Name is required.', 'error'); return; }
@@ -124,17 +205,19 @@
     authFetch('/api/learners/me', {
       method: 'PUT',
       body: JSON.stringify({
-        name:               name,
-        phone:              phone   || null,
-        dob:                dob     || null,
-        gender:             gender  || null,
-        target_exam:        exam    || null,
-        graduation_college: college || null,
+        name, phone: phone || null, city: city || null,
+        dob: dob || null, gender: gender || null,
+        target_exam: exam || null, graduation_college: college || null,
       }),
     }).then(function (data) {
       showMsg('Profile saved successfully!', 'success');
       var l = data.learner;
       document.getElementById('profileDisplayName').textContent = l.name;
+      var meta = [];
+      if (l.target_exam && l.target_exam !== 'General') meta.push(l.target_exam + ' Aspirant');
+      if (l.city) meta.push(l.city);
+      if (l.email) meta.push(l.email);
+      document.getElementById('profileMetaLine').textContent = meta.join(' · ');
       var cached = getUser() || {};
       cached.name = l.name;
       localStorage.setItem(USER_KEY, JSON.stringify(cached));
@@ -147,23 +230,20 @@
   }
 
   /* ── Load downloads ──────────────────────────────────────── */
-
   function loadDownloads() {
     authFetch('/api/learners/downloads').then(function (data) {
       var downloads = data.downloads || [];
       var body = document.getElementById('downloadsBody');
 
       if (!downloads.length) {
-        body.innerHTML =
-          '<p class="profile-empty"><i class="fas fa-inbox"></i> No downloads yet.<br>' +
-          '<a href="/resources">Browse resources →</a></p>';
+        body.innerHTML = '<p class="profile-empty"><i class="fas fa-inbox"></i> No downloads yet.<br>' +
+          '<a href="/resources">Browse resources &rarr;</a></p>';
         return;
       }
 
       var rows = downloads.map(function (d) {
         var date = d.downloaded_at
-          ? new Date(d.downloaded_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-          : '';
+          ? new Date(d.downloaded_at).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' }) : '';
         return '<tr>' +
           '<td><span class="dl-title">' + esc(d.title) + '</span><br>' +
                '<span class="dl-sub">' + esc(d.subject) + ' · ' + esc(d.resource_type) + '</span></td>' +
@@ -173,11 +253,10 @@
           '</tr>';
       }).join('');
 
-      body.innerHTML =
-        '<div class="dl-table-wrap"><table class="dl-table">' +
-          '<thead><tr><th>Resource</th><th>Date</th><th></th></tr></thead>' +
-          '<tbody>' + rows + '</tbody>' +
-        '</table></div>';
+      body.innerHTML = '<div class="dl-table-wrap"><table class="dl-table">' +
+        '<thead><tr><th>Resource</th><th>Date</th><th></th></tr></thead>' +
+        '<tbody>' + rows + '</tbody></table></div>';
+
     }).catch(function () {
       document.getElementById('downloadsBody').innerHTML =
         '<p class="profile-empty">Could not load download history.</p>';
@@ -185,31 +264,23 @@
   }
 
   /* ── Helpers ─────────────────────────────────────────────── */
-
   function showMsg(msg, type) {
     var el = document.getElementById('profileFormMsg');
-    el.textContent  = msg;
-    el.className    = 'profile-msg profile-msg--' + type;
+    el.textContent   = msg;
+    el.className     = 'profile-msg profile-msg--' + type;
     el.style.display = 'block';
     el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
-
   function clearMsg() {
     var el = document.getElementById('profileFormMsg');
-    el.style.display = 'none';
-    el.textContent   = '';
+    el.style.display = 'none'; el.textContent = '';
   }
-
   function esc(s) {
-    return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-                    .replace(/"/g,'&quot;');
+    return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
-  /* ── Boot ────────────────────────────────────────────────── */
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
+  } else { init(); }
 
 })();

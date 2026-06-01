@@ -250,7 +250,7 @@
         const data = await res.json();
 
         if (res.ok && data.success) {
-          localStorage.setItem('learner_token', data.token);
+          localStorage.setItem('jaspal_learner_token', data.token);
           document.getElementById('accountBox').style.display = 'none';
           document.getElementById('accountDone').style.display = 'block';
           // Set WA link

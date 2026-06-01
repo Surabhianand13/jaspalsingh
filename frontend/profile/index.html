@@ -222,8 +222,15 @@
       <!-- Hero strip -->
       <section class="profile-hero">
         <div class="container profile-hero-inner">
-          <div class="profile-avatar-circle" id="profileAvatarCircle">
-            <span id="profileInitials">?</span>
+          <div class="profile-avatar-wrap" id="profileAvatarWrap">
+            <div class="profile-avatar-circle" id="profileAvatarCircle">
+              <img id="profileAvatarImg" src="" alt="" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%;" />
+              <span id="profileInitials">?</span>
+            </div>
+            <label class="profile-avatar-edit" for="profilePhotoInput" title="Change photo">
+              <i class="fas fa-camera"></i>
+            </label>
+            <input type="file" id="profilePhotoInput" accept="image/*" style="display:none;" />
           </div>
           <div class="profile-hero-info">
             <h1 class="profile-name" id="profileDisplayName">Loading…</h1>
@@ -250,25 +257,39 @@
 
             <div class="profile-form-grid">
 
-              <div class="pf-field">
-                <label for="pfName">Full Name <span class="pf-required">*</span></label>
-                <input type="text" id="pfName" placeholder="Your full name" autocomplete="name" required />
+              <div class="pf-field pf-field--full">
+                <label for="pfName">Student Name (as per Aadhaar) <span class="pf-required">*</span></label>
+                <input type="text" id="pfName" placeholder="Exact name as on your Aadhaar Card" autocomplete="name" required />
               </div>
 
               <div class="pf-field">
-                <label for="pfEmail">Email</label>
+                <label for="pfEmail">Email ID</label>
                 <input type="email" id="pfEmail" disabled title="Email cannot be changed" />
                 <span class="pf-hint">Email cannot be changed</span>
               </div>
 
               <div class="pf-field">
                 <label for="pfPhone">Mobile Number</label>
-                <input type="tel" id="pfPhone" placeholder="+91 9XXXXXXXXX" autocomplete="tel" />
+                <input type="tel" id="pfPhone" placeholder="10-digit mobile number" autocomplete="tel" maxlength="10" />
               </div>
 
               <div class="pf-field">
-                <label for="pfDob">Date of Birth</label>
-                <input type="date" id="pfDob" />
+                <label for="pfCity">City</label>
+                <input type="text" id="pfCity" placeholder="e.g. Jaipur" autocomplete="address-level2" />
+              </div>
+
+              <div class="pf-field">
+                <label for="pfExam">Target Exam</label>
+                <select id="pfExam">
+                  <option value="General">Select your target exam</option>
+                  <option value="RSSB JEN">RSSB JEN (Rajasthan)</option>
+                  <option value="RPSC AE">RPSC AE (Rajasthan)</option>
+                  <option value="GATE">GATE Civil Engineering</option>
+                  <option value="ESE">UPSC IES / ESE</option>
+                  <option value="SSC JE">SSC JE</option>
+                  <option value="State AE/JE">State AE / JE (Other)</option>
+                  <option value="General">General / Multiple</option>
+                </select>
               </div>
 
               <div class="pf-field">
@@ -282,17 +303,11 @@
               </div>
 
               <div class="pf-field">
-                <label for="pfExam">Target Exam</label>
-                <select id="pfExam">
-                  <option value="General">General</option>
-                  <option value="GATE">GATE CE</option>
-                  <option value="ESE">UPSC IES / ESE</option>
-                  <option value="SSC JE">SSC JE</option>
-                  <option value="State AE/JE">State AE / JE</option>
-                </select>
+                <label for="pfDob">Date of Birth</label>
+                <input type="date" id="pfDob" />
               </div>
 
-              <div class="pf-field pf-field--full">
+              <div class="pf-field">
                 <label for="pfCollege">Graduation College <span class="pf-optional">(optional)</span></label>
                 <input type="text" id="pfCollege" placeholder="e.g. IIT Delhi, NIT Warangal" autocomplete="organization" />
               </div>
@@ -306,6 +321,18 @@
             </div>
 
           </form>
+        </section>
+
+        <!-- Enrolled Programs card -->
+        <section class="profile-card" aria-label="My Enrolled Programs">
+          <div class="profile-card-header">
+            <h2><i class="fas fa-graduation-cap"></i> My Enrolled Programs</h2>
+          </div>
+          <div id="enrolledBody">
+            <div class="profile-skeleton-list">
+              <div class="pskel"></div><div class="pskel"></div>
+            </div>
+          </div>
         </section>
 
         <!-- Download history card -->

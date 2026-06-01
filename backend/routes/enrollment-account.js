@@ -78,4 +78,30 @@ router.post('/create-account', async (req, res) => {
   }
 });
 
+/* ── GET /api/enrollment/my-enrollments ──────────────────── */
+router.get('/my-enrollments', async (req, res) => {
+  try {
+    const token = (req.headers.authorization || '').replace('Bearer ', '');
+    if (!token) return res.status(401).json({ error: 'Unauthorised.' });
+
+    const jwt = require('jsonwebtoken');
+    let decoded;
+    try { decoded = jwt.verify(token, process.env.JWT_SECRET); }
+    catch(e) { return res.status(401).json({ error: 'Invalid token.' }); }
+
+    const result = await query(
+      `SELECT order_id, program_slug, program_name, amount, status, paid_at, coupon_code
+       FROM enrollments
+       WHERE learner_id = $1 AND status = 'paid'
+       ORDER BY paid_at DESC`,
+      [decoded.id]
+    );
+
+    res.json({ enrollments: result.rows });
+  } catch (err) {
+    console.error('[my-enrollments]', err);
+    res.status(500).json({ error: 'Server error.' });
+  }
+});
+
 module.exports = router;
