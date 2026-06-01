@@ -117,7 +117,7 @@
         showModal();
         scheduleNext(); // schedule the next one after this fires
       }
-    }, 30000);
+    }, 10000); // 10 seconds
   }
 
   scheduleNext();
