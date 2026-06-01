@@ -64,6 +64,21 @@
     .form-input:focus { border-color: #C81240; }
     .form-input::placeholder { color: #9999b0; }
 
+    /* Coupon */
+    .coupon-row { display: flex; gap: 8px; margin-bottom: 18px; }
+    .coupon-row .form-input { margin: 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+    .coupon-apply-btn {
+      flex-shrink: 0; padding: 0 20px;
+      border: 1.5px solid rgba(26,26,46,.14); border-radius: 10px;
+      background: var(--white); color: #1A1A2E;
+      font-family: inherit; font-size: 13px; font-weight: 700;
+      cursor: pointer; white-space: nowrap; transition: all .18s;
+    }
+    .coupon-apply-btn:hover { border-color: #C81240; color: #C81240; }
+    .coupon-msg { font-size: 12px; font-weight: 600; margin-top: -10px; margin-bottom: 14px; padding: 8px 12px; border-radius: 8px; display: none; }
+    .coupon-msg.success { background: rgba(22,163,74,.10); color: #15803d; display: block; }
+    .coupon-msg.error   { background: rgba(200,18,64,.08);  color: #C81240;  display: block; }
+
     .pay-btn {
       width: 100%;
       padding: 16px;
@@ -217,6 +232,15 @@
             <input class="form-input" type="email" id="inp-email" name="email" placeholder="your@email.com (optional)" autocomplete="email" />
           </div>
 
+          <div class="form-group" style="margin-bottom:6px;">
+            <label class="form-label" for="inp-coupon">Coupon Code <span style="font-weight:400;color:#9999b0;">(optional)</span></label>
+            <div class="coupon-row">
+              <input class="form-input" type="text" id="inp-coupon" placeholder="Enter coupon code" autocomplete="off" style="text-transform:uppercase;" />
+              <button type="button" class="coupon-apply-btn" id="couponApplyBtn">Apply</button>
+            </div>
+          </div>
+          <div class="coupon-msg" id="couponMsg"></div>
+
           <div id="formError" class="co-error"></div>
 
           <button type="submit" class="pay-btn" id="payBtn">
@@ -291,36 +315,81 @@
     const slug    = params.get('program');
     const program = PROGRAMS[slug];
 
+    let appliedCoupon = null;
+    let finalPrice    = program ? program.price : 0;
+
+    function updatePriceDisplay(price) {
+      finalPrice = price;
+      document.getElementById('summaryPrice').textContent = '₹' + price.toLocaleString('en-IN');
+      document.getElementById('summarySave').textContent  = 'You save ₹' + (program.mrp - price).toLocaleString('en-IN');
+      document.getElementById('payBtnText').textContent   = 'Pay ₹' + price.toLocaleString('en-IN');
+    }
+
     if (!program) {
       document.getElementById('loadingState').style.display = 'none';
       document.getElementById('errorState').style.display   = 'block';
     } else {
-      // Populate summary
       document.getElementById('summaryName').textContent  = program.name;
       document.getElementById('summaryMrp').textContent   = '₹' + program.mrp.toLocaleString('en-IN');
-      document.getElementById('summaryPrice').textContent = '₹' + program.price.toLocaleString('en-IN');
-      document.getElementById('summarySave').textContent  = 'You save ₹' + (program.mrp - program.price).toLocaleString('en-IN');
-      document.getElementById('payBtnText').textContent   = 'Pay ₹' + program.price.toLocaleString('en-IN');
+      updatePriceDisplay(program.price);
       document.getElementById('summaryThumb').style.background = program.color;
       document.getElementById('summaryIcon').className    = 'fas ' + program.icon;
       document.title = 'Enroll - ' + program.name;
-
       document.getElementById('loadingState').style.display  = 'none';
       document.getElementById('checkoutGrid').style.display  = 'grid';
     }
 
+    // Coupon apply
+    document.getElementById('couponApplyBtn').addEventListener('click', async function() {
+      const code = document.getElementById('inp-coupon').value.trim().toUpperCase();
+      const msg  = document.getElementById('couponMsg');
+      msg.className = 'coupon-msg';
+      msg.textContent = '';
+
+      if (!code) { msg.className = 'coupon-msg error'; msg.textContent = 'Please enter a coupon code.'; return; }
+
+      this.textContent = 'Checking...';
+      this.disabled = true;
+
+      try {
+        const res  = await fetch(API + '/api/payment/validate-coupon', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ coupon_code: code, program_slug: slug }),
+        });
+        const data = await res.json();
+
+        if (res.ok && data.valid) {
+          appliedCoupon = code;
+          updatePriceDisplay(data.final_price);
+          msg.className   = 'coupon-msg success';
+          msg.textContent = '✓ Coupon applied! ' + data.label + ' - You pay ₹' + data.final_price;
+          document.getElementById('inp-coupon').disabled = true;
+          this.textContent = 'Applied ✓';
+        } else {
+          msg.className   = 'coupon-msg error';
+          msg.textContent = data.error || 'Invalid coupon code.';
+          this.textContent = 'Apply';
+          this.disabled = false;
+        }
+      } catch (e) {
+        msg.className = 'coupon-msg error';
+        msg.textContent = 'Could not validate coupon. Try again.';
+        this.textContent = 'Apply';
+        this.disabled = false;
+      }
+    });
+
     // Form submit
     document.getElementById('enrollForm').addEventListener('submit', async function(e) {
       e.preventDefault();
-      const btn      = document.getElementById('payBtn');
-      const errEl    = document.getElementById('formError');
-      const name     = document.getElementById('inp-name').value.trim();
-      const phone    = document.getElementById('inp-phone').value.trim().replace(/\D/g,'');
-      const email    = document.getElementById('inp-email').value.trim();
+      const btn   = document.getElementById('payBtn');
+      const errEl = document.getElementById('formError');
+      const name  = document.getElementById('inp-name').value.trim();
+      const phone = document.getElementById('inp-phone').value.trim().replace(/\D/g,'');
+      const email = document.getElementById('inp-email').value.trim();
 
       errEl.style.display = 'none';
-
-      if (!name) { showError('Please enter your full name.'); return; }
+      if (!name)               { showError('Please enter your full name.'); return; }
       if (phone.length !== 10) { showError('Please enter a valid 10-digit WhatsApp number.'); return; }
 
       btn.disabled = true;
@@ -330,28 +399,24 @@
         const res  = await fetch(API + '/api/payment/create-order', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ program_slug: slug, name, email, phone }),
+          body: JSON.stringify({ program_slug: slug, name, email, phone, coupon_code: appliedCoupon }),
         });
         const data = await res.json();
 
         if (!res.ok || !data.payment_session_id) {
           showError(data.error || 'Payment setup failed. Please try again.');
           btn.disabled = false;
-          document.getElementById('payBtnText').textContent = 'Pay ₹' + program.price.toLocaleString('en-IN');
+          document.getElementById('payBtnText').textContent = 'Pay ₹' + finalPrice.toLocaleString('en-IN');
           return;
         }
 
-        // Launch Cashfree
         const cashfree = Cashfree({ mode: 'production' });
-        cashfree.checkout({
-          paymentSessionId: data.payment_session_id,
-          redirectTarget:   '_self',
-        });
+        cashfree.checkout({ paymentSessionId: data.payment_session_id, redirectTarget: '_self' });
 
       } catch (err) {
         showError('Network error. Please check your connection and try again.');
         btn.disabled = false;
-        document.getElementById('payBtnText').textContent = 'Pay ₹' + program.price.toLocaleString('en-IN');
+        document.getElementById('payBtnText').textContent = 'Pay ₹' + finalPrice.toLocaleString('en-IN');
       }
     });
 

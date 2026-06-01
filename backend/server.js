@@ -142,10 +142,12 @@ async function migrate() {
       student_phone   VARCHAR(20) NOT NULL,
       status          VARCHAR(20) NOT NULL DEFAULT 'pending',
       cf_payment_id   VARCHAR(100),
+      coupon_code     VARCHAR(50),
       paid_at         TIMESTAMP WITH TIME ZONE,
       created_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     )
   `);
+  await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS coupon_code VARCHAR(50)`);
 
   await query(`
     CREATE TABLE IF NOT EXISTS leads (

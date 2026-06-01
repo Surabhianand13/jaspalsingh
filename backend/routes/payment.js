@@ -8,6 +8,22 @@ const router  = express.Router();
 const { query } = require('../config/db');
 const https   = require('https');
 
+/* ── Coupon catalogue ────────────────────────────────────── */
+const COUPONS = {
+  'FIRST': { discountedPrice: 1, label: 'First-time offer' },
+};
+
+function applyCoupon(coupon, originalPrice) {
+  if (!coupon) return { finalPrice: originalPrice, discount: 0, label: null };
+  const c = COUPONS[coupon.toUpperCase()];
+  if (!c) return null; // invalid
+  return {
+    finalPrice: c.discountedPrice,
+    discount:   originalPrice - c.discountedPrice,
+    label:      c.label,
+  };
+}
+
 /* ── Program catalogue ───────────────────────────────────── */
 const PROGRAMS = {
   'rssb-jen-diploma-test-series': {
@@ -58,10 +74,24 @@ function cashfreeRequest(method, path, body = null) {
   });
 }
 
+/* ── POST /api/payment/validate-coupon ───────────────────── */
+router.post('/validate-coupon', (req, res) => {
+  const { coupon_code, program_slug } = req.body;
+  if (!coupon_code || !program_slug) return res.status(400).json({ error: 'coupon_code and program_slug required.' });
+
+  const program = PROGRAMS[program_slug];
+  if (!program) return res.status(400).json({ error: 'Invalid program.' });
+
+  const result = applyCoupon(coupon_code, program.price);
+  if (!result) return res.status(400).json({ valid: false, error: 'Invalid coupon code.' });
+
+  res.json({ valid: true, final_price: result.finalPrice, discount: result.discount, label: result.label });
+});
+
 /* ── POST /api/payment/create-order ─────────────────────── */
 router.post('/create-order', async (req, res) => {
   try {
-    const { program_slug, name, email, phone } = req.body;
+    const { program_slug, name, email, phone, coupon_code } = req.body;
 
     if (!program_slug || !name || !email || !phone) {
       return res.status(400).json({ error: 'name, email, phone and program_slug are required.' });
@@ -70,6 +100,14 @@ router.post('/create-order', async (req, res) => {
     const program = PROGRAMS[program_slug];
     if (!program) return res.status(400).json({ error: 'Invalid program.' });
 
+    // Apply coupon if provided
+    let finalPrice = program.price;
+    let couponApplied = null;
+    if (coupon_code) {
+      const coup = applyCoupon(coupon_code, program.price);
+      if (coup) { finalPrice = coup.finalPrice; couponApplied = coupon_code.toUpperCase(); }
+    }
+
     // Unique order ID
     const order_id = `JSP-${program_slug.slice(0,6).toUpperCase()}-${Date.now()}`;
 
@@ -77,7 +115,7 @@ router.post('/create-order', async (req, res) => {
 
     const payload = {
       order_id,
-      order_amount:   program.price,
+      order_amount:   finalPrice,
       order_currency: 'INR',
       customer_details: {
         customer_id:    `CUST-${Date.now()}`,
@@ -101,10 +139,10 @@ router.post('/create-order', async (req, res) => {
 
     // Store enrollment record as pending
     await query(
-      `INSERT INTO enrollments (order_id, program_slug, program_name, amount, student_name, student_email, student_phone, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')
+      `INSERT INTO enrollments (order_id, program_slug, program_name, amount, student_name, student_email, student_phone, status, coupon_code)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8)
        ON CONFLICT (order_id) DO NOTHING`,
-      [order_id, program_slug, program.name, program.price, name, email, phone]
+      [order_id, program_slug, program.name, finalPrice, name, email, phone, couponApplied]
     );
 
     res.json({
