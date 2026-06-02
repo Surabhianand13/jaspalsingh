@@ -10,12 +10,17 @@
   var API = 'https://jaspalsingh.onrender.com';
   var INTERVAL = 10000; // 10 seconds
 
-  var noWallPaths = ['/checkout', '/payment-success', '/admin'];
   var path = window.location.pathname;
-  if (noWallPaths.some(function(p){ return path.startsWith(p); })) return;
-
   var token = localStorage.getItem('jaspal_learner_token');
   var wallActive = false;
+
+  /* ── Header auth UI (Login button / avatar) - runs on EVERY page ── */
+  injectHeaderStyles();
+  renderHeaderAuth();
+
+  /* ── Wall logic only below (respects noWallPaths) ── */
+  var noWallPaths = ['/checkout', '/payment-success', '/admin'];
+  if (noWallPaths.some(function(p){ return path.startsWith(p); })) return;
 
   /* Decide whether to run, and in which mode */
   if (!token) {
@@ -135,6 +140,62 @@
       }, INTERVAL);
     }
     tick();
+  }
+
+  /* ── Header auth: Login button (logged out) / avatar (logged in) ── */
+  function injectHeaderStyles() {
+    if (document.getElementById('lwHeaderStyles')) return;
+    var s = document.createElement('style');
+    s.id = 'lwHeaderStyles';
+    s.textContent = `
+      .lw-h-wrap { display:flex; align-items:center; gap:10px; margin-left:14px; }
+      .lw-h-login { display:inline-flex; align-items:center; gap:7px; padding:9px 20px;
+        background:linear-gradient(135deg,#C81240,#9B1230); color:#fff; border-radius:50px;
+        font-family:'Plus Jakarta Sans',sans-serif; font-size:13.5px; font-weight:800;
+        text-decoration:none; box-shadow:0 4px 14px rgba(200,18,64,.28); transition:transform .15s,opacity .15s; white-space:nowrap; }
+      .lw-h-login:hover { transform:translateY(-1px); opacity:.94; color:#fff; }
+      .lw-h-avatar { width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg,#C81240,#9B1230);
+        color:#fff; display:flex; align-items:center; justify-content:center;
+        font-family:'Plus Jakarta Sans',sans-serif; font-size:14px; font-weight:800; text-decoration:none;
+        overflow:hidden; flex-shrink:0; box-shadow:0 2px 10px rgba(200,18,64,.3); transition:transform .15s; cursor:pointer; }
+      .lw-h-avatar:hover { transform:scale(1.06); }
+      .lw-h-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
+      @media (max-width:600px){ .lw-h-login { padding:8px 15px; font-size:12.5px; } .lw-h-wrap { margin-left:8px; } }
+    `;
+    document.head.appendChild(s);
+  }
+
+  function renderHeaderAuth() {
+    // Dedup: don't double-render if learner-auth.js already injected, or we already did
+    if (document.getElementById('learnerHeaderUI') || document.getElementById('lwHeaderAuth')) return;
+
+    var headerRight = document.querySelector('.header-right');
+    var headerInner = document.querySelector('.header-inner');
+    var host = headerRight || headerInner;
+    if (!host) return;
+
+    var user = null;
+    try { user = JSON.parse(localStorage.getItem('jaspal_learner')); } catch(e) {}
+
+    var wrap = document.createElement('div');
+    wrap.className = 'lw-h-wrap';
+    wrap.id = 'lwHeaderAuth';
+
+    if (token && user) {
+      var initials = (user.name || 'U').split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();
+      var inner = user.photo_url ? '<img src="'+user.photo_url+'" alt="" />' : initials;
+      wrap.innerHTML = '<a href="/profile" class="lw-h-avatar" title="'+(user.name||'My Profile')+'">'+inner+'</a>';
+    } else {
+      wrap.innerHTML = '<a href="/profile?tab=login" class="lw-h-login"><i class="fas fa-user"></i> Log In</a>';
+    }
+
+    // Insert before hamburger if present, else append
+    var hamburger = document.getElementById('hamburger');
+    if (headerRight && hamburger && hamburger.parentNode === headerRight) {
+      headerRight.insertBefore(wrap, hamburger);
+    } else {
+      host.appendChild(wrap);
+    }
   }
 
 })();

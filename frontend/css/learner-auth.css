@@ -240,6 +240,17 @@
   transition: transform 0.15s;
 }
 .learner-avatar:hover { transform: scale(1.06); }
+.learner-login-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 20px;
+  background: linear-gradient(135deg, #C81240, #9B1230);
+  color: #fff; border-radius: 50px;
+  font-family: var(--font-heading, 'Plus Jakarta Sans', sans-serif);
+  font-size: 13.5px; font-weight: 800; text-decoration: none;
+  box-shadow: 0 4px 14px rgba(200,18,64,0.28);
+  transition: transform 0.15s, opacity 0.15s; white-space: nowrap;
+}
+.learner-login-btn:hover { transform: translateY(-1px); opacity: 0.94; color: #fff; }
 .learner-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
 .learner-profile-link {
   font-family: var(--font-heading, 'Plus Jakarta Sans', sans-serif);
