@@ -1279,8 +1279,12 @@
   color: #fff;
   white-space: nowrap;
   letter-spacing: .2px;
+  text-decoration: none;
+  transition: color .15s;
 }
-.ticker-item i { color: var(--orange); font-size: 14px; }
+a.ticker-item:hover { color: var(--orange); text-decoration: underline; text-underline-offset: 3px; }
+a.ticker-item:hover i { color: #fff; }
+.ticker-item i { color: var(--orange); font-size: 14px; transition: color .15s; }
 .ticker-dot {
   color: rgba(255,255,255,.35);
   padding: 0 22px;
