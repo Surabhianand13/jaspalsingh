@@ -1345,11 +1345,33 @@ a.ticker-item:hover i { color: #fff; }
   /* Brand wordmark a touch smaller so it never crowds the controls */
   .wordmark { font-size: 18px; }
   .header-avatar { width: 34px; height: 34px; }
+  /* On phones show only "Login" (its page has a Sign Up tab too) so the
+     brand name never gets clipped by two buttons + hamburger. */
+  .lw-btn-signup { display: none !important; }
 
   /* Carousel: hide side arrows (swipe + dots remain), reclaim padding */
   .carousel-prev, .carousel-next, .carousel-arrow { display: none !important; }
-  .carousel-slide-inner { padding: 0 20px !important; }
-  .cs-ctas { width: 100%; gap: 10px; }
+
+  /* Banner: stack with the designed graphic on top (full width, fully
+     visible) and centered text + CTAs below - clean on every phone. */
+  .carousel-slide { height: auto !important; padding: 28px 0 30px !important; }
+  .carousel-slide-inner {
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    padding: 0 18px !important;
+    gap: 20px !important;
+  }
+  .cs-banner-img-wrap {
+    order: -1;                 /* graphic appears first */
+    width: 100% !important;
+    max-width: 480px;
+  }
+  .cs-banner-img { height: auto !important; object-fit: contain !important; }
+  .cs-text { width: 100%; }
+  .cs-badge { margin-left: auto !important; margin-right: auto !important; }
+  .cs-sub { margin-left: auto !important; margin-right: auto !important; }
+  .cs-ctas { width: 100%; gap: 10px; justify-content: center; }
   .cs-cta { flex: 1 1 auto; justify-content: center; padding: 12px 18px; font-size: 14px; }
 
   /* Section padding tighter on phones */
