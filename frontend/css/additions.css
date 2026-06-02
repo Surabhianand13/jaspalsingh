@@ -1323,3 +1323,72 @@ a.ticker-item:hover i { color: #fff; }
 @media (prefers-reduced-motion: reduce) {
   .ticker-track { animation: none; }
 }
+
+/* ============================================================
+   MOBILE POLISH  -  site-wide (90% mobile traffic)
+   Loaded after style.css/home.css so these overrides win.
+   ============================================================ */
+
+/* ── Tablet & below ── */
+@media (max-width: 900px) {
+  /* Declutter header: phone goes to drawer, keep avatar + hamburger */
+  .header-phone { display: none !important; }
+  .header-inner { gap: 10px; }
+  /* Smaller auth controls so they fit next to hamburger */
+  .lw-h-avatar, .learner-avatar { width: 36px; height: 36px; font-size: 13px; }
+  .lw-btn-login, .lw-btn-signup, .learner-login-btn { padding: 7px 14px; font-size: 12.5px; }
+  .lw-h-wrap { gap: 8px; margin-left: 8px; }
+}
+
+/* ── Phones ── */
+@media (max-width: 600px) {
+  /* Brand wordmark a touch smaller so it never crowds the controls */
+  .wordmark { font-size: 18px; }
+  .header-avatar { width: 34px; height: 34px; }
+
+  /* Carousel: hide side arrows (swipe + dots remain), reclaim padding */
+  .carousel-prev, .carousel-next, .carousel-arrow { display: none !important; }
+  .carousel-slide-inner { padding: 0 20px !important; }
+  .cs-ctas { width: 100%; gap: 10px; }
+  .cs-cta { flex: 1 1 auto; justify-content: center; padding: 12px 18px; font-size: 14px; }
+
+  /* Section padding tighter on phones */
+  .section-pad { padding: 48px 0; }
+
+  /* Quick Links / News stack with comfortable spacing */
+  .ql-news-grid { gap: 18px; }
+  .ln-viewport { height: 380px; }
+
+  /* Recognition: 2-up stays, tighten */
+  .recog-grid { gap: 12px; }
+
+  /* Program detail hero: single column already; tighten meta */
+  .hero-meta-row { gap: 14px !important; }
+
+  /* Prevent grid/flex children from forcing the layout wider than the
+     viewport (min-width:auto is the default culprit on mobile). */
+  .detail-layout, .detail-main, .detail-block, .detail-sidebar,
+  .included-list, .included-item, .ii-body, .for-grid,
+  .hero-layout, .ql-news-grid, .ln-card, .ql-card { min-width: 0; }
+
+  /* Schedule table scrolls inside its own block, never expands parent */
+  .schedule-table { display: block; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Forms / inputs: comfortable tap size, never overflow */
+  input, select, textarea, .form-input, .ps-input, .auth-input, .lead-input { font-size: 16px !important; }
+
+  /* Buttons full-width feel but not oversized */
+  .op-card-cta { font-size: 13px; }
+
+  /* WhatsApp float a bit smaller so it doesn't cover content */
+  .whatsapp-float { width: 52px; height: 52px; font-size: 26px; }
+}
+
+/* ── Small phones ── */
+@media (max-width: 380px) {
+  .wordmark { font-size: 16px; }
+  .header-avatar { width: 30px; height: 30px; }
+  .lw-btn-login, .lw-btn-signup { padding: 6px 11px; font-size: 11.5px; }
+  .lw-h-wrap { gap: 6px; }
+  .cs-title { font-size: 21px !important; }
+}
