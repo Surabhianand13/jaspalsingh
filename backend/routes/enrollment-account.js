@@ -40,8 +40,13 @@ router.post('/create-account', async (req, res) => {
     );
 
     if (existing.rows.length) {
-      // Account exists — return a token + user object
+      // Account exists — link ALL their paid orders + return token
       const learner = existing.rows[0];
+      await query(
+        `UPDATE enrollments SET learner_id = $1
+         WHERE learner_id IS NULL AND (student_email = $2 OR student_phone = $3)`,
+        [learner.id, enr.student_email, enr.student_phone]
+      );
       const token = jwt.sign(
         { id: learner.id, email: learner.email, name: learner.name, learner: true },
         process.env.JWT_SECRET, { expiresIn: '30d' }
@@ -64,10 +69,11 @@ router.post('/create-account', async (req, res) => {
 
     const learner = result.rows[0];
 
-    // Link enrollment to learner
+    // Link ALL paid orders for this email/phone to the new learner
     await query(
-      `UPDATE enrollments SET learner_id = $1 WHERE order_id = $2`,
-      [learner.id, order_id]
+      `UPDATE enrollments SET learner_id = $1
+       WHERE learner_id IS NULL AND (student_email = $2 OR student_phone = $3)`,
+      [learner.id, enr.student_email, enr.student_phone]
     );
 
     const token = jwt.sign(
@@ -99,12 +105,26 @@ router.get('/my-enrollments', async (req, res) => {
     try { decoded = jwt.verify(token, process.env.JWT_SECRET); }
     catch(e) { return res.status(401).json({ error: 'Invalid token.' }); }
 
+    // Get the learner's email + phone so we can match purchases that
+    // may not yet be linked via learner_id (repeat purchases, etc.)
+    const lr = await query('SELECT id, email, phone FROM learners WHERE id = $1', [decoded.id]);
+    const learner = lr.rows[0] || { id: decoded.id, email: decoded.email, phone: null };
+
+    // Backfill: link any unlinked paid orders for this learner now
+    await query(
+      `UPDATE enrollments SET learner_id = $1
+       WHERE learner_id IS NULL AND status = 'paid'
+         AND (student_email = $2 OR student_phone = $3)`,
+      [learner.id, learner.email, learner.phone]
+    );
+
     const result = await query(
       `SELECT order_id, program_slug, program_name, amount, status, paid_at, coupon_code
        FROM enrollments
-       WHERE learner_id = $1 AND status = 'paid'
+       WHERE status = 'paid'
+         AND (learner_id = $1 OR student_email = $2 OR student_phone = $3)
        ORDER BY paid_at DESC`,
-      [decoded.id]
+      [learner.id, learner.email, learner.phone]
     );
 
     res.json({ enrollments: result.rows });
