@@ -102,7 +102,7 @@
       + '<div class="lw-benefits">'
       +   '<div class="lw-benefit"><i class="fas fa-file-alt"></i> Free Civil Engineering notes &amp; resources</div>'
       +   '<div class="lw-benefit"><i class="fas fa-bell"></i> Batch opening alerts on WhatsApp</div>'
-      +   '<div class="lw-benefit"><i class="fas fa-graduation-cap"></i> Exam strategy from AIR-04 GATE topper</div>'
+      +   '<div class="lw-benefit"><i class="fas fa-graduation-cap"></i> Exam strategy from the Expert</div>'
       + '</div>'
       + '<a href="/profile" class="lw-btn-primary"><i class="fas fa-user-plus"></i> Create Free Account</a>'
       + '<a href="/profile?tab=login" class="lw-btn-secondary">Already have an account? Log In</a>'
