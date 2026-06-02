@@ -333,6 +333,20 @@
     const slug    = params.get('program');
     const program = PROGRAMS[slug];
 
+    /* ── Tracking: checkout funnel ── */
+    function trk(type, label, meta, beacon) {
+      try {
+        var sid = localStorage.getItem('jsp_sid') || '';
+        var body = JSON.stringify({ type: type, label: label||slug, path: location.pathname, session_id: sid, meta: meta||null });
+        if (beacon && navigator.sendBeacon) { navigator.sendBeacon(API + '/api/events/track', new Blob([body], {type:'application/json'})); return; }
+        fetch(API + '/api/events/track', { method:'POST', headers:{'Content-Type':'application/json'}, body: body, keepalive:true }).catch(function(){});
+      } catch(e){}
+    }
+    var checkoutCompleted = false;
+    if (program) trk('checkout_start', slug);
+    // Track abandonment (exit before launching payment)
+    window.addEventListener('beforeunload', function(){ if (!checkoutCompleted) trk('checkout_exit', slug, null, true); });
+
     let appliedCoupon = null;
     let finalPrice    = program ? program.price : 0;
 
@@ -431,6 +445,7 @@
           return;
         }
 
+        checkoutCompleted = true; // proceeding to payment - don't log as exit
         const cashfree = Cashfree({ mode: 'production' });
         cashfree.checkout({ paymentSessionId: data.payment_session_id, redirectTarget: '_self' });
 

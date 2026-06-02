@@ -239,6 +239,12 @@
 
     async function showSuccess(data) {
       successData = data;
+      // Track successful payment
+      try {
+        var sid = localStorage.getItem('jsp_sid') || '';
+        fetch(API + '/api/events/track', { method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ type:'payment_success', label:data.program_name||order_id, path:location.pathname, session_id:sid, meta:{ order_id:order_id, amount:data.amount } }), keepalive:true }).catch(function(){});
+      } catch(e){}
       document.getElementById('stateLoading').style.display = 'none';
       document.getElementById('stateSuccess').style.display = 'block';
 

@@ -39,4 +39,16 @@ router.post('/capture', async (req, res) => {
   }
 });
 
+/* ── ADMIN: all leads ────────────────────────────────────── */
+const { protect } = require('../middleware/auth');
+router.get('/admin/all', protect, async (req, res, next) => {
+  try {
+    const result = await query(
+      `SELECT id, program_slug, program_name, name, email, phone, created_at
+       FROM leads ORDER BY created_at DESC`
+    );
+    res.json({ leads: result.rows, total: result.rowCount });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;
