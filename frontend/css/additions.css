@@ -1220,6 +1220,31 @@
 
 /* Latest News */
 .ln-body { padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+
+/* Auto-scrolling viewport */
+.ln-viewport {
+  height: 470px;
+  overflow: hidden;
+  position: relative;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 24px, #000 calc(100% - 24px), transparent 100%);
+          mask-image: linear-gradient(to bottom, transparent 0, #000 24px, #000 calc(100% - 24px), transparent 100%);
+}
+.ln-scroll {
+  display: flex;
+  flex-direction: column;
+  animation: lnScrollUp 26s linear infinite;
+}
+.ln-viewport:hover .ln-scroll { animation-play-state: paused; }
+.ln-group { display: flex; flex-direction: column; gap: 14px; padding: 18px; }
+@keyframes lnScrollUp {
+  0%   { transform: translateY(0); }
+  100% { transform: translateY(-50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ln-scroll { animation: none; }
+  .ln-viewport { height: auto; -webkit-mask-image: none; mask-image: none; }
+}
+
 .ln-item {
   position: relative;
   padding: 18px 18px 18px 20px;
