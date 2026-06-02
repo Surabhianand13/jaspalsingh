@@ -151,17 +151,38 @@
       <div id="stateSuccess" style="display:none;">
         <div class="ps-tick"><i class="fas fa-check"></i></div>
         <h1 class="ps-title">Payment Confirmed!</h1>
-        <p class="ps-sub">Your enrollment is confirmed. Now set a password to create your student account.</p>
+        <p class="ps-sub" id="accountSub">Your enrollment is confirmed. Just a few quick details to set up your student account.</p>
         <div class="ps-details" id="successDetails"></div>
 
         <!-- Account creation -->
         <div class="ps-account-box" id="accountBox">
-          <p class="ps-account-label"><i class="fas fa-user-circle"></i> Create Your Student Account</p>
-          <input type="password" id="inp-password" class="ps-input" placeholder="Set a password (min 6 chars)" minlength="6" />
-          <input type="password" id="inp-password2" class="ps-input" placeholder="Confirm password" minlength="6" />
+          <p class="ps-account-label"><i class="fas fa-user-circle"></i> <span id="accountBoxLabel">Complete Your Profile</span></p>
+
+          <!-- Password (only for new accounts) -->
+          <div id="passwordFields">
+            <input type="password" id="inp-password" class="ps-input" placeholder="Set a password (min 6 chars)" minlength="6" />
+            <input type="password" id="inp-password2" class="ps-input" placeholder="Confirm password" minlength="6" />
+          </div>
+
+          <!-- Profile questions (always shown) -->
+          <select id="inp-exam" class="ps-input">
+            <option value="">Target exam you're preparing for</option>
+            <option value="RSSB JEN">RSSB JEN (Rajasthan)</option>
+            <option value="RPSC AE">RPSC AE (Rajasthan)</option>
+            <option value="GATE">GATE Civil Engineering</option>
+            <option value="ESE">UPSC IES / ESE</option>
+            <option value="SSC JE">SSC JE</option>
+            <option value="State AE/JE">State AE / JE (Other)</option>
+            <option value="General">General / Multiple</option>
+          </select>
+          <input type="text" id="inp-city" class="ps-input" placeholder="City (e.g. Jaipur)" />
+          <input type="text" id="inp-college" class="ps-input" placeholder="College (optional)" />
+          <label style="display:block;font-size:12px;color:#9999b0;margin:2px 2px 4px;">Date of Birth</label>
+          <input type="date" id="inp-dob" class="ps-input" />
+
           <div class="ps-account-err" id="accountErr" style="display:none;"></div>
           <button class="ps-wa-btn" id="createAccountBtn" style="background:linear-gradient(135deg,#C81240,#9B1230);box-shadow:0 6px 20px rgba(200,18,64,.35);border:none;cursor:pointer;margin-top:8px;">
-            <i class="fas fa-user-plus"></i> Create Account &amp; Continue
+            <i class="fas fa-user-plus"></i> <span id="createBtnText">Create Account &amp; Continue</span>
           </button>
         </div>
 
@@ -214,8 +235,9 @@
     }
 
     let successData = null;
+    let accountExists = false;
 
-    function showSuccess(data) {
+    async function showSuccess(data) {
       successData = data;
       document.getElementById('stateLoading').style.display = 'none';
       document.getElementById('stateSuccess').style.display = 'block';
@@ -228,35 +250,59 @@
         <div class="ps-detail-row"><span class="ps-dk">Order ID</span><span class="ps-dv" style="font-size:11px;">${data.order_id}</span></div>
         <div class="ps-detail-row"><span class="ps-dk">Status</span><span class="ps-dv green"><i class="fas fa-check-circle"></i> Confirmed</span></div>
       `;
+
+      // Does this buyer already have an account? -> skip password
+      try {
+        const r = await fetch(`${API}/api/enrollment/account-status?order_id=${encodeURIComponent(order_id)}`);
+        const s = await r.json();
+        accountExists = !!s.exists;
+      } catch (e) { accountExists = false; }
+
+      if (accountExists) {
+        document.getElementById('passwordFields').style.display = 'none';
+        document.getElementById('accountSub').textContent =
+          'Your enrollment is confirmed. Welcome back - just confirm a few details below.';
+        document.getElementById('accountBoxLabel').textContent = 'Complete Your Profile';
+        document.getElementById('createBtnText').textContent = 'Save & Continue';
+      }
     }
 
-    // Create account button
+    // Create account / save profile button
     document.getElementById('createAccountBtn').addEventListener('click', async function() {
-      const pw1 = document.getElementById('inp-password').value;
-      const pw2 = document.getElementById('inp-password2').value;
       const err = document.getElementById('accountErr');
       err.style.display = 'none';
 
-      if (pw1.length < 6)  { err.textContent = 'Password must be at least 6 characters.'; err.style.display='block'; return; }
-      if (pw1 !== pw2)     { err.textContent = 'Passwords do not match.'; err.style.display='block'; return; }
+      const payload = {
+        order_id: order_id,
+        target_exam: document.getElementById('inp-exam').value || null,
+        city:        document.getElementById('inp-city').value.trim() || null,
+        college:     document.getElementById('inp-college').value.trim() || null,
+        dob:         document.getElementById('inp-dob').value || null,
+      };
 
-      this.disabled = true; this.textContent = 'Creating account...';
+      if (!accountExists) {
+        const pw1 = document.getElementById('inp-password').value;
+        const pw2 = document.getElementById('inp-password2').value;
+        if (pw1.length < 6) { err.textContent = 'Password must be at least 6 characters.'; err.style.display='block'; return; }
+        if (pw1 !== pw2)    { err.textContent = 'Passwords do not match.'; err.style.display='block'; return; }
+        payload.password = pw1;
+      }
+
+      this.disabled = true; document.getElementById('createBtnText').textContent = 'Please wait...';
 
       try {
         const res  = await fetch(API + '/api/enrollment/create-account', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ order_id, password: pw1 }),
+          body: JSON.stringify(payload),
         });
         const data = await res.json();
 
         if (res.ok && data.success) {
           localStorage.setItem('jaspal_learner_token', data.token);
-          // Store user object so the header profile pill renders site-wide
           var learnerObj = data.learner || { name: (successData && successData.student_name) || 'Student' };
           localStorage.setItem('jaspal_learner', JSON.stringify(learnerObj));
           document.getElementById('accountBox').style.display = 'none';
           document.getElementById('accountDone').style.display = 'block';
-          // Set WA link
           if (successData) {
             const msg = encodeURIComponent(
               `Hi Dr. Jaspal Singh, I have enrolled in "${successData.program_name}". My Order ID is ${order_id}. Please share the batch details.`
@@ -264,14 +310,14 @@
             document.getElementById('waConfirmBtn').href = `https://wa.me/919999999999?text=${msg}`;
           }
         } else {
-          err.textContent = data.error || 'Account creation failed. Please try again.';
+          err.textContent = data.error || 'Could not save. Please try again.';
           err.style.display = 'block';
-          this.disabled = false; this.innerHTML = '<i class="fas fa-user-plus"></i> Create Account & Continue';
+          this.disabled = false; document.getElementById('createBtnText').textContent = accountExists ? 'Save & Continue' : 'Create Account & Continue';
         }
       } catch(e) {
         err.textContent = 'Network error. Try again.';
         err.style.display = 'block';
-        this.disabled = false; this.innerHTML = '<i class="fas fa-user-plus"></i> Create Account & Continue';
+        this.disabled = false; document.getElementById('createBtnText').textContent = accountExists ? 'Save & Continue' : 'Create Account & Continue';
       }
     });
 
