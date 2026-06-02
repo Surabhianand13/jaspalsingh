@@ -164,9 +164,9 @@
             <input type="password" id="inp-password2" class="ps-input" placeholder="Confirm password" minlength="6" />
           </div>
 
-          <!-- Profile questions (always shown) -->
-          <select id="inp-exam" class="ps-input">
-            <option value="">Target exam you're preparing for</option>
+          <!-- Profile questions (always shown, all required) -->
+          <select id="inp-exam" class="ps-input" required>
+            <option value="">Target exam you're preparing for *</option>
             <option value="RSSB JEN">RSSB JEN (Rajasthan)</option>
             <option value="RPSC AE">RPSC AE (Rajasthan)</option>
             <option value="GATE">GATE Civil Engineering</option>
@@ -175,10 +175,10 @@
             <option value="State AE/JE">State AE / JE (Other)</option>
             <option value="General">General / Multiple</option>
           </select>
-          <input type="text" id="inp-city" class="ps-input" placeholder="City (e.g. Jaipur)" />
-          <input type="text" id="inp-college" class="ps-input" placeholder="College (optional)" />
-          <label style="display:block;font-size:12px;color:#9999b0;margin:2px 2px 4px;">Date of Birth</label>
-          <input type="date" id="inp-dob" class="ps-input" />
+          <input type="text" id="inp-city" class="ps-input" placeholder="City (e.g. Jaipur) *" required />
+          <input type="text" id="inp-college" class="ps-input" placeholder="College / University *" required />
+          <label style="display:block;font-size:12px;color:#9999b0;margin:2px 2px 4px;">Date of Birth *</label>
+          <input type="date" id="inp-dob" class="ps-input" required />
 
           <div class="ps-account-err" id="accountErr" style="display:none;"></div>
           <button class="ps-wa-btn" id="createAccountBtn" style="background:linear-gradient(135deg,#C81240,#9B1230);box-shadow:0 6px 20px rgba(200,18,64,.35);border:none;cursor:pointer;margin-top:8px;">
@@ -272,12 +272,22 @@
       const err = document.getElementById('accountErr');
       err.style.display = 'none';
 
+      const examVal    = document.getElementById('inp-exam').value;
+      const cityVal    = document.getElementById('inp-city').value.trim();
+      const collegeVal = document.getElementById('inp-college').value.trim();
+      const dobVal     = document.getElementById('inp-dob').value;
+
+      if (!examVal)    { err.textContent = 'Please select your target exam.'; err.style.display='block'; return; }
+      if (!cityVal)    { err.textContent = 'Please enter your city.'; err.style.display='block'; return; }
+      if (!collegeVal) { err.textContent = 'Please enter your college / university.'; err.style.display='block'; return; }
+      if (!dobVal)     { err.textContent = 'Please enter your date of birth.'; err.style.display='block'; return; }
+
       const payload = {
         order_id: order_id,
-        target_exam: document.getElementById('inp-exam').value || null,
-        city:        document.getElementById('inp-city').value.trim() || null,
-        college:     document.getElementById('inp-college').value.trim() || null,
-        dob:         document.getElementById('inp-dob').value || null,
+        target_exam: examVal,
+        city:        cityVal,
+        college:     collegeVal,
+        dob:         dobVal,
       };
 
       if (!accountExists) {
