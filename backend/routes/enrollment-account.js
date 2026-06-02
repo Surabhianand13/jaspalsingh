@@ -35,15 +35,22 @@ router.post('/create-account', async (req, res) => {
 
     // Check if account already exists
     const existing = await query(
-      `SELECT id FROM learners WHERE email = $1 OR phone = $2`,
+      `SELECT id, name, email FROM learners WHERE email = $1 OR phone = $2`,
       [enr.student_email, enr.student_phone]
     );
 
     if (existing.rows.length) {
-      // Account exists — just return a token
+      // Account exists — return a token + user object
       const learner = existing.rows[0];
-      const token = jwt.sign({ id: learner.id, role: 'learner' }, process.env.JWT_SECRET, { expiresIn: '30d' });
-      return res.json({ success: true, token, message: 'Account already exists. Logged in.' });
+      const token = jwt.sign(
+        { id: learner.id, email: learner.email, name: learner.name, learner: true },
+        process.env.JWT_SECRET, { expiresIn: '30d' }
+      );
+      return res.json({
+        success: true, token,
+        learner: { id: learner.id, name: learner.name, email: learner.email },
+        message: 'Account already exists. Logged in.'
+      });
     }
 
     // Create account
@@ -63,7 +70,10 @@ router.post('/create-account', async (req, res) => {
       [learner.id, order_id]
     );
 
-    const token = jwt.sign({ id: learner.id, role: 'learner' }, process.env.JWT_SECRET, { expiresIn: '30d' });
+    const token = jwt.sign(
+      { id: learner.id, email: learner.email, name: learner.name, learner: true },
+      process.env.JWT_SECRET, { expiresIn: '30d' }
+    );
 
     res.json({
       success: true,

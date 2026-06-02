@@ -17,7 +17,8 @@ const protectLearner = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    if (!decoded.learner) {
+    // Accept either { learner: true } (login) or { role: 'learner' } (post-payment account)
+    if (!decoded.learner && decoded.role !== 'learner') {
       return res.status(403).json({ error: 'Invalid token type.' });
     }
     req.learner = decoded;
