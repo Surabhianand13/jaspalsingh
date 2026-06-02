@@ -100,7 +100,9 @@
       box-shadow: 0 4px 14px rgba(200,18,64,.28);
     }
     .prog-filter-btn i { font-size: 12px; }
-    .prog-card.hidden { display: none; }
+    .prog-card.hidden, .op-card.hidden { display: none; }
+    /* Ensure op-cards fill grid cells on this page (not carousel width) */
+    .progs-grid .op-card { flex: 1 1 auto; }
 
     .progs-grid {
       display: grid;
@@ -443,141 +445,134 @@
         <div class="progs-grid">
 
           <!-- 1. RSSB JEN Diploma Test Series -->
-          <article class="prog-card" data-cat="test-series">
-            <div class="prog-thumb th-blue">
-              <span class="prog-thumb-type-label">Offline Test Series</span>
-              <i class="fas fa-clipboard-list prog-thumb-icon"></i>
-              <span class="prog-thumb-status"><span class="status-dot sd-open"></span>Enrolling Now</span>
+          <article class="op-card" data-cat="test-series">
+            <div class="op-thumb" style="background:linear-gradient(145deg,#0369A1,#0284C7)">
+              <span class="op-thumb-exam">RSSB JEN 2026</span>
+              <i class="fas fa-clipboard-list op-thumb-icon"></i>
+              <span class="op-thumb-label">Offline Test Series</span>
+              <span class="op-thumb-seats"><span class="op-seat-dot seat-ok"></span>Enrolling Now</span>
             </div>
-            <div class="prog-seats-bar"><div class="prog-seats-fill sf-blue" style="width:40%;"></div></div>
-            <div class="prog-card-inner">
-              <div class="prog-card-meta-row">
-                <span class="prog-badge pb-offline">Offline &middot; Jaipur</span>
-                <span class="prog-badge pb-live">Live</span>
+            <div class="op-card-content">
+              <span class="op-type-label">Test Series &middot; Diploma (Civil)</span>
+              <h3 class="op-title">RSSB JEN 2026<br>Civil Diploma</h3>
+              <ul class="op-features">
+                <li><span class="op-fi op-fi-blue"><i class="fas fa-file-alt"></i></span>Subject-wise Mock Tests</li>
+                <li><span class="op-fi op-fi-blue"><i class="fas fa-tasks"></i></span>Full-length Mock Papers</li>
+                <li><span class="op-fi op-fi-blue"><i class="fas fa-search-plus"></i></span>Expert Review After Each Test</li>
+                <li><span class="op-fi op-fi-blue"><i class="fas fa-chart-bar"></i></span>Performance Analysis Report</li>
+              </ul>
+              <div class="op-price-divider"></div>
+              <div class="op-price-row">
+                <span class="op-price-offer">₹2,999</span>
+                <span class="op-price-mrp">₹4,999</span>
+                <span class="op-price-save">Save 40%</span>
               </div>
-              <h2 class="prog-card-title">RSSB JEN 2026 &mdash; Civil Diploma<br>Offline Test Series</h2>
-              <p class="prog-card-desc">Structured offline mock test series designed for Diploma-level Civil Engineering aspirants appearing in RSSB JEN 2026. Subject-wise and full-length papers with detailed review sessions.</p>
-              <div class="prog-card-details">
-                <div class="pcd-item"><span class="pcd-label">Exam</span><span class="pcd-val">RSSB JEN 2026</span></div>
-                <div class="pcd-item"><span class="pcd-label">Level</span><span class="pcd-val">Diploma (Civil)</span></div>
-                <div class="pcd-item"><span class="pcd-label">Format</span><span class="pcd-val">Offline Test Series</span></div>
-                <div class="pcd-item"><span class="pcd-label">Location</span><span class="pcd-val">Jaipur, Raj.</span></div>
-              </div>
             </div>
-            <div class="prog-card-footer">
-              <span class="prog-card-footer-label">Test Series</span>
-              <a href="/programs/rssb-jen-diploma-test-series/" class="prog-view-btn">View Details <i class="fas fa-arrow-right"></i></a>
-            </div>
+            <a href="/programs/rssb-jen-diploma-test-series/" class="op-card-cta">View Full Details <i class="fas fa-arrow-right"></i></a>
           </article>
 
           <!-- 2. RSSB JEN Degree Test Series -->
-          <article class="prog-card" data-cat="test-series">
-            <div class="prog-thumb th-teal">
-              <span class="prog-thumb-type-label">Offline Test Series</span>
-              <i class="fas fa-clipboard-check prog-thumb-icon"></i>
-              <span class="prog-thumb-status"><span class="status-dot sd-open"></span>Enrolling Now</span>
+          <article class="op-card" data-cat="test-series">
+            <div class="op-thumb" style="background:linear-gradient(145deg,#0F766E,#0D9488)">
+              <span class="op-thumb-exam">RSSB JEN 2026&ndash;27</span>
+              <i class="fas fa-clipboard-check op-thumb-icon"></i>
+              <span class="op-thumb-label">Offline Test Series</span>
+              <span class="op-thumb-seats"><span class="op-seat-dot seat-ok"></span>Enrolling Now</span>
             </div>
-            <div class="prog-seats-bar"><div class="prog-seats-fill sf-teal" style="width:35%;"></div></div>
-            <div class="prog-card-inner">
-              <div class="prog-card-meta-row">
-                <span class="prog-badge pb-offline">Offline &middot; Jaipur</span>
-                <span class="prog-badge pb-live">Live</span>
+            <div class="op-card-content">
+              <span class="op-type-label">Test Series &middot; Degree (Civil)</span>
+              <h3 class="op-title">RSSB JEN 2026&ndash;27<br>Civil Degree</h3>
+              <ul class="op-features">
+                <li><span class="op-fi op-fi-teal"><i class="fas fa-file-alt"></i></span>Subject-wise Mock Tests</li>
+                <li><span class="op-fi op-fi-teal"><i class="fas fa-tasks"></i></span>Full-length Mock Papers</li>
+                <li><span class="op-fi op-fi-teal"><i class="fas fa-search-plus"></i></span>Post-test Expert Review</li>
+                <li><span class="op-fi op-fi-teal"><i class="fas fa-chart-line"></i></span>Score Tracking &amp; Analysis</li>
+              </ul>
+              <div class="op-price-divider"></div>
+              <div class="op-price-row">
+                <span class="op-price-offer">₹2,999</span>
+                <span class="op-price-mrp">₹4,999</span>
+                <span class="op-price-save">Save 40%</span>
               </div>
-              <h2 class="prog-card-title">RSSB JEN 2026&ndash;27 &mdash; Civil Degree<br>Offline Test Series</h2>
-              <p class="prog-card-desc">Comprehensive offline mock test series for Degree-level Civil Engineering aspirants targeting RSSB JEN 2026&ndash;27. Covers full technical syllabus with performance analysis after each test.</p>
-              <div class="prog-card-details">
-                <div class="pcd-item"><span class="pcd-label">Exam</span><span class="pcd-val">RSSB JEN 2026&ndash;27</span></div>
-                <div class="pcd-item"><span class="pcd-label">Level</span><span class="pcd-val">Degree (Civil)</span></div>
-                <div class="pcd-item"><span class="pcd-label">Format</span><span class="pcd-val">Offline Test Series</span></div>
-                <div class="pcd-item"><span class="pcd-label">Location</span><span class="pcd-val">Jaipur, Raj.</span></div>
-              </div>
             </div>
-            <div class="prog-card-footer">
-              <span class="prog-card-footer-label">Test Series</span>
-              <a href="/programs/rssb-jen-degree-test-series/" class="prog-view-btn">View Details <i class="fas fa-arrow-right"></i></a>
-            </div>
+            <a href="/programs/rssb-jen-degree-test-series/" class="op-card-cta">View Full Details <i class="fas fa-arrow-right"></i></a>
           </article>
 
           <!-- 3. RPSC AE Interview Guidance -->
-          <article class="prog-card" data-cat="interview">
-            <div class="prog-thumb th-purple">
-              <span class="prog-thumb-type-label">Interview Guidance</span>
-              <i class="fas fa-user-tie prog-thumb-icon"></i>
-              <span class="prog-thumb-status"><span class="status-dot sd-open"></span>Enrolling Now</span>
+          <article class="op-card" data-cat="interview">
+            <div class="op-thumb" style="background:linear-gradient(145deg,#6D28D9,#7C3AED)">
+              <span class="op-thumb-exam">RPSC AE 2024</span>
+              <i class="fas fa-user-tie op-thumb-icon"></i>
+              <span class="op-thumb-label">Interview Guidance</span>
+              <span class="op-thumb-seats"><span class="op-seat-dot seat-warn"></span>High Demand</span>
             </div>
-            <div class="prog-seats-bar"><div class="prog-seats-fill sf-purple" style="width:60%;"></div></div>
-            <div class="prog-card-inner">
-              <div class="prog-card-meta-row">
-                <span class="prog-badge pb-offline">Offline &middot; Jaipur</span>
-                <span class="prog-badge pb-new">High Demand</span>
+            <div class="op-card-content">
+              <span class="op-type-label">Interview Guidance Programme</span>
+              <h3 class="op-title">RPSC AE 2024<br>Interview Guidance</h3>
+              <ul class="op-features">
+                <li><span class="op-fi op-fi-purple"><i class="fas fa-comments"></i></span>Mock Board Panel Sessions</li>
+                <li><span class="op-fi op-fi-purple"><i class="fas fa-chalkboard-teacher"></i></span>Technical Interview Prep</li>
+                <li><span class="op-fi op-fi-purple"><i class="fas fa-user-graduate"></i></span>Personality &amp; Presentation</li>
+                <li><span class="op-fi op-fi-purple"><i class="fas fa-map-marked-alt"></i></span>Rajasthan GK &amp; Current Affairs</li>
+              </ul>
+              <div class="op-price-divider"></div>
+              <div class="op-price-row">
+                <span class="op-price-offer">₹4,999</span>
+                <span class="op-price-mrp">₹8,999</span>
+                <span class="op-price-save">Save 44%</span>
               </div>
-              <h2 class="prog-card-title">RPSC AE 2024<br>Interview Guidance Programme</h2>
-              <p class="prog-card-desc">Focused interview preparation programme for candidates who have cleared the RPSC AE 2024 written exam. Covers technical interview rounds, board simulation and personality assessment guidance.</p>
-              <div class="prog-card-details">
-                <div class="pcd-item"><span class="pcd-label">Exam</span><span class="pcd-val">RPSC AE 2024</span></div>
-                <div class="pcd-item"><span class="pcd-label">Stage</span><span class="pcd-val">Interview / Viva</span></div>
-                <div class="pcd-item"><span class="pcd-label">Format</span><span class="pcd-val">Offline Guidance</span></div>
-                <div class="pcd-item"><span class="pcd-label">Location</span><span class="pcd-val">Jaipur, Raj.</span></div>
-              </div>
             </div>
-            <div class="prog-card-footer">
-              <span class="prog-card-footer-label">Interview Programme</span>
-              <a href="/programs/rpsc-ae-interview/" class="prog-view-btn">View Details <i class="fas fa-arrow-right"></i></a>
-            </div>
+            <a href="/programs/rpsc-ae-interview/" class="op-card-cta">View Full Details <i class="fas fa-arrow-right"></i></a>
           </article>
 
           <!-- 4. RSSB JEN Crash Course -->
-          <article class="prog-card" data-cat="course">
-            <div class="prog-thumb th-orange">
-              <span class="prog-thumb-type-label">Offline Crash Course</span>
-              <i class="fas fa-bolt prog-thumb-icon"></i>
-              <span class="prog-thumb-status"><span class="status-dot sd-soon"></span>Batch Starting Soon</span>
+          <article class="op-card" data-cat="course">
+            <div class="op-thumb" style="background:linear-gradient(145deg,#C2410C,#EA580C)">
+              <span class="op-thumb-exam">RSSB JEN 2026&ndash;27</span>
+              <i class="fas fa-bolt op-thumb-icon"></i>
+              <span class="op-thumb-label">Offline Crash Course</span>
+              <span class="op-thumb-seats"><span class="op-seat-dot seat-soon"></span>Batch Starting Soon</span>
             </div>
-            <div class="prog-card-inner">
-              <div class="prog-card-meta-row">
-                <span class="prog-badge pb-offline">Offline &middot; Jaipur</span>
-                <span class="prog-badge pb-soon">Batch</span>
+            <div class="op-card-content">
+              <span class="op-type-label">Crash Course &middot; Offline Batch</span>
+              <h3 class="op-title">RSSB JEN 2026&ndash;27<br>Offline Crash Course</h3>
+              <ul class="op-features">
+                <li><span class="op-fi op-fi-orange"><i class="fas fa-layer-group"></i></span>Complete Syllabus Coverage</li>
+                <li><span class="op-fi op-fi-orange"><i class="fas fa-question-circle"></i></span>Daily Doubt Sessions</li>
+                <li><span class="op-fi op-fi-orange"><i class="fas fa-tasks"></i></span>In-Batch Mock Tests</li>
+                <li><span class="op-fi op-fi-orange"><i class="fas fa-file-alt"></i></span>Revision Notes &amp; Formula Sheets</li>
+              </ul>
+              <div class="op-price-divider"></div>
+              <div class="op-price-row">
+                <span class="op-price-offer" style="font-size:16px;color:var(--orange);">Launching Soon</span>
               </div>
-              <h2 class="prog-card-title">RSSB JEN 2026&ndash;27<br>Offline Crash Course</h2>
-              <p class="prog-card-desc">Intensive offline crash course batch for RSSB JEN 2026&ndash;27 covering the complete Civil Engineering syllabus at an accelerated pace. Designed for aspirants who need focused, time-efficient preparation.</p>
-              <div class="prog-card-details">
-                <div class="pcd-item"><span class="pcd-label">Exam</span><span class="pcd-val">RSSB JEN 2026&ndash;27</span></div>
-                <div class="pcd-item"><span class="pcd-label">Type</span><span class="pcd-val">Crash Course (Batch)</span></div>
-                <div class="pcd-item"><span class="pcd-label">Format</span><span class="pcd-val">Offline Classroom</span></div>
-                <div class="pcd-item"><span class="pcd-label">Location</span><span class="pcd-val">Jaipur, Raj.</span></div>
-              </div>
             </div>
-            <div class="prog-card-footer">
-              <span class="prog-card-footer-label">Crash Course</span>
-              <a href="/programs/rssb-jen-crash-course/" class="prog-view-btn">View Details <i class="fas fa-arrow-right"></i></a>
-            </div>
+            <a href="/programs/rssb-jen-crash-course/" class="op-card-cta">View Full Details <i class="fas fa-arrow-right"></i></a>
           </article>
 
           <!-- 5. GATE / ESE Foundation Course -->
-          <article class="prog-card">
-            <div class="prog-thumb th-green">
-              <span class="prog-thumb-type-label">Offline Foundation Course</span>
-              <i class="fas fa-graduation-cap prog-thumb-icon"></i>
-              <span class="prog-thumb-status"><span class="status-dot sd-soon"></span>Admissions Open</span>
+          <article class="op-card" data-cat="course">
+            <div class="op-thumb" style="background:linear-gradient(145deg,#15803D,#16A34A)">
+              <span class="op-thumb-exam">GATE / ESE 2028</span>
+              <i class="fas fa-graduation-cap op-thumb-icon"></i>
+              <span class="op-thumb-label">Foundation Course</span>
+              <span class="op-thumb-seats"><span class="op-seat-dot seat-ok"></span>Admissions Open</span>
             </div>
-            <div class="prog-card-inner">
-              <div class="prog-card-meta-row">
-                <span class="prog-badge pb-offline">Offline &middot; Jaipur</span>
-                <span class="prog-badge pb-new">New</span>
+            <div class="op-card-content">
+              <span class="op-type-label">Foundation Course &middot; Degree (Civil)</span>
+              <h3 class="op-title">GATE / ESE 2028<br>Offline Foundation</h3>
+              <ul class="op-features">
+                <li><span class="op-fi op-fi-green"><i class="fas fa-layer-group"></i></span>12-Month Structured Course</li>
+                <li><span class="op-fi op-fi-green"><i class="fas fa-tasks"></i></span>Weekly Tests &amp; Subject Assessments</li>
+                <li><span class="op-fi op-fi-green"><i class="fas fa-question-circle"></i></span>Dedicated Doubt Sessions</li>
+                <li><span class="op-fi op-fi-green"><i class="fas fa-clipboard-list"></i></span>GATE &amp; ESE Full Mock Tests</li>
+              </ul>
+              <div class="op-price-divider"></div>
+              <div class="op-price-row">
+                <span class="op-price-offer" style="font-size:16px;color:var(--green);">Launching Soon</span>
               </div>
-              <h2 class="prog-card-title">GATE / ESE 2028<br>Offline Foundation Course</h2>
-              <p class="prog-card-desc">Long-duration offline foundation course for Civil Engineering graduates targeting GATE 2028 and UPSC ESE 2028. Builds conceptual depth, problem-solving speed and exam temperament from first principles.</p>
-              <div class="prog-card-details">
-                <div class="pcd-item"><span class="pcd-label">Exam</span><span class="pcd-val">GATE / ESE 2028</span></div>
-                <div class="pcd-item"><span class="pcd-label">Level</span><span class="pcd-val">Degree (Civil)</span></div>
-                <div class="pcd-item"><span class="pcd-label">Format</span><span class="pcd-val">Offline Classroom</span></div>
-                <div class="pcd-item"><span class="pcd-label">Location</span><span class="pcd-val">Jaipur, Raj.</span></div>
-              </div>
             </div>
-            <div class="prog-card-footer">
-              <span class="prog-card-footer-label">Foundation Course</span>
-              <a href="/programs/gate-ese-foundation/" class="prog-view-btn">View Details <i class="fas fa-arrow-right"></i></a>
-            </div>
+            <a href="/programs/gate-ese-foundation/" class="op-card-cta">View Full Details <i class="fas fa-arrow-right"></i></a>
           </article>
 
         </div>
@@ -669,7 +664,7 @@
         document.querySelectorAll('.prog-filter-btn').forEach(function(b) { b.classList.remove('active'); });
         btn.classList.add('active');
         var filter = btn.dataset.filter;
-        document.querySelectorAll('.prog-card').forEach(function(card) {
+        document.querySelectorAll('.op-card').forEach(function(card) {
           if (filter === 'all' || card.dataset.cat === filter) {
             card.classList.remove('hidden');
           } else {
