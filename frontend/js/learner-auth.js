@@ -349,8 +349,16 @@
   }
 
   /* ── Header learner pill ────────────────────────────────── */
+  /* Header auth UI is now owned entirely by login-wall.js (single
+     source of truth across all pages). This is a no-op to avoid a
+     conflicting/duplicate header element. */
 
   function updateHeaderUI() {
+    return;
+  }
+
+  /* eslint-disable no-unreachable */
+  function _legacyUpdateHeaderUI() {
     var existing = document.getElementById('learnerHeaderUI');
     if (existing) existing.remove();
     // Remove login-wall's header element to avoid duplicates
