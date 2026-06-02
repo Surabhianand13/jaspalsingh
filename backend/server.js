@@ -80,6 +80,9 @@ app.use('/api/upload',       require('./routes/upload'));
 app.use('/api/payment',      require('./routes/payment'));
 app.use('/api/leads',        require('./routes/leads'));
 app.use('/api/enrollment',   require('./routes/enrollment-account'));
+app.use('/api/events',       require('./routes/events'));
+app.use('/api/programs',     require('./routes/programs'));
+app.use('/api/banners',      require('./routes/banners'));
 
 /* ── Health Check ────────────────────────────────────────── */
 
@@ -165,7 +168,83 @@ async function migrate() {
     )
   `);
 
-  console.log('✅ Migration: enrollments + leads tables ensured');
+  /* ── Event tracking (captures every interaction) ── */
+  await query(`
+    CREATE TABLE IF NOT EXISTS events (
+      id          SERIAL PRIMARY KEY,
+      type        VARCHAR(60)  NOT NULL,   -- page_view, whatsapp_click, call_click, enquiry_click, program_view, checkout_start, checkout_exit, payment_success, signup, etc.
+      label       VARCHAR(200),            -- e.g. program slug, button location
+      path        VARCHAR(300),            -- page path
+      session_id  VARCHAR(80),             -- anonymous browser session
+      learner_id  INTEGER,                 -- if logged in
+      meta        JSONB,                   -- any extra payload
+      created_at  TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    )
+  `);
+  await query(`CREATE INDEX IF NOT EXISTS idx_events_type ON events(type)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_events_created ON events(created_at DESC)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_events_session ON events(session_id)`);
+
+  /* ── Programs (DB-driven so admin can toggle live/coming-soon) ── */
+  await query(`
+    CREATE TABLE IF NOT EXISTS programs (
+      id            SERIAL PRIMARY KEY,
+      slug          VARCHAR(120) UNIQUE NOT NULL,
+      title         VARCHAR(300) NOT NULL,
+      category      VARCHAR(60)  NOT NULL DEFAULT 'test-series',  -- test-series | interview | course
+      exam          VARCHAR(120),
+      level         VARCHAR(120),
+      status        VARCHAR(30)  NOT NULL DEFAULT 'enrolling',    -- enrolling | coming_soon | closed
+      price         INTEGER,
+      mrp           INTEGER,
+      thumbnail_url VARCHAR(1000),
+      accent        VARCHAR(40),                                  -- gradient/colour key
+      tags          JSONB        DEFAULT '[]'::jsonb,
+      short_desc    TEXT,
+      detail_url    VARCHAR(300),
+      is_visible    BOOLEAN      NOT NULL DEFAULT TRUE,
+      sort_order    INTEGER      NOT NULL DEFAULT 0,
+      created_at    TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at    TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    )
+  `);
+  await query(`CREATE INDEX IF NOT EXISTS idx_programs_visible ON programs(is_visible)`);
+
+  /* ── Banners / promotional images ── */
+  await query(`
+    CREATE TABLE IF NOT EXISTS banners (
+      id            SERIAL PRIMARY KEY,
+      title         VARCHAR(200),
+      image_url     VARCHAR(1000) NOT NULL,
+      link_url      VARCHAR(300),
+      placement     VARCHAR(40) NOT NULL DEFAULT 'home_carousel', -- home_carousel | promo_strip | programs_banner
+      is_visible    BOOLEAN     NOT NULL DEFAULT TRUE,
+      sort_order    INTEGER     NOT NULL DEFAULT 0,
+      created_at    TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    )
+  `);
+
+  /* ── Seed programs once (only if table is empty) ── */
+  const pCount = await query(`SELECT COUNT(*)::int AS n FROM programs`);
+  if (pCount.rows[0].n === 0) {
+    const seed = [
+      ['rssb-jen-diploma-test-series','RSSB JEN 2026 - Civil Diploma Offline Test Series','test-series','RSSB JEN 2026','Diploma (Civil)','enrolling',2999,4999,'blue',1],
+      ['rssb-jen-degree-test-series','RSSB JEN 2026-27 - Civil Degree Offline Test Series','test-series','RSSB JEN 2026-27','Degree (Civil)','enrolling',2999,4999,'teal',2],
+      ['rpsc-ae-interview','RPSC AE 2024 - Interview Guidance Programme','interview','RPSC AE 2024','Interview / Viva','enrolling',4999,8999,'purple',3],
+      ['rssb-jen-crash-course','RSSB JEN 2026-27 - Offline Crash Course','course','RSSB JEN 2026-27','Crash Course','coming_soon',null,null,'orange',4],
+      ['gate-ese-foundation','GATE / ESE 2028 - Offline Foundation Course','course','GATE / ESE 2028','Degree (Civil)','coming_soon',null,null,'green',5],
+    ];
+    for (const p of seed) {
+      await query(
+        `INSERT INTO programs (slug,title,category,exam,level,status,price,mrp,accent,sort_order,detail_url,is_visible)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,TRUE) ON CONFLICT (slug) DO NOTHING`,
+        [p[0],p[1],p[2],p[3],p[4],p[5],p[6],p[7],p[8],p[9],'/programs/'+p[0]+'/']
+      );
+    }
+    console.log('✅ Seeded 5 programs');
+  }
+
+  console.log('✅ Migration: enrollments, leads, events, programs, banners ensured');
 }
 
 migrate()

@@ -1544,3 +1544,52 @@ ul, ol { list-style: none; }
   .stat-card-value { font-size: 24px; }
   .admin-content { padding: 12px 12px; }
 }
+
+/* ============================================================
+   BUSINESS DASHBOARD COMPONENTS (programs, banners, analytics)
+   ============================================================ */
+.admin-stat-row { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 20px; }
+.admin-stat-card {
+  flex: 1 1 140px; background: #fff; border: 1.5px solid rgba(26,26,46,.08);
+  border-radius: 12px; padding: 16px 18px; min-width: 120px;
+}
+.admin-stat-val { font-size: 24px; font-weight: 800; color: #1A1A2E; line-height: 1.1; }
+.admin-stat-lbl { font-size: 12px; color: #6b6b8a; margin-top: 4px; font-weight: 600; }
+
+.admin-badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+.admin-badge--green  { background: rgba(22,163,74,.12);  color: #15803d; }
+.admin-badge--orange { background: rgba(255,107,53,.14); color: #c2410c; }
+.admin-badge--grey   { background: rgba(26,26,46,.08);   color: #6b6b8a; }
+
+.admin-switch { position: relative; display: inline-block; width: 42px; height: 24px; cursor: pointer; }
+.admin-switch input { opacity: 0; width: 0; height: 0; }
+.admin-switch span {
+  position: absolute; inset: 0; background: #ccc; border-radius: 24px; transition: .2s;
+}
+.admin-switch span::before {
+  content: ''; position: absolute; height: 18px; width: 18px; left: 3px; top: 3px;
+  background: #fff; border-radius: 50%; transition: .2s;
+}
+.admin-switch input:checked + span { background: #16a34a; }
+.admin-switch input:checked + span::before { transform: translateX(18px); }
+
+.admin-field { display: block; margin-bottom: 12px; }
+.admin-field span { display: block; font-size: 12px; font-weight: 700; color: #1A1A2E; margin-bottom: 5px; }
+.admin-field .admin-input { width: 100%; box-sizing: border-box; }
+
+.btn-sm { padding: 6px 12px !important; font-size: 12px !important; }
+.btn-ghost { background: #fff !important; color: #C81240 !important; border: 1.5px solid rgba(200,18,64,.3) !important; box-shadow: none !important; }
+.btn-ghost:hover { background: rgba(200,18,64,.06) !important; }
+
+.admin-modal-overlay {
+  position: fixed; inset: 0; z-index: 9999; background: rgba(10,10,20,.5);
+  display: flex; align-items: flex-start; justify-content: center; padding: 40px 16px; overflow-y: auto;
+}
+.admin-modal {
+  background: #fff; border-radius: 16px; max-width: 520px; width: 100%;
+  box-shadow: 0 24px 64px rgba(0,0,0,.25);
+}
+.admin-modal-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 22px; border-bottom: 1px solid rgba(26,26,46,.08); }
+.admin-modal-head h3 { margin: 0; font-size: 17px; font-weight: 800; color: #1A1A2E; }
+.admin-modal-close { background: none; border: none; font-size: 26px; line-height: 1; color: #9999b0; cursor: pointer; }
+.admin-modal-body { padding: 22px; }

@@ -170,4 +170,26 @@ router.get('/my-enrollments', async (req, res) => {
   }
 });
 
+/* ── ADMIN: all enrollments + revenue summary ────────────── */
+const { protect } = require('../middleware/auth');
+router.get('/admin/all', protect, async (req, res, next) => {
+  try {
+    const status = req.query.status; // optional filter: paid | pending
+    const params = [];
+    let where = '';
+    if (status) { params.push(status); where = `WHERE status = $${params.length}`; }
+    const rows = await query(
+      `SELECT id, order_id, program_slug, program_name, amount, student_name,
+              student_email, student_phone, status, coupon_code, paid_at, created_at
+       FROM enrollments ${where} ORDER BY created_at DESC`, params);
+    const summary = await query(
+      `SELECT
+         COUNT(*) FILTER (WHERE status='paid')::int    AS paid_count,
+         COUNT(*) FILTER (WHERE status='pending')::int AS pending_count,
+         COALESCE(SUM(amount) FILTER (WHERE status='paid'),0)::int AS revenue
+       FROM enrollments`);
+    res.json({ enrollments: rows.rows, total: rows.rowCount, summary: summary.rows[0] });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;

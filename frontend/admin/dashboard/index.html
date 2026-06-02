@@ -76,6 +76,35 @@
       </div>
 
       <div class="admin-nav-section" style="margin-top:8px;">
+        <span class="admin-nav-label">Business</span>
+
+        <button class="admin-nav-link" data-section="programs">
+          <i class="fas fa-layer-group" aria-hidden="true"></i>
+          Programs
+        </button>
+
+        <button class="admin-nav-link" data-section="enrollments">
+          <i class="fas fa-indian-rupee-sign" aria-hidden="true"></i>
+          Enrollments
+        </button>
+
+        <button class="admin-nav-link" data-section="programleads">
+          <i class="fas fa-hand-pointer" aria-hidden="true"></i>
+          Interest / Leads
+        </button>
+
+        <button class="admin-nav-link" data-section="banners">
+          <i class="fas fa-image" aria-hidden="true"></i>
+          Banners
+        </button>
+
+        <button class="admin-nav-link" data-section="analytics">
+          <i class="fas fa-chart-line" aria-hidden="true"></i>
+          Analytics
+        </button>
+      </div>
+
+      <div class="admin-nav-section" style="margin-top:8px;">
         <span class="admin-nav-label">Community</span>
 
         <button class="admin-nav-link" data-section="messages" id="navMessages">
@@ -448,8 +477,80 @@
 
       </section><!-- /#section-learners -->
 
+      <!-- ── PROGRAMS ── -->
+      <section class="admin-section" id="section-programs" aria-label="Programs management">
+        <div class="section-header">
+          <h2 class="section-title">Programs</h2>
+          <div class="section-actions">
+            <button class="btn" id="btnNewProgram"><i class="fas fa-plus"></i> New Program</button>
+          </div>
+        </div>
+        <p style="color:#6b6b8a;font-size:14px;margin-bottom:16px;">Toggle visibility, change status (Enrolling / Coming Soon / Closed), update price, tags and thumbnails. Changes reflect on the live site.</p>
+        <div id="programsBody"><p class="admin-empty">Loading…</p></div>
+      </section>
+
+      <!-- ── ENROLLMENTS ── -->
+      <section class="admin-section" id="section-enrollments" aria-label="Enrollments">
+        <div class="section-header">
+          <h2 class="section-title">Enrollments</h2>
+          <div class="section-actions">
+            <select id="enrollFilter" class="admin-input"><option value="">All</option><option value="paid">Paid</option><option value="pending">Pending</option></select>
+          </div>
+        </div>
+        <div id="enrollSummary" class="admin-stat-row"></div>
+        <div id="enrollmentsBody"><p class="admin-empty">Loading…</p></div>
+      </section>
+
+      <!-- ── INTEREST / LEADS ── -->
+      <section class="admin-section" id="section-programleads" aria-label="Program interest leads">
+        <div class="section-header">
+          <h2 class="section-title">Interest / Leads</h2>
+        </div>
+        <p style="color:#6b6b8a;font-size:14px;margin-bottom:16px;">Everyone who registered interest in a Coming Soon program.</p>
+        <div id="programLeadsBody"><p class="admin-empty">Loading…</p></div>
+      </section>
+
+      <!-- ── BANNERS ── -->
+      <section class="admin-section" id="section-banners" aria-label="Banners management">
+        <div class="section-header">
+          <h2 class="section-title">Banners &amp; Promo Images</h2>
+          <div class="section-actions">
+            <button class="btn" id="btnNewBanner"><i class="fas fa-plus"></i> New Banner</button>
+          </div>
+        </div>
+        <p style="color:#6b6b8a;font-size:14px;margin-bottom:16px;">Manage carousel banners and promotional images. Set placement, order and visibility.</p>
+        <div id="bannersBody"><p class="admin-empty">Loading…</p></div>
+      </section>
+
+      <!-- ── ANALYTICS ── -->
+      <section class="admin-section" id="section-analytics" aria-label="Analytics">
+        <div class="section-header">
+          <h2 class="section-title">Analytics</h2>
+          <div class="section-actions">
+            <select id="analyticsDays" class="admin-input"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option></select>
+          </div>
+        </div>
+        <div id="analyticsBody"><p class="admin-empty">Loading…</p></div>
+      </section>
+
     </div><!-- /.admin-content -->
   </main><!-- /.admin-main -->
+
+  <!-- ── Program editor modal ── -->
+  <div class="admin-modal-overlay" id="programModal" style="display:none;">
+    <div class="admin-modal">
+      <div class="admin-modal-head"><h3 id="programModalTitle">New Program</h3><button class="admin-modal-close" id="programModalClose">&times;</button></div>
+      <div class="admin-modal-body" id="programModalBody"></div>
+    </div>
+  </div>
+
+  <!-- ── Banner editor modal ── -->
+  <div class="admin-modal-overlay" id="bannerModal" style="display:none;">
+    <div class="admin-modal">
+      <div class="admin-modal-head"><h3 id="bannerModalTitle">New Banner</h3><button class="admin-modal-close" id="bannerModalClose">&times;</button></div>
+      <div class="admin-modal-body" id="bannerModalBody"></div>
+    </div>
+  </div>
 
 </div><!-- /.admin-layout -->
 
