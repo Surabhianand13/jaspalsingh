@@ -196,7 +196,10 @@
   }
 
   function renderHeaderAuth() {
-    if (document.getElementById('learnerHeaderUI') || document.getElementById('lwHeaderAuth')) return;
+    if (document.getElementById('lwHeaderAuth')) return;
+    // Remove any legacy element from older learner-auth.js builds
+    var legacy = document.getElementById('learnerHeaderUI');
+    if (legacy) legacy.remove();
 
     var headerRight = document.querySelector('.header-right');
     var headerInner = document.querySelector('.header-inner');
