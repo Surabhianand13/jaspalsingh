@@ -191,7 +191,12 @@
     'blog':         'Blog',
     'testimonials': 'Testimonials',
     'messages':     'Messages',
-    'learners':     'Learners'
+    'learners':     'Learners',
+    'programs':     'Programs',
+    'enrollments':  'Enrollments',
+    'programleads': 'Interest / Leads',
+    'banners':      'Banners & Promo Images',
+    'analytics':    'Analytics'
   };
 
   /**
@@ -232,6 +237,11 @@
       case 'testimonials': loadTestimonials(); break;
       case 'messages':     loadMessages();     break;
       case 'learners':     loadLearners();     break;
+      case 'programs':     loadPrograms();     break;
+      case 'enrollments':  loadEnrollments();  break;
+      case 'programleads': loadProgramLeads(); break;
+      case 'banners':      loadBanners();      break;
+      case 'analytics':    loadBizAnalytics(); break;
     }
   }
 
@@ -1656,6 +1666,207 @@
     /* ── Show initial section ──────────────────── */
     showSection('dashboard');
 
+    bindBizSections();
   });
+
+  /* ============================================================
+     BUSINESS SECTIONS  -  programs, enrollments, leads, banners, analytics
+     ============================================================ */
+  function e(s){ return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function inr(n){ return '₹' + Number(n||0).toLocaleString('en-IN'); }
+  function fmtDate(d){ return d ? new Date(d).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) : '-'; }
+
+  var STATUS_LABELS = { enrolling:'Enrolling', coming_soon:'Coming Soon', closed:'Closed' };
+
+  /* ── PROGRAMS ── */
+  function loadPrograms() {
+    var body = document.getElementById('programsBody');
+    adminFetch('GET', '/api/programs/admin/all').then(function(d){
+      var ps = d.programs || [];
+      if (!ps.length) { body.innerHTML = '<p class="admin-empty">No programs yet.</p>'; return; }
+      var rows = ps.map(function(p){
+        return '<tr>' +
+          '<td><strong>'+e(p.title)+'</strong><br><span style="color:#9999b0;font-size:12px;">'+e(p.slug)+'</span></td>' +
+          '<td>'+e(p.category)+'</td>' +
+          '<td>'+(p.price?inr(p.price):'-')+(p.mrp?' <s style="color:#aaa">'+inr(p.mrp)+'</s>':'')+'</td>' +
+          '<td><span class="admin-badge admin-badge--'+(p.status==='enrolling'?'green':p.status==='coming_soon'?'orange':'grey')+'">'+(STATUS_LABELS[p.status]||p.status)+'</span></td>' +
+          '<td><label class="admin-switch"><input type="checkbox" data-prog-vis="'+p.id+'" '+(p.is_visible?'checked':'')+'><span></span></label></td>' +
+          '<td><button class="btn btn-sm" data-prog-edit="'+p.id+'">Edit</button> <button class="btn btn-sm btn-ghost" data-prog-del="'+p.id+'">Delete</button></td>' +
+          '</tr>';
+      }).join('');
+      body.innerHTML = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Program</th><th>Type</th><th>Price</th><th>Status</th><th>Visible</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+      body._data = ps;
+      bindProgramRowActions(ps);
+    }).catch(function(err){ body.innerHTML = '<p class="admin-empty">'+e(err.message)+'</p>'; });
+  }
+
+  function bindProgramRowActions(ps){
+    document.querySelectorAll('[data-prog-vis]').forEach(function(cb){
+      cb.addEventListener('change', function(){
+        adminFetch('PATCH','/api/programs/'+cb.getAttribute('data-prog-vis')+'/visibility',{is_visible:cb.checked})
+          .then(function(){ showToast('Visibility updated','success'); })
+          .catch(function(e){ showToast(e.message,'error'); cb.checked=!cb.checked; });
+      });
+    });
+    document.querySelectorAll('[data-prog-edit]').forEach(function(b){
+      b.addEventListener('click', function(){ var p = ps.filter(function(x){return x.id==b.getAttribute('data-prog-edit');})[0]; openProgramModal(p); });
+    });
+    document.querySelectorAll('[data-prog-del]').forEach(function(b){
+      b.addEventListener('click', function(){
+        if (!confirm('Delete this program? This cannot be undone.')) return;
+        adminFetch('DELETE','/api/programs/'+b.getAttribute('data-prog-del')).then(function(){ showToast('Deleted','success'); loadPrograms(); }).catch(function(e){ showToast(e.message,'error'); });
+      });
+    });
+  }
+
+  function openProgramModal(p){
+    p = p || {};
+    var isEdit = !!p.id;
+    document.getElementById('programModalTitle').textContent = isEdit ? 'Edit Program' : 'New Program';
+    var body = document.getElementById('programModalBody');
+    body.innerHTML =
+      fld('Slug (URL)','pm_slug',p.slug||'', isEdit) +
+      fld('Title','pm_title',p.title||'') +
+      sel('Category','pm_category',['test-series','interview','course'],p.category||'test-series') +
+      fld('Exam','pm_exam',p.exam||'') +
+      fld('Level','pm_level',p.level||'') +
+      sel('Status','pm_status',['enrolling','coming_soon','closed'],p.status||'enrolling') +
+      fld('Price (blank = hide)','pm_price',p.price||'') +
+      fld('MRP','pm_mrp',p.mrp||'') +
+      fld('Thumbnail URL','pm_thumb',p.thumbnail_url||'') +
+      fld('Tags (comma separated)','pm_tags',(p.tags||[]).join(', ')) +
+      fld('Sort order','pm_sort',p.sort_order||0) +
+      '<button class="btn" id="pm_save" style="margin-top:8px;">'+(isEdit?'Save Changes':'Create Program')+'</button>';
+    document.getElementById('programModal').style.display='flex';
+    document.getElementById('pm_save').onclick = function(){
+      var payload = {
+        slug: val('pm_slug'), title: val('pm_title'), category: val('pm_category'),
+        exam: val('pm_exam'), level: val('pm_level'), status: val('pm_status'),
+        price: val('pm_price')||'', mrp: val('pm_mrp')||'', thumbnail_url: val('pm_thumb'),
+        tags: val('pm_tags').split(',').map(function(t){return t.trim();}).filter(Boolean),
+        sort_order: parseInt(val('pm_sort')||'0',10)
+      };
+      var req = isEdit ? adminFetch('PUT','/api/programs/'+p.id,payload) : adminFetch('POST','/api/programs',payload);
+      req.then(function(){ showToast(isEdit?'Saved':'Created','success'); document.getElementById('programModal').style.display='none'; loadPrograms(); })
+         .catch(function(e){ showToast(e.message,'error'); });
+    };
+  }
+
+  /* ── ENROLLMENTS ── */
+  function loadEnrollments(){
+    var f = (document.getElementById('enrollFilter')||{}).value || '';
+    var body = document.getElementById('enrollmentsBody');
+    adminFetch('GET','/api/enrollment/admin/all'+(f?('?status='+f):'')).then(function(d){
+      var s = d.summary||{};
+      document.getElementById('enrollSummary').innerHTML =
+        statCard('Revenue', inr(s.revenue)) + statCard('Paid', s.paid_count||0) + statCard('Pending', s.pending_count||0);
+      var es = d.enrollments||[];
+      if (!es.length){ body.innerHTML='<p class="admin-empty">No enrollments yet.</p>'; return; }
+      var rows = es.map(function(x){
+        return '<tr><td>'+e(x.student_name)+'<br><span style="color:#9999b0;font-size:12px;">'+e(x.student_phone)+(x.student_email?' · '+e(x.student_email):'')+'</span></td>' +
+          '<td>'+e(x.program_name)+'</td><td>'+inr(x.amount)+(x.coupon_code?'<br><span style="color:#16a34a;font-size:11px;">'+e(x.coupon_code)+'</span>':'')+'</td>' +
+          '<td><span class="admin-badge admin-badge--'+(x.status==='paid'?'green':'orange')+'">'+e(x.status)+'</span></td>' +
+          '<td>'+fmtDate(x.paid_at||x.created_at)+'</td><td style="font-size:11px;color:#9999b0;">'+e(x.order_id)+'</td></tr>';
+      }).join('');
+      body.innerHTML = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Student</th><th>Program</th><th>Amount</th><th>Status</th><th>Date</th><th>Order</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+    }).catch(function(err){ body.innerHTML='<p class="admin-empty">'+e(err.message)+'</p>'; });
+  }
+
+  /* ── LEADS ── */
+  function loadProgramLeads(){
+    var body = document.getElementById('programLeadsBody');
+    adminFetch('GET','/api/leads/admin/all').then(function(d){
+      var ls = d.leads||[];
+      if (!ls.length){ body.innerHTML='<p class="admin-empty">No interest leads yet.</p>'; return; }
+      var rows = ls.map(function(x){
+        return '<tr><td>'+e(x.name)+'</td><td>'+e(x.phone)+'</td><td>'+e(x.email||'-')+'</td><td>'+e(x.program_name)+'</td><td>'+fmtDate(x.created_at)+'</td></tr>';
+      }).join('');
+      body.innerHTML = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Program</th><th>Date</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+    }).catch(function(err){ body.innerHTML='<p class="admin-empty">'+e(err.message)+'</p>'; });
+  }
+
+  /* ── BANNERS ── */
+  function loadBanners(){
+    var body = document.getElementById('bannersBody');
+    adminFetch('GET','/api/banners/admin/all').then(function(d){
+      var bs = d.banners||[];
+      if (!bs.length){ body.innerHTML='<p class="admin-empty">No banners yet. Add one with the button above.</p>'; return; }
+      var rows = bs.map(function(b){
+        return '<tr><td><img src="'+e(b.image_url)+'" style="width:90px;height:48px;object-fit:cover;border-radius:6px;"></td>' +
+          '<td>'+e(b.title||'-')+'</td><td>'+e(b.placement)+'</td><td>'+b.sort_order+'</td>' +
+          '<td><label class="admin-switch"><input type="checkbox" data-ban-vis="'+b.id+'" '+(b.is_visible?'checked':'')+'><span></span></label></td>' +
+          '<td><button class="btn btn-sm" data-ban-edit="'+b.id+'">Edit</button> <button class="btn btn-sm btn-ghost" data-ban-del="'+b.id+'">Delete</button></td></tr>';
+      }).join('');
+      body.innerHTML = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Image</th><th>Title</th><th>Placement</th><th>Order</th><th>Visible</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+      bindBannerRowActions(bs);
+    }).catch(function(err){ body.innerHTML='<p class="admin-empty">'+e(err.message)+'</p>'; });
+  }
+  function bindBannerRowActions(bs){
+    document.querySelectorAll('[data-ban-vis]').forEach(function(cb){
+      cb.addEventListener('change', function(){ adminFetch('PATCH','/api/banners/'+cb.getAttribute('data-ban-vis')+'/visibility',{is_visible:cb.checked}).then(function(){showToast('Updated','success');}).catch(function(e){showToast(e.message,'error');cb.checked=!cb.checked;}); });
+    });
+    document.querySelectorAll('[data-ban-edit]').forEach(function(b){ b.addEventListener('click', function(){ openBannerModal(bs.filter(function(x){return x.id==b.getAttribute('data-ban-edit');})[0]); }); });
+    document.querySelectorAll('[data-ban-del]').forEach(function(b){ b.addEventListener('click', function(){ if(!confirm('Delete this banner?'))return; adminFetch('DELETE','/api/banners/'+b.getAttribute('data-ban-del')).then(function(){showToast('Deleted','success');loadBanners();}).catch(function(e){showToast(e.message,'error');}); }); });
+  }
+  function openBannerModal(b){
+    b = b || {}; var isEdit = !!b.id;
+    document.getElementById('bannerModalTitle').textContent = isEdit?'Edit Banner':'New Banner';
+    document.getElementById('bannerModalBody').innerHTML =
+      fld('Image URL','bm_img',b.image_url||'') +
+      fld('Title (optional)','bm_title',b.title||'') +
+      fld('Link URL (optional)','bm_link',b.link_url||'') +
+      sel('Placement','bm_place',['home_carousel','promo_strip','programs_banner'],b.placement||'home_carousel') +
+      fld('Sort order','bm_sort',b.sort_order||0) +
+      '<button class="btn" id="bm_save" style="margin-top:8px;">'+(isEdit?'Save':'Create')+'</button>';
+    document.getElementById('bannerModal').style.display='flex';
+    document.getElementById('bm_save').onclick=function(){
+      var payload={image_url:val('bm_img'),title:val('bm_title'),link_url:val('bm_link'),placement:val('bm_place'),sort_order:parseInt(val('bm_sort')||'0',10)};
+      if(!payload.image_url){showToast('Image URL is required','error');return;}
+      var req=isEdit?adminFetch('PUT','/api/banners/'+b.id,payload):adminFetch('POST','/api/banners',payload);
+      req.then(function(){showToast(isEdit?'Saved':'Created','success');document.getElementById('bannerModal').style.display='none';loadBanners();}).catch(function(e){showToast(e.message,'error');});
+    };
+  }
+
+  /* ── ANALYTICS ── */
+  function loadBizAnalytics(){
+    var days = (document.getElementById('analyticsDays')||{}).value || '30';
+    var body = document.getElementById('analyticsBody');
+    adminFetch('GET','/api/events/summary?days='+days).then(function(d){
+      var f = d.funnel||{};
+      var byType = {}; (d.by_type||[]).forEach(function(r){ byType[r.type]=r.count; });
+      var cards =
+        statCard('Active now (30m)', d.active_now||0) +
+        statCard('Page views', byType.page_view||0) +
+        statCard('Program views', f.program_views||0) +
+        statCard('WhatsApp clicks', byType.whatsapp_click||0) +
+        statCard('Call clicks', byType.call_click||0) +
+        statCard('Enquiry clicks', byType.enquiry_click||0);
+      var funnel =
+        '<h3 style="margin:24px 0 12px;font-size:16px;">Checkout Funnel ('+days+'d)</h3><div class="admin-stat-row">' +
+        statCard('Program views', f.program_views||0) +
+        statCard('Checkout started', f.checkout_starts||0) +
+        statCard('Checkout exited', f.checkout_exits||0) +
+        statCard('Payments', f.payments||0) + '</div>';
+      var typeRows = (d.by_type||[]).map(function(r){ return '<tr><td>'+e(r.type)+'</td><td>'+r.count+'</td></tr>'; }).join('');
+      body.innerHTML = '<div class="admin-stat-row">'+cards+'</div>'+funnel +
+        '<h3 style="margin:24px 0 12px;font-size:16px;">All events ('+days+'d)</h3>' +
+        '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Event</th><th>Count</th></tr></thead><tbody>'+typeRows+'</tbody></table></div>';
+    }).catch(function(err){ body.innerHTML='<p class="admin-empty">'+e(err.message)+'</p>'; });
+  }
+
+  /* ── small UI helpers ── */
+  function fld(label,id,v,disabled){ return '<label class="admin-field"><span>'+e(label)+'</span><input class="admin-input" id="'+id+'" value="'+e(v)+'"'+(disabled?' disabled':'')+'></label>'; }
+  function sel(label,id,opts,cur){ return '<label class="admin-field"><span>'+e(label)+'</span><select class="admin-input" id="'+id+'">'+opts.map(function(o){return '<option value="'+o+'"'+(o===cur?' selected':'')+'>'+(STATUS_LABELS[o]||o)+'</option>';}).join('')+'</select></label>'; }
+  function val(id){ var el=document.getElementById(id); return el?el.value.trim():''; }
+  function statCard(label,v){ return '<div class="admin-stat-card"><div class="admin-stat-val">'+e(v)+'</div><div class="admin-stat-lbl">'+e(label)+'</div></div>'; }
+
+  function bindBizSections(){
+    var np=document.getElementById('btnNewProgram'); if(np) np.onclick=function(){openProgramModal(null);};
+    var nb=document.getElementById('btnNewBanner'); if(nb) nb.onclick=function(){openBannerModal(null);};
+    var pc=document.getElementById('programModalClose'); if(pc) pc.onclick=function(){document.getElementById('programModal').style.display='none';};
+    var bc=document.getElementById('bannerModalClose'); if(bc) bc.onclick=function(){document.getElementById('bannerModal').style.display='none';};
+    var ef=document.getElementById('enrollFilter'); if(ef) ef.onchange=loadEnrollments;
+    var ad=document.getElementById('analyticsDays'); if(ad) ad.onchange=loadBizAnalytics;
+  }
 
 })();
