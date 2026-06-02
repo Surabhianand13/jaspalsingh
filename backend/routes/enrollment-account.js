@@ -9,16 +9,45 @@ const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
 const { query } = require('../config/db');
 
-/* ── POST /api/enrollment/create-account ────────────────── */
+/* ── GET /api/enrollment/account-status ─────────────────────
+   Tells the success page whether the buyer already has an account,
+   so the UI can skip the password step.                          */
+router.get('/account-status', async (req, res) => {
+  try {
+    const { order_id } = req.query;
+    if (!order_id) return res.status(400).json({ error: 'order_id required.' });
+
+    const enrR = await query(
+      `SELECT student_email, student_phone, student_name FROM enrollments WHERE order_id = $1 AND status = 'paid'`,
+      [order_id]
+    );
+    if (!enrR.rows.length) return res.status(404).json({ error: 'No completed enrollment found.' });
+
+    const enr = enrR.rows[0];
+    const existing = await query(
+      `SELECT id, name FROM learners WHERE email = $1 OR phone = $2`,
+      [enr.student_email, enr.student_phone]
+    );
+
+    res.json({
+      exists: existing.rows.length > 0,
+      name: enr.student_name,
+    });
+  } catch (err) {
+    console.error('[account-status]', err);
+    res.status(500).json({ error: 'Server error.' });
+  }
+});
+
+/* ── POST /api/enrollment/create-account ────────────────────
+   Handles both new accounts (password required) and existing
+   accounts (password skipped). Saves profile details either way. */
 router.post('/create-account', async (req, res) => {
   try {
-    const { order_id, password } = req.body;
+    const { order_id, password, target_exam, city, college, dob } = req.body;
 
-    if (!order_id || !password) {
-      return res.status(400).json({ error: 'order_id and password are required.' });
-    }
-    if (password.length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+    if (!order_id) {
+      return res.status(400).json({ error: 'order_id is required.' });
     }
 
     // Fetch enrollment
@@ -26,12 +55,18 @@ router.post('/create-account', async (req, res) => {
       `SELECT * FROM enrollments WHERE order_id = $1 AND status = 'paid'`,
       [order_id]
     );
-
     if (!enrResult.rows.length) {
       return res.status(404).json({ error: 'No completed enrollment found for this order.' });
     }
-
     const enr = enrResult.rows[0];
+
+    // Profile fields (optional, applied in both paths)
+    const prof = {
+      target_exam: target_exam || null,
+      city:        city || null,
+      college:     college || null,
+      dob:         dob || null,
+    };
 
     // Check if account already exists
     const existing = await query(
@@ -39,37 +74,37 @@ router.post('/create-account', async (req, res) => {
       [enr.student_email, enr.student_phone]
     );
 
+    let learner;
+
     if (existing.rows.length) {
-      // Account exists — link ALL their paid orders + return token
-      const learner = existing.rows[0];
+      // ── Existing account: no password needed ──
+      learner = existing.rows[0];
       await query(
-        `UPDATE enrollments SET learner_id = $1
-         WHERE learner_id IS NULL AND (student_email = $2 OR student_phone = $3)`,
-        [learner.id, enr.student_email, enr.student_phone]
+        `UPDATE learners SET
+            target_exam        = COALESCE($1, target_exam),
+            city               = COALESCE($2, city),
+            graduation_college = COALESCE($3, graduation_college),
+            dob                = COALESCE($4, dob)
+         WHERE id = $5`,
+        [prof.target_exam, prof.city, prof.college, prof.dob, learner.id]
       );
-      const token = jwt.sign(
-        { id: learner.id, email: learner.email, name: learner.name, learner: true },
-        process.env.JWT_SECRET, { expiresIn: '30d' }
+    } else {
+      // ── New account: password required ──
+      if (!password || password.length < 6) {
+        return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+      }
+      const hash = await bcrypt.hash(password, 10);
+      const result = await query(
+        `INSERT INTO learners (name, email, phone, password_hash, target_exam, city, graduation_college, dob, is_active)
+         VALUES ($1, $2, $3, $4, COALESCE($5,'General'), $6, $7, $8, true)
+         RETURNING id, name, email`,
+        [enr.student_name, enr.student_email || '', enr.student_phone, hash,
+         prof.target_exam, prof.city, prof.college, prof.dob]
       );
-      return res.json({
-        success: true, token,
-        learner: { id: learner.id, name: learner.name, email: learner.email },
-        message: 'Account already exists. Logged in.'
-      });
+      learner = result.rows[0];
     }
 
-    // Create account
-    const hash = await bcrypt.hash(password, 10);
-    const result = await query(
-      `INSERT INTO learners (name, email, phone, password_hash, target_exam, is_active)
-       VALUES ($1, $2, $3, $4, 'General', true)
-       RETURNING id, name, email`,
-      [enr.student_name, enr.student_email || '', enr.student_phone, hash]
-    );
-
-    const learner = result.rows[0];
-
-    // Link ALL paid orders for this email/phone to the new learner
+    // Link ALL paid orders for this email/phone to the learner
     await query(
       `UPDATE enrollments SET learner_id = $1
        WHERE learner_id IS NULL AND (student_email = $2 OR student_phone = $3)`,
@@ -84,8 +119,9 @@ router.post('/create-account', async (req, res) => {
     res.json({
       success: true,
       token,
+      existed: existing.rows.length > 0,
       learner: { id: learner.id, name: learner.name, email: learner.email },
-      message: 'Account created successfully.',
+      message: existing.rows.length ? 'Welcome back! Profile updated.' : 'Account created successfully.',
     });
 
   } catch (err) {
