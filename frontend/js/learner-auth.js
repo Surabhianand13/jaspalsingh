@@ -353,9 +353,22 @@
   function updateHeaderUI() {
     var existing = document.getElementById('learnerHeaderUI');
     if (existing) existing.remove();
+    // Remove login-wall's header element to avoid duplicates
+    var lwHeader = document.getElementById('lwHeaderAuth');
+    if (lwHeader) lwHeader.remove();
 
     var user = getUser();
-    if (!user) return;
+    if (!user) {
+      // Logged out -> show Login button in the same spot
+      var el2 = document.createElement('div');
+      el2.id = 'learnerHeaderUI';
+      el2.className = 'learner-header-ui';
+      el2.innerHTML = '<a href="/profile?tab=login" class="learner-login-btn"><i class="fas fa-user"></i> Log In</a>';
+      var hi = document.querySelector('.header-inner');
+      var hb = document.getElementById('hamburger');
+      if (hi && hb) hi.insertBefore(el2, hb); else if (hi) hi.appendChild(el2);
+      return;
+    }
 
     var firstName = (user.name || 'Friend').split(' ')[0];
     var initials  = (user.name || 'U').split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();
