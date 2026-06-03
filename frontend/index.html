@@ -2,6 +2,18 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <script>
+    /* Cloudflare serves this homepage as the fallback for any unmatched
+       route. If the visitor actually requested a /programs/<slug>/ page
+       that has no static file (e.g. a program created in the admin
+       dashboard), bounce them to the dynamic detail template. */
+    (function () {
+      var m = location.pathname.match(/^\/programs\/([^\/]+)\/?$/);
+      if (m && m[1] !== 'view') {
+        location.replace('/programs/view/?slug=' + encodeURIComponent(m[1]));
+      }
+    })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dr. Jaspal Singh  -  Ex-IES (AIR-04) | PhD | Civil Engineering Educator</title>
   <meta name="description" content="Dr. Jaspal Singh  -  Ex-IES Officer (AIR-04), GATE AIR-06, PhD, and one of India's most celebrated Civil Engineering educators. Mentoring GATE, ESE, SSC JE & State AE/JE aspirants." />

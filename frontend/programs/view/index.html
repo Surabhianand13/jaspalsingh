@@ -141,9 +141,12 @@
       function esc(s){ var d=document.createElement('div'); d.textContent=(s==null?'':String(s)); return d.innerHTML; }
       function inr(n){ return '&#8377;' + Number(n).toLocaleString('en-IN'); }
 
-      // slug = last non-empty path segment
-      var parts = location.pathname.split('/').filter(Boolean);
-      var slug = parts[parts.length - 1] || '';
+      // slug from ?slug= query param (preferred), else last path segment
+      var slug = new URLSearchParams(location.search).get('slug') || '';
+      if (!slug) {
+        var parts = location.pathname.split('/').filter(Boolean);
+        if (parts.length && parts[parts.length - 1] !== 'view') slug = parts[parts.length - 1];
+      }
 
       var root = document.getElementById('progRoot');
 
