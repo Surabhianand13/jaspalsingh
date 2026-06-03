@@ -1674,7 +1674,7 @@
      ============================================================ */
   function e(s){ return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function inr(n){ return '₹' + Number(n||0).toLocaleString('en-IN'); }
-  function fmtDate(d){ return d ? new Date(d).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) : '-'; }
+  /* (uses the existing top-level fmtDate helper) */
 
   var STATUS_LABELS = { enrolling:'Enrolling', coming_soon:'Coming Soon', closed:'Closed' };
 
