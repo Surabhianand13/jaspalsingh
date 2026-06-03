@@ -414,34 +414,68 @@
 
     <!-- ─── ANNOUNCEMENT TICKER ──────────────────────── -->
     <div class="ticker-strip" aria-label="Latest announcements">
-      <div class="ticker-track">
-        <!-- group repeated twice for seamless loop -->
+      <div class="ticker-track" id="tickerTrack">
+        <!-- group repeated twice for seamless loop; JS rebuilds from /api/programs -->
         <div class="ticker-group">
-          <a href="/programs/gate-ese-foundation/" class="ticker-item"><i class="fas fa-fire"></i> Admissions Open &mdash; GATE / ESE / PSUs 2027</a>
-          <span class="ticker-dot">&bull;</span>
           <a href="/programs" class="ticker-item"><i class="fas fa-map-marker-alt"></i> Offline Coaching in Jaipur</a>
           <span class="ticker-dot">&bull;</span>
-          <a href="/programs/rssb-jen-diploma-test-series/" class="ticker-item"><i class="fas fa-clipboard-list"></i> RSSB JEN &amp; RPSC AE Test Series Live</a>
+          <a href="/programs/rssb-jen-diploma-test-series/" class="ticker-item"><i class="fas fa-clipboard-list"></i> RSSB JEN 2026 Civil Diploma Test Series</a>
+          <span class="ticker-dot">&bull;</span>
+          <a href="/programs/rssb-jen-degree-test-series/" class="ticker-item"><i class="fas fa-clipboard-list"></i> RSSB JEN 2026-27 Civil Degree Test Series</a>
+          <span class="ticker-dot">&bull;</span>
+          <a href="/programs/rpsc-ae-interview/" class="ticker-item"><i class="fas fa-user-tie"></i> RPSC AE 2024 Interview Guidance</a>
+          <span class="ticker-dot">&bull;</span>
+          <a href="/programs/rssb-jen-crash-course/" class="ticker-item"><i class="fas fa-graduation-cap"></i> RSSB JEN Crash Course - Coming Soon</a>
+          <span class="ticker-dot">&bull;</span>
+          <a href="/programs/gate-ese-foundation/" class="ticker-item"><i class="fas fa-graduation-cap"></i> GATE / ESE 2028 Foundation - Coming Soon</a>
           <span class="ticker-dot">&bull;</span>
           <a href="/about" class="ticker-item"><i class="fas fa-medal"></i> Mentored by AIR-04 ESE &middot; GATE AIR-06</a>
-          <span class="ticker-dot">&bull;</span>
-          <a href="/programs" class="ticker-item"><i class="fas fa-users"></i> Limited Seats per Batch &mdash; Enrol Early</a>
           <span class="ticker-dot">&bull;</span>
         </div>
         <div class="ticker-group" aria-hidden="true">
-          <a href="/programs/gate-ese-foundation/" class="ticker-item"><i class="fas fa-fire"></i> Admissions Open &mdash; GATE / ESE / PSUs 2027</a>
-          <span class="ticker-dot">&bull;</span>
           <a href="/programs" class="ticker-item"><i class="fas fa-map-marker-alt"></i> Offline Coaching in Jaipur</a>
           <span class="ticker-dot">&bull;</span>
-          <a href="/programs/rssb-jen-diploma-test-series/" class="ticker-item"><i class="fas fa-clipboard-list"></i> RSSB JEN &amp; RPSC AE Test Series Live</a>
+          <a href="/programs/rssb-jen-diploma-test-series/" class="ticker-item"><i class="fas fa-clipboard-list"></i> RSSB JEN 2026 Civil Diploma Test Series</a>
+          <span class="ticker-dot">&bull;</span>
+          <a href="/programs/rssb-jen-degree-test-series/" class="ticker-item"><i class="fas fa-clipboard-list"></i> RSSB JEN 2026-27 Civil Degree Test Series</a>
+          <span class="ticker-dot">&bull;</span>
+          <a href="/programs/rpsc-ae-interview/" class="ticker-item"><i class="fas fa-user-tie"></i> RPSC AE 2024 Interview Guidance</a>
+          <span class="ticker-dot">&bull;</span>
+          <a href="/programs/rssb-jen-crash-course/" class="ticker-item"><i class="fas fa-graduation-cap"></i> RSSB JEN Crash Course - Coming Soon</a>
+          <span class="ticker-dot">&bull;</span>
+          <a href="/programs/gate-ese-foundation/" class="ticker-item"><i class="fas fa-graduation-cap"></i> GATE / ESE 2028 Foundation - Coming Soon</a>
           <span class="ticker-dot">&bull;</span>
           <a href="/about" class="ticker-item"><i class="fas fa-medal"></i> Mentored by AIR-04 ESE &middot; GATE AIR-06</a>
-          <span class="ticker-dot">&bull;</span>
-          <a href="/programs" class="ticker-item"><i class="fas fa-users"></i> Limited Seats per Batch &mdash; Enrol Early</a>
           <span class="ticker-dot">&bull;</span>
         </div>
       </div>
     </div>
+    <script>
+      /* Rebuild the ticker from live programs so all programs (and any
+         added in admin) appear, with Coming Soon reflected automatically. */
+      (function () {
+        var API = location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://jaspalsingh.onrender.com';
+        var ICON = { 'test-series':'fa-clipboard-list', 'interview':'fa-user-tie', 'course':'fa-graduation-cap' };
+        function esc(s){ var d=document.createElement('div'); d.textContent=(s==null?'':String(s)); return d.innerHTML; }
+        fetch(API + '/api/programs')
+          .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
+          .then(function(data){
+            var list = (data && data.programs) || [];
+            if (!list.length) return;
+            var items = ['<a href="/programs" class="ticker-item"><i class="fas fa-map-marker-alt"></i> Offline Coaching in Jaipur</a>'];
+            list.forEach(function(p){
+              var icon = ICON[p.category] || 'fa-clipboard-list';
+              var suffix = (p.status === 'coming_soon') ? ' - Coming Soon' : (p.status === 'closed' ? ' - Closed' : '');
+              var label = esc((p.title || '').replace(/\s*-\s*Offline.*$/i, '').trim()) + suffix;
+              items.push('<a href="/programs/view/?slug=' + encodeURIComponent(p.slug) + '" class="ticker-item"><i class="fas ' + icon + '"></i> ' + label + '</a>');
+            });
+            items.push('<a href="/about" class="ticker-item"><i class="fas fa-medal"></i> Mentored by AIR-04 ESE &middot; GATE AIR-06</a>');
+            var groupHTML = items.join('<span class="ticker-dot">&bull;</span>') + '<span class="ticker-dot">&bull;</span>';
+            document.querySelectorAll('#tickerTrack .ticker-group').forEach(function(g){ g.innerHTML = groupHTML; });
+          })
+          .catch(function(){ /* keep static fallback */ });
+      })();
+    </script>
 
     <!-- ─── TRUST STATS ──────────────────────────────── -->
     <section class="trust-stats-strip" aria-label="Credentials at a glance" data-reveal="fade">
