@@ -7,3 +7,8 @@
 /programs/rpsc-ae-interview /programs/rpsc-ae-interview/ 301
 /programs/rssb-jen-crash-course /programs/rssb-jen-crash-course/ 301
 /programs/gate-ese-foundation /programs/gate-ese-foundation/ 301
+
+# Dynamic fallback: any program slug without its own static page renders
+# the API-driven detail template. Existing static dirs take precedence;
+# this only fires for slugs created in the admin dashboard.
+/programs/* /programs/view/index.html 200
