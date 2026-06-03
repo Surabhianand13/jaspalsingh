@@ -11,7 +11,7 @@
   /* ══════════════════════════════════════════════
      CONFIG
      ══════════════════════════════════════════════ */
-  var API_BASE  = location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+  var API_BASE  = location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://jaspalsingh.onrender.com';
   var TOKEN_KEY = 'jaspal_admin_token';
 
   /* ══════════════════════════════════════════════
