@@ -660,20 +660,122 @@
   <script src="/js/login-wall.js" defer></script>
   <script src="/js/track.js" defer></script>
   <script>
-    document.querySelectorAll('.prog-filter-btn').forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        document.querySelectorAll('.prog-filter-btn').forEach(function(b) { b.classList.remove('active'); });
-        btn.classList.add('active');
-        var filter = btn.dataset.filter;
-        document.querySelectorAll('.op-card').forEach(function(card) {
-          if (filter === 'all' || card.dataset.cat === filter) {
-            card.classList.remove('hidden');
-          } else {
-            card.classList.add('hidden');
-          }
+    var PROG_API = location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://jaspalsingh.onrender.com';
+
+    function bindProgFilters() {
+      document.querySelectorAll('.prog-filter-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          document.querySelectorAll('.prog-filter-btn').forEach(function(b) { b.classList.remove('active'); });
+          btn.classList.add('active');
+          var filter = btn.dataset.filter;
+          document.querySelectorAll('.op-card').forEach(function(card) {
+            if (filter === 'all' || card.dataset.cat === filter) { card.classList.remove('hidden'); }
+            else { card.classList.add('hidden'); }
+          });
         });
       });
-    });
+    }
+
+    // Accent -> gradient + feature-icon colour class
+    var ACCENTS = {
+      blue:   { grad:'#0369A1,#0284C7', fi:'op-fi-blue'   },
+      teal:   { grad:'#0F766E,#0D9488', fi:'op-fi-teal'   },
+      purple: { grad:'#6D28D9,#7C3AED', fi:'op-fi-purple' },
+      orange: { grad:'#C2410C,#EA580C', fi:'op-fi-orange' },
+      green:  { grad:'#15803D,#16A34A', fi:'op-fi-green'  }
+    };
+    var CAT_LABEL = { 'test-series':'Offline Test Series', 'interview':'Interview Guidance', 'course':'Course & Batch' };
+    var CAT_ICON  = { 'test-series':'fa-clipboard-list', 'interview':'fa-user-tie', 'course':'fa-graduation-cap' };
+
+    function esc(s) { var d = document.createElement('div'); d.textContent = (s == null ? '' : String(s)); return d.innerHTML; }
+    function inr(n) { return '₹' + Number(n).toLocaleString('en-IN'); }
+    function slugFromHref(href) { var m = (href || '').match(/\/programs\/([^\/]+)\/?$/); return m ? m[1] : ''; }
+
+    function statusBits(status) {
+      if (status === 'coming_soon') return { dot:'seat-soon', text:'Coming Soon' };
+      if (status === 'closed')      return { dot:'seat-warn', text:'Enrollment Closed' };
+      return { dot:'seat-ok', text:'Enrolling Now' };
+    }
+
+    function buildCard(p) {
+      var acc = ACCENTS[p.accent] || { grad:'#C81240,#7C3AED', fi:'op-fi-purple' };
+      var cat = p.category || 'test-series';
+      var st  = statusBits(p.status);
+      var tags = Array.isArray(p.tags) ? p.tags : (p.tags ? JSON.parse(p.tags) : []);
+      var feats = tags.slice(0, 4).map(function(t) {
+        return '<li><span class="op-fi ' + acc.fi + '"><i class="fas fa-check"></i></span>' + esc(t) + '</li>';
+      }).join('');
+      if (!feats && p.short_desc) feats = '<li><span class="op-fi ' + acc.fi + '"><i class="fas fa-info-circle"></i></span>' + esc(p.short_desc) + '</li>';
+
+      var priceRow;
+      if (p.price && Number(p.price) > 0) {
+        var save = (p.mrp && Number(p.mrp) > Number(p.price)) ? Math.round((1 - p.price / p.mrp) * 100) : 0;
+        priceRow = '<span class="op-price-offer">' + inr(p.price) + '</span>' +
+                   (p.mrp ? '<span class="op-price-mrp">' + inr(p.mrp) + '</span>' : '') +
+                   (save ? '<span class="op-price-save">Save ' + save + '%</span>' : '');
+      } else {
+        priceRow = '<span class="op-price-offer" style="font-size:16px;color:var(--magenta);">Launching Soon</span>';
+      }
+
+      var art = document.createElement('article');
+      art.className = 'op-card';
+      art.setAttribute('data-cat', cat);
+      art.innerHTML =
+        '<div class="op-thumb" style="background:linear-gradient(145deg,' + acc.grad + ')">' +
+          (p.exam ? '<span class="op-thumb-exam">' + esc(p.exam) + '</span>' : '') +
+          '<i class="fas ' + (CAT_ICON[cat] || 'fa-book') + ' op-thumb-icon"></i>' +
+          '<span class="op-thumb-label">' + esc(CAT_LABEL[cat] || cat) + '</span>' +
+          '<span class="op-thumb-seats"><span class="op-seat-dot ' + st.dot + '"></span>' + st.text + '</span>' +
+        '</div>' +
+        '<div class="op-card-content">' +
+          '<span class="op-type-label">' + esc(CAT_LABEL[cat] || cat) + (p.level ? ' &middot; ' + esc(p.level) : '') + '</span>' +
+          '<h3 class="op-title">' + esc(p.title) + '</h3>' +
+          (feats ? '<ul class="op-features">' + feats + '</ul>' : '') +
+          '<div class="op-price-divider"></div>' +
+          '<div class="op-price-row">' + priceRow + '</div>' +
+        '</div>' +
+        '<a href="' + esc(p.detail_url || ('/programs/' + p.slug + '/')) + '" class="op-card-cta">View Full Details <i class="fas fa-arrow-right"></i></a>';
+      return art;
+    }
+
+    function syncPrograms() {
+      var grid = document.querySelector('.progs-grid');
+      if (!grid) { bindProgFilters(); return; }
+      fetch(PROG_API + '/api/programs')
+        .then(function(r) { return r.ok ? r.json() : Promise.reject(); })
+        .then(function(data) {
+          var list = (data && data.programs) || [];
+          if (!list.length) return; // keep hardcoded fallback if API empty
+          var visible = {};
+          list.forEach(function(p) { visible[p.slug] = p; });
+
+          // Map existing hardcoded cards by slug from their CTA href
+          var existing = {};
+          grid.querySelectorAll('.op-card').forEach(function(card) {
+            var cta = card.querySelector('.op-card-cta');
+            var slug = cta ? slugFromHref(cta.getAttribute('href')) : '';
+            if (slug) existing[slug] = card;
+            // Hide hardcoded cards that the admin has toggled off / removed
+            if (slug && !visible[slug]) card.remove();
+          });
+
+          // Append any DB program that isn't already on the page
+          list.forEach(function(p) {
+            if (!existing[p.slug]) grid.appendChild(buildCard(p));
+          });
+
+          // Update active-count heading
+          var heading = document.querySelector('#programs-grid .sec-heading');
+          if (heading) {
+            var n = grid.querySelectorAll('.op-card').length;
+            heading.innerHTML = n + ' Active Program' + (n === 1 ? '' : 's') + ' &mdash; <span class="gradient-text">Enrolling Now</span>';
+          }
+        })
+        .catch(function() { /* offline: keep hardcoded cards */ })
+        .finally(function() { bindProgFilters(); });
+    }
+
+    syncPrograms();
   </script>
 </body>
 </html>
