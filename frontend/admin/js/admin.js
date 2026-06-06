@@ -1866,6 +1866,7 @@
     var pc=document.getElementById('programModalClose'); if(pc) pc.onclick=function(){document.getElementById('programModal').style.display='none';};
     var bc=document.getElementById('bannerModalClose'); if(bc) bc.onclick=function(){document.getElementById('bannerModal').style.display='none';};
     var ef=document.getElementById('enrollFilter'); if(ef) ef.onchange=loadEnrollments;
+    var re=document.getElementById('btnRefreshEnrollments'); if(re) re.onclick=loadEnrollments;
     var ad=document.getElementById('analyticsDays'); if(ad) ad.onchange=loadBizAnalytics;
   }
 
