@@ -8,11 +8,11 @@ const { sendContactNotification, sendContactAutoReply } = require('../services/e
 /* POST /api/contact  -  submit a contact message (public) */
 const submit = async (req, res, next) => {
   try {
-    const { name, email, message, subject } = req.body;
+    const { name, email, phone, message, subject } = req.body;
 
     // Validate
-    if (!name || !email || !message) {
-      return res.status(400).json({ error: 'name, email and message are required.' });
+    if (!name || !email || !phone || !message) {
+      return res.status(400).json({ error: 'name, email, phone and message are required.' });
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -30,12 +30,17 @@ const submit = async (req, res, next) => {
       return res.status(400).json({ error: 'Subject is too long (maximum 300 characters).' });
     }
 
+    const cleanPhone = phone.replace(/\D/g,'').slice(-10);
+    if (cleanPhone.length !== 10) {
+      return res.status(400).json({ error: 'Please provide a valid 10-digit mobile number.' });
+    }
+
     // Save to database
     const result = await query(
-      `INSERT INTO contact_messages (name, email, subject, message)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO contact_messages (name, email, phone, subject, message)
+       VALUES ($1, $2, $3, $4, $5)
        RETURNING id, name, created_at`,
-      [name.trim(), email.toLowerCase().trim(), subject ? subject.trim() || null : null, message.trim()]
+      [name.trim(), email.toLowerCase().trim(), cleanPhone, subject ? subject.trim() || null : null, message.trim()]
     );
 
     const saved = result.rows[0];
@@ -60,7 +65,7 @@ const getAll = async (req, res, next) => {
     const where = unread === 'true' ? 'WHERE is_read = FALSE' : '';
 
     const result = await query(
-      `SELECT id, name, email, subject, message, is_read, created_at
+      `SELECT id, name, email, phone, subject, message, is_read, created_at
        FROM contact_messages ${where}
        ORDER BY created_at DESC`
     );
