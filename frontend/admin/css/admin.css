@@ -1560,6 +1560,7 @@ ul, ol { list-style: none; }
 .admin-badge--green  { background: rgba(22,163,74,.12);  color: #15803d; }
 .admin-badge--orange { background: rgba(255,107,53,.14); color: #c2410c; }
 .admin-badge--grey   { background: rgba(26,26,46,.08);   color: #6b6b8a; }
+.admin-badge--blue   { background: rgba(3,105,161,.12);  color: #0369a1; }
 
 .admin-switch { position: relative; display: inline-block; width: 42px; height: 24px; cursor: pointer; }
 .admin-switch input { opacity: 0; width: 0; height: 0; }

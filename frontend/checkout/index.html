@@ -345,7 +345,23 @@
     var checkoutCompleted = false;
     if (program) trk('checkout_start', slug);
     // Track abandonment (exit before launching payment)
-    window.addEventListener('beforeunload', function(){ if (!checkoutCompleted) trk('checkout_exit', slug, null, true); });
+    window.addEventListener('beforeunload', function(){
+      if (!checkoutCompleted) {
+        trk('checkout_exit', slug, null, true);
+        // Capture partial form data so no lead is lost
+        var phone = (document.getElementById('inp-phone')||{}).value||'';
+        phone = phone.replace(/\D/g,'').slice(-10);
+        if (phone.length === 10) {
+          var payload = JSON.stringify({
+            program_slug: slug,
+            name:  (document.getElementById('inp-name')||{}).value||'',
+            email: (document.getElementById('inp-email')||{}).value||'',
+            phone: phone,
+          });
+          try { navigator.sendBeacon(API + '/api/leads/checkout-abandon', new Blob([payload], {type:'application/json'})); } catch(e){}
+        }
+      }
+    });
 
     let appliedCoupon = null;
     let finalPrice    = program ? program.price : 0;

@@ -161,11 +161,18 @@ async function migrate() {
       id            SERIAL PRIMARY KEY,
       program_slug  VARCHAR(100) NOT NULL,
       program_name  VARCHAR(300) NOT NULL,
-      name          VARCHAR(255) NOT NULL,
+      name          VARCHAR(255),
       email         VARCHAR(255),
       phone         VARCHAR(20) NOT NULL,
+      source        VARCHAR(50) DEFAULT 'interest_form',
       created_at    TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     )
+  `);
+  await query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS source VARCHAR(50) DEFAULT 'interest_form'`);
+  /* unique index to dedup checkout abandons by phone+program */
+  await query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS leads_phone_program_uidx
+    ON leads (phone, program_slug)
   `);
 
   /* ── Event tracking (captures every interaction) ── */
