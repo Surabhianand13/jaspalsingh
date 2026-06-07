@@ -1779,9 +1779,12 @@
       var ls = d.leads||[];
       if (!ls.length){ body.innerHTML='<p class="admin-empty">No interest leads yet.</p>'; return; }
       var rows = ls.map(function(x){
-        return '<tr><td>'+e(x.name)+'</td><td>'+e(x.phone)+'</td><td>'+e(x.email||'-')+'</td><td>'+e(x.program_name)+'</td><td>'+fmtDate(x.created_at)+'</td></tr>';
+        var srcLabel = x.source === 'checkout_abandon'
+          ? '<span class="admin-badge admin-badge--orange" title="Filled checkout but did not pay">Abandoned</span>'
+          : '<span class="admin-badge admin-badge--blue">Interest</span>';
+        return '<tr><td>'+e(x.name||'-')+'</td><td>'+e(x.phone)+'</td><td>'+e(x.email||'-')+'</td><td>'+e(x.program_name)+'</td><td>'+srcLabel+'</td><td>'+fmtDate(x.created_at)+'</td></tr>';
       }).join('');
-      body.innerHTML = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Program</th><th>Date</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+      body.innerHTML = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Program</th><th>Source</th><th>Date</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
     }).catch(function(err){ body.innerHTML='<p class="admin-empty">'+e(err.message)+'</p>'; });
   }
 
