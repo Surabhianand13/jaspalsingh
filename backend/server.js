@@ -251,6 +251,7 @@ async function migrate() {
     console.log('✅ Seeded 5 programs');
   }
 
+  await query(`ALTER TABLE contact_messages ADD COLUMN IF NOT EXISTS phone VARCHAR(20)`);
   console.log('✅ Migration: enrollments, leads, events, programs, banners ensured');
 }
 

@@ -332,6 +332,11 @@
             </div>
 
             <div class="form-group">
+              <label class="form-label" for="contactPhone">WhatsApp / Mobile Number *</label>
+              <input type="tel" class="form-input" id="contactPhone" name="phone" placeholder="10-digit mobile number" required autocomplete="tel" maxlength="10" />
+            </div>
+
+            <div class="form-group">
               <label class="form-label" for="contactMessage">Your Message *</label>
               <textarea class="form-textarea" id="contactMessage" name="message" placeholder="Write your message here  -  a question, a doubt, a thank-you, or anything you'd like to share…" required></textarea>
             </div>
@@ -476,9 +481,10 @@
 
         var name    = document.getElementById('contactName').value.trim();
         var email   = document.getElementById('contactEmail').value.trim();
+        var phone   = document.getElementById('contactPhone').value.trim().replace(/\D/g,'').slice(-10);
         var message = document.getElementById('contactMessage').value.trim();
 
-        if (!name || !email || !message) {
+        if (!name || !email || !phone || !message) {
           errorEl.textContent = 'Please fill in all fields before sending.';
           errorEl.style.display = 'block';
           return;
@@ -487,6 +493,12 @@
         var emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRe.test(email)) {
           errorEl.textContent = 'Please enter a valid email address.';
+          errorEl.style.display = 'block';
+          return;
+        }
+
+        if (phone.length !== 10) {
+          errorEl.textContent = 'Please enter a valid 10-digit mobile number.';
           errorEl.style.display = 'block';
           return;
         }
@@ -507,7 +519,7 @@
         }
 
         function trySubmit(isRetry) {
-          api.contact.submit({ name: name, email: email, message: message })
+          api.contact.submit({ name: name, email: email, phone: phone, message: message })
             .then(function () { onSuccess(); })
             .catch(function (err) {
               var status = err && err.status;
