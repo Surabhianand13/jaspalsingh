@@ -766,6 +766,13 @@
                 <input type="text" id="sm-name" name="name" placeholder="e.g. Rahul Sharma" required />
               </div>
               <div class="form-group">
+                <label for="sm-phone">WhatsApp Number <span class="form-required">*</span></label>
+                <input type="tel" id="sm-phone" name="phone" placeholder="10-digit mobile number" required maxlength="10" />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
                 <label for="sm-email">Email Address <span class="form-required">*</span></label>
                 <input type="email" id="sm-email" name="email" placeholder="your@email.com" required />
               </div>
@@ -959,6 +966,7 @@
         e.preventDefault();
 
         var nameEl  = document.getElementById('sm-name');
+        var phoneEl = document.getElementById('sm-phone');
         var emailEl = document.getElementById('sm-email');
         var examEl  = document.getElementById('sm-exam');
         var timeEl  = document.getElementById('sm-time');
@@ -969,6 +977,8 @@
 
         /* Validation */
         if (!nameEl.value.trim())                                    { nameEl.focus();  return; }
+        var cleanPhone = phoneEl ? phoneEl.value.replace(/\D/g,'').slice(-10) : '';
+        if (cleanPhone.length !== 10)                                { if(phoneEl) phoneEl.focus(); return; }
         if (!emailEl.value.trim() || emailEl.value.indexOf('@') < 0) { emailEl.focus(); return; }
         if (!examEl.value)                                           { examEl.focus();  return; }
 
@@ -989,6 +999,7 @@
         var payload = {
           name:    nameEl.value.trim(),
           email:   emailEl.value.trim(),
+          phone:   cleanPhone,
           subject: 'Strategy Plan Request  -  ' + (examEl.value || 'Civil Engineering'),
           message: 'Strategy Maker Request\n\n' + details,
         };
