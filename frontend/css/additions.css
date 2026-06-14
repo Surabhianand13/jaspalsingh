@@ -87,7 +87,7 @@
 /* Section header row with nav arrows */
 .progs-section-header {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 20px;
   margin-bottom: 32px;
