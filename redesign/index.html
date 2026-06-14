@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dr. Jaspal Singh — Civil Engineering Educator | SSC JE · Rajasthan AE/JE · GATE</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" />
+  <style>
+    :root {
+      --magenta:       #F0345A;
+      --sky:           #67C8E8;
+      --orange:        #FF6B35;
+      --green:         #16A34A;
+      --gold:          #D97706;
+      --dark:          #1A1A2E;
+      --body:          #4A4A68;
+      --light:         #F8F8F8;
+      --white:         #FFFFFF;
+      --gradient:      linear-gradient(135deg,#F0345A 0%,#67C8E8 100%);
+      --grad-orange:   linear-gradient(135deg,#FF6B35 0%,#F0345A 100%);
+      --grad-green:    linear-gradient(135deg,#16A34A 0%,#22C55E 100%);
+      --font-h:        'Plus Jakarta Sans',sans-serif;
+      --font-b:        'Inter',sans-serif;
+      --radius-pill:   50px;
+      --radius-md:     16px;
+      --radius-sm:     10px;
+      --shadow-sm:     0 2px 8px rgba(26,26,46,.07);
+      --shadow-md:     0 6px 28px rgba(26,26,46,.11);
+      --header-h:      72px;
+      --trans:         all .3s cubic-bezier(.4,0,.2,1);
+    }
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    html { scroll-behavior:smooth; }
+    body { font-family:var(--font-b); color:var(--body); background:var(--white); overflow-x:hidden; line-height:1.65; }
+    img { max-width:100%; height:auto; display:block; }
+    a { text-decoration:none; color:inherit; transition:var(--trans); }
+    button { cursor:pointer; font-family:var(--font-b); }
+    ul, ol { list-style:none; }
+    .container { width:100%; max-width:1200px; margin:0 auto; padding:0 28px; }
+    .section-pad { padding:88px 0; }
+    .bg-light { background:var(--light); }
+    .gradient-text { background:var(--gradient); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+
+    /* ── Buttons ── */
+    .btn { display:inline-flex; align-items:center; gap:9px; padding:14px 28px; border-radius:var(--radius-pill); font-family:var(--font-h); font-weight:700; font-size:15px; cursor:pointer; border:2px solid transparent; white-space:nowrap; transition:var(--trans); }
+    .btn-primary { background:var(--gradient); color:#fff; box-shadow:0 4px 22px rgba(240,52,90,.35); }
+    .btn-primary:hover { transform:translateY(-2px); box-shadow:0 8px 36px rgba(240,52,90,.45); }
+    .btn-orange { background:var(--grad-orange); color:#fff; box-shadow:0 4px 22px rgba(255,107,53,.35); }
+    .btn-orange:hover { transform:translateY(-2px); }
+    .btn-green { background:var(--grad-green); color:#fff; box-shadow:0 4px 22px rgba(22,163,74,.3); }
+    .btn-green:hover { transform:translateY(-2px); }
+    .btn-outline { background:transparent; color:var(--sky); border-color:var(--sky); }
+    .btn-outline:hover { background:var(--sky); color:#fff; transform:translateY(-2px); }
+    .btn-ghost { background:rgba(255,255,255,.15); color:#fff; border-color:rgba(255,255,255,.4); }
+    .btn-ghost:hover { background:rgba(255,255,255,.25); }
+
+    /* ── Section header ── */
+    .sec-head { text-align:center; margin-bottom:56px; }
+    .sec-tag { display:inline-flex; align-items:center; gap:6px; font-family:var(--font-h); font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--magenta); background:rgba(240,52,90,.08); border:1px solid rgba(240,52,90,.18); padding:6px 16px; border-radius:var(--radius-pill); margin-bottom:14px; }
+    .sec-tag.orange { color:var(--orange); background:rgba(255,107,53,.08); border-color:rgba(255,107,53,.18); }
+    .sec-tag.green { color:var(--green); background:rgba(22,163,74,.08); border-color:rgba(22,163,74,.18); }
+    .sec-title { font-family:var(--font-h); font-size:clamp(28px,4vw,42px); font-weight:800; color:var(--dark); line-height:1.15; letter-spacing:-.5px; margin-bottom:14px; }
+    .sec-sub { font-size:17px; color:var(--body); max-width:580px; margin:0 auto; line-height:1.75; }
+
+    /* ── Announcement Bar ── */
+    .announce-bar { background:var(--dark); color:#fff; padding:10px 0; font-size:13px; font-weight:500; overflow:hidden; }
+    .announce-inner { display:flex; align-items:center; gap:32px; justify-content:center; flex-wrap:wrap; }
+    .announce-pill { display:inline-flex; align-items:center; gap:8px; padding:4px 14px; border-radius:var(--radius-pill); font-size:12px; font-weight:700; }
+    .announce-pill.orange { background:rgba(255,107,53,.2); color:#FF9A75; border:1px solid rgba(255,107,53,.3); }
+    .announce-pill.green { background:rgba(22,163,74,.2); color:#4ADE80; border:1px solid rgba(22,163,74,.3); }
+    .announce-pill.blue { background:rgba(103,200,232,.15); color:#93D8EE; border:1px solid rgba(103,200,232,.25); }
+    .announce-item { display:flex; align-items:center; gap:8px; color:rgba(255,255,255,.85); }
+    .announce-dot { width:6px; height:6px; border-radius:50%; background:#F0345A; animation:blink 1.5s ease infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+    /* ── Header ── */
+    .site-header { position:fixed; top:0; left:0; right:0; z-index:900; height:var(--header-h); background:var(--white); border-bottom:2px solid var(--magenta); transition:box-shadow .3s; }
+    .site-header.scrolled { box-shadow:0 4px 32px rgba(26,26,46,.1); }
+    .header-inner { display:flex; align-items:center; justify-content:space-between; height:100%; }
+    .header-brand { display:flex; align-items:center; gap:10px; flex-shrink:0; }
+    .header-avatar { width:38px; height:38px; border-radius:50%; object-fit:cover; border:2px solid var(--magenta); background:#f2e9e0; flex-shrink:0; }
+    .wordmark { font-family:var(--font-h); font-weight:800; font-size:20px; color:var(--magenta); letter-spacing:-.3px; position:relative; padding-bottom:3px; }
+    .wordmark::after { content:''; position:absolute; bottom:0; left:0; width:100%; height:2.5px; background:var(--sky); border-radius:2px; }
+    .main-nav { display:flex; align-items:center; gap:2px; }
+    .nav-link { font-family:var(--font-h); font-weight:600; font-size:14px; color:var(--dark); padding:7px 14px; border-radius:var(--radius-pill); transition:var(--trans); }
+    .nav-link:hover { color:var(--magenta); background:rgba(240,52,90,.07); }
+    .nav-link.active { color:var(--magenta); background:rgba(240,52,90,.07); }
+    .nav-link.nav-programs { color:var(--orange); background:rgba(255,107,53,.07); font-weight:700; }
+    .nav-link.nav-programs:hover { background:rgba(255,107,53,.15); }
+    .nav-link.nav-alerts { color:var(--green); background:rgba(22,163,74,.07); font-weight:700; }
+    .nav-link.nav-alerts:hover { background:rgba(22,163,74,.15); }
+    .nav-link.nav-cta { background:var(--gradient); color:#fff; box-shadow:0 2px 14px rgba(240,52,90,.3); margin-left:4px; }
+    .nav-link.nav-cta:hover { transform:translateY(-1px); box-shadow:0 4px 22px rgba(240,52,90,.4); color:#fff; }
+    .hamburger { display:none; flex-direction:column; justify-content:center; gap:5px; background:none; border:none; cursor:pointer; padding:6px; width:40px; height:40px; }
+    .hamburger span { display:block; width:24px; height:2px; background:var(--dark); border-radius:2px; transition:var(--trans); }
+
+    /* ── Hero ── */
+    .hero-section { padding-top:calc(var(--header-h) + 36px + 48px); padding-bottom:72px; position:relative; overflow:hidden; min-height:90vh; display:flex; align-items:center; }
+    .hero-blob-1 { position:absolute; top:-8%; right:-4%; width:620px; height:620px; background:radial-gradient(circle at center,rgba(103,200,232,.18) 0%,rgba(240,52,90,.1) 45%,transparent 68%); border-radius:50%; pointer-events:none; z-index:0; }
+    .hero-blob-2 { position:absolute; bottom:-15%; left:-8%; width:480px; height:480px; background:radial-gradient(circle at center,rgba(240,52,90,.09) 0%,transparent 65%); border-radius:50%; pointer-events:none; z-index:0; }
+    .hero-inner { display:grid; grid-template-columns:1fr 1fr; align-items:center; gap:64px; position:relative; z-index:1; }
+    .hero-text { display:flex; flex-direction:column; gap:20px; }
+    .hero-badge { display:inline-flex; align-items:center; gap:8px; font-family:var(--font-h); font-weight:600; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--magenta); background:rgba(240,52,90,.08); border:1px solid rgba(240,52,90,.18); padding:8px 18px; border-radius:var(--radius-pill); width:fit-content; }
+    .hero-name { font-family:var(--font-h); font-size:clamp(40px,5.2vw,64px); font-weight:800; color:var(--dark); line-height:1.08; letter-spacing:-2px; }
+    .hero-tagline { font-family:var(--font-h); font-size:clamp(18px,2.2vw,24px); font-weight:600; color:var(--body); line-height:1.45; }
+    .tagline-highlight { background:var(--gradient); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    .hero-sub { font-size:16px; color:var(--body); line-height:1.75; max-width:480px; }
+    .hero-ctas { display:flex; gap:14px; flex-wrap:wrap; }
+    .hero-photo-ring { width:420px; height:420px; border-radius:50%; background:conic-gradient(from 0deg, var(--magenta), var(--sky), var(--orange), var(--magenta)); padding:4px; box-shadow:0 24px 80px rgba(240,52,90,.2); }
+    .hero-photo-inner { width:100%; height:100%; border-radius:50%; overflow:hidden; background:linear-gradient(135deg,#f5e9e0,#e8f0f5); display:flex; align-items:center; justify-content:center; }
+    .hero-photo { width:100%; height:100%; object-fit:cover; }
+    .hero-chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:4px; }
+    .hero-chip { display:inline-flex; align-items:center; gap:6px; font-family:var(--font-h); font-size:11px; font-weight:700; padding:5px 12px; border-radius:var(--radius-pill); }
+    .chip-orange { background:rgba(255,107,53,.1); color:var(--orange); border:1px solid rgba(255,107,53,.2); }
+    .chip-green { background:rgba(22,163,74,.1); color:var(--green); border:1px solid rgba(22,163,74,.2); }
+    .chip-blue { background:rgba(103,200,232,.12); color:#0EA5E9; border:1px solid rgba(103,200,232,.25); }
+
+    /* ── Stats bar ── */
+    .stats-bar { background:var(--dark); padding:32px 0; }
+    .stats-inner { display:flex; align-items:center; justify-content:space-evenly; gap:24px; flex-wrap:wrap; }
+    .stat-item { text-align:center; }
+    .stat-num { font-family:var(--font-h); font-size:clamp(28px,4vw,42px); font-weight:800; color:#fff; line-height:1; }
+    .stat-sym { font-family:var(--font-h); font-size:28px; font-weight:800; color:var(--magenta); }
+    .stat-label { display:block; font-size:12px; color:rgba(255,255,255,.55); font-weight:500; text-transform:uppercase; letter-spacing:.8px; margin-top:6px; }
+    .stat-divider { width:1px; height:48px; background:rgba(255,255,255,.12); }
+
+    /* ── Programs section ── */
+    .programs-section { padding:88px 0; }
+    .programs-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:28px; }
+    .program-card { background:var(--white); border-radius:var(--radius-md); border:1.5px solid rgba(26,26,46,.07); box-shadow:var(--shadow-sm); overflow:hidden; display:flex; flex-direction:column; transition:var(--trans); }
+    .program-card:hover { transform:translateY(-6px); box-shadow:var(--shadow-md); border-color:var(--orange); }
+    .program-card-top { padding:24px 24px 0; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+    .program-type-icon { width:52px; height:52px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; }
+    .icon-orange { background:rgba(255,107,53,.12); color:var(--orange); }
+    .icon-magenta { background:rgba(240,52,90,.1); color:var(--magenta); }
+    .icon-green { background:rgba(22,163,74,.1); color:var(--green); }
+    .icon-blue { background:rgba(103,200,232,.15); color:#0EA5E9; }
+    .program-badges { display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+    .pbadge { font-family:var(--font-h); font-size:10px; font-weight:700; padding:4px 10px; border-radius:var(--radius-pill); text-transform:uppercase; letter-spacing:.5px; }
+    .pbadge-offline { background:rgba(255,107,53,.1); color:var(--orange); border:1px solid rgba(255,107,53,.2); }
+    .pbadge-new { background:rgba(240,52,90,.1); color:var(--magenta); border:1px solid rgba(240,52,90,.2); }
+    .pbadge-popular { background:rgba(22,163,74,.1); color:var(--green); border:1px solid rgba(22,163,74,.2); }
+    .program-card-body { padding:18px 24px 0; flex:1; }
+    .program-card-title { font-family:var(--font-h); font-size:17px; font-weight:700; color:var(--dark); line-height:1.3; margin-bottom:8px; }
+    .program-card-desc { font-size:14px; color:var(--body); line-height:1.7; margin-bottom:16px; }
+    .program-meta { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
+    .pmeta-item { display:flex; flex-direction:column; gap:2px; }
+    .pmeta-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.7px; color:rgba(74,74,104,.5); }
+    .pmeta-val { font-family:var(--font-h); font-size:13px; font-weight:700; color:var(--dark); }
+    .pmeta-val.orange { color:var(--orange); }
+    .pmeta-val.green { color:var(--green); }
+    .program-fee-row { display:flex; align-items:center; justify-content:space-between; padding:14px 24px; background:var(--light); border-top:1.5px solid rgba(26,26,46,.06); }
+    .program-fee { font-family:var(--font-h); font-size:22px; font-weight:800; color:var(--dark); }
+    .program-fee span { font-size:13px; font-weight:500; color:var(--body); }
+    .program-fee-old { font-size:13px; color:var(--body); text-decoration:line-through; margin-left:6px; }
+    .program-enroll-btn { display:block; background:var(--grad-orange); color:#fff; text-align:center; padding:14px; font-family:var(--font-h); font-weight:700; font-size:14px; transition:var(--trans); }
+    .program-enroll-btn:hover { opacity:.9; letter-spacing:.3px; color:#fff; }
+
+    /* ── Job Alerts section ── */
+    .alerts-section { padding:88px 0; background:var(--light); }
+    .filter-bar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:32px; }
+    .filter-btn { font-family:var(--font-h); font-size:13px; font-weight:600; padding:7px 18px; border-radius:var(--radius-pill); border:1.5px solid rgba(26,26,46,.15); background:var(--white); color:var(--body); cursor:pointer; transition:var(--trans); }
+    .filter-btn:hover, .filter-btn.active { background:var(--dark); color:#fff; border-color:var(--dark); }
+    .filter-btn.active.ssc { background:#1565C0; border-color:#1565C0; }
+    .filter-btn.active.raj-ae { background:#7B1FA2; border-color:#7B1FA2; }
+    .filter-btn.active.raj-je { background:#E65100; border-color:#E65100; }
+    .alerts-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:20px; }
+    .alert-card { background:var(--white); border-radius:var(--radius-sm); border:1.5px solid rgba(26,26,46,.07); padding:22px; box-shadow:var(--shadow-sm); transition:var(--trans); display:flex; flex-direction:column; gap:12px; }
+    .alert-card:hover { transform:translateY(-3px); box-shadow:var(--shadow-md); }
+    .alert-card-top { display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; }
+    .exam-badge { font-family:var(--font-h); font-size:10px; font-weight:700; padding:4px 12px; border-radius:var(--radius-pill); text-transform:uppercase; letter-spacing:.6px; }
+    .badge-ssc { background:#1565C0; color:#fff; }
+    .badge-raj-ae { background:#7B1FA2; color:#fff; }
+    .badge-raj-je { background:#E65100; color:#fff; }
+    .badge-ese { background:#B71C1C; color:#fff; }
+    .badge-gate { background:#1B5E20; color:#fff; }
+    .status-pill { font-family:var(--font-h); font-size:10px; font-weight:700; padding:3px 10px; border-radius:var(--radius-pill); letter-spacing:.5px; }
+    .status-new { background:#FEF08A; color:#713F12; }
+    .status-active { background:#BBF7D0; color:#14532D; }
+    .status-upcoming { background:#BAE6FD; color:#0C4A6E; }
+    .status-closed { background:rgba(26,26,46,.08); color:rgba(26,26,46,.45); }
+    .alert-title { font-family:var(--font-h); font-size:15px; font-weight:700; color:var(--dark); line-height:1.4; }
+    .alert-dates { display:flex; flex-wrap:wrap; gap:8px; }
+    .alert-date-chip { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--body); background:var(--light); padding:4px 10px; border-radius:6px; }
+    .alert-date-chip i { color:var(--magenta); }
+    .alert-actions { display:flex; gap:8px; flex-wrap:wrap; padding-top:4px; border-top:1px solid rgba(26,26,46,.06); }
+    .alert-link { display:inline-flex; align-items:center; gap:5px; font-family:var(--font-h); font-size:12px; font-weight:700; color:var(--magenta); padding:5px 12px; border-radius:var(--radius-pill); border:1.5px solid rgba(240,52,90,.2); transition:var(--trans); }
+    .alert-link:hover { background:var(--magenta); color:#fff; }
+    .alert-link.green { color:var(--green); border-color:rgba(22,163,74,.2); }
+    .alert-link.green:hover { background:var(--green); color:#fff; }
+
+    /* ── Blog preview ── */
+    .blog-section { padding:88px 0; }
+    .blog-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:28px; }
+    .blog-card { background:var(--white); border:1.5px solid rgba(26,26,46,.07); border-radius:var(--radius-md); overflow:hidden; display:flex; flex-direction:column; transition:var(--trans); }
+    .blog-card:hover { transform:translateY(-5px); box-shadow:var(--shadow-md); }
+    .blog-card-img { height:160px; display:flex; align-items:center; justify-content:center; font-size:48px; }
+    .img-bg-1 { background:linear-gradient(135deg,rgba(240,52,90,.12),rgba(103,200,232,.15)); color:var(--magenta); }
+    .img-bg-2 { background:linear-gradient(135deg,rgba(255,107,53,.12),rgba(240,52,90,.1)); color:var(--orange); }
+    .img-bg-3 { background:linear-gradient(135deg,rgba(22,163,74,.1),rgba(103,200,232,.12)); color:var(--green); }
+    .blog-card-body { padding:22px; display:flex; flex-direction:column; gap:10px; flex:1; }
+    .blog-cat { display:inline-flex; align-items:center; gap:6px; font-family:var(--font-h); font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; padding:4px 10px; border-radius:var(--radius-pill); }
+    .cat-exam { background:rgba(240,52,90,.08); color:var(--magenta); }
+    .cat-program { background:rgba(255,107,53,.08); color:var(--orange); }
+    .cat-tips { background:rgba(22,163,74,.08); color:var(--green); }
+    .blog-title { font-family:var(--font-h); font-size:16px; font-weight:700; color:var(--dark); line-height:1.4; }
+    .blog-meta { display:flex; gap:14px; font-size:12px; color:rgba(74,74,104,.6); }
+    .blog-excerpt { font-size:14px; color:var(--body); line-height:1.7; flex:1; }
+    .blog-read-more { display:inline-flex; align-items:center; gap:6px; font-family:var(--font-h); font-size:13px; font-weight:700; color:var(--magenta); margin-top:auto; padding-top:12px; border-top:1px solid rgba(26,26,46,.06); }
+    .blog-read-more:hover { gap:10px; }
+
+    /* ── Testimonials ── */
+    .testi-section { padding:88px 0; background:var(--light); }
+    .testi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:24px; }
+    .testi-card { background:var(--white); border-radius:var(--radius-md); padding:28px; border:1.5px solid rgba(26,26,46,.07); position:relative; }
+    .testi-card.featured { border-color:var(--magenta); box-shadow:0 8px 40px rgba(240,52,90,.12); }
+    .testi-quote { font-size:32px; color:var(--magenta); opacity:.2; position:absolute; top:20px; left:24px; font-family:serif; line-height:1; }
+    .testi-text { font-size:15px; color:var(--body); line-height:1.75; font-style:italic; padding-top:20px; margin-bottom:20px; }
+    .testi-author { display:flex; align-items:center; gap:12px; }
+    .testi-avatar { width:42px; height:42px; border-radius:50%; background:var(--gradient); display:flex; align-items:center; justify-content:center; font-family:var(--font-h); font-weight:700; font-size:14px; color:#fff; flex-shrink:0; }
+    .testi-name { font-family:var(--font-h); font-size:14px; font-weight:700; color:var(--dark); }
+    .testi-exam { font-size:12px; color:rgba(74,74,104,.65); margin-top:2px; }
+
+    /* ── Community ── */
+    .community-section { padding:88px 0; }
+    .community-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; }
+    .community-btn { display:flex; align-items:center; gap:16px; padding:20px 22px; border-radius:var(--radius-md); text-decoration:none; transition:var(--trans); border:1.5px solid transparent; }
+    .community-btn:hover { transform:translateY(-4px); box-shadow:var(--shadow-md); }
+    .community-icon { font-size:28px; width:52px; height:52px; border-radius:14px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .community-btn-title { font-family:var(--font-h); font-weight:700; font-size:15px; display:block; }
+    .community-btn-sub { font-size:12px; color:rgba(74,74,104,.7); display:block; margin-top:2px; }
+    .telegram { background:linear-gradient(135deg,rgba(41,182,246,.08),rgba(3,169,244,.05)); border-color:rgba(3,169,244,.2); }
+    .telegram .community-icon { background:rgba(3,169,244,.1); color:#0288D1; }
+    .telegram .community-btn-title { color:#0277BD; }
+    .whatsapp { background:linear-gradient(135deg,rgba(37,211,102,.08),rgba(18,140,126,.05)); border-color:rgba(37,211,102,.2); }
+    .whatsapp .community-icon { background:rgba(37,211,102,.1); color:#25D366; }
+    .whatsapp .community-btn-title { color:#1B5E20; }
+    .instagram { background:linear-gradient(135deg,rgba(240,52,90,.07),rgba(131,58,180,.06)); border-color:rgba(131,58,180,.2); }
+    .instagram .community-icon { background:linear-gradient(135deg,rgba(131,58,180,.15),rgba(240,52,90,.1)); color:#9C27B0; }
+    .instagram .community-btn-title { color:#7B1FA2; }
+    .youtube { background:linear-gradient(135deg,rgba(255,0,0,.07),rgba(204,0,0,.04)); border-color:rgba(255,0,0,.15); }
+    .youtube .community-icon { background:rgba(255,0,0,.08); color:#CC0000; }
+    .youtube .community-btn-title { color:#B71C1C; }
+
+    /* ── CTA banner ── */
+    .cta-banner { padding:80px 0; background:var(--gradient); }
+    .cta-inner { text-align:center; }
+    .cta-inner h2 { font-family:var(--font-h); font-size:clamp(26px,4vw,40px); font-weight:800; color:#fff; margin-bottom:14px; }
+    .cta-inner p { color:rgba(255,255,255,.85); font-size:17px; max-width:500px; margin:0 auto 32px; line-height:1.7; }
+    .cta-btns { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; }
+
+    /* ── Footer ── */
+    .site-footer { background:var(--dark); padding-top:72px; }
+    .footer-inner { display:grid; grid-template-columns:2fr 1fr 1fr 1.2fr; gap:48px; padding-bottom:56px; }
+    .footer-wordmark { font-family:var(--font-h); font-weight:800; font-size:22px; color:#fff; display:inline-block; margin-bottom:12px; }
+    .footer-tagline { font-size:13px; color:rgba(255,255,255,.5); line-height:1.7; max-width:280px; margin-bottom:16px; }
+    .footer-col-title { font-family:var(--font-h); font-weight:700; font-size:11px; letter-spacing:1.4px; text-transform:uppercase; color:rgba(255,255,255,.4); margin-bottom:18px; }
+    .footer-links { display:flex; flex-direction:column; gap:10px; }
+    .footer-link { font-size:13px; color:rgba(255,255,255,.6); transition:var(--trans); }
+    .footer-link:hover { color:var(--sky); }
+    .footer-social { display:flex; gap:10px; margin-bottom:16px; }
+    .fsocial-link { width:38px; height:38px; border-radius:50%; background:rgba(255,255,255,.08); display:flex; align-items:center; justify-content:center; font-size:15px; color:rgba(255,255,255,.6); transition:var(--trans); }
+    .fsocial-link:hover { background:var(--magenta); color:#fff; transform:translateY(-2px); }
+    .footer-bottom { border-top:1px solid rgba(255,255,255,.07); padding:20px 0; }
+    .footer-bottom p { font-size:12px; color:rgba(255,255,255,.3); text-align:center; }
+
+    /* WhatsApp Float */
+    .whatsapp-float { position:fixed; bottom:24px; right:24px; background:#25D366; color:#fff; border-radius:50%; width:56px; height:56px; display:flex; align-items:center; justify-content:center; font-size:28px; box-shadow:0 4px 16px rgba(0,0,0,.25); z-index:9999; transition:var(--trans); }
+    .whatsapp-float:hover { transform:scale(1.1); box-shadow:0 6px 20px rgba(37,211,102,.5); color:#fff; }
+
+    /* ── Responsive ── */
+    @media(max-width:900px) {
+      .main-nav { display:none; }
+      .hamburger { display:flex; }
+      .hero-inner { grid-template-columns:1fr; gap:40px; text-align:center; }
+      .hero-photo-ring { width:280px; height:280px; margin:0 auto; }
+      .hero-ctas { justify-content:center; }
+      .hero-chips { justify-content:center; }
+      .footer-inner { grid-template-columns:1fr 1fr; gap:32px; }
+    }
+    @media(max-width:600px) {
+      :root { --header-h:64px; }
+      .container { padding:0 18px; }
+      .section-pad { padding:60px 0; }
+      .announce-inner { flex-direction:column; gap:8px; font-size:12px; }
+      .hero-photo-ring { width:220px; height:220px; }
+      .footer-inner { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ANNOUNCEMENT BAR -->
+  <div class="announce-bar">
+    <div class="container announce-inner">
+      <div class="announce-item">
+        <span class="announce-dot"></span>
+        <span class="announce-pill orange"><i class="fas fa-map-marker-alt"></i> Jaipur, Rajasthan</span>
+        <span>SSC JE Interview Prep Workshop — June 15–17 &nbsp;·&nbsp; Limited Seats</span>
+      </div>
+      <div class="announce-item" style="color:rgba(255,255,255,.5);">|</div>
+      <div class="announce-item">
+        <span class="announce-pill green"><i class="fas fa-bell"></i> New Alert</span>
+        <span>RPSC JE 2025 Notification Released</span>
+      </div>
+      <div class="announce-item" style="color:rgba(255,255,255,.5);">|</div>
+      <div class="announce-item">
+        <span class="announce-pill blue"><i class="fas fa-graduation-cap"></i></span>
+        <span>Rajasthan AE/JE Mock Interview — June 8, Jaipur</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- HEADER -->
+  <header class="site-header" id="siteHeader" role="banner">
+    <div class="container header-inner">
+      <a href="index.html" class="header-brand" aria-label="Dr. Jaspal Singh — Home">
+        <img src="../frontend/assets/images/jaspal-hero.png" class="header-avatar" alt="Dr. Jaspal Singh" onerror="this.style.display='none'" />
+        <span class="wordmark">Dr. Jaspal Singh</span>
+      </a>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="index.html" class="nav-link active">Home</a>
+        <a href="programs/index.html" class="nav-link nav-programs"><i class="fas fa-chalkboard-teacher"></i> Programs</a>
+        <a href="job-alerts/index.html" class="nav-link nav-alerts"><i class="fas fa-bell"></i> Job Alerts</a>
+        <a href="#" class="nav-link">Blog</a>
+        <a href="#" class="nav-link">Resources</a>
+        <a href="#" class="nav-link">About</a>
+        <a href="#" class="nav-link nav-cta">Connect</a>
+      </nav>
+      <button class="hamburger" id="hamburger" aria-label="Open menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- HERO -->
+    <section class="hero-section">
+      <div class="hero-blob-1" aria-hidden="true"></div>
+      <div class="hero-blob-2" aria-hidden="true"></div>
+      <div class="container hero-inner">
+        <div class="hero-text">
+          <span class="hero-badge">
+            Ex-IES (AIR-04) &nbsp;·&nbsp; GATE AIR-06 &nbsp;·&nbsp; PhD &nbsp;·&nbsp; Unacademy Educator
+          </span>
+          <h1 class="hero-name">Dr. Jaspal Singh</h1>
+          <p class="hero-tagline">
+            Because Har Aspirant Deserves a<br/>
+            <span class="tagline-highlight">Teacher Who Truly Cares.</span>
+          </p>
+          <p class="hero-sub">
+            15+ years transforming Civil Engineering education. Now bringing <strong>offline programs to Jaipur</strong> — Interview Prep, Mock Interviews, and Offline Tests for SSC JE, Rajasthan AE/JE & more.
+          </p>
+          <div class="hero-chips">
+            <span class="hero-chip chip-orange"><i class="fas fa-map-marker-alt"></i> Jaipur, Rajasthan</span>
+            <span class="hero-chip chip-green"><i class="fas fa-certificate"></i> SSC JE · Rajasthan AE/JE</span>
+            <span class="hero-chip chip-blue"><i class="fas fa-users"></i> Small Batches · Personal Attention</span>
+          </div>
+          <div class="hero-ctas">
+            <a href="programs/index.html" class="btn btn-orange">
+              <i class="fas fa-chalkboard-teacher"></i> Offline Programs
+            </a>
+            <a href="job-alerts/index.html" class="btn btn-green">
+              <i class="fas fa-bell"></i> Job Alerts
+            </a>
+            <a href="../frontend/resources/" class="btn btn-outline">
+              <i class="fas fa-book-open"></i> Free Resources
+            </a>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:center;">
+          <div class="hero-photo-ring">
+            <div class="hero-photo-inner">
+              <img src="../frontend/assets/images/jaspal-hero.png" alt="Dr. Jaspal Singh" class="hero-photo" onerror="this.parentElement.style.background='linear-gradient(135deg,#F0345A,#67C8E8)'" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STATS -->
+    <div class="stats-bar">
+      <div class="container stats-inner">
+        <div class="stat-item">
+          <div><span class="stat-num">15</span><span class="stat-sym">+</span></div>
+          <span class="stat-label">Years of Teaching</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <div><span class="stat-num">1L</span><span class="stat-sym">+</span></div>
+          <span class="stat-label">Students Mentored</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <div><span class="stat-num" style="font-size:28px;">AIR-04</span></div>
+          <span class="stat-label">ESE Rank · GATE AIR-06</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <div><span class="stat-num">4</span><span class="stat-sym">+</span></div>
+          <span class="stat-label">Offline Programs · Jaipur</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <div><span class="stat-num">500</span><span class="stat-sym">+</span></div>
+          <span class="stat-label">Job Alerts Posted</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- OFFLINE PROGRAMS -->
+    <section class="programs-section">
+      <div class="container">
+        <div class="sec-head">
+          <div class="sec-tag orange"><i class="fas fa-map-marker-alt"></i> Offline · Jaipur, Rajasthan</div>
+          <h2 class="sec-title">Offline Programs for <span class="gradient-text">Engineering Aspirants</span></h2>
+          <p class="sec-sub">Hands-on, intensive offline programs in Jaipur — designed specifically for SSC JE, Rajasthan AE/JE, and other engineering exam aspirants.</p>
+        </div>
+
+        <div class="programs-grid">
+
+          <!-- Program 1 -->
+          <div class="program-card">
+            <div class="program-card-top">
+              <div class="program-type-icon icon-orange"><i class="fas fa-user-tie"></i></div>
+              <div class="program-badges">
+                <span class="pbadge pbadge-offline"><i class="fas fa-building"></i> Offline · Jaipur</span>
+                <span class="pbadge pbadge-new">New Batch</span>
+              </div>
+            </div>
+            <div class="program-card-body">
+              <h3 class="program-card-title">SSC JE Interview Prep Workshop</h3>
+              <p class="program-card-desc">3-day intensive offline workshop covering technical mock interviews, HR round preparation, document verification, and personality grooming.</p>
+              <div class="program-meta">
+                <div class="pmeta-item"><span class="pmeta-label">Duration</span><span class="pmeta-val">3 Days</span></div>
+                <div class="pmeta-item"><span class="pmeta-label">Next Batch</span><span class="pmeta-val orange">Jun 15–17</span></div>
+                <div class="pmeta-item"><span class="pmeta-label">Location</span><span class="pmeta-val">Jaipur, Rajasthan</span></div>
+                <div class="pmeta-item"><span class="pmeta-label">Seats Left</span><span class="pmeta-val green">12 / 30</span></div>
+              </div>
+            </div>
+            <div class="program-fee-row">
+              <div>
+                <div class="program-fee">₹2,999 <span>/ person</span></div>
+                <div style="display:inline"><span class="program-fee-old">₹4,999</span></div>
+              </div>
+            </div>
+            <a href="programs/index.html" class="program-enroll-btn"><i class="fas fa-arrow-right"></i> Enroll Now</a>
+          </div>
+
+          <!-- Program 2 -->
+          <div class="program-card">
+            <div class="program-card-top">
+              <div class="program-type-icon icon-magenta"><i class="fas fa-comments"></i></div>
+              <div class="program-badges">
+                <span class="pbadge pbadge-offline"><i class="fas fa-building"></i> Offline · Jaipur</span>
+                <span class="pbadge pbadge-popular">Most Popular</span>
+              </div>
+            </div>
+            <div class="program-card-body">
+              <h3 class="program-card-title">Rajasthan AE/JE Mock Interview Program</h3>
+              <p class="program-card-desc">Full-day simulation of the RPSC/RSMSSB interview process — technical + HR rounds, panel discussion, instant feedback by Dr. Jaspal Sir.</p>
+              <div class="program-meta">
+                <div class="pmeta-item"><span class="pmeta-label">Duration</span><span class="pmeta-val">1 Day</span></div>
+                <div class="pmeta-item"><span class="pmeta-label">Next Batch</span><span class="pmeta-val orange">Jun 8, 2026</span></div>
+                <div class="pmeta-item"><span class="pmeta-label">Location</span><span class="pmeta-val">Jaipur, Rajasthan</span></div>
+                <div class="pmeta-item"><span class="pmeta-label">Seats Left</span><span class="pmeta-val green">5 / 20</span></div>
+              </div>
+            </div>
+            <div class="program-fee-row">
+              <div>
+                <div class="program-fee">₹1,999 <span>/ person</span></div>
+                <div style="display:inline"><span class="program-fee-old">₹2,999</span></div>
+              </div>
+            </div>
+            <a href="programs/index.html" class="program-enroll-btn"><i class="fas fa-arrow-right"></i> Enroll Now</a>
+          </div>
+
+          <!-- Program 3 -->
+          <div class="program-card">
+            <div class="program-card-top">
+              <div class="program-type-icon icon-green"><i class="fas fa-pencil-alt"></i></div>
+              <div class="program-badges">
+                <span class="pbadge pbadge-offline"><i class="fas fa-building"></i> Offline · Jaipur</span>
+              </div>
+            </div>
+            <div class="program-card-body">
+              <h3 class="program-card-title">Offline Test Series — SSC JE & Rajasthan AE/JE</h3>
+              <p class="program-card-desc">Weekly offline tests at our Jaipur center covering full syllabus for SSC JE, RPSC AE/JE. Detailed performance analysis after each test.</p>
+              <div class="program-meta">
+                <div class="pmeta-item"><span class="pmeta-label">Frequency</span><span class="pmeta-val">Weekly</span></div>
+                <div class="pmeta-item"><span class="pmeta-label">Starts</span><span class="pmeta-val orange">Ongoing</span></div>
+                <div class="pmeta-item"><span class="pmeta-label">Location</span><span class="pmeta-val">Jaipur, Rajasthan</span></div>
+                <div class="pmeta-item"><span class="pmeta-label">Seats Left</span><span class="pmeta-val green">Open</span></div>
+              </div>
+            </div>
+            <div class="program-fee-row">
+              <div>
+                <div class="program-fee">₹4,999 <span>/ month</span></div>
+              </div>
+            </div>
+            <a href="programs/index.html" class="program-enroll-btn"><i class="fas fa-arrow-right"></i> Enroll Now</a>
+          </div>
+
+          <!-- Program 4 -->
+          <div class="program-card">
+            <div class="program-card-top">
+              <div class="program-type-icon icon-blue"><i class="fas fa-users"></i></div>
+              <div class="program-badges">
+                <span class="pbadge pbadge-offline"><i class="fas fa-building"></i> Offline · Jaipur</span>
+                <span class="pbadge pbadge-new">New</span>
+              </div>
+            </div>
+            <div class="program-card-body">
+              <h3 class="program-card-title">GD + Personality Development + Interview Skills</h3>
+              <p class="program-card-desc">2-day offline program covering Group Discussion, communication skills, body language, and confidence building for engineering job interviews.</p>
+              <div class="program-meta">
+                <div class="pmeta-item"><span class="pmeta-label">Duration</span><span class="pmeta-val">2 Days</span></div>
+                <div class="pmeta-item"><span class="pmeta-label">Next Batch</span><span class="pmeta-val orange">Jun 22–23</span></div>
+                <div class="pmeta-item"><span class="pmeta-label">Location</span><span class="pmeta-val">Jaipur, Rajasthan</span></div>
+                <div class="pmeta-item"><span class="pmeta-label">Seats Left</span><span class="pmeta-val green">18 / 25</span></div>
+              </div>
+            </div>
+            <div class="program-fee-row">
+              <div>
+                <div class="program-fee">₹3,499 <span>/ person</span></div>
+                <div style="display:inline"><span class="program-fee-old">₹5,999</span></div>
+              </div>
+            </div>
+            <a href="programs/index.html" class="program-enroll-btn"><i class="fas fa-arrow-right"></i> Enroll Now</a>
+          </div>
+
+        </div>
+
+        <div style="text-align:center;margin-top:48px;">
+          <a href="programs/index.html" class="btn btn-orange">View All Programs &nbsp;<i class="fas fa-arrow-right"></i></a>
+        </div>
+      </div>
+    </section>
+
+    <!-- JOB ALERTS -->
+    <section class="alerts-section">
+      <div class="container">
+        <div class="sec-head">
+          <div class="sec-tag green"><i class="fas fa-bell"></i> Live Notifications</div>
+          <h2 class="sec-title">Latest Job <span class="gradient-text">Notifications</span></h2>
+          <p class="sec-sub">Real-time alerts for SSC JE, Rajasthan AE/JE, RPSC, RSMSSB and other engineering recruitment exams. Never miss a deadline.</p>
+        </div>
+
+        <div class="filter-bar">
+          <button class="filter-btn active">All</button>
+          <button class="filter-btn">SSC JE</button>
+          <button class="filter-btn">Rajasthan AE</button>
+          <button class="filter-btn">Rajasthan JE</button>
+          <button class="filter-btn">GATE CE</button>
+          <button class="filter-btn">UPSC ESE</button>
+        </div>
+
+        <div class="alerts-grid">
+
+          <div class="alert-card">
+            <div class="alert-card-top">
+              <span class="exam-badge badge-raj-je">RPSC JE</span>
+              <span class="status-pill status-new">NEW</span>
+            </div>
+            <p class="alert-title">RPSC Junior Engineer (Civil) 2025 — 1,207 Vacancies Released</p>
+            <div class="alert-dates">
+              <span class="alert-date-chip"><i class="fas fa-calendar-alt"></i> Notified: May 20, 2026</span>
+              <span class="alert-date-chip"><i class="fas fa-hourglass-end"></i> Last Date: Jun 30, 2026</span>
+              <span class="alert-date-chip"><i class="fas fa-pencil-alt"></i> Exam: Aug 2026</span>
+            </div>
+            <div class="alert-actions">
+              <a href="#" class="alert-link"><i class="fas fa-file-pdf"></i> Official Notification</a>
+              <a href="#" class="alert-link green"><i class="fas fa-external-link-alt"></i> Apply Online</a>
+              <a href="#" class="alert-link"><i class="fas fa-book-open"></i> Prep Strategy</a>
+            </div>
+          </div>
+
+          <div class="alert-card">
+            <div class="alert-card-top">
+              <span class="exam-badge badge-ssc">SSC JE</span>
+              <span class="status-pill status-active">ACTIVE</span>
+            </div>
+            <p class="alert-title">SSC JE 2025 Paper-I — Exam Dates Announced, Admit Card Live</p>
+            <div class="alert-dates">
+              <span class="alert-date-chip"><i class="fas fa-calendar-alt"></i> Notified: Mar 28, 2026</span>
+              <span class="alert-date-chip"><i class="fas fa-id-card"></i> Admit Card: Out Now</span>
+              <span class="alert-date-chip"><i class="fas fa-pencil-alt"></i> Exam: Jun 10–12</span>
+            </div>
+            <div class="alert-actions">
+              <a href="#" class="alert-link"><i class="fas fa-download"></i> Download Admit Card</a>
+              <a href="#" class="alert-link"><i class="fas fa-book-open"></i> Syllabus & Pattern</a>
+            </div>
+          </div>
+
+          <div class="alert-card">
+            <div class="alert-card-top">
+              <span class="exam-badge badge-raj-ae">RPSC AE</span>
+              <span class="status-pill status-upcoming">UPCOMING</span>
+            </div>
+            <p class="alert-title">RPSC Assistant Engineer (Civil) 2025 — Interview Dates Announced</p>
+            <div class="alert-dates">
+              <span class="alert-date-chip"><i class="fas fa-calendar-alt"></i> Interview: Jul 8–15, 2026</span>
+              <span class="alert-date-chip"><i class="fas fa-map-marker-alt"></i> Venue: Jaipur</span>
+            </div>
+            <div class="alert-actions">
+              <a href="#" class="alert-link"><i class="fas fa-file-pdf"></i> Official Schedule</a>
+              <a href="programs/index.html" class="alert-link green"><i class="fas fa-chalkboard-teacher"></i> Mock Interview Prep</a>
+            </div>
+          </div>
+
+          <div class="alert-card">
+            <div class="alert-card-top">
+              <span class="exam-badge badge-ssc">SSC JE</span>
+              <span class="status-pill status-upcoming">UPCOMING</span>
+            </div>
+            <p class="alert-title">SSC JE 2026 — Expected Notification in August 2026, Start Prep Now</p>
+            <div class="alert-dates">
+              <span class="alert-date-chip"><i class="fas fa-calendar-alt"></i> Expected: Aug 2026</span>
+              <span class="alert-date-chip"><i class="fas fa-users"></i> Vacancies: ~2,500 Expected</span>
+            </div>
+            <div class="alert-actions">
+              <a href="#" class="alert-link"><i class="fas fa-bell"></i> Get Alert When Live</a>
+              <a href="#" class="alert-link"><i class="fas fa-chess"></i> Study Strategy</a>
+            </div>
+          </div>
+
+          <div class="alert-card">
+            <div class="alert-card-top">
+              <span class="exam-badge badge-ese">UPSC ESE</span>
+              <span class="status-pill status-active">ACTIVE</span>
+            </div>
+            <p class="alert-title">UPSC ESE 2025 Notification Released — Key Dates & Eligibility</p>
+            <div class="alert-dates">
+              <span class="alert-date-chip"><i class="fas fa-calendar-alt"></i> Last Date: Jun 5, 2026</span>
+              <span class="alert-date-chip"><i class="fas fa-pencil-alt"></i> Prelims: Oct 19</span>
+            </div>
+            <div class="alert-actions">
+              <a href="#" class="alert-link"><i class="fas fa-file-pdf"></i> Official Notification</a>
+              <a href="#" class="alert-link green"><i class="fas fa-external-link-alt"></i> Apply at UPSC</a>
+            </div>
+          </div>
+
+          <div class="alert-card">
+            <div class="alert-card-top">
+              <span class="exam-badge badge-gate">GATE CE</span>
+              <span class="status-pill status-upcoming">UPCOMING</span>
+            </div>
+            <p class="alert-title">GATE CE 2026 — Application Window Opens August 2025</p>
+            <div class="alert-dates">
+              <span class="alert-date-chip"><i class="fas fa-calendar-alt"></i> Opens: Aug 2026</span>
+              <span class="alert-date-chip"><i class="fas fa-pencil-alt"></i> Exam: Feb 2027</span>
+            </div>
+            <div class="alert-actions">
+              <a href="#" class="alert-link"><i class="fas fa-bell"></i> Remind Me</a>
+              <a href="#" class="alert-link"><i class="fas fa-book-open"></i> GATE Resources</a>
+            </div>
+          </div>
+
+        </div>
+
+        <div style="text-align:center;margin-top:48px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
+          <a href="job-alerts/index.html" class="btn btn-green"><i class="fas fa-bell"></i> View All Job Alerts</a>
+          <a href="https://t.me/jaspalsirofficial" target="_blank" rel="noopener" class="btn" style="background:linear-gradient(135deg,#1a9fd8,#28bce8);color:#fff;border:none;">
+            <i class="fab fa-telegram"></i> Telegram for Instant Alerts
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- BLOG PREVIEW -->
+    <section class="blog-section">
+      <div class="container">
+        <div class="sec-head">
+          <div class="sec-tag"><i class="fas fa-pen-nib"></i> Blog & Insights</div>
+          <h2 class="sec-title">Latest from the <span class="gradient-text">Blog</span></h2>
+          <p class="sec-sub">Exam tips, subject insights, job notifications, and personal notes from Dr. Jaspal Singh.</p>
+        </div>
+
+        <div class="blog-grid">
+          <article class="blog-card">
+            <div class="blog-card-img img-bg-2"><i class="fas fa-user-tie"></i></div>
+            <div class="blog-card-body">
+              <span class="blog-cat cat-program">Offline Programs</span>
+              <h3 class="blog-title">How to Crack the SSC JE Interview — Dr. Jaspal's Insider Guide</h3>
+              <div class="blog-meta"><span><i class="fas fa-calendar-alt"></i> May 20, 2026</span><span><i class="fas fa-clock"></i> 6 min</span></div>
+              <p class="blog-excerpt">Most SSC JE candidates clear Paper-I but stumble at the interview stage. Here's exactly what the interview panel looks for — and how to prepare systematically.</p>
+              <a href="#" class="blog-read-more">Read Full Post <i class="fas fa-arrow-right"></i></a>
+            </div>
+          </article>
+
+          <article class="blog-card">
+            <div class="blog-card-img img-bg-1"><i class="fas fa-bell"></i></div>
+            <div class="blog-card-body">
+              <span class="blog-cat cat-exam">Exam Update</span>
+              <h3 class="blog-title">RPSC JE 2025 — Complete Guide to 1,207 Civil Engineering Vacancies</h3>
+              <div class="blog-meta"><span><i class="fas fa-calendar-alt"></i> May 20, 2026</span><span><i class="fas fa-clock"></i> 5 min</span></div>
+              <p class="blog-excerpt">Rajasthan Public Service Commission has released 1,207 JE vacancies. Full breakdown of eligibility, syllabus, exam pattern, and preparation timeline.</p>
+              <a href="#" class="blog-read-more">Read Full Post <i class="fas fa-arrow-right"></i></a>
+            </div>
+          </article>
+
+          <article class="blog-card">
+            <div class="blog-card-img img-bg-3"><i class="fas fa-chess-king"></i></div>
+            <div class="blog-card-body">
+              <span class="blog-cat cat-tips">Subject Tips</span>
+              <h3 class="blog-title">Rajasthan AE/JE vs SSC JE — Which Exam to Target First?</h3>
+              <div class="blog-meta"><span><i class="fas fa-calendar-alt"></i> May 15, 2026</span><span><i class="fas fa-clock"></i> 4 min</span></div>
+              <p class="blog-excerpt">A practical guide for Rajasthan-based engineering aspirants — how to decide exam priority, how the syllabus overlaps, and how to prepare for both simultaneously.</p>
+              <a href="#" class="blog-read-more">Read Full Post <i class="fas fa-arrow-right"></i></a>
+            </div>
+          </article>
+        </div>
+
+        <div style="text-align:center;margin-top:48px;">
+          <a href="#" class="btn btn-primary">View All Blog Posts &nbsp;<i class="fas fa-arrow-right"></i></a>
+        </div>
+      </div>
+    </section>
+
+    <!-- TESTIMONIALS -->
+    <section class="testi-section">
+      <div class="container">
+        <div class="sec-head">
+          <div class="sec-tag"><i class="fas fa-star"></i> Success Stories</div>
+          <h2 class="sec-title">What His <span class="gradient-text">Baccho</span> Say</h2>
+          <p class="sec-sub">Real students. Real results. Real love for their Sir.</p>
+        </div>
+
+        <div class="testi-grid">
+          <blockquote class="testi-card">
+            <div class="testi-quote">"</div>
+            <p class="testi-text">Sir ke SSC JE Interview Prep Workshop ke baad interview mein bilkul confident tha. Technical questions, HR round — everything Sir ne cover kiya tha. Selected in SSC JE 2024!</p>
+            <div class="testi-author">
+              <div class="testi-avatar">AV</div>
+              <div>
+                <div class="testi-name">Abhishek Vyas</div>
+                <div class="testi-exam">SSC JE 2024 · Civil Engineering · Jaipur</div>
+              </div>
+            </div>
+          </blockquote>
+
+          <blockquote class="testi-card featured">
+            <div class="testi-quote">"</div>
+            <p class="testi-text">Rajasthan AE Mock Interview program ne meri soch hi badal di. Pehle toh bahut nervous rehti thi panel ke saamne — Sir ne ek hi din mein confidence de diya. RPSC AE 2024 mein selected.</p>
+            <div class="testi-author">
+              <div class="testi-avatar">PS</div>
+              <div>
+                <div class="testi-name">Pooja Sharma</div>
+                <div class="testi-exam">RPSC AE 2024 · Civil Engg. · Jodhpur</div>
+              </div>
+            </div>
+          </blockquote>
+
+          <blockquote class="testi-card">
+            <div class="testi-quote">"</div>
+            <p class="testi-text">Environmental Engineering used to be my weakest subject. After Dr. Jaspal Sir's offline test series in Jaipur, it became my strongest. GATE CE 2024 — 92 percentile.</p>
+            <div class="testi-author">
+              <div class="testi-avatar">RK</div>
+              <div>
+                <div class="testi-name">Rahul Kumawat</div>
+                <div class="testi-exam">GATE CE 2024 · 92 Percentile · Jaipur</div>
+              </div>
+            </div>
+          </blockquote>
+        </div>
+      </div>
+    </section>
+
+    <!-- COMMUNITY -->
+    <section class="community-section">
+      <div class="container">
+        <div class="sec-head">
+          <div class="sec-tag"><i class="fas fa-users"></i> Community</div>
+          <h2 class="sec-title">Learn Together, <span class="gradient-text">Grow Together</span></h2>
+          <p class="sec-sub">Join thousands of aspirants guided by Dr. Jaspal Singh.</p>
+        </div>
+        <div class="community-grid">
+          <a href="https://t.me/jaspalsirofficial" target="_blank" rel="noopener" class="community-btn telegram">
+            <div class="community-icon"><i class="fab fa-telegram"></i></div>
+            <div>
+              <span class="community-btn-title">Join Telegram</span>
+              <span class="community-btn-sub">Live Q&A, updates & study sessions</span>
+            </div>
+          </a>
+          <a href="https://whatsapp.com/channel/0029VaBBx7u8PgsF7Y4KZv06" target="_blank" rel="noopener" class="community-btn whatsapp">
+            <div class="community-icon"><i class="fab fa-whatsapp"></i></div>
+            <div>
+              <span class="community-btn-title">WhatsApp Channel</span>
+              <span class="community-btn-sub">Exam alerts & quick announcements</span>
+            </div>
+          </a>
+          <a href="https://www.instagram.com/iesjaspalsingh/" target="_blank" rel="noopener" class="community-btn instagram">
+            <div class="community-icon"><i class="fab fa-instagram"></i></div>
+            <div>
+              <span class="community-btn-title">Follow on Instagram</span>
+              <span class="community-btn-sub">Reels, insights & beyond the classroom</span>
+            </div>
+          </a>
+          <a href="https://unacademy.com/@jaspallive" target="_blank" rel="noopener" class="community-btn youtube">
+            <div class="community-icon"><i class="fas fa-play-circle"></i></div>
+            <div>
+              <span class="community-btn-title">Watch on Unacademy</span>
+              <span class="community-btn-sub">Live classes & recorded lectures</span>
+            </div>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA BANNER -->
+    <div class="cta-banner">
+      <div class="container cta-inner">
+        <h2>Ready to crack your interview?</h2>
+        <p>Join Dr. Jaspal Singh's offline programs in Jaipur — small batches, personal attention, proven results.</p>
+        <div class="cta-btns">
+          <a href="programs/index.html" class="btn" style="background:#fff;color:var(--orange);border-color:#fff;"><i class="fas fa-chalkboard-teacher"></i> View Programs</a>
+          <a href="job-alerts/index.html" class="btn btn-ghost"><i class="fas fa-bell"></i> Job Alerts</a>
+          <a href="#" class="btn btn-ghost"><i class="fas fa-book-open"></i> Free Resources</a>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div>
+        <a href="index.html" class="footer-wordmark">Dr. Jaspal Singh</a>
+        <p class="footer-tagline">Because Har Aspirant Deserves a Teacher Who Truly Cares. Offline Programs in Jaipur, Rajasthan.</p>
+        <div class="footer-social">
+          <a href="https://www.instagram.com/iesjaspalsingh/" target="_blank" rel="noopener" class="fsocial-link" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+          <a href="https://t.me/jaspalsirofficial" target="_blank" rel="noopener" class="fsocial-link" aria-label="Telegram"><i class="fab fa-telegram"></i></a>
+          <a href="https://whatsapp.com/channel/0029VaBBx7u8PgsF7Y4KZv06" target="_blank" rel="noopener" class="fsocial-link" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a>
+          <a href="https://unacademy.com/@jaspallive" target="_blank" rel="noopener" class="fsocial-link" aria-label="Unacademy"><i class="fas fa-play-circle"></i></a>
+        </div>
+      </div>
+      <div>
+        <h3 class="footer-col-title">Quick Links</h3>
+        <div class="footer-links">
+          <a href="index.html" class="footer-link">Home</a>
+          <a href="programs/index.html" class="footer-link">Offline Programs</a>
+          <a href="job-alerts/index.html" class="footer-link">Job Alerts</a>
+          <a href="#" class="footer-link">Blog</a>
+          <a href="#" class="footer-link">Resources</a>
+        </div>
+      </div>
+      <div>
+        <h3 class="footer-col-title">Programs</h3>
+        <div class="footer-links">
+          <a href="programs/index.html" class="footer-link">SSC JE Interview Prep</a>
+          <a href="programs/index.html" class="footer-link">Rajasthan AE/JE Mock Interview</a>
+          <a href="programs/index.html" class="footer-link">Offline Test Series</a>
+          <a href="programs/index.html" class="footer-link">GD + Personality Dev.</a>
+        </div>
+      </div>
+      <div>
+        <h3 class="footer-col-title">Job Alerts</h3>
+        <div class="footer-links">
+          <a href="job-alerts/index.html" class="footer-link">SSC JE Notifications</a>
+          <a href="job-alerts/index.html" class="footer-link">Rajasthan AE Alerts</a>
+          <a href="job-alerts/index.html" class="footer-link">Rajasthan JE Alerts</a>
+          <a href="job-alerts/index.html" class="footer-link">UPSC ESE · GATE</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="container">
+        <p>© 2026 Dr. Jaspal Singh · jaspalsingh.in · Empowering Civil Engineering aspirants across Rajasthan & India · Offline Programs in Jaipur</p>
+      </div>
+    </div>
+  </footer>
+
+  <a href="https://wa.me/910000000000" target="_blank" rel="noopener" aria-label="Chat on WhatsApp" class="whatsapp-float"><i class="fab fa-whatsapp"></i></a>
+
+  <script>
+    // Header scroll
+    var hdr = document.getElementById('siteHeader');
+    window.addEventListener('scroll', function(){ hdr.classList.toggle('scrolled', window.scrollY > 40); });
+  </script>
+</body>
+</html>

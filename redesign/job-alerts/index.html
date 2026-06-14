@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Job Alerts — SSC JE · Rajasthan AE/JE · GATE | Dr. Jaspal Singh</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" />
+  <style>
+    :root {
+      --magenta:#F0345A; --sky:#67C8E8; --orange:#FF6B35; --green:#16A34A; --dark:#1A1A2E;
+      --body:#4A4A68; --light:#F8F8F8; --white:#FFFFFF;
+      --gradient:linear-gradient(135deg,#F0345A 0%,#67C8E8 100%);
+      --grad-green:linear-gradient(135deg,#16A34A 0%,#22C55E 100%);
+      --font-h:'Plus Jakarta Sans',sans-serif; --font-b:'Inter',sans-serif;
+      --radius-pill:50px; --radius-md:16px; --radius-sm:10px;
+      --shadow-sm:0 2px 8px rgba(26,26,46,.07); --shadow-md:0 6px 28px rgba(26,26,46,.11);
+      --header-h:72px; --trans:all .3s cubic-bezier(.4,0,.2,1);
+    }
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    html { scroll-behavior:smooth; }
+    body { font-family:var(--font-b); color:var(--body); background:var(--white); overflow-x:hidden; line-height:1.65; }
+    a { text-decoration:none; color:inherit; transition:var(--trans); }
+    button { cursor:pointer; font-family:var(--font-b); }
+    ul { list-style:none; }
+    .container { width:100%; max-width:1200px; margin:0 auto; padding:0 28px; }
+    .gradient-text { background:var(--gradient); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    .btn { display:inline-flex; align-items:center; gap:9px; padding:14px 28px; border-radius:var(--radius-pill); font-family:var(--font-h); font-weight:700; font-size:15px; cursor:pointer; border:2px solid transparent; white-space:nowrap; transition:var(--trans); }
+    .btn-green { background:var(--grad-green); color:#fff; box-shadow:0 4px 22px rgba(22,163,74,.3); }
+    .btn-green:hover { transform:translateY(-2px); color:#fff; }
+    .btn-primary { background:var(--gradient); color:#fff; }
+    .btn-primary:hover { transform:translateY(-2px); color:#fff; }
+    .btn-ghost { background:rgba(255,255,255,.15); color:#fff; border-color:rgba(255,255,255,.4); }
+    .btn-ghost:hover { background:rgba(255,255,255,.25); }
+
+    /* ── Header ── */
+    .announce-bar { background:var(--dark); color:#fff; padding:9px 0; font-size:12px; overflow:hidden; }
+    .announce-inner { display:flex; align-items:center; gap:24px; justify-content:center; flex-wrap:wrap; }
+    .announce-pill { display:inline-flex; align-items:center; gap:6px; padding:3px 12px; border-radius:50px; font-size:11px; font-weight:700; }
+    .pill-green { background:rgba(22,163,74,.2); color:#4ADE80; border:1px solid rgba(22,163,74,.3); }
+    .pill-orange { background:rgba(255,107,53,.2); color:#FF9A75; border:1px solid rgba(255,107,53,.3); }
+    .announce-dot { width:6px; height:6px; border-radius:50%; background:#F0345A; animation:blink 1.5s ease infinite; flex-shrink:0; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+    .site-header { position:fixed; top:0; left:0; right:0; z-index:900; height:var(--header-h); background:var(--white); border-bottom:2px solid var(--magenta); transition:box-shadow .3s; }
+    .header-inner { display:flex; align-items:center; justify-content:space-between; height:100%; }
+    .header-brand { display:flex; align-items:center; gap:10px; }
+    .header-avatar { width:38px; height:38px; border-radius:50%; object-fit:cover; border:2px solid var(--magenta); background:#f2e9e0; }
+    .wordmark { font-family:var(--font-h); font-weight:800; font-size:20px; color:var(--magenta); position:relative; padding-bottom:3px; }
+    .wordmark::after { content:''; position:absolute; bottom:0; left:0; width:100%; height:2.5px; background:var(--sky); border-radius:2px; }
+    .main-nav { display:flex; align-items:center; gap:2px; }
+    .nav-link { font-family:var(--font-h); font-weight:600; font-size:14px; color:var(--dark); padding:7px 14px; border-radius:var(--radius-pill); transition:var(--trans); }
+    .nav-link:hover { color:var(--magenta); background:rgba(240,52,90,.07); }
+    .nav-link.nav-programs { color:var(--orange); background:rgba(255,107,53,.07); font-weight:700; }
+    .nav-link.active, .nav-link.nav-alerts { color:var(--green); background:rgba(22,163,74,.1); font-weight:700; }
+    .nav-link.nav-cta { background:var(--gradient); color:#fff; margin-left:4px; }
+    .nav-link.nav-cta:hover { transform:translateY(-1px); color:#fff; }
+    .hamburger { display:none; flex-direction:column; justify-content:center; gap:5px; background:none; border:none; width:40px; height:40px; padding:6px; }
+    .hamburger span { display:block; width:24px; height:2px; background:var(--dark); border-radius:2px; }
+
+    /* ── Page Hero ── */
+    .page-hero { padding-top:calc(var(--header-h) + 36px + 56px); padding-bottom:72px; background:linear-gradient(135deg,#0F2027,#1A1A2E); position:relative; overflow:hidden; }
+    .hero-glow-1 { position:absolute; top:-10%; left:-5%; width:500px; height:500px; background:radial-gradient(circle,rgba(22,163,74,.15) 0%,transparent 65%); border-radius:50%; pointer-events:none; }
+    .hero-glow-2 { position:absolute; bottom:-20%; right:-5%; width:400px; height:400px; background:radial-gradient(circle,rgba(240,52,90,.1) 0%,transparent 65%); border-radius:50%; pointer-events:none; }
+    .page-hero .container { position:relative; z-index:1; }
+    .breadcrumb { font-size:13px; color:rgba(255,255,255,.5); font-weight:500; margin-bottom:16px; }
+    .breadcrumb a { color:#4ADE80; }
+    .page-title { font-family:var(--font-h); font-size:clamp(32px,5vw,52px); font-weight:800; color:#fff; line-height:1.1; letter-spacing:-1px; margin-bottom:16px; }
+    .page-sub { font-size:18px; color:rgba(255,255,255,.7); max-width:620px; line-height:1.7; margin-bottom:28px; }
+    .hero-stats { display:flex; flex-wrap:wrap; gap:28px; }
+    .hero-stat { text-align:center; }
+    .hero-stat-num { font-family:var(--font-h); font-size:32px; font-weight:800; color:#fff; line-height:1; }
+    .hero-stat-num span { color:#4ADE80; }
+    .hero-stat-label { font-size:12px; color:rgba(255,255,255,.5); text-transform:uppercase; letter-spacing:.8px; margin-top:4px; }
+
+    /* ── Subscribe Banner ── */
+    .subscribe-banner { background:var(--grad-green); padding:28px 0; }
+    .subscribe-inner { display:flex; align-items:center; justify-content:space-between; gap:24px; flex-wrap:wrap; }
+    .subscribe-text h3 { font-family:var(--font-h); font-size:18px; font-weight:800; color:#fff; margin-bottom:4px; }
+    .subscribe-text p { font-size:14px; color:rgba(255,255,255,.8); }
+    .subscribe-form { display:flex; gap:10px; flex-wrap:wrap; }
+    .subscribe-input { padding:12px 20px; border-radius:var(--radius-pill); border:none; font-family:var(--font-h); font-size:14px; font-weight:600; outline:none; min-width:240px; }
+    .subscribe-btn { padding:12px 24px; border-radius:var(--radius-pill); background:var(--dark); color:#fff; font-family:var(--font-h); font-weight:700; font-size:14px; border:none; cursor:pointer; display:flex; align-items:center; gap:8px; transition:var(--trans); }
+    .subscribe-btn:hover { background:#2d2d50; }
+    .subscribe-channels { display:flex; gap:10px; }
+    .channel-btn { padding:10px 18px; border-radius:var(--radius-pill); font-family:var(--font-h); font-weight:700; font-size:13px; display:flex; align-items:center; gap:7px; border:2px solid rgba(255,255,255,.3); color:#fff; transition:var(--trans); background:rgba(255,255,255,.1); }
+    .channel-btn:hover { background:rgba(255,255,255,.25); color:#fff; }
+
+    /* ── Main content ── */
+    .alerts-main { padding:72px 0; }
+    .alerts-layout { display:grid; grid-template-columns:1fr 300px; gap:40px; align-items:start; }
+
+    /* Filter bar */
+    .filter-section { margin-bottom:32px; }
+    .filter-label { font-family:var(--font-h); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:rgba(74,74,104,.55); margin-bottom:12px; }
+    .filter-bar { display:flex; flex-wrap:wrap; gap:8px; }
+    .filter-btn { font-family:var(--font-h); font-size:13px; font-weight:600; padding:8px 18px; border-radius:var(--radius-pill); border:1.5px solid rgba(26,26,46,.15); background:var(--white); color:var(--body); cursor:pointer; transition:var(--trans); display:flex; align-items:center; gap:6px; }
+    .filter-btn:hover { border-color:var(--dark); color:var(--dark); }
+    .filter-btn.active { color:#fff; border-color:transparent; }
+    .filter-btn.f-all.active { background:var(--dark); }
+    .filter-btn.f-ssc.active { background:#1565C0; }
+    .filter-btn.f-raj-ae.active { background:#7B1FA2; }
+    .filter-btn.f-raj-je.active { background:#E65100; }
+    .filter-btn.f-ese.active { background:#B71C1C; }
+    .filter-btn.f-gate.active { background:#1B5E20; }
+    .filter-count { display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; background:rgba(26,26,46,.1); color:var(--body); font-size:10px; font-weight:800; }
+    .filter-btn.active .filter-count { background:rgba(255,255,255,.2); color:#fff; }
+
+    /* Alert cards */
+    .alerts-list { display:flex; flex-direction:column; gap:16px; }
+    .alert-card { background:var(--white); border:1.5px solid rgba(26,26,46,.08); border-radius:var(--radius-md); padding:24px; box-shadow:var(--shadow-sm); transition:var(--trans); }
+    .alert-card:hover { transform:translateY(-3px); box-shadow:var(--shadow-md); }
+    .alert-card.featured { border-color:var(--green); border-width:2px; }
+    .alert-card-header { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
+    .alert-badges { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .exam-badge { font-family:var(--font-h); font-size:10px; font-weight:700; padding:4px 12px; border-radius:var(--radius-pill); text-transform:uppercase; letter-spacing:.6px; }
+    .badge-ssc { background:#1565C0; color:#fff; }
+    .badge-raj-ae { background:#7B1FA2; color:#fff; }
+    .badge-raj-je { background:#E65100; color:#fff; }
+    .badge-ese { background:#B71C1C; color:#fff; }
+    .badge-gate { background:#1B5E20; color:#fff; }
+    .status-pill { font-family:var(--font-h); font-size:10px; font-weight:700; padding:4px 12px; border-radius:var(--radius-pill); letter-spacing:.5px; }
+    .s-new { background:#FEF08A; color:#713F12; }
+    .s-active { background:#BBF7D0; color:#14532D; }
+    .s-upcoming { background:#BAE6FD; color:#0C4A6E; }
+    .s-closed { background:rgba(26,26,46,.08); color:rgba(26,26,46,.4); text-decoration:line-through; }
+    .alert-title { font-family:var(--font-h); font-size:17px; font-weight:700; color:var(--dark); line-height:1.4; margin-bottom:12px; }
+    .alert-title a { color:inherit; }
+    .alert-title a:hover { color:var(--green); }
+    .alert-dates-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; margin-bottom:16px; }
+    .date-item { display:flex; align-items:center; gap:8px; background:var(--light); padding:8px 12px; border-radius:8px; }
+    .date-item-icon { color:var(--magenta); font-size:12px; width:16px; text-align:center; }
+    .date-item-content { flex:1; }
+    .date-item-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:rgba(74,74,104,.5); }
+    .date-item-val { font-family:var(--font-h); font-size:12px; font-weight:700; color:var(--dark); }
+    .date-item-val.urgent { color:#DC2626; }
+    .alert-vacancies { display:inline-flex; align-items:center; gap:6px; font-family:var(--font-h); font-size:12px; font-weight:700; color:var(--body); background:var(--light); padding:5px 12px; border-radius:6px; margin-bottom:14px; }
+    .alert-vacancies i { color:var(--orange); }
+    .alert-actions { display:flex; flex-wrap:wrap; gap:8px; padding-top:14px; border-top:1px solid rgba(26,26,46,.06); }
+    .alert-btn { display:inline-flex; align-items:center; gap:6px; font-family:var(--font-h); font-size:12px; font-weight:700; padding:7px 14px; border-radius:var(--radius-pill); border:1.5px solid; transition:var(--trans); cursor:pointer; }
+    .abtn-pdf { color:#B71C1C; border-color:rgba(183,28,28,.2); }
+    .abtn-pdf:hover { background:#B71C1C; color:#fff; }
+    .abtn-apply { color:var(--green); border-color:rgba(22,163,74,.2); }
+    .abtn-apply:hover { background:var(--green); color:#fff; }
+    .abtn-strategy { color:var(--magenta); border-color:rgba(240,52,90,.2); }
+    .abtn-strategy:hover { background:var(--magenta); color:#fff; }
+    .abtn-enroll { color:var(--orange); border-color:rgba(255,107,53,.2); }
+    .abtn-enroll:hover { background:var(--orange); color:#fff; }
+    .abtn-alert { color:var(--body); border-color:rgba(74,74,104,.2); }
+    .abtn-alert:hover { background:var(--dark); color:#fff; border-color:var(--dark); }
+
+    /* Sidebar */
+    .sidebar { position:sticky; top:calc(var(--header-h) + 24px); }
+    .sidebar-card { background:var(--white); border:1.5px solid rgba(26,26,46,.08); border-radius:var(--radius-md); padding:24px; margin-bottom:20px; box-shadow:var(--shadow-sm); }
+    .sidebar-card h3 { font-family:var(--font-h); font-size:15px; font-weight:800; color:var(--dark); margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+    .sidebar-card h3 i { color:var(--orange); }
+    .upcoming-list { display:flex; flex-direction:column; gap:12px; }
+    .upcoming-item { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid rgba(26,26,46,.06); }
+    .upcoming-item:last-child { border-bottom:none; }
+    .upcoming-badge { width:36px; height:36px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:800; flex-shrink:0; color:#fff; }
+    .ub-ssc { background:#1565C0; }
+    .ub-raj { background:#7B1FA2; }
+    .ub-ese { background:#B71C1C; }
+    .ub-gate { background:#1B5E20; }
+    .upcoming-text { flex:1; }
+    .upcoming-name { font-family:var(--font-h); font-size:12px; font-weight:700; color:var(--dark); line-height:1.3; }
+    .upcoming-date { font-size:11px; color:var(--body); margin-top:2px; }
+    .subscribe-card { background:var(--grad-green); border-radius:var(--radius-md); padding:24px; text-align:center; }
+    .subscribe-card h3 { font-family:var(--font-h); font-size:16px; font-weight:800; color:#fff; margin-bottom:8px; }
+    .subscribe-card p { font-size:13px; color:rgba(255,255,255,.8); margin-bottom:18px; line-height:1.6; }
+    .subscribe-card-input { width:100%; padding:11px 16px; border-radius:var(--radius-pill); border:none; font-family:var(--font-h); font-size:13px; outline:none; margin-bottom:10px; }
+    .subscribe-card-btn { width:100%; padding:12px; border-radius:var(--radius-pill); background:var(--dark); color:#fff; font-family:var(--font-h); font-weight:700; font-size:14px; border:none; cursor:pointer; transition:var(--trans); }
+    .subscribe-card-btn:hover { background:#2d2d50; }
+    .subscribe-channels-row { display:flex; gap:8px; margin-top:12px; }
+    .schan-btn { flex:1; padding:9px; border-radius:var(--radius-pill); font-family:var(--font-h); font-weight:700; font-size:11px; display:flex; align-items:center; justify-content:center; gap:5px; border:none; cursor:pointer; transition:var(--trans); color:#fff; }
+    .schan-tg { background:rgba(3,169,244,.9); }
+    .schan-wa { background:rgba(37,211,102,.9); }
+    .schan-tg:hover, .schan-wa:hover { opacity:.85; }
+
+    /* ── sec header ── */
+    .sec-head { text-align:center; margin-bottom:56px; }
+    .sec-tag { display:inline-flex; align-items:center; gap:6px; font-family:var(--font-h); font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--green); background:rgba(22,163,74,.08); border:1px solid rgba(22,163,74,.18); padding:6px 16px; border-radius:var(--radius-pill); margin-bottom:14px; }
+    .sec-title { font-family:var(--font-h); font-size:clamp(26px,3.5vw,38px); font-weight:800; color:var(--dark); line-height:1.15; margin-bottom:14px; }
+    .sec-sub { font-size:16px; color:var(--body); max-width:560px; margin:0 auto; line-height:1.75; }
+
+    /* ── Footer ── */
+    .site-footer { background:var(--dark); padding-top:64px; }
+    .footer-inner { display:grid; grid-template-columns:2fr 1fr 1.2fr; gap:48px; padding-bottom:52px; }
+    .footer-wordmark { font-family:var(--font-h); font-weight:800; font-size:22px; color:#fff; display:inline-block; margin-bottom:12px; }
+    .footer-tagline { font-size:13px; color:rgba(255,255,255,.5); line-height:1.7; max-width:280px; }
+    .footer-col-title { font-family:var(--font-h); font-weight:700; font-size:11px; letter-spacing:1.4px; text-transform:uppercase; color:rgba(255,255,255,.4); margin-bottom:18px; }
+    .footer-links { display:flex; flex-direction:column; gap:10px; }
+    .footer-link { font-size:13px; color:rgba(255,255,255,.6); transition:var(--trans); }
+    .footer-link:hover { color:var(--sky); }
+    .footer-social { display:flex; gap:10px; margin-top:16px; }
+    .fsocial-link { width:38px; height:38px; border-radius:50%; background:rgba(255,255,255,.08); display:flex; align-items:center; justify-content:center; font-size:15px; color:rgba(255,255,255,.6); transition:var(--trans); }
+    .fsocial-link:hover { background:var(--magenta); color:#fff; }
+    .footer-bottom { border-top:1px solid rgba(255,255,255,.07); padding:20px 0; }
+    .footer-bottom p { font-size:12px; color:rgba(255,255,255,.3); text-align:center; }
+    .whatsapp-float { position:fixed; bottom:24px; right:24px; background:#25D366; color:#fff; border-radius:50%; width:56px; height:56px; display:flex; align-items:center; justify-content:center; font-size:28px; box-shadow:0 4px 16px rgba(0,0,0,.25); z-index:9999; transition:var(--trans); }
+    .whatsapp-float:hover { transform:scale(1.1); color:#fff; }
+
+    @media(max-width:900px) {
+      .main-nav { display:none; }
+      .hamburger { display:flex; }
+      .alerts-layout { grid-template-columns:1fr; }
+      .sidebar { position:static; }
+      .subscribe-inner { flex-direction:column; }
+      .footer-inner { grid-template-columns:1fr 1fr; gap:28px; }
+    }
+    @media(max-width:600px) {
+      :root { --header-h:64px; }
+      .container { padding:0 18px; }
+      .alert-card { padding:18px; }
+      .footer-inner { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ANNOUNCEMENT BAR -->
+  <div class="announce-bar">
+    <div class="container announce-inner">
+      <span class="announce-dot"></span>
+      <span class="announce-pill pill-green"><i class="fas fa-bell"></i> 3 New Alerts Today</span>
+      <span>RPSC JE 2025 · SSC JE Admit Card · RPSC AE Interview Dates — all updated</span>
+    </div>
+  </div>
+
+  <!-- HEADER -->
+  <header class="site-header" id="siteHeader">
+    <div class="container header-inner">
+      <a href="../index.html" class="header-brand">
+        <img src="../../frontend/assets/images/jaspal-hero.png" class="header-avatar" alt="Dr. Jaspal Singh" onerror="this.style.display='none'" />
+        <span class="wordmark">Dr. Jaspal Singh</span>
+      </a>
+      <nav class="main-nav">
+        <a href="../index.html" class="nav-link">Home</a>
+        <a href="../programs/index.html" class="nav-link nav-programs"><i class="fas fa-chalkboard-teacher"></i> Programs</a>
+        <a href="index.html" class="nav-link active nav-alerts"><i class="fas fa-bell"></i> Job Alerts</a>
+        <a href="#" class="nav-link">Blog</a>
+        <a href="#" class="nav-link">Resources</a>
+        <a href="#" class="nav-link">About</a>
+        <a href="#" class="nav-link nav-cta">Connect</a>
+      </nav>
+      <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- PAGE HERO -->
+    <section class="page-hero">
+      <div class="hero-glow-1"></div>
+      <div class="hero-glow-2"></div>
+      <div class="container">
+        <p class="breadcrumb"><a href="../index.html">Home</a> / Job Alerts</p>
+        <h1 class="page-title">Job <span style="color:#4ADE80;">Notifications</span> &<br/>Recruitment Alerts</h1>
+        <p class="page-sub">Real-time alerts for SSC JE, Rajasthan AE/JE (RPSC, RSMSSB), GATE, UPSC ESE, and all major Civil Engineering recruitment exams. Updated daily.</p>
+        <div class="hero-stats">
+          <div class="hero-stat"><div class="hero-stat-num">500<span>+</span></div><div class="hero-stat-label">Alerts Posted</div></div>
+          <div class="hero-stat"><div class="hero-stat-num">12<span></span></div><div class="hero-stat-label">Exams Tracked</div></div>
+          <div class="hero-stat"><div class="hero-stat-num">24h<span></span></div><div class="hero-stat-label">Update Frequency</div></div>
+          <div class="hero-stat"><div class="hero-stat-num">50k<span>+</span></div><div class="hero-stat-label">Subscribers</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SUBSCRIBE BANNER -->
+    <div class="subscribe-banner">
+      <div class="container subscribe-inner">
+        <div class="subscribe-text">
+          <h3><i class="fas fa-bell"></i> Never Miss a Notification</h3>
+          <p>Get instant alerts via email, Telegram, or WhatsApp the moment a new notification drops.</p>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div class="subscribe-form">
+            <input type="email" class="subscribe-input" placeholder="Enter your email address" />
+            <button class="subscribe-btn"><i class="fas fa-paper-plane"></i> Subscribe Free</button>
+          </div>
+          <div class="subscribe-channels">
+            <a href="https://t.me/jaspalsirofficial" target="_blank" rel="noopener" class="channel-btn"><i class="fab fa-telegram"></i> Telegram</a>
+            <a href="https://whatsapp.com/channel/0029VaBBx7u8PgsF7Y4KZv06" target="_blank" rel="noopener" class="channel-btn"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN ALERTS SECTION -->
+    <section class="alerts-main">
+      <div class="container">
+        <div class="alerts-layout">
+
+          <!-- Alerts column -->
+          <div>
+            <!-- Filter -->
+            <div class="filter-section">
+              <p class="filter-label">Filter by Exam</p>
+              <div class="filter-bar">
+                <button class="filter-btn f-all active" onclick="setFilter(this,'all')">
+                  All <span class="filter-count">18</span>
+                </button>
+                <button class="filter-btn f-ssc" onclick="setFilter(this,'ssc')">
+                  <span style="width:8px;height:8px;border-radius:50%;background:#1565C0;display:inline-block;"></span> SSC JE <span class="filter-count">6</span>
+                </button>
+                <button class="filter-btn f-raj-ae" onclick="setFilter(this,'raj-ae')">
+                  <span style="width:8px;height:8px;border-radius:50%;background:#7B1FA2;display:inline-block;"></span> Rajasthan AE <span class="filter-count">4</span>
+                </button>
+                <button class="filter-btn f-raj-je" onclick="setFilter(this,'raj-je')">
+                  <span style="width:8px;height:8px;border-radius:50%;background:#E65100;display:inline-block;"></span> Rajasthan JE <span class="filter-count">4</span>
+                </button>
+                <button class="filter-btn f-ese" onclick="setFilter(this,'ese')">
+                  <span style="width:8px;height:8px;border-radius:50%;background:#B71C1C;display:inline-block;"></span> UPSC ESE <span class="filter-count">2</span>
+                </button>
+                <button class="filter-btn f-gate" onclick="setFilter(this,'gate')">
+                  <span style="width:8px;height:8px;border-radius:50%;background:#1B5E20;display:inline-block;"></span> GATE CE <span class="filter-count">2</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="alerts-list" id="alertsList">
+
+              <!-- Alert 1 — RPSC JE -->
+              <div class="alert-card featured" data-exam="raj-je">
+                <div class="alert-card-header">
+                  <div class="alert-badges">
+                    <span class="exam-badge badge-raj-je">RPSC JE</span>
+                    <span class="exam-badge" style="background:#E65100;color:#fff;font-size:9px;">Rajasthan</span>
+                    <span class="status-pill s-new">🔴 NEW TODAY</span>
+                  </div>
+                  <span style="font-size:11px;color:rgba(74,74,104,.5);">May 24, 2026</span>
+                </div>
+                <h3 class="alert-title">RPSC Junior Engineer (Civil) Recruitment 2025 — 1,207 Vacancies in Civil Engineering Branch</h3>
+                <span class="alert-vacancies"><i class="fas fa-users"></i> 1,207 Vacancies &nbsp;·&nbsp; <i class="fas fa-map-marker-alt"></i> Rajasthan</span>
+                <div class="alert-dates-grid">
+                  <div class="date-item"><span class="date-item-icon"><i class="fas fa-calendar-alt"></i></span><div class="date-item-content"><p class="date-item-label">Notification Date</p><p class="date-item-val">May 20, 2026</p></div></div>
+                  <div class="date-item"><span class="date-item-icon"><i class="fas fa-hourglass-end"></i></span><div class="date-item-content"><p class="date-item-label">Last Date to Apply</p><p class="date-item-val urgent">Jun 30, 2026</p></div></div>
+                  <div class="date-item"><span class="date-item-icon"><i class="fas fa-pencil-alt"></i></span><div class="date-item-content"><p class="date-item-label">Exam Date</p><p class="date-item-val">Aug–Sep 2026</p></div></div>
+                  <div class="date-item"><span class="date-item-icon"><i class="fas fa-rupee-sign"></i></span><div class="date-item-content"><p class="date-item-label">Application Fee</p><p class="date-item-val">₹600 (Gen) · ₹400 (OBC/SC/ST)</p></div></div>
+                </div>
+                <div class="alert-actions">
+                  <a href="#" class="alert-btn abtn-pdf"><i class="fas fa-file-pdf"></i> Official Notification</a>
+                  <a href="#" class="alert-btn abtn-apply"><i class="fas fa-external-link-alt"></i> Apply at RPSC</a>
+                  <a href="#" class="alert-btn abtn-strategy"><i class="fas fa-chess"></i> Exam Strategy</a>
+                  <a href="../programs/index.html" class="alert-btn abtn-enroll"><i class="fas fa-chalkboard-teacher"></i> Mock Interview Prep</a>
+                </div>
+              </div>
+
+              <!-- Alert 2 — SSC JE Admit Card -->
+              <div class="alert-card" data-exam="ssc">
+                <div class="alert-card-header">
+                  <div class="alert-badges">
+                    <span class="exam-badge badge-ssc">SSC JE</span>
+                    <span class="status-pill s-active">✅ ACTIVE</span>
+                  </div>
+                  <span style="font-size:11px;color:rgba(74,74,104,.5);">May 22, 2026</span>
+                </div>
+                <h3 class="alert-title">SSC JE 2025 Paper-I — Admit Card Released, Exam on June 10–12 · Download Now</h3>
+                <span class="alert-vacancies"><i class="fas fa-users"></i> 1,765 Vacancies &nbsp;·&nbsp; <i class="fas fa-id-card"></i> Admit Card: Live</span>
+                <div class="alert-dates-grid">
+                  <div class="date-item"><span class="date-item-icon"><i class="fas fa-id-card"></i></span><div class="date-item-content"><p class="date-item-label">Admit Card</p><p class="date-item-val" style="color:var(--green);">Download Now</p></div></div>
+                  <div class="date-item"><span class="date-item-icon"><i class="fas fa-pencil-alt"></i></span><div class="date-item-content"><p class="date-item-label">Paper-I Exam</p><p class="date-item-val urgent">Jun 10–12, 2026</p></div></div>
+                  <div class="date-item"><span class="date-item-icon"><i class="fas fa-building"></i></span><div class="date-item-content"><p class="date-item-label">Exam Mode</p><p class="date-item-val">CBT (Computer Based)</p></div></div>
+                  <div class="date-item"><span class="date-item-icon"><i class="fas fa-file-alt"></i></span><div class="date-item-content"><p class="date-item-label">Departments</p><p class="date-item-val">CPWD, MES, BRO, CWC</p></div></div>
+                </div>
+                <div class="alert-actions">
+                  <a href="#" class="alert-btn abtn-apply" style="background:rgba(22,163,74,.08);"><i class="fas fa-download"></i> Download Admit Card</a>
+                  <a href="#" class="alert-btn abtn-strategy"><i class="fas fa-chess"></i> Last Minute Strategy</a>
+                  <a href="../programs/index.html" class="alert-btn abtn-enroll"><i class="fas fa-chalkboard-teacher"></i> Interview Prep Workshop</a>
+                </div>
+              </div>
+
+              <!-- Alert 3 — RPSC AE Interview -->
+              <div class="alert-card" data-exam="raj-ae">
+                <div class="alert-card-header">
+                  <div class="alert-badges">
+                    <span class="exam-badge badge-raj-ae">RPSC AE</span>
+                    <span class="status-pill s-upcoming">🔵 INTERVIEW PHASE</span>
+                  </div>
+                  <span style="font-size:11px;color:rgba(74,74,104,.5);">May 18, 2026</span>
+                </div>
+                <h3 class="alert-title">RPSC Assistant Engineer (Civil) 2025 — Interview Dates Released, Venue: Jaipur</h3>
+                <span class="alert-vacancies"><i class="fas fa-users"></i> 243 Civil Engg. Posts &nbsp;·&nbsp; <i class="fas fa-map-marker-alt"></i> Venue: Jaipur</span>
+                <div class="alert-dates-grid">
+                  <div class="date-item"><span class="date-item-icon"><i class="fas fa-calendar-check"></i></span><div class="date-item-content"><p class="date-item-label">Interview Dates</p><p class="date-item-val urgent">Jul 8–15, 2026</p></div></div>
+                  <div class="date-item"><span class="date-item-icon"><i class="fas fa-map-marker-alt"></i></span><div class="date-item-content"><p class="date-item-label">Venue</p><p class="date-item-val">RPSC Office, Jaipur</p></div></div>
+                  <div class="date-item"><span class="date-item-icon"><i class="fas fa-file-alt"></i></span><div class="date-item-content"><p class="date-item-label">Documents</p><p class="date-item-val">See official list →</p></div></div>
+                  <div class="date-item"><span class="date-item-icon"><i class="fas fa-marks"></i></span><div class="date-item-content"><p class="date-item-label">Interview Marks</p><p class="date-item-val">75 Marks</p></div></div>
+                </div>
+                <div class="alert-actions">
+                  <a href="#" class="alert-btn abtn-pdf"><i class="fas fa-file-pdf"></i> Interview Schedule</a>
+                  <a href="#" class="alert-btn abtn-pdf"><i class="fas fa-list"></i> Document Checklist</a>
+                  <a href="../programs/index.html#prog-rajasthan-ae" class="alert-btn abtn-enroll"><i class="fas fa-chalkboard-teacher"></i> Mock Interview — Jun 8</a>
+                </div>
+              </div>
+
+              <!-- Alert 4 — RSMSSB JE -->
+              <div class="alert-card" data-exam="raj-je">
+                <div class="alert-card-header">
+                  <div class="alert-badges">
+                    <span class="exam-badge badge-raj-je">RSMSSB JE</span>
+                    <span class="exam-badge" style="background:#E65100;color:#fff;font-size:9px;">Rajasthan</span>
+                    <span class="status-pill s-active">✅ ACTIVE</span>
+                  </div>
+                  <span style="font-size:11px;color:rgba(74,74,104,.5);">May 12, 2026</span>
+                </div>
+                <h3 class="alert-title">RSMSSB Junior Engineer (Civil) 2025 — 2,000+ Vacancies, Applications Open</h3>
+                <span class="alert-vacancies"><i class="fas fa-users"></i> 2,039 Vacancies &nbsp;·&nbsp; <i class="fas fa-map-marker-alt"></i> Rajasthan</span>
+                <div class="alert-dates-grid">
+                  <div class="date-item"><span class="date-item-icon"><i class="fas fa-calendar-alt"></i></span><div class="date-item-content"><p class="date-item-label">Application Start</p><p class="date-item-val">May 10, 2026</p></div></div>
+                  <div class="date-item"><span class="date-item-icon"><i class="fas fa-hourglass-end"></i></span><div class="date-item-content"><p class="date-item-label">Last Date</p><p class="date-item-val urgent">Jun 20, 2026</p></div></div>
+                  <div class="date-item"><span class="date-item-icon"><i class="fas fa-pencil-alt"></i></span><div class="date-item-content"><p class="date-item-label">Exam Date</p><p class="date-item-val">Sep 2026</p></div></div>
+                  <div class="date-item"><span class="date-item-icon"><i class="fas fa-rupee-sign"></i></span><div class="date-item-content"><p class="date-item-label">Application Fee</p><p class="date-item-val">₹450 (Gen) · ₹250 (SC/ST)</p></div></div>
+                </div>
+                <div class="alert-actions">
+                  <a href="#" class="alert-btn abtn-pdf"><i class="fas fa-file-pdf"></i> Official Notification</a>
+                  <a href="#" class="alert-btn abtn-apply"><i class="fas fa-external-link-alt"></i> Apply at RSMSSB</a>
+                  <a href="#" class="alert-btn abtn-strategy"><i class="fas fa-chess"></i> Rajasthan JE Strategy</a>
+                </div>
+              </div>
+
+              <!-- Alert 5 — SSC JE 2026 Expected -->
+              <div class="alert-card" data-exam="ssc">
+                <div class="alert-card-header">
+                  <div class="alert-badges">
+                    <span class="exam-badge badge-ssc">SSC JE</span>
+                    <span class="status-pill s-upcoming">🔵 UPCOMING</span>
+                  </div>
+                  <span style="font-size:11px;color:rgba(74,74,104,.5);">May 5, 2026</span>
+                </div>
+                <h3 class="alert-title">SSC JE 2026 — Expected Notification in August 2026, ~2,500 Vacancies Anticipated · Start Prep Now</h3>
+                <div class="alert-dates-grid">
+                  <div class="date-item"><span class="date-item-icon"><i class="fas fa-calendar-alt"></i></span><div class="date-item-content"><p class="date-item-label">Expected Notification</p><p class="date-item-val">August 2026</p></div></div>
+                  <div class="date-item"><span class="date-item-icon"><i class="fas fa-users"></i></span><div class="date-item-content"><p class="date-item-label">Expected Vacancies</p><p class="date-item-val">~2,500+</p></div></div>
+                  <div class="date-item"><span class="date-item-icon"><i class="fas fa-pencil-alt"></i></span><div class="date-item-content"><p class="date-item-label">Exam</p><p class="date-item-val">Nov–Dec 2026</p></div></div>
+                </div>
+                <div class="alert-actions">
+                  <a href="#" class="alert-btn abtn-alert"><i class="fas fa-bell"></i> Alert Me When Live</a>
+                  <a href="#" class="alert-btn abtn-strategy"><i class="fas fa-chess"></i> SSC JE Prep Strategy</a>
+                  <a href="../programs/index.html" class="alert-btn abtn-enroll"><i class="fas fa-pencil-alt"></i> Join Test Series</a>
+                </div>
+              </div>
+
+              <!-- Alert 6 — UPSC ESE -->
+              <div class="alert-card" data-exam="ese">
+                <div class="alert-card-header">
+                  <div class="alert-badges">
+                    <span class="exam-badge badge-ese">UPSC ESE</span>
+                    <span class="status-pill s-active">✅ ACTIVE</span>
+                  </div>
+                  <span style="font-size:11px;color:rgba(74,74,104,.5);">Apr 10, 2026</span>
+                </div>
+                <h3 class="alert-title">UPSC Engineering Services Exam (ESE) 2025 — Notification Released, Apply by June 5</h3>
+                <span class="alert-vacancies"><i class="fas fa-users"></i> 247 Posts (Civil, Mechanical, Electrical, Electronics)</span>
+                <div class="alert-dates-grid">
+                  <div class="date-item"><span class="date-item-icon"><i class="fas fa-hourglass-end"></i></span><div class="date-item-content"><p class="date-item-label">Last Date</p><p class="date-item-val urgent">Jun 5, 2026</p></div></div>
+                  <div class="date-item"><span class="date-item-icon"><i class="fas fa-pencil-alt"></i></span><div class="date-item-content"><p class="date-item-label">Prelims</p><p class="date-item-val">Oct 19, 2026</p></div></div>
+                  <div class="date-item"><span class="date-item-icon"><i class="fas fa-rupee-sign"></i></span><div class="date-item-content"><p class="date-item-label">Application Fee</p><p class="date-item-val">₹200 (SC/ST/PH/Women: Free)</p></div></div>
+                </div>
+                <div class="alert-actions">
+                  <a href="#" class="alert-btn abtn-pdf"><i class="fas fa-file-pdf"></i> Official Notification</a>
+                  <a href="#" class="alert-btn abtn-apply"><i class="fas fa-external-link-alt"></i> Apply at UPSC</a>
+                  <a href="#" class="alert-btn abtn-strategy"><i class="fas fa-chess"></i> ESE Prep Strategy</a>
+                </div>
+              </div>
+
+              <!-- Alert 7 — GATE CE -->
+              <div class="alert-card" data-exam="gate">
+                <div class="alert-card-header">
+                  <div class="alert-badges">
+                    <span class="exam-badge badge-gate">GATE CE</span>
+                    <span class="status-pill s-upcoming">🔵 UPCOMING</span>
+                  </div>
+                  <span style="font-size:11px;color:rgba(74,74,104,.5);">Apr 5, 2026</span>
+                </div>
+                <h3 class="alert-title">GATE CE 2026 — Application Window Expected August 2026 · IIT Tirupati Organising Institute</h3>
+                <div class="alert-dates-grid">
+                  <div class="date-item"><span class="date-item-icon"><i class="fas fa-calendar-alt"></i></span><div class="date-item-content"><p class="date-item-label">Registration</p><p class="date-item-val">Aug–Sep 2026</p></div></div>
+                  <div class="date-item"><span class="date-item-icon"><i class="fas fa-pencil-alt"></i></span><div class="date-item-content"><p class="date-item-label">Exam</p><p class="date-item-val">Feb 2027</p></div></div>
+                  <div class="date-item"><span class="date-item-icon"><i class="fas fa-university"></i></span><div class="date-item-content"><p class="date-item-label">Organising Institute</p><p class="date-item-val">IIT Tirupati</p></div></div>
+                </div>
+                <div class="alert-actions">
+                  <a href="#" class="alert-btn abtn-alert"><i class="fas fa-bell"></i> Alert Me When Live</a>
+                  <a href="#" class="alert-btn abtn-strategy"><i class="fas fa-chess"></i> GATE CE Strategy</a>
+                  <a href="#" class="alert-btn abtn-pdf"><i class="fas fa-book-open"></i> Free Resources</a>
+                </div>
+              </div>
+
+            </div><!-- end alertsList -->
+          </div>
+
+          <!-- SIDEBAR -->
+          <aside class="sidebar">
+            <div class="sidebar-card">
+              <h3><i class="fas fa-fire-alt"></i> Upcoming Deadlines</h3>
+              <div class="upcoming-list">
+                <div class="upcoming-item">
+                  <div class="upcoming-badge ub-ssc">SSC</div>
+                  <div class="upcoming-text">
+                    <p class="upcoming-name">SSC JE 2025 Admit Card</p>
+                    <p class="upcoming-date" style="color:#DC2626;font-weight:700;"><i class="fas fa-fire"></i> Exam: Jun 10</p>
+                  </div>
+                </div>
+                <div class="upcoming-item">
+                  <div class="upcoming-badge ub-raj" style="font-size:9px;">RPSC</div>
+                  <div class="upcoming-text">
+                    <p class="upcoming-name">RPSC JE Application</p>
+                    <p class="upcoming-date" style="color:#DC2626;font-weight:700;"><i class="fas fa-hourglass-end"></i> Last Date: Jun 30</p>
+                  </div>
+                </div>
+                <div class="upcoming-item">
+                  <div class="upcoming-badge" style="background:#E65100;font-size:9px;">RSMSSB</div>
+                  <div class="upcoming-text">
+                    <p class="upcoming-name">RSMSSB JE Application</p>
+                    <p class="upcoming-date" style="color:#D97706;font-weight:700;"><i class="fas fa-hourglass-end"></i> Last Date: Jun 20</p>
+                  </div>
+                </div>
+                <div class="upcoming-item">
+                  <div class="upcoming-badge ub-ese">ESE</div>
+                  <div class="upcoming-text">
+                    <p class="upcoming-name">UPSC ESE Application</p>
+                    <p class="upcoming-date" style="color:#D97706;font-weight:700;"><i class="fas fa-hourglass-end"></i> Last Date: Jun 5</p>
+                  </div>
+                </div>
+                <div class="upcoming-item">
+                  <div class="upcoming-badge ub-raj" style="font-size:9px;">RPSC</div>
+                  <div class="upcoming-text">
+                    <p class="upcoming-name">RPSC AE Interview</p>
+                    <p class="upcoming-date"><i class="fas fa-calendar-check"></i> Jul 8–15, Jaipur</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="subscribe-card">
+              <h3><i class="fas fa-bell"></i> Get Instant Alerts</h3>
+              <p>Enter your email and never miss a notification. Free, no spam, unsubscribe anytime.</p>
+              <input type="email" class="subscribe-card-input" placeholder="your@email.com" />
+              <button class="subscribe-card-btn"><i class="fas fa-paper-plane"></i> Subscribe Free</button>
+              <div class="subscribe-channels-row">
+                <a href="https://t.me/jaspalsirofficial" target="_blank" rel="noopener" class="schan-btn schan-tg"><i class="fab fa-telegram"></i> Telegram</a>
+                <a href="https://whatsapp.com/channel/0029VaBBx7u8PgsF7Y4KZv06" target="_blank" rel="noopener" class="schan-btn schan-wa"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+              </div>
+            </div>
+
+            <div class="sidebar-card">
+              <h3><i class="fas fa-chalkboard-teacher"></i> Interview Coming Up?</h3>
+              <p style="font-size:13px;color:var(--body);line-height:1.7;margin-bottom:16px;">Dr. Jaspal Singh's offline Mock Interview programs in Jaipur. RPSC AE interview on Jul 8 — last batch Jun 8.</p>
+              <a href="../programs/index.html" class="btn btn-primary" style="width:100%;justify-content:center;"><i class="fas fa-arrow-right"></i> View Programs</a>
+            </div>
+          </aside>
+
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div>
+        <a href="../index.html" class="footer-wordmark">Dr. Jaspal Singh</a>
+        <p class="footer-tagline">Job alerts for SSC JE, Rajasthan AE/JE, UPSC ESE, GATE and all Civil Engineering recruitment exams.</p>
+        <div class="footer-social">
+          <a href="https://www.instagram.com/iesjaspalsingh/" target="_blank" rel="noopener" class="fsocial-link"><i class="fab fa-instagram"></i></a>
+          <a href="https://t.me/jaspalsirofficial" target="_blank" rel="noopener" class="fsocial-link"><i class="fab fa-telegram"></i></a>
+          <a href="https://whatsapp.com/channel/0029VaBBx7u8PgsF7Y4KZv06" target="_blank" rel="noopener" class="fsocial-link"><i class="fab fa-whatsapp"></i></a>
+        </div>
+      </div>
+      <div>
+        <h3 class="footer-col-title">Quick Links</h3>
+        <div class="footer-links">
+          <a href="../index.html" class="footer-link">Home</a>
+          <a href="../programs/index.html" class="footer-link">Offline Programs</a>
+          <a href="index.html" class="footer-link">Job Alerts</a>
+          <a href="#" class="footer-link">Blog</a>
+          <a href="#" class="footer-link">Resources</a>
+        </div>
+      </div>
+      <div>
+        <h3 class="footer-col-title">Exam Alerts</h3>
+        <div class="footer-links">
+          <a href="#" class="footer-link">SSC JE Notifications</a>
+          <a href="#" class="footer-link">RPSC AE Alerts</a>
+          <a href="#" class="footer-link">RSMSSB JE Alerts</a>
+          <a href="#" class="footer-link">UPSC ESE Notifications</a>
+          <a href="#" class="footer-link">GATE CE Updates</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="container">
+        <p>© 2026 Dr. Jaspal Singh · jaspalsingh.in · Job alerts for Civil Engineering aspirants across Rajasthan & India</p>
+      </div>
+    </div>
+  </footer>
+
+  <a href="https://wa.me/910000000000" target="_blank" rel="noopener" class="whatsapp-float"><i class="fab fa-whatsapp"></i></a>
+
+  <script>
+    window.addEventListener('scroll', function(){ document.getElementById('siteHeader').classList.toggle('scrolled', window.scrollY>40); });
+
+    function setFilter(btn, exam) {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      var cards = document.querySelectorAll('.alert-card');
+      cards.forEach(function(card) {
+        if (exam === 'all' || card.dataset.exam === exam) {
+          card.style.display = '';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+  </script>
+</body>
+</html>

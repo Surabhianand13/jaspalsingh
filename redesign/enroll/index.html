@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Enroll & Pay — Dr. Jaspal Singh Offline Programs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" />
+  <style>
+    :root {
+      --magenta:#F0345A; --sky:#67C8E8; --orange:#FF6B35; --green:#16A34A; --dark:#1A1A2E;
+      --body:#4A4A68; --light:#F8F8F8; --white:#FFFFFF;
+      --gradient:linear-gradient(135deg,#F0345A 0%,#67C8E8 100%);
+      --grad-orange:linear-gradient(135deg,#FF6B35 0%,#F0345A 100%);
+      --font-h:'Plus Jakarta Sans',sans-serif; --font-b:'Inter',sans-serif;
+      --radius-pill:50px; --radius-md:16px; --radius-sm:10px;
+      --shadow-sm:0 2px 8px rgba(26,26,46,.07); --shadow-md:0 6px 28px rgba(26,26,46,.11);
+      --header-h:72px; --trans:all .3s cubic-bezier(.4,0,.2,1);
+    }
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    html { scroll-behavior:smooth; }
+    body { font-family:var(--font-b); color:var(--body); background:var(--light); overflow-x:hidden; line-height:1.65; }
+    a { text-decoration:none; color:inherit; transition:var(--trans); }
+    button { cursor:pointer; font-family:var(--font-b); }
+    ul { list-style:none; }
+    .container { width:100%; max-width:1100px; margin:0 auto; padding:0 28px; }
+    .gradient-text { background:var(--gradient); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+
+    /* ── Header ── */
+    .site-header { position:fixed; top:0; left:0; right:0; z-index:900; height:var(--header-h); background:var(--white); border-bottom:2px solid var(--magenta); box-shadow:0 4px 24px rgba(26,26,46,.08); }
+    .header-inner { display:flex; align-items:center; justify-content:space-between; height:100%; }
+    .header-brand { display:flex; align-items:center; gap:10px; }
+    .header-avatar { width:38px; height:38px; border-radius:50%; object-fit:cover; border:2px solid var(--magenta); background:#f2e9e0; }
+    .wordmark { font-family:var(--font-h); font-weight:800; font-size:20px; color:var(--magenta); position:relative; padding-bottom:3px; }
+    .wordmark::after { content:''; position:absolute; bottom:0; left:0; width:100%; height:2.5px; background:var(--sky); border-radius:2px; }
+    .header-secure { display:flex; align-items:center; gap:8px; font-family:var(--font-h); font-size:13px; font-weight:600; color:var(--green); }
+    .header-secure i { font-size:15px; }
+
+    /* ── Progress Steps ── */
+    .enroll-page { padding-top:calc(var(--header-h) + 40px); padding-bottom:80px; min-height:100vh; }
+    .progress-bar { background:var(--white); border-bottom:1px solid rgba(26,26,46,.08); padding:20px 0; margin-bottom:40px; }
+    .progress-steps { display:flex; align-items:center; justify-content:center; gap:0; }
+    .step { display:flex; align-items:center; gap:10px; }
+    .step-num { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:var(--font-h); font-weight:800; font-size:14px; transition:var(--trans); flex-shrink:0; }
+    .step-label { font-family:var(--font-h); font-size:13px; font-weight:600; white-space:nowrap; }
+    .step.done .step-num { background:var(--green); color:#fff; }
+    .step.done .step-label { color:var(--green); }
+    .step.active .step-num { background:var(--grad-orange); color:#fff; box-shadow:0 4px 14px rgba(255,107,53,.4); }
+    .step.active .step-label { color:var(--orange); }
+    .step.pending .step-num { background:rgba(26,26,46,.08); color:rgba(74,74,104,.5); }
+    .step.pending .step-label { color:rgba(74,74,104,.45); }
+    .step-connector { width:60px; height:2px; background:rgba(26,26,46,.1); margin:0 8px; flex-shrink:0; }
+    .step-connector.done { background:var(--green); }
+
+    /* ── Layout ── */
+    .enroll-layout { display:grid; grid-template-columns:1fr 380px; gap:36px; align-items:start; }
+
+    /* ── Form card ── */
+    .form-card { background:var(--white); border-radius:var(--radius-md); border:1.5px solid rgba(26,26,46,.07); box-shadow:var(--shadow-sm); overflow:hidden; }
+    .form-card-header { padding:28px 32px 0; border-bottom:1px solid rgba(26,26,46,.07); padding-bottom:24px; }
+    .form-card-header h2 { font-family:var(--font-h); font-size:20px; font-weight:800; color:var(--dark); margin-bottom:4px; }
+    .form-card-header p { font-size:14px; color:var(--body); }
+    .form-card-body { padding:28px 32px; }
+    .form-row { display:grid; gap:20px; margin-bottom:20px; }
+    .form-row.two-col { grid-template-columns:1fr 1fr; }
+    .form-group { display:flex; flex-direction:column; gap:6px; }
+    .form-label { font-family:var(--font-h); font-size:13px; font-weight:700; color:var(--dark); }
+    .form-label .required { color:var(--magenta); margin-left:2px; }
+    .form-input, .form-select, .form-textarea { padding:12px 16px; border-radius:var(--radius-sm); border:1.5px solid rgba(26,26,46,.14); font-family:var(--font-b); font-size:14px; color:var(--dark); background:var(--white); transition:var(--trans); outline:none; width:100%; }
+    .form-input:focus, .form-select:focus, .form-textarea:focus { border-color:var(--orange); box-shadow:0 0 0 3px rgba(255,107,53,.1); }
+    .form-input::placeholder { color:rgba(74,74,104,.4); }
+    .form-textarea { resize:vertical; min-height:80px; }
+    .form-hint { font-size:11px; color:rgba(74,74,104,.55); margin-top:2px; }
+    .input-prefix { display:flex; align-items:center; border:1.5px solid rgba(26,26,46,.14); border-radius:var(--radius-sm); overflow:hidden; transition:var(--trans); }
+    .input-prefix:focus-within { border-color:var(--orange); box-shadow:0 0 0 3px rgba(255,107,53,.1); }
+    .prefix-label { padding:12px 14px; background:var(--light); border-right:1.5px solid rgba(26,26,46,.1); font-size:13px; font-weight:700; color:var(--body); white-space:nowrap; }
+    .input-prefix .form-input { border:none; box-shadow:none; }
+    .input-prefix .form-input:focus { box-shadow:none; }
+
+    /* Exam target selector */
+    .exam-selector { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+    .exam-option { display:none; }
+    .exam-option-label { display:flex; flex-direction:column; align-items:center; gap:6px; padding:14px 10px; border-radius:var(--radius-sm); border:1.5px solid rgba(26,26,46,.12); cursor:pointer; transition:var(--trans); text-align:center; }
+    .exam-option-label:hover { border-color:var(--orange); background:rgba(255,107,53,.04); }
+    .exam-option:checked + .exam-option-label { border-color:var(--orange); background:rgba(255,107,53,.08); }
+    .exam-icon { font-size:20px; }
+    .exam-name { font-family:var(--font-h); font-size:11px; font-weight:700; color:var(--dark); }
+
+    /* Coupon */
+    .coupon-row { display:flex; gap:10px; align-items:flex-end; }
+    .coupon-row .form-group { flex:1; }
+    .coupon-apply-btn { padding:12px 20px; border-radius:var(--radius-sm); background:var(--light); border:1.5px solid rgba(26,26,46,.14); font-family:var(--font-h); font-weight:700; font-size:13px; color:var(--dark); cursor:pointer; white-space:nowrap; transition:var(--trans); }
+    .coupon-apply-btn:hover { background:var(--orange); color:#fff; border-color:var(--orange); }
+    .coupon-success { display:flex; align-items:center; gap:6px; font-family:var(--font-h); font-size:12px; font-weight:700; color:var(--green); margin-top:6px; }
+
+    /* ── Payment section ── */
+    .payment-section { border-top:1.5px solid rgba(26,26,46,.08); padding:28px 32px; }
+    .payment-section h3 { font-family:var(--font-h); font-size:16px; font-weight:800; color:var(--dark); margin-bottom:20px; display:flex; align-items:center; gap:8px; }
+    .payment-section h3 i { color:var(--green); }
+    .payment-methods { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:24px; }
+    .pay-method { display:none; }
+    .pay-method-label { display:flex; flex-direction:column; align-items:center; gap:6px; padding:14px 10px; border-radius:var(--radius-sm); border:1.5px solid rgba(26,26,46,.12); cursor:pointer; transition:var(--trans); text-align:center; }
+    .pay-method-label:hover { border-color:var(--orange); }
+    .pay-method:checked + .pay-method-label { border-color:var(--orange); background:rgba(255,107,53,.06); }
+    .pay-icon { font-size:24px; }
+    .pay-name { font-family:var(--font-h); font-size:11px; font-weight:700; color:var(--dark); }
+    .upi-input-wrap { margin-bottom:20px; display:none; }
+    .upi-input-wrap.show { display:block; }
+    .razorpay-logos { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:20px; padding:12px 16px; background:var(--light); border-radius:var(--radius-sm); }
+    .razorpay-logos span { font-size:11px; font-weight:600; color:rgba(74,74,104,.6); }
+    .razorpay-logos .rp-badge { display:flex; align-items:center; gap:5px; font-family:var(--font-h); font-size:11px; font-weight:700; padding:4px 10px; border-radius:6px; background:rgba(2,99,224,.08); color:#0263E0; border:1px solid rgba(2,99,224,.15); }
+    .pay-btn { width:100%; padding:18px; border-radius:var(--radius-pill); background:var(--grad-orange); color:#fff; font-family:var(--font-h); font-weight:800; font-size:17px; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; box-shadow:0 6px 28px rgba(255,107,53,.4); transition:var(--trans); letter-spacing:.2px; }
+    .pay-btn:hover { transform:translateY(-2px); box-shadow:0 10px 40px rgba(255,107,53,.5); }
+    .pay-note { text-align:center; font-size:12px; color:rgba(74,74,104,.55); margin-top:14px; display:flex; align-items:center; justify-content:center; gap:6px; }
+
+    /* ── Order Summary (sidebar) ── */
+    .order-sidebar { position:sticky; top:calc(var(--header-h) + 24px); display:flex; flex-direction:column; gap:20px; }
+    .order-card { background:var(--white); border-radius:var(--radius-md); border:1.5px solid rgba(26,26,46,.08); box-shadow:var(--shadow-sm); overflow:hidden; }
+    .order-card-header { background:var(--dark); padding:18px 22px; }
+    .order-card-header h3 { font-family:var(--font-h); font-size:14px; font-weight:800; color:#fff; }
+    .order-card-header p { font-size:11px; color:rgba(255,255,255,.55); margin-top:2px; }
+    .order-prog-block { padding:20px 22px; border-bottom:1px solid rgba(26,26,46,.07); }
+    .order-prog-icon { width:44px; height:44px; border-radius:12px; background:rgba(255,107,53,.1); color:var(--orange); display:flex; align-items:center; justify-content:center; font-size:18px; float:left; margin-right:12px; margin-bottom:8px; }
+    .order-prog-name { font-family:var(--font-h); font-size:14px; font-weight:700; color:var(--dark); line-height:1.3; }
+    .order-prog-details { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; clear:both; }
+    .order-detail-chip { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--body); background:var(--light); padding:4px 9px; border-radius:6px; }
+    .order-detail-chip i { color:var(--orange); }
+    .order-price-block { padding:20px 22px; }
+    .price-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; font-size:13px; }
+    .price-row-label { color:var(--body); }
+    .price-row-val { font-family:var(--font-h); font-weight:700; color:var(--dark); }
+    .price-row-val.discount { color:var(--green); }
+    .price-row-val.strikethrough { text-decoration:line-through; color:rgba(74,74,104,.45); font-weight:500; }
+    .price-divider { border:none; border-top:1.5px dashed rgba(26,26,46,.1); margin:12px 0; }
+    .price-total-row { display:flex; align-items:center; justify-content:space-between; }
+    .price-total-label { font-family:var(--font-h); font-size:14px; font-weight:800; color:var(--dark); }
+    .price-total-val { font-family:var(--font-h); font-size:26px; font-weight:800; color:var(--dark); }
+    .price-gst-note { font-size:11px; color:rgba(74,74,104,.5); margin-top:2px; text-align:right; }
+    .savings-badge { background:rgba(22,163,74,.08); border:1px solid rgba(22,163,74,.15); border-radius:var(--radius-sm); padding:10px 14px; margin-top:14px; display:flex; align-items:center; gap:8px; }
+    .savings-badge i { color:var(--green); }
+    .savings-badge span { font-family:var(--font-h); font-size:12px; font-weight:700; color:var(--green); }
+
+    /* Trust badges card */
+    .trust-card { background:var(--white); border-radius:var(--radius-md); border:1.5px solid rgba(26,26,46,.08); padding:18px 20px; }
+    .trust-card h4 { font-family:var(--font-h); font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:rgba(74,74,104,.45); margin-bottom:14px; }
+    .trust-list { display:flex; flex-direction:column; gap:10px; }
+    .trust-item { display:flex; align-items:flex-start; gap:10px; }
+    .trust-icon { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0; background:rgba(22,163,74,.1); color:var(--green); }
+    .trust-icon.orange { background:rgba(255,107,53,.1); color:var(--orange); }
+    .trust-text strong { display:block; font-family:var(--font-h); font-size:12px; font-weight:700; color:var(--dark); }
+    .trust-text span { font-size:11px; color:var(--body); }
+
+    /* ── Success State ── */
+    .success-overlay { display:none; position:fixed; inset:0; background:rgba(26,26,46,.6); z-index:2000; align-items:center; justify-content:center; padding:20px; }
+    .success-overlay.show { display:flex; }
+    .success-modal { background:var(--white); border-radius:var(--radius-md); padding:48px 40px; text-align:center; max-width:500px; width:100%; box-shadow:0 24px 80px rgba(26,26,46,.3); animation:scaleIn .4s cubic-bezier(.4,0,.2,1); }
+    @keyframes scaleIn { from{transform:scale(.85);opacity:0} to{transform:scale(1);opacity:1} }
+    .success-icon { width:80px; height:80px; border-radius:50%; background:rgba(22,163,74,.1); border:3px solid var(--green); display:flex; align-items:center; justify-content:center; font-size:36px; color:var(--green); margin:0 auto 24px; }
+    .success-modal h2 { font-family:var(--font-h); font-size:26px; font-weight:800; color:var(--dark); margin-bottom:12px; }
+    .success-modal p { font-size:15px; color:var(--body); line-height:1.7; margin-bottom:28px; }
+    .success-detail { background:var(--light); border-radius:var(--radius-sm); padding:18px; margin-bottom:24px; text-align:left; }
+    .success-detail-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; font-size:13px; }
+    .success-detail-row:last-child { margin-bottom:0; }
+    .success-detail-row .label { color:var(--body); }
+    .success-detail-row .val { font-family:var(--font-h); font-weight:700; color:var(--dark); }
+    .success-btns { display:flex; flex-direction:column; gap:10px; }
+    .success-btn-primary { padding:14px; border-radius:var(--radius-pill); background:var(--grad-orange); color:#fff; font-family:var(--font-h); font-weight:700; font-size:15px; border:none; cursor:pointer; transition:var(--trans); }
+    .success-btn-primary:hover { transform:translateY(-2px); }
+    .success-btn-secondary { padding:12px; border-radius:var(--radius-pill); background:transparent; color:var(--dark); font-family:var(--font-h); font-weight:600; font-size:14px; border:1.5px solid rgba(26,26,46,.15); cursor:pointer; transition:var(--trans); }
+    .success-btn-secondary:hover { background:var(--light); }
+
+    /* ── Footer ── */
+    .enroll-footer { background:var(--dark); padding:24px 0; margin-top:60px; }
+    .enroll-footer-inner { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; }
+    .enroll-footer p { font-size:12px; color:rgba(255,255,255,.35); }
+    .enroll-footer-links { display:flex; gap:16px; }
+    .enroll-footer-links a { font-size:12px; color:rgba(255,255,255,.4); transition:var(--trans); }
+    .enroll-footer-links a:hover { color:var(--sky); }
+
+    @media(max-width:900px) {
+      .enroll-layout { grid-template-columns:1fr; }
+      .order-sidebar { position:static; }
+      .form-row.two-col { grid-template-columns:1fr; }
+      .exam-selector { grid-template-columns:repeat(2,1fr); }
+      .payment-methods { grid-template-columns:repeat(2,1fr); }
+      .step-connector { width:30px; }
+    }
+    @media(max-width:600px) {
+      :root { --header-h:64px; }
+      .container { padding:0 16px; }
+      .form-card-header, .form-card-body, .payment-section { padding:20px 18px; }
+      .progress-steps { gap:0; }
+      .step-label { display:none; }
+      .step-connector { width:20px; }
+      .exam-selector { grid-template-columns:repeat(3,1fr); }
+      .success-modal { padding:32px 24px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="../index.html" class="header-brand">
+        <img src="../../frontend/assets/images/jaspal-hero.png" class="header-avatar" alt="Dr. Jaspal Singh" onerror="this.style.display='none'" />
+        <span class="wordmark">Dr. Jaspal Singh</span>
+      </a>
+      <div class="header-secure">
+        <i class="fas fa-lock"></i> Secure Enrollment via Razorpay
+      </div>
+    </div>
+  </header>
+
+  <div class="enroll-page">
+
+    <!-- PROGRESS STEPS -->
+    <div class="progress-bar">
+      <div class="container">
+        <div class="progress-steps">
+          <div class="step done">
+            <div class="step-num"><i class="fas fa-check" style="font-size:12px;"></i></div>
+            <span class="step-label">Select Program</span>
+          </div>
+          <div class="step-connector done"></div>
+          <div class="step active">
+            <div class="step-num">2</div>
+            <span class="step-label">Your Details</span>
+          </div>
+          <div class="step-connector"></div>
+          <div class="step pending">
+            <div class="step-num">3</div>
+            <span class="step-label">Payment</span>
+          </div>
+          <div class="step-connector"></div>
+          <div class="step pending">
+            <div class="step-num">4</div>
+            <span class="step-label">Confirmed</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="enroll-layout">
+
+        <!-- FORM -->
+        <div>
+          <!-- Personal Details -->
+          <div class="form-card" style="margin-bottom:24px;">
+            <div class="form-card-header">
+              <h2><i class="fas fa-user-circle" style="color:var(--orange);margin-right:8px;"></i> Your Details</h2>
+              <p>Fill in your details to reserve your seat. All fields are required.</p>
+            </div>
+            <div class="form-card-body">
+              <div class="form-row two-col">
+                <div class="form-group">
+                  <label class="form-label">Full Name <span class="required">*</span></label>
+                  <input type="text" class="form-input" placeholder="As on government ID" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Email Address <span class="required">*</span></label>
+                  <input type="email" class="form-input" placeholder="Confirmation will be sent here" />
+                </div>
+              </div>
+
+              <div class="form-row two-col">
+                <div class="form-group">
+                  <label class="form-label">Mobile Number <span class="required">*</span></label>
+                  <div class="input-prefix">
+                    <span class="prefix-label">+91</span>
+                    <input type="tel" class="form-input" placeholder="WhatsApp number preferred" />
+                  </div>
+                  <p class="form-hint"><i class="fab fa-whatsapp" style="color:#25D366;"></i> Program updates will be shared on WhatsApp</p>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">City / District <span class="required">*</span></label>
+                  <input type="text" class="form-input" placeholder="Where are you from?" />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Target Exam <span class="required">*</span></label>
+                  <div class="exam-selector">
+                    <div>
+                      <input type="radio" name="exam" id="ex-sscje" class="exam-option" value="SSC JE" checked />
+                      <label for="ex-sscje" class="exam-option-label">
+                        <span class="exam-icon">🏗️</span>
+                        <span class="exam-name">SSC JE</span>
+                      </label>
+                    </div>
+                    <div>
+                      <input type="radio" name="exam" id="ex-raj-ae" class="exam-option" value="RPSC AE" />
+                      <label for="ex-raj-ae" class="exam-option-label">
+                        <span class="exam-icon">🏛️</span>
+                        <span class="exam-name">RPSC AE</span>
+                      </label>
+                    </div>
+                    <div>
+                      <input type="radio" name="exam" id="ex-raj-je" class="exam-option" value="RSMSSB JE" />
+                      <label for="ex-raj-je" class="exam-option-label">
+                        <span class="exam-icon">⚙️</span>
+                        <span class="exam-name">RSMSSB JE</span>
+                      </label>
+                    </div>
+                    <div>
+                      <input type="radio" name="exam" id="ex-gate" class="exam-option" value="GATE CE" />
+                      <label for="ex-gate" class="exam-option-label">
+                        <span class="exam-icon">📐</span>
+                        <span class="exam-name">GATE CE</span>
+                      </label>
+                    </div>
+                    <div>
+                      <input type="radio" name="exam" id="ex-ese" class="exam-option" value="UPSC ESE" />
+                      <label for="ex-ese" class="exam-option-label">
+                        <span class="exam-icon">🎖️</span>
+                        <span class="exam-name">UPSC ESE</span>
+                      </label>
+                    </div>
+                    <div>
+                      <input type="radio" name="exam" id="ex-other" class="exam-option" value="Other" />
+                      <label for="ex-other" class="exam-option-label">
+                        <span class="exam-icon">📝</span>
+                        <span class="exam-name">Other</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">How did you hear about us?</label>
+                  <select class="form-select">
+                    <option value="">Select an option</option>
+                    <option>Telegram Channel</option>
+                    <option>Instagram / Social Media</option>
+                    <option>WhatsApp Group</option>
+                    <option>Friend / Batchmate</option>
+                    <option>Google Search</option>
+                    <option>Unacademy</option>
+                    <option>Other</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Any specific areas you want to focus on? <span style="font-weight:500;opacity:.6;">(Optional)</span></label>
+                  <textarea class="form-textarea" placeholder="e.g., I struggle with technical questions in HR round, need help with confidence..."></textarea>
+                </div>
+              </div>
+
+              <!-- Coupon -->
+              <div class="coupon-row">
+                <div class="form-group">
+                  <label class="form-label">Coupon Code</label>
+                  <input type="text" class="form-input" placeholder="Enter coupon code" id="couponInput" style="text-transform:uppercase;" />
+                </div>
+                <button class="coupon-apply-btn" onclick="applyCoupon()">Apply</button>
+              </div>
+              <div class="coupon-success" id="couponSuccess" style="display:none;">
+                <i class="fas fa-check-circle"></i> Coupon JASPAL20 applied — ₹600 discount added!
+              </div>
+            </div>
+          </div>
+
+          <!-- Payment -->
+          <div class="form-card">
+            <div class="payment-section">
+              <h3><i class="fas fa-shield-alt"></i> Payment Details</h3>
+
+              <div class="payment-methods">
+                <div>
+                  <input type="radio" name="payment" id="pay-upi" class="pay-method" value="upi" checked />
+                  <label for="pay-upi" class="pay-method-label">
+                    <span class="pay-icon">📱</span>
+                    <span class="pay-name">UPI / GPay</span>
+                  </label>
+                </div>
+                <div>
+                  <input type="radio" name="payment" id="pay-card" class="pay-method" value="card" />
+                  <label for="pay-card" class="pay-method-label">
+                    <span class="pay-icon">💳</span>
+                    <span class="pay-name">Card</span>
+                  </label>
+                </div>
+                <div>
+                  <input type="radio" name="payment" id="pay-netbanking" class="pay-method" value="nb" />
+                  <label for="pay-netbanking" class="pay-method-label">
+                    <span class="pay-icon">🏦</span>
+                    <span class="pay-name">Net Banking</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="upi-input-wrap show" id="upiWrap">
+                <div class="form-group">
+                  <label class="form-label">UPI ID <span class="required">*</span></label>
+                  <input type="text" class="form-input" placeholder="yourname@upi" />
+                  <p class="form-hint">Supports GPay, PhonePe, Paytm, BHIM and all UPI apps</p>
+                </div>
+              </div>
+
+              <div class="razorpay-logos">
+                <span>Secured by</span>
+                <span class="rp-badge"><i class="fas fa-bolt"></i> Razorpay</span>
+                <span style="margin-left:auto;display:flex;align-items:center;gap:6px;">
+                  <span class="rp-badge" style="background:rgba(22,163,74,.08);color:var(--green);border-color:rgba(22,163,74,.15);"><i class="fas fa-lock"></i> 256-bit SSL</span>
+                  <span class="rp-badge" style="background:rgba(26,26,46,.05);color:var(--body);border-color:rgba(26,26,46,.1);">PCI DSS</span>
+                </span>
+              </div>
+
+              <button class="pay-btn" onclick="handlePayment()">
+                <i class="fas fa-lock"></i>
+                Pay ₹2,999 &amp; Confirm Seat
+              </button>
+
+              <p class="pay-note">
+                <i class="fas fa-shield-alt" style="color:var(--green);"></i>
+                100% secure payment &nbsp;·&nbsp; Instant confirmation email &nbsp;·&nbsp; Full refund if batch cancelled
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ORDER SUMMARY -->
+        <aside class="order-sidebar">
+          <div class="order-card">
+            <div class="order-card-header">
+              <h3>Order Summary</h3>
+              <p>1 Program · Jaipur, Rajasthan</p>
+            </div>
+            <div class="order-prog-block">
+              <div class="order-prog-icon"><i class="fas fa-user-tie"></i></div>
+              <p class="order-prog-name">SSC JE Interview Prep Workshop</p>
+              <div class="order-prog-details">
+                <span class="order-detail-chip"><i class="fas fa-calendar-alt"></i> Jun 15–17, 2026</span>
+                <span class="order-detail-chip"><i class="fas fa-map-marker-alt"></i> Jaipur, Rajasthan</span>
+                <span class="order-detail-chip"><i class="fas fa-clock"></i> 3 Days · 9 AM–6 PM</span>
+                <span class="order-detail-chip"><i class="fas fa-users"></i> 12 seats left</span>
+              </div>
+            </div>
+            <div class="order-price-block">
+              <div class="price-row">
+                <span class="price-row-label">Program Fee</span>
+                <span class="price-row-val strikethrough">₹4,999</span>
+              </div>
+              <div class="price-row">
+                <span class="price-row-label">Early Bird Discount</span>
+                <span class="price-row-val discount">− ₹2,000</span>
+              </div>
+              <div class="price-row" id="couponRow" style="display:none;">
+                <span class="price-row-label">Coupon (JASPAL20)</span>
+                <span class="price-row-val discount">− ₹600</span>
+              </div>
+              <div class="price-row">
+                <span class="price-row-label">GST (18%)</span>
+                <span class="price-row-val" id="gstVal">₹540</span>
+              </div>
+              <hr class="price-divider" />
+              <div class="price-total-row">
+                <span class="price-total-label">Total</span>
+                <span class="price-total-val" id="totalVal">₹3,539</span>
+              </div>
+              <p class="price-gst-note" id="gstNote">Incl. GST on ₹2,999</p>
+              <div class="savings-badge">
+                <i class="fas fa-tag"></i>
+                <span>You save ₹2,000 with Early Bird pricing!</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- What's included -->
+          <div class="trust-card">
+            <h4>What's Included</h4>
+            <div class="trust-list">
+              <div class="trust-item">
+                <div class="trust-icon"><i class="fas fa-check"></i></div>
+                <div class="trust-text">
+                  <strong>3 Full Days of Training</strong>
+                  <span>Daily 9 AM – 6 PM. All sessions by Dr. Jaspal Singh.</span>
+                </div>
+              </div>
+              <div class="trust-item">
+                <div class="trust-icon"><i class="fas fa-check"></i></div>
+                <div class="trust-text">
+                  <strong>2 Mock Interviews</strong>
+                  <span>Minimum 2 personal mock sessions with expert panel.</span>
+                </div>
+              </div>
+              <div class="trust-item">
+                <div class="trust-icon"><i class="fas fa-check"></i></div>
+                <div class="trust-text">
+                  <strong>Study Material + Notes</strong>
+                  <span>Printed notes and prep material included.</span>
+                </div>
+              </div>
+              <div class="trust-item">
+                <div class="trust-icon orange"><i class="fas fa-utensils"></i></div>
+                <div class="trust-text">
+                  <strong>Lunch + Refreshments</strong>
+                  <span>All meals included for all 3 days.</span>
+                </div>
+              </div>
+              <div class="trust-item">
+                <div class="trust-icon"><i class="fas fa-certificate"></i></div>
+                <div class="trust-text">
+                  <strong>Participation Certificate</strong>
+                  <span>Signed certificate from Dr. Jaspal Singh.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Trust -->
+          <div class="trust-card">
+            <h4>Why Trust Us</h4>
+            <div class="trust-list">
+              <div class="trust-item">
+                <div class="trust-icon"><i class="fas fa-shield-alt"></i></div>
+                <div class="trust-text">
+                  <strong>Secure Payment</strong>
+                  <span>Razorpay · PCI DSS Compliant · 256-bit SSL</span>
+                </div>
+              </div>
+              <div class="trust-item">
+                <div class="trust-icon"><i class="fas fa-undo"></i></div>
+                <div class="trust-text">
+                  <strong>Full Refund Policy</strong>
+                  <span>100% refund if batch cancelled. Transfer option available.</span>
+                </div>
+              </div>
+              <div class="trust-item">
+                <div class="trust-icon orange"><i class="fas fa-trophy"></i></div>
+                <div class="trust-text">
+                  <strong>100+ Selections</strong>
+                  <span>Students selected in RPSC AE, RSMSSB JE & SSC JE.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- SUCCESS MODAL -->
+  <div class="success-overlay" id="successOverlay" onclick="closeSuccess(event)">
+    <div class="success-modal" onclick="event.stopPropagation()">
+      <div class="success-icon"><i class="fas fa-check"></i></div>
+      <h2>Enrollment Confirmed!</h2>
+      <p>Your seat is reserved. A confirmation email with program details, location map, and prep material has been sent to your inbox.</p>
+      <div class="success-detail">
+        <div class="success-detail-row"><span class="label">Program</span><span class="val">SSC JE Interview Prep</span></div>
+        <div class="success-detail-row"><span class="label">Dates</span><span class="val">Jun 15–17, 2026</span></div>
+        <div class="success-detail-row"><span class="label">Location</span><span class="val">Jaipur, Rajasthan</span></div>
+        <div class="success-detail-row"><span class="label">Order ID</span><span class="val" style="color:var(--green);">JS-2026-0847</span></div>
+        <div class="success-detail-row"><span class="label">Amount Paid</span><span class="val">₹3,539</span></div>
+      </div>
+      <div class="success-btns">
+        <button class="success-btn-primary" onclick="closeSuccess()">
+          <i class="fas fa-download"></i> Download Receipt
+        </button>
+        <a href="https://wa.me/910000000000?text=I have enrolled in SSC JE Interview Prep Workshop" target="_blank" rel="noopener" class="success-btn-secondary" style="display:flex;align-items:center;justify-content:center;gap:8px;font-family:var(--font-h);font-weight:600;font-size:14px;padding:12px;border-radius:50px;border:1.5px solid rgba(26,26,46,.15);color:var(--dark);">
+          <i class="fab fa-whatsapp" style="color:#25D366;"></i> Join Program WhatsApp Group
+        </a>
+        <button class="success-btn-secondary" onclick="window.location.href='../programs/index.html'">
+          Browse Other Programs
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="enroll-footer">
+    <div class="container enroll-footer-inner">
+      <p>© 2026 Dr. Jaspal Singh · jaspalsingh.in · All payments secured by Razorpay</p>
+      <div class="enroll-footer-links">
+        <a href="../programs/index.html">Programs</a>
+        <a href="#">Privacy Policy</a>
+        <a href="#">Refund Policy</a>
+        <a href="#">Contact</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Coupon code logic
+    function applyCoupon() {
+      var code = document.getElementById('couponInput').value.toUpperCase().trim();
+      if (code === 'JASPAL20' || code === 'JASPAL') {
+        document.getElementById('couponSuccess').style.display = 'flex';
+        document.getElementById('couponRow').style.display = 'flex';
+        document.getElementById('totalVal').textContent = '₹2,939';
+        document.getElementById('gstVal').textContent = '₹540';
+        document.getElementById('gstNote').textContent = 'Incl. GST on ₹2,399';
+        document.querySelector('.pay-btn').innerHTML = '<i class="fas fa-lock"></i> Pay ₹2,939 & Confirm Seat';
+      } else if (code) {
+        alert('Invalid coupon code. Try JASPAL20 for 20% off!');
+      }
+    }
+
+    // Payment method toggle
+    document.querySelectorAll('.pay-method').forEach(function(radio) {
+      radio.addEventListener('change', function() {
+        var upiWrap = document.getElementById('upiWrap');
+        upiWrap.classList.toggle('show', this.value === 'upi');
+      });
+    });
+
+    // Simulate payment
+    function handlePayment() {
+      var btn = document.querySelector('.pay-btn');
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing Payment...';
+      btn.style.opacity = '.8';
+      btn.disabled = true;
+      setTimeout(function() {
+        document.getElementById('successOverlay').classList.add('show');
+        btn.innerHTML = '<i class="fas fa-lock"></i> Pay ₹3,539 & Confirm Seat';
+        btn.style.opacity = '1';
+        btn.disabled = false;
+      }, 2200);
+    }
+
+    function closeSuccess(e) {
+      if (!e || e.target === document.getElementById('successOverlay')) {
+        document.getElementById('successOverlay').classList.remove('show');
+      }
+    }
+  </script>
+</body>
+</html>
