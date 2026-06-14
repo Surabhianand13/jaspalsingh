@@ -19,7 +19,7 @@
   renderHeaderAuth();
 
   /* ── Wall logic only below (respects noWallPaths) ── */
-  var noWallPaths = ['/checkout', '/payment-success', '/admin', '/profile'];
+  var noWallPaths = ['/checkout', '/payment-success', '/admin', '/profile', '/reset-password'];
   if (noWallPaths.some(function(p){ return path.startsWith(p); })) return;
 
   /* Decide whether to run, and in which mode */
