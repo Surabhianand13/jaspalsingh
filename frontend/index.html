@@ -1013,27 +1013,27 @@
 
     /* Carousel is handled by main.js */
 
-    /* ── 24-hour countdown timer for limited offer ── */
+    /* ── Rolling daily offer countdown: active 6 AM - 2 AM, restarts every day ── */
     (function() {
-      function getEndTime(key) {
-        var stored = localStorage.getItem('lo_end_' + key);
-        var now = Date.now();
-        if (stored && parseInt(stored) > now) return parseInt(stored);
-        var end = now + 24 * 60 * 60 * 1000;
-        localStorage.setItem('lo_end_' + key, end);
+      function getDailyOfferEnd() {
+        var now = new Date();
+        var h = now.getHours();
+        var end = new Date(now);
+        if (h >= 6) { end.setHours(2,0,0,0); end.setDate(end.getDate()+1); }
+        else { end.setHours(2,0,0,0); }
         return end;
       }
+      function isOfferActive() { var h = new Date().getHours(); return h >= 6 || h < 2; }
       function pad(n) { return n < 10 ? '0' + n : n; }
       function tick() {
-        document.querySelectorAll('.op-countdown').forEach(function(el) {
-          var key = el.getAttribute('data-end');
-          var end = getEndTime(key);
-          var diff = Math.max(0, end - Date.now());
-          var h = Math.floor(diff / 3600000);
-          var m = Math.floor((diff % 3600000) / 60000);
-          var s = Math.floor((diff % 60000) / 1000);
-          el.textContent = pad(h) + ':' + pad(m) + ':' + pad(s);
-        });
+        var spans = document.querySelectorAll('.op-countdown');
+        if (!isOfferActive()) { spans.forEach(function(el) { el.textContent = 'Starts 6 AM'; }); return; }
+        var diff = Math.max(0, getDailyOfferEnd() - new Date());
+        var h = Math.floor(diff / 3600000);
+        var m = Math.floor((diff % 3600000) / 60000);
+        var s = Math.floor((diff % 60000) / 1000);
+        var text = pad(h) + ':' + pad(m) + ':' + pad(s);
+        spans.forEach(function(el) { el.textContent = text; });
       }
       tick();
       setInterval(tick, 1000);
