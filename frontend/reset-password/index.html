@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reset Password - Dr. Jaspal Singh</title>
+  <meta name="robots" content="noindex" />
+  <link rel="icon" href="/assets/images/favicon.png" type="image/png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/additions.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" />
+  <script src="/js/loader.js"></script>
+  <script src="/js/login-wall.js" defer></script>
+</head>
+<body>
+
+  <a href="#main" class="skip-link">Skip to main content</a>
+
+  <!-- Header (identical to homepage) -->
+  <header class="site-header" id="siteHeader" role="banner">
+    <div class="container header-inner">
+      <div class="header-left">
+        <a href="/" class="header-brand" aria-label="Dr. Jaspal Singh - Home">
+          <img src="/assets/images/jaspal-hero.png" class="header-avatar" alt="Dr. Jaspal Singh" onerror="this.style.display='none'" />
+          <span class="wordmark">Dr. Jaspal Singh</span>
+        </a>
+      </div>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="/" class="nav-link">Home</a>
+        <a href="/programs" class="nav-link">Offline Programs</a>
+        <a href="/about" class="nav-link">About</a>
+      </nav>
+      <div class="header-right">
+        <a href="tel:+919829133317" class="header-phone" aria-label="Call us">
+          <span class="phone-ring-wrap"><i class="fas fa-phone phone-icon"></i></span>
+          <span class="phone-text">+91 98291 33317</span>
+        </a>
+        <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false" aria-controls="mobileDrawer">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <div style="min-height:80vh;display:flex;align-items:center;justify-content:center;padding:100px 16px 48px;background:linear-gradient(160deg,#fafafa 0%,#fff5f7 100%);">
+      <div style="width:100%;max-width:400px;">
+
+        <!-- Brand pill -->
+        <div style="text-align:center;margin-bottom:32px;">
+          <div style="display:inline-flex;align-items:center;gap:10px;background:#fff;border:1px solid rgba(200,18,64,0.12);border-radius:50px;padding:8px 18px 8px 10px;box-shadow:0 2px 12px rgba(200,18,64,0.08);">
+            <img src="/assets/images/jaspal-hero.png" alt="Dr. Jaspal Singh" style="width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid #C81240;" />
+            <span style="font-family:var(--font-heading);font-size:13.5px;font-weight:800;color:#1A1A2E;">Dr. <span style="color:#C81240;">Jaspal Singh</span></span>
+          </div>
+        </div>
+
+        <!-- Card -->
+        <div style="background:#fff;border-radius:20px;box-shadow:0 8px 40px rgba(26,26,46,0.10);padding:36px 32px;border:1px solid rgba(26,26,46,0.06);">
+
+          <!-- Step 1: Request reset -->
+          <div id="stepRequest">
+            <h2 style="font-family:var(--font-heading);font-size:21px;font-weight:800;color:#1A1A2E;margin:0 0 4px;">Forgot your password?</h2>
+            <p style="font-size:13.5px;color:#6b7280;margin:0 0 24px;line-height:1.6;">Enter your email and we will send you a reset link.</p>
+            <div id="requestMsg" style="display:none;padding:10px 14px;border-radius:8px;font-size:13px;font-weight:600;margin-bottom:14px;"></div>
+            <div style="margin-bottom:16px;">
+              <label style="display:block;font-size:12.5px;font-weight:700;color:#374151;margin-bottom:6px;">Email ID</label>
+              <input type="email" id="resetEmail" placeholder="your@email.com" autocomplete="email"
+                style="width:100%;padding:12px 14px;border:1.5px solid rgba(26,26,46,.12);border-radius:10px;font-family:inherit;font-size:15px;color:#1A1A2E;outline:none;box-sizing:border-box;background:#fafafa;" />
+            </div>
+            <button onclick="doForgot()" id="forgotBtn"
+              style="width:100%;padding:14px;background:linear-gradient(135deg,#C81240,#9B1230);color:#fff;border:none;border-radius:50px;font-family:var(--font-heading);font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 6px 20px rgba(200,18,64,.3);">
+              Send Reset Link &nbsp;&rarr;
+            </button>
+            <p style="font-size:13px;color:#9999b0;text-align:center;margin-top:16px;">
+              Remembered it? <a href="/profile/?tab=login" style="color:#C81240;font-weight:700;text-decoration:none;">Log in &rarr;</a>
+            </p>
+          </div>
+
+          <!-- Step 2: Set new password (shown when ?token= is in URL) -->
+          <div id="stepReset" style="display:none;">
+            <h2 style="font-family:var(--font-heading);font-size:21px;font-weight:800;color:#1A1A2E;margin:0 0 4px;">Set new password</h2>
+            <p style="font-size:13.5px;color:#6b7280;margin:0 0 24px;line-height:1.6;">Choose a strong password you have not used before.</p>
+            <div id="resetMsg" style="display:none;padding:10px 14px;border-radius:8px;font-size:13px;font-weight:600;margin-bottom:14px;"></div>
+            <div style="margin-bottom:16px;">
+              <label style="display:block;font-size:12.5px;font-weight:700;color:#374151;margin-bottom:6px;">New Password</label>
+              <input type="password" id="newPassword" placeholder="Min 6 characters" autocomplete="new-password"
+                style="width:100%;padding:12px 14px;border:1.5px solid rgba(26,26,46,.12);border-radius:10px;font-family:inherit;font-size:15px;color:#1A1A2E;outline:none;box-sizing:border-box;background:#fafafa;" />
+            </div>
+            <div style="margin-bottom:20px;">
+              <label style="display:block;font-size:12.5px;font-weight:700;color:#374151;margin-bottom:6px;">Confirm Password</label>
+              <input type="password" id="confirmPassword" placeholder="Repeat your new password" autocomplete="new-password"
+                style="width:100%;padding:12px 14px;border:1.5px solid rgba(26,26,46,.12);border-radius:10px;font-family:inherit;font-size:15px;color:#1A1A2E;outline:none;box-sizing:border-box;background:#fafafa;" />
+            </div>
+            <button onclick="doReset()" id="resetBtn"
+              style="width:100%;padding:14px;background:linear-gradient(135deg,#C81240,#9B1230);color:#fff;border:none;border-radius:50px;font-family:var(--font-heading);font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 6px 20px rgba(200,18,64,.3);">
+              Update Password &nbsp;&rarr;
+            </button>
+          </div>
+
+          <!-- Step 3: Success -->
+          <div id="stepDone" style="display:none;text-align:center;">
+            <div style="width:56px;height:56px;border-radius:50%;background:#f0fdf4;border:2px solid #86efac;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
+              <i class="fas fa-check" style="color:#16a34a;font-size:22px;"></i>
+            </div>
+            <h2 style="font-family:var(--font-heading);font-size:20px;font-weight:800;color:#1A1A2E;margin:0 0 8px;">Password updated!</h2>
+            <p style="font-size:14px;color:#6b7280;margin:0 0 24px;line-height:1.6;">Your password has been changed. You can now log in.</p>
+            <a href="/profile/?tab=login"
+              style="display:block;width:100%;padding:14px;background:linear-gradient(135deg,#C81240,#9B1230);color:#fff;border:none;border-radius:50px;font-family:var(--font-heading);font-size:15px;font-weight:800;text-decoration:none;box-sizing:border-box;">
+              Go to Login &nbsp;&rarr;
+            </a>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    var API = 'https://jaspalsingh.onrender.com';
+    var resetToken = new URLSearchParams(window.location.search).get('token');
+
+    // If token in URL, show reset form instead of request form
+    if (resetToken) {
+      document.getElementById('stepRequest').style.display = 'none';
+      document.getElementById('stepReset').style.display = 'block';
+    }
+
+    function showMsg(id, msg, type) {
+      var el = document.getElementById(id);
+      el.textContent = msg;
+      el.style.display = 'block';
+      el.style.background = type === 'error' ? 'rgba(200,18,64,.08)' : 'rgba(22,163,74,.08)';
+      el.style.color = type === 'error' ? '#C81240' : '#15803d';
+      el.style.border = type === 'error' ? '1px solid rgba(200,18,64,.15)' : '1px solid rgba(22,163,74,.15)';
+    }
+
+    function doForgot() {
+      var email = document.getElementById('resetEmail').value.trim();
+      var btn = document.getElementById('forgotBtn');
+      if (!email) { showMsg('requestMsg', 'Please enter your email address.', 'error'); return; }
+      btn.disabled = true; btn.textContent = 'Sending...';
+      fetch(API + '/api/learners/forgot-password', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ email: email })
+      })
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        showMsg('requestMsg', data.message || 'Reset link sent. Check your inbox.', 'success');
+        btn.disabled = false; btn.innerHTML = 'Send Reset Link &nbsp;&rarr;';
+      })
+      .catch(function(){
+        showMsg('requestMsg', 'Something went wrong. Please try again.', 'error');
+        btn.disabled = false; btn.innerHTML = 'Send Reset Link &nbsp;&rarr;';
+      });
+    }
+
+    function doReset() {
+      var password = document.getElementById('newPassword').value;
+      var confirm  = document.getElementById('confirmPassword').value;
+      var btn = document.getElementById('resetBtn');
+      if (!password || password.length < 6) { showMsg('resetMsg', 'Password must be at least 6 characters.', 'error'); return; }
+      if (password !== confirm) { showMsg('resetMsg', 'Passwords do not match.', 'error'); return; }
+      btn.disabled = true; btn.textContent = 'Updating...';
+      fetch(API + '/api/learners/reset-password', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ token: resetToken, password: password })
+      })
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        if (data.error) { showMsg('resetMsg', data.error, 'error'); btn.disabled = false; btn.innerHTML = 'Update Password &nbsp;&rarr;'; return; }
+        document.getElementById('stepReset').style.display = 'none';
+        document.getElementById('stepDone').style.display = 'block';
+      })
+      .catch(function(){
+        showMsg('resetMsg', 'Something went wrong. Please try again.', 'error');
+        btn.disabled = false; btn.innerHTML = 'Update Password &nbsp;&rarr;';
+      });
+    }
+
+    // Allow Enter key to submit
+    document.addEventListener('keydown', function(e){
+      if (e.key !== 'Enter') return;
+      if (resetToken) doReset(); else doForgot();
+    });
+  </script>
+
+</body>
+</html>

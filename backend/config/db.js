@@ -17,14 +17,19 @@ const pool = new Pool({
   connectionTimeoutMillis: 5000,
 });
 
-// Test the connection on startup
+// Test the connection on startup and run safe migrations
 pool.connect((err, client, release) => {
   if (err) {
     console.error('❌ PostgreSQL connection failed:', err.message);
     console.error('   Check DATABASE_URL in your .env file.');
   } else {
     console.log('✅ PostgreSQL connected successfully.');
-    release();
+    // Add password reset columns if they don't exist yet
+    client.query(`
+      ALTER TABLE learners ADD COLUMN IF NOT EXISTS reset_token TEXT;
+      ALTER TABLE learners ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMPTZ;
+    `).catch(e => console.error('[migration] reset token columns:', e.message))
+      .finally(() => release());
   }
 });
 

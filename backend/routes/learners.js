@@ -35,8 +35,10 @@ const loginLimiter = rateLimit({
 });
 
 /* Public */
-router.post('/register', registerLimiter, ctrl.register);
-router.post('/login',    loginLimiter,    ctrl.login);
+router.post('/register',        registerLimiter, ctrl.register);
+router.post('/login',           loginLimiter,    ctrl.login);
+router.post('/forgot-password', loginLimiter,    ctrl.forgotPassword);
+router.post('/reset-password',                   ctrl.resetPassword);
 
 /* Learner protected */
 router.get('/me',        protectLearner, ctrl.getMe);

@@ -241,4 +241,84 @@ const adminStats = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { register, login, getMe, updateMe, getMyDownloads, adminGetAll, adminStats };
+/* ── POST /api/learners/forgot-password ─────────────────────── */
+const crypto = require('crypto');
+const { Resend } = require('resend');
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+const forgotPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email is required.' });
+
+    const result = await query('SELECT id, name FROM learners WHERE email = $1', [email.toLowerCase().trim()]);
+    // Always return success to prevent email enumeration
+    if (!result.rows.length) return res.json({ message: 'If that email is registered, a reset link has been sent.' });
+
+    const learner = result.rows[0];
+    const token = crypto.randomBytes(32).toString('hex');
+    const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    await query(
+      `UPDATE learners SET reset_token = $1, reset_token_expires = $2 WHERE id = $3`,
+      [token, expires, learner.id]
+    );
+
+    const resetUrl = `https://www.jaspalsingh.in/reset-password/?token=${token}`;
+    const firstName = (learner.name || 'there').split(' ')[0];
+
+    await resend.emails.send({
+      from: 'Dr. Jaspal Singh <team@jaspalsingh.in>',
+      to: email,
+      subject: 'Reset your password - jaspalsingh.in',
+      html: `<!DOCTYPE html><html><head><meta charset="UTF-8"/></head>
+<body style="margin:0;padding:0;background:#f4f5f8;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f5f8;padding:32px 16px;">
+<tr><td align="center"><table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+  <tr><td style="background:#0F1117;border-radius:14px 14px 0 0;padding:24px 36px;text-align:center;">
+    <div style="font-size:20px;font-weight:800;color:#fff;">Dr. <span style="color:#C81240;">Jaspal Singh</span></div>
+    <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:4px;letter-spacing:1.5px;text-transform:uppercase;">jaspalsingh.in</div>
+  </td></tr>
+  <tr><td style="background:#fff;padding:32px 36px;">
+    <h2 style="margin:0 0 8px;font-size:20px;color:#1A1A2E;font-weight:800;">Hi ${firstName},</h2>
+    <p style="margin:0 0 24px;font-size:15px;color:#374151;line-height:1.7;">We received a request to reset your password. Click the button below to set a new one. This link expires in 1 hour.</p>
+    <div style="text-align:center;margin:24px 0;">
+      <a href="${resetUrl}" style="display:inline-block;background:#C81240;color:#fff;border-radius:10px;padding:14px 32px;font-size:15px;font-weight:700;text-decoration:none;">Reset My Password</a>
+    </div>
+    <p style="font-size:13px;color:#9ca3af;margin:24px 0 0;">If you did not request this, you can safely ignore this email. Your password will not change.</p>
+  </td></tr>
+  <tr><td style="background:#f4f5f8;border-radius:0 0 14px 14px;padding:16px 36px;text-align:center;">
+    <p style="margin:0;font-size:12px;color:#9ca3af;">Questions? WhatsApp us at +91 98291 33317</p>
+  </td></tr>
+</table></td></tr></table>
+</body></html>`,
+    });
+
+    res.json({ message: 'If that email is registered, a reset link has been sent.' });
+  } catch (err) { next(err); }
+};
+
+/* ── POST /api/learners/reset-password ──────────────────────── */
+const resetPassword = async (req, res, next) => {
+  try {
+    const { token, password } = req.body;
+    if (!token || !password) return res.status(400).json({ error: 'Token and new password are required.' });
+    if (password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+
+    const result = await query(
+      `SELECT id FROM learners WHERE reset_token = $1 AND reset_token_expires > NOW()`,
+      [token]
+    );
+    if (!result.rows.length) return res.status(400).json({ error: 'Reset link is invalid or has expired.' });
+
+    const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
+    await query(
+      `UPDATE learners SET password_hash = $1, reset_token = NULL, reset_token_expires = NULL WHERE id = $2`,
+      [password_hash, result.rows[0].id]
+    );
+
+    res.json({ message: 'Password updated successfully. You can now log in.' });
+  } catch (err) { next(err); }
+};
+
+module.exports = { register, login, getMe, updateMe, getMyDownloads, adminGetAll, adminStats, forgotPassword, resetPassword };
