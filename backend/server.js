@@ -231,6 +231,12 @@ async function migrate() {
     )
   `);
 
+  /* ── Rename crash course to remove dash before Offline (fixes ticker label) ── */
+  await query(`
+    UPDATE programs SET title = 'RSSB JEN 2026-27 Offline Crash Course'
+    WHERE slug = 'rssb-jen-crash-course' AND title = 'RSSB JEN 2026-27 - Offline Crash Course'
+  `);
+
   /* ── Seed programs once (only if table is empty) ── */
   const pCount = await query(`SELECT COUNT(*)::int AS n FROM programs`);
   if (pCount.rows[0].n === 0) {
@@ -238,7 +244,7 @@ async function migrate() {
       ['rssb-jen-diploma-test-series','RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Diploma Offline','test-series','RSSB JE 2026','Diploma (Civil)','enrolling',2999,4999,'blue',1],
       ['rssb-jen-degree-test-series','RSSB JEN 2026 - Jaspal Sir Ki Test Series - Civil Degree Offline','test-series','RSSB JEN 2026','Degree (Civil)','enrolling',2999,4999,'teal',2],
       ['rpsc-ae-interview','RPSC AE 2024 - Interview Guidance Programme','interview','RPSC AE 2024','Interview / Viva','enrolling',4999,8999,'purple',3],
-      ['rssb-jen-crash-course','RSSB JEN 2026-27 - Offline Crash Course','course','RSSB JEN 2026-27','Crash Course','coming_soon',null,null,'orange',4],
+      ['rssb-jen-crash-course','RSSB JEN 2026-27 Offline Crash Course','course','RSSB JEN 2026-27','Crash Course','coming_soon',null,null,'orange',4],
       ['gate-ese-foundation','GATE / ESE 2028 - Offline Foundation Course','course','GATE / ESE 2028','Degree (Civil)','coming_soon',null,null,'green',5],
     ];
     for (const p of seed) {
