@@ -1515,6 +1515,23 @@ a.ticker-item:hover i { color: #fff; }
   line-height: 1;
 }
 
+/* ── Launching Soon footer (aligns with early bird chip on other cards) ── */
+.op-launching-soon {
+  margin: 0 12px 12px;
+  border-radius: 10px;
+  background: #f5f5f8;
+  border: 1.5px solid rgba(26,26,46,0.08);
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #6b6b8a;
+  text-align: center;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* ── Small phones ── */
 @media (max-width: 380px) {
   .wordmark { font-size: 16px; }
