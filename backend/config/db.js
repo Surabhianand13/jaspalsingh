@@ -24,11 +24,11 @@ pool.connect((err, client, release) => {
     console.error('   Check DATABASE_URL in your .env file.');
   } else {
     console.log('✅ PostgreSQL connected successfully.');
-    // Add password reset columns if they don't exist yet
-    client.query(`
-      ALTER TABLE learners ADD COLUMN IF NOT EXISTS reset_token TEXT;
-      ALTER TABLE learners ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMPTZ;
-    `).catch(e => console.error('[migration] reset token columns:', e.message))
+    // Add password reset columns if they don't exist yet (two separate queries - pg doesn't support multi-statement)
+    client.query(`ALTER TABLE learners ADD COLUMN IF NOT EXISTS reset_token TEXT`)
+      .then(() => client.query(`ALTER TABLE learners ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMPTZ`))
+      .then(() => console.log('[migration] reset_token columns ready.'))
+      .catch(e => console.error('[migration] reset token columns:', e.message))
       .finally(() => release());
   }
 });
