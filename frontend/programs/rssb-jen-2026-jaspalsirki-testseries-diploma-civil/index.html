@@ -57,14 +57,35 @@
     .ii-body { display:flex; flex-direction:column; gap:3px; }
     .ii-title { font-family:var(--font-heading); font-size:14px; font-weight:700; color:var(--heading-color); }
     .ii-desc { font-size:13px; color:var(--body-color); line-height:1.6; }
-    .schedule-table { width:100%; border-collapse:collapse; }
-    .schedule-table th { font-family:var(--font-heading); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; color:rgba(74,74,104,.55); padding:10px 14px; text-align:left; background:var(--light-grey); border-bottom:1.5px solid rgba(26,26,46,.08); }
-    .schedule-table td { padding:12px 14px; font-size:13.5px; color:var(--heading-color); border-bottom:1px solid rgba(26,26,46,.06); line-height:1.5; }
-    .schedule-table tr:last-child td { border-bottom:none; }
-    .schedule-table tr:hover td { background:rgba(26,26,46,.025); }
-    .td-bold { font-family:var(--font-heading); font-weight:700; }
-    .td-sub { font-size:12px; color:var(--body-color); margin-top:2px; }
-    .td-full { background:rgba(200,18,64,.04); }
+    /* Premium Schedule */
+    .sched-phase { margin-bottom:24px; }
+    .sched-phase-header { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+    .sched-phase-pill { font-family:var(--font-heading); font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:1px; padding:4px 12px; border-radius:20px; }
+    .sched-phase-pill.subject { background:rgba(2,132,199,.1); color:#0284C7; border:1px solid rgba(2,132,199,.2); }
+    .sched-phase-pill.full { background:rgba(200,18,64,.09); color:#C81240; border:1px solid rgba(200,18,64,.18); }
+    .sched-phase-line { flex:1; height:1px; background:rgba(26,26,46,.08); }
+    .sched-cards { display:flex; flex-direction:column; gap:8px; }
+    .sched-card { display:grid; grid-template-columns:52px 100px 1fr 48px; align-items:center; gap:14px; padding:13px 16px; background:#fff; border:1.5px solid rgba(26,26,46,.07); border-radius:12px; transition:box-shadow .18s,border-color .18s; }
+    .sched-card:hover { border-color:rgba(2,132,199,.25); box-shadow:0 4px 16px rgba(26,26,46,.07); }
+    .sched-card.full-card { border-color:rgba(200,18,64,.1); background:#fff; }
+    .sched-card.full-card:hover { border-color:rgba(200,18,64,.28); }
+    .sched-num { width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-family:var(--font-heading); font-size:13px; font-weight:800; flex-shrink:0; }
+    .sched-num.subj { background:rgba(2,132,199,.1); color:#0284C7; }
+    .sched-num.full { background:rgba(200,18,64,.09); color:#C81240; }
+    .sched-date { font-family:var(--font-heading); font-size:12px; font-weight:700; color:var(--body-color); white-space:nowrap; }
+    .sched-syllabus { font-size:13.5px; color:var(--heading-color); line-height:1.5; font-weight:500; }
+    .sched-qs { font-family:var(--font-heading); font-size:13px; font-weight:800; color:var(--heading-color); text-align:right; white-space:nowrap; }
+    .sched-qs span { font-size:10px; font-weight:600; color:var(--body-color); display:block; }
+    .hindi-note { background:linear-gradient(135deg,rgba(2,132,199,.04) 0%,rgba(2,132,199,.08) 100%); border:1.5px solid rgba(2,132,199,.15); border-radius:14px; padding:20px 22px; margin-top:16px; }
+    .hindi-note + .hindi-note { background:linear-gradient(135deg,rgba(245,158,11,.04) 0%,rgba(245,158,11,.08) 100%); border-color:rgba(245,158,11,.2); margin-top:10px; }
+    .hindi-note-label { font-family:var(--font-heading); font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.8px; color:#0284C7; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+    .hindi-note + .hindi-note .hindi-note-label { color:#B45309; }
+    .hindi-note-text { font-size:14px; color:var(--heading-color); line-height:1.85; }
+    .hindi-note-text strong { color:#0284C7; }
+    .hindi-note + .hindi-note .hindi-note-text strong { color:#B45309; }
+    .sched-disclaimer { margin-top:14px; display:flex; flex-direction:column; gap:6px; }
+    .sched-disc-item { font-size:13px; color:var(--body-color); display:flex; align-items:flex-start; gap:7px; line-height:1.6; }
+    .sched-disc-item i { color:var(--green); margin-top:3px; flex-shrink:0; font-size:11px; }
     .for-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
     .for-item { display:flex; gap:12px; align-items:flex-start; padding:14px; border:1.5px solid rgba(26,26,46,.07); border-radius:var(--radius-sm); background:var(--white); }
     .for-check { color:var(--green); font-size:14px; margin-top:2px; flex-shrink:0; }
@@ -224,146 +245,97 @@
 
             <div class="detail-block">
               <h2 class="detail-section-title">Complete Test Schedule</h2>
-              <table class="schedule-table">
-                <thead>
-                  <tr><th>#</th><th>Date</th><th>Syllabus</th><th>Qs</th></tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td class="td-bold">Test 01</td>
-                    <td>5 Jul 2026</td>
-                    <td>Rajasthan Ka Bhugol + Building Technology &amp; Construction Management</td>
-                    <td class="td-bold">120</td>
-                  </tr>
-                  <tr>
-                    <td class="td-bold">Test 02</td>
-                    <td>12 Jul 2026</td>
-                    <td>Rajasthan Ka Itihas + Surveying, Estimating &amp; Costing</td>
-                    <td class="td-bold">120</td>
-                  </tr>
-                  <tr>
-                    <td class="td-bold">Test 03</td>
-                    <td>19 Jul 2026</td>
-                    <td>Rajasthan Ki Kala evam Sanskriti + Strength of Materials</td>
-                    <td class="td-bold">120</td>
-                  </tr>
-                  <tr>
-                    <td class="td-bold">Test 04</td>
-                    <td>26 Jul 2026</td>
-                    <td>Rajasthan Ki Rajnitik evam Prashasanik Vyavastha + Reinforced Concrete Design</td>
-                    <td class="td-bold">120</td>
-                  </tr>
-                  <tr>
-                    <td class="td-bold">Test 05</td>
-                    <td>2 Aug 2026</td>
-                    <td>Rajasthan GK Mixed Revision - I + Irrigation &amp; Water Resources</td>
-                    <td class="td-bold">120</td>
-                  </tr>
-                  <tr>
-                    <td class="td-bold">Test 06</td>
-                    <td>9 Aug 2026</td>
-                    <td>Rajasthan GK Mixed Revision - II + Soil Engineering</td>
-                    <td class="td-bold">120</td>
-                  </tr>
-                  <tr>
-                    <td class="td-bold">Test 07</td>
-                    <td>16 Aug 2026</td>
-                    <td>Rajasthan GK Mixed Revision - III + AutoCAD Civil Engineering Drawing</td>
-                    <td class="td-bold">120</td>
-                  </tr>
-                  <tr class="td-full">
-                    <td class="td-bold">Test 08</td>
-                    <td>23 Aug 2026</td>
-                    <td>Full Length Test - 01</td>
-                    <td class="td-bold">120</td>
-                  </tr>
-                  <tr class="td-full">
-                    <td class="td-bold">Test 09</td>
-                    <td>30 Aug 2026</td>
-                    <td>Full Length Test - 02</td>
-                    <td class="td-bold">120</td>
-                  </tr>
-                  <tr class="td-full">
-                    <td class="td-bold">Test 10</td>
-                    <td>6 Sep 2026</td>
-                    <td>Full Length Test - 03</td>
-                    <td class="td-bold">120</td>
-                  </tr>
-                  <tr class="td-full">
-                    <td class="td-bold">Test 11</td>
-                    <td>13 Sep 2026</td>
-                    <td>Full Length Test - 04</td>
-                    <td class="td-bold">120</td>
-                  </tr>
-                  <tr class="td-full">
-                    <td class="td-bold">Test 12</td>
-                    <td>20 Sep 2026</td>
-                    <td>Full Length Test - 05</td>
-                    <td class="td-bold">120</td>
-                  </tr>
-                  <tr class="td-full">
-                    <td class="td-bold">Test 13</td>
-                    <td>27 Sep 2026</td>
-                    <td>Full Length Test - 06</td>
-                    <td class="td-bold">120</td>
-                  </tr>
-                  <tr class="td-full">
-                    <td class="td-bold">Test 14</td>
-                    <td>4 Oct 2026</td>
-                    <td>Full Length Test - 07</td>
-                    <td class="td-bold">120</td>
-                  </tr>
-                  <tr class="td-full">
-                    <td class="td-bold">Test 15</td>
-                    <td>11 Oct 2026</td>
-                    <td>Full Length Test - 08</td>
-                    <td class="td-bold">120</td>
-                  </tr>
-                  <tr class="td-full">
-                    <td class="td-bold">Test 16</td>
-                    <td>18 Oct 2026</td>
-                    <td>Full Length Test - 09</td>
-                    <td class="td-bold">120</td>
-                  </tr>
-                  <tr class="td-full">
-                    <td class="td-bold">Test 17</td>
-                    <td>25 Oct 2026</td>
-                    <td>Full Length Test - 10</td>
-                    <td class="td-bold">120</td>
-                  </tr>
-                  <tr class="td-full">
-                    <td class="td-bold">Test 18</td>
-                    <td>1 Nov 2026</td>
-                    <td>Full Length Test - 11</td>
-                    <td class="td-bold">120</td>
-                  </tr>
-                  <tr class="td-full">
-                    <td class="td-bold">Test 19</td>
-                    <td>8 Nov 2026</td>
-                    <td>Full Length Test - 12</td>
-                    <td class="td-bold">120</td>
-                  </tr>
-                  <tr class="td-full">
-                    <td class="td-bold">Test 20</td>
-                    <td>15 Nov 2026</td>
-                    <td>Full Length Test - 13</td>
-                    <td class="td-bold">120</td>
-                  </tr>
-                  <tr class="td-full">
-                    <td class="td-bold">Test 21</td>
-                    <td>22 Nov 2026</td>
-                    <td>Full Length Test - 14</td>
-                    <td class="td-bold">120</td>
-                  </tr>
-                  <tr class="td-full">
-                    <td class="td-bold">Test 22</td>
-                    <td>29 Nov 2026</td>
-                    <td>Full Length Test - 15</td>
-                    <td class="td-bold">120</td>
-                  </tr>
-                </tbody>
-              </table>
-              <p class="schedule-note"><i class="fas fa-info-circle" style="color:#B45309;margin-right:5px;"></i> Schedule may be revised after RSSB JE 2026 exam date is officially announced. Final schedule will be set keeping exam date and student interests in mind.</p>
+
+              <!-- Phase 1: Subject-Wise Tests -->
+              <div class="sched-phase">
+                <div class="sched-phase-header">
+                  <span class="sched-phase-pill subject"><i class="fas fa-book"></i> Phase 1 - Subject-Wise Tests (Tests 01-07)</span>
+                  <div class="sched-phase-line"></div>
+                </div>
+                <div class="sched-cards">
+                  <div class="sched-card">
+                    <div class="sched-num subj">01</div>
+                    <div class="sched-date">5 Jul 2026</div>
+                    <div class="sched-syllabus">राजस्थान का भूगोल + Building Technology &amp; Construction Management</div>
+                    <div class="sched-qs">120<span>Qs</span></div>
+                  </div>
+                  <div class="sched-card">
+                    <div class="sched-num subj">02</div>
+                    <div class="sched-date">12 Jul 2026</div>
+                    <div class="sched-syllabus">राजस्थान का इतिहास + Surveying, Estimating &amp; Costing</div>
+                    <div class="sched-qs">120<span>Qs</span></div>
+                  </div>
+                  <div class="sched-card">
+                    <div class="sched-num subj">03</div>
+                    <div class="sched-date">19 Jul 2026</div>
+                    <div class="sched-syllabus">राजस्थान की कला एवं संस्कृति + Strength of Materials</div>
+                    <div class="sched-qs">120<span>Qs</span></div>
+                  </div>
+                  <div class="sched-card">
+                    <div class="sched-num subj">04</div>
+                    <div class="sched-date">26 Jul 2026</div>
+                    <div class="sched-syllabus">राजस्थान की राजनीतिक एवं प्रशासनिक व्यवस्था + Reinforced Concrete Design</div>
+                    <div class="sched-qs">120<span>Qs</span></div>
+                  </div>
+                  <div class="sched-card">
+                    <div class="sched-num subj">05</div>
+                    <div class="sched-date">2 Aug 2026</div>
+                    <div class="sched-syllabus">Rajasthan GK Mixed Revision - I + Irrigation &amp; Water Resources</div>
+                    <div class="sched-qs">120<span>Qs</span></div>
+                  </div>
+                  <div class="sched-card">
+                    <div class="sched-num subj">06</div>
+                    <div class="sched-date">9 Aug 2026</div>
+                    <div class="sched-syllabus">Rajasthan GK Mixed Revision - II + Soil Engineering</div>
+                    <div class="sched-qs">120<span>Qs</span></div>
+                  </div>
+                  <div class="sched-card">
+                    <div class="sched-num subj">07</div>
+                    <div class="sched-date">16 Aug 2026</div>
+                    <div class="sched-syllabus">Rajasthan GK Mixed Revision - III + AutoCAD Civil Engineering Drawing</div>
+                    <div class="sched-qs">120<span>Qs</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Phase 2: Full Length Tests -->
+              <div class="sched-phase">
+                <div class="sched-phase-header">
+                  <span class="sched-phase-pill full"><i class="fas fa-file-alt"></i> Phase 2 - Full Length Mock Tests (Tests 08-22)</span>
+                  <div class="sched-phase-line"></div>
+                </div>
+                <div class="sched-cards">
+                  <div class="sched-card full-card"><div class="sched-num full">08</div><div class="sched-date">23 Aug 2026</div><div class="sched-syllabus">Full Length Test - 01</div><div class="sched-qs">120<span>Qs</span></div></div>
+                  <div class="sched-card full-card"><div class="sched-num full">09</div><div class="sched-date">30 Aug 2026</div><div class="sched-syllabus">Full Length Test - 02</div><div class="sched-qs">120<span>Qs</span></div></div>
+                  <div class="sched-card full-card"><div class="sched-num full">10</div><div class="sched-date">6 Sep 2026</div><div class="sched-syllabus">Full Length Test - 03</div><div class="sched-qs">120<span>Qs</span></div></div>
+                  <div class="sched-card full-card"><div class="sched-num full">11</div><div class="sched-date">13 Sep 2026</div><div class="sched-syllabus">Full Length Test - 04</div><div class="sched-qs">120<span>Qs</span></div></div>
+                  <div class="sched-card full-card"><div class="sched-num full">12</div><div class="sched-date">20 Sep 2026</div><div class="sched-syllabus">Full Length Test - 05</div><div class="sched-qs">120<span>Qs</span></div></div>
+                  <div class="sched-card full-card"><div class="sched-num full">13</div><div class="sched-date">27 Sep 2026</div><div class="sched-syllabus">Full Length Test - 06</div><div class="sched-qs">120<span>Qs</span></div></div>
+                  <div class="sched-card full-card"><div class="sched-num full">14</div><div class="sched-date">4 Oct 2026</div><div class="sched-syllabus">Full Length Test - 07</div><div class="sched-qs">120<span>Qs</span></div></div>
+                  <div class="sched-card full-card"><div class="sched-num full">15</div><div class="sched-date">11 Oct 2026</div><div class="sched-syllabus">Full Length Test - 08</div><div class="sched-qs">120<span>Qs</span></div></div>
+                  <div class="sched-card full-card"><div class="sched-num full">16</div><div class="sched-date">18 Oct 2026</div><div class="sched-syllabus">Full Length Test - 09</div><div class="sched-qs">120<span>Qs</span></div></div>
+                  <div class="sched-card full-card"><div class="sched-num full">17</div><div class="sched-date">25 Oct 2026</div><div class="sched-syllabus">Full Length Test - 10</div><div class="sched-qs">120<span>Qs</span></div></div>
+                  <div class="sched-card full-card"><div class="sched-num full">18</div><div class="sched-date">1 Nov 2026</div><div class="sched-syllabus">Full Length Test - 11</div><div class="sched-qs">120<span>Qs</span></div></div>
+                  <div class="sched-card full-card"><div class="sched-num full">19</div><div class="sched-date">8 Nov 2026</div><div class="sched-syllabus">Full Length Test - 12</div><div class="sched-qs">120<span>Qs</span></div></div>
+                  <div class="sched-card full-card"><div class="sched-num full">20</div><div class="sched-date">15 Nov 2026</div><div class="sched-syllabus">Full Length Test - 13</div><div class="sched-qs">120<span>Qs</span></div></div>
+                  <div class="sched-card full-card"><div class="sched-num full">21</div><div class="sched-date">22 Nov 2026</div><div class="sched-syllabus">Full Length Test - 14</div><div class="sched-qs">120<span>Qs</span></div></div>
+                  <div class="sched-card full-card"><div class="sched-num full">22</div><div class="sched-date">29 Nov 2026</div><div class="sched-syllabus">Full Length Test - 15</div><div class="sched-qs">120<span>Qs</span></div></div>
+                </div>
+              </div>
+
+              <!-- Hindi Notes from PDF -->
+              <div class="hindi-note">
+                <div class="hindi-note-label"><i class="fas fa-book-open"></i> विस्तृत समाधान (Detailed Solution)</div>
+                <p class="hindi-note-text">प्रत्येक टेस्ट के बाद विद्यार्थियों को <strong>प्रिंटेड Detailed Solution Booklet</strong> उपलब्ध कराई जाएगी। इससे विद्यार्थी अपनी गलतियों का विश्लेषण कर सकेंगे, कमजोर टॉपिक्स की पहचान कर पाएंगे तथा आगामी टेस्ट एवं वास्तविक परीक्षा में अपने प्रदर्शन को बेहतर बना सकेंगे।</p>
+              </div>
+              <div class="hindi-note">
+                <div class="hindi-note-label"><i class="fas fa-exclamation-circle"></i> महत्वपूर्ण सूचना</div>
+                <p class="hindi-note-text">प्रत्येक Subject-wise Test में लगभग <strong>10% प्रश्न पूर्व में आयोजित विषयों (Previous Test Syllabus)</strong> से भी शामिल किए जाएंगे, जिससे विद्यार्थियों का पुराने विषयों पर निरंतर रिवीजन होता रहे तथा वे पहले पढे हुए टॉपिक्स को भूलें नहीं। यह व्यवस्था अभ्यर्थियों को <strong>Revision + Retention + Exam Readiness</strong> बनाए रखने में सहायता करेगी और अंतिम परीक्षा तक सम्पूर्ण सिलेबस पर मजबूत पकड़ सुनिश्चित करेगी।</p>
+              </div>
+              <div class="sched-disclaimer">
+                <div class="sched-disc-item"><i class="fas fa-check-circle"></i> RSSB JE 2026 परीक्षा तिथि घोषित होने के बाद आवश्यकतानुसार टेस्ट शेड्यूल में परिवर्तन किया जा सकता है।</div>
+                <div class="sched-disc-item"><i class="fas fa-check-circle"></i> अंतिम टेस्ट कार्यक्रम परीक्षा तिथि एवं अभ्यर्थियों के हित को ध्यान में रखते हुए निर्धारित किया जाएगा।</div>
+              </div>
             </div>
 
             <div class="detail-block">
