@@ -188,17 +188,8 @@ router.get('/verify', async (req, res) => {
       if (updateResult.rows.length > 0) {
         const enrollment = updateResult.rows[0];
 
-        // Check if this learner has paid before (existing learner = previous paid enrollment)
-        const prevEnrollments = await query(
-          `SELECT COUNT(*) FROM enrollments WHERE student_email = $1 AND status = 'paid' AND order_id != $2`,
-          [enrollment.student_email, enrollment.order_id]
-        );
-        const isNewLearner = parseInt(prevEnrollments.rows[0].count) === 0;
-
         sendInvoiceEmail(enrollment).catch(e => console.error('[invoice email]', e.message));
-        if (isNewLearner) {
-          sendWelcomePaymentEmail(enrollment).catch(e => console.error('[welcome email]', e.message));
-        }
+        sendWelcomePaymentEmail(enrollment).catch(e => console.error('[welcome email]', e.message));
       }
     }
 

@@ -257,7 +257,17 @@
         <div class="ps-detail-row"><span class="ps-dk">Status</span><span class="ps-dv green"><i class="fas fa-check-circle"></i> Confirmed</span></div>
       `;
 
-      // Does this buyer already have an account? -> skip password
+      // If already logged in, skip the entire account/profile box
+      const existingToken = localStorage.getItem('jaspal_learner_token');
+      if (existingToken) {
+        accountExists = true;
+        document.getElementById('accountBox').style.display = 'none';
+        document.getElementById('accountSub').textContent =
+          'Your enrollment is confirmed. We have sent the details to your email.';
+        return;
+      }
+
+      // Does this buyer already have an account? -> skip password fields only
       try {
         const r = await fetch(`${API}/api/enrollment/account-status?order_id=${encodeURIComponent(order_id)}`);
         const s = await r.json();
