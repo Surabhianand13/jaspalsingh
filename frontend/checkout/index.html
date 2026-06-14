@@ -150,6 +150,7 @@
       background-image: radial-gradient(circle, rgba(255,255,255,.10) 1px, transparent 1px);
       background-size: 20px 20px;
     }
+    .co-summary-thumb.has-image::before { display: none; }
     .co-summary-thumb i { position: relative; z-index: 1; filter: drop-shadow(0 4px 12px rgba(0,0,0,.2)); }
     .co-summary-body { padding: 22px; }
     .co-summary-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #9999b0; margin-bottom: 6px; }
@@ -386,23 +387,17 @@
       document.getElementById('summaryMrp').textContent   = '₹' + program.mrp.toLocaleString('en-IN');
       updatePriceDisplay(program.price);
       const thumbEl = document.getElementById('summaryThumb');
+      const iconEl  = document.getElementById('summaryIcon');
       if (program.thumb) {
-        const img = new Image();
-        img.onload = function() {
-          thumbEl.style.background = 'none';
-          thumbEl.style.padding = '0';
-          thumbEl.innerHTML = '<img src="'+program.thumb+'" alt="'+program.name+'" style="width:100%;height:100%;object-fit:cover;display:block;" />';
-        };
-        img.onerror = function() {
-          thumbEl.style.background = program.color;
-          document.getElementById('summaryIcon').className = 'fas ' + program.icon;
-        };
-        img.src = program.thumb;
-        thumbEl.style.background = program.color;
-        document.getElementById('summaryIcon').className = 'fas ' + program.icon;
+        thumbEl.style.backgroundImage = 'url("' + program.thumb + '")';
+        thumbEl.style.backgroundSize = 'cover';
+        thumbEl.style.backgroundPosition = 'center';
+        thumbEl.style.backgroundRepeat = 'no-repeat';
+        thumbEl.classList.add('has-image');
+        iconEl.style.display = 'none';
       } else {
         thumbEl.style.background = program.color;
-        document.getElementById('summaryIcon').className = 'fas ' + program.icon;
+        iconEl.className = 'fas ' + program.icon;
       }
       document.title = 'Enroll - ' + program.name;
       document.getElementById('loadingState').style.display  = 'none';
