@@ -558,5 +558,57 @@
   <a href="https://wa.me/919829133317" target="_blank" rel="noopener" aria-label="Chat on WhatsApp" class="whatsapp-float"><i class="fab fa-whatsapp"></i></a>
   <script src="/js/main.js"></script>
   <script src="/js/track.js" defer></script>
+  <script>
+    // Rolling daily offer: active 6:00 AM - 2:00 AM next day (20 hrs), restarts every day
+    function getDailyOfferEnd() {
+      var now = new Date();
+      var h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
+      var todaySeconds = h * 3600 + m * 60 + s;
+      var startSec = 6 * 3600;   // 6:00 AM
+      var endSec   = 26 * 3600;  // 2:00 AM next day (6 + 20 = 26)
+      var end = new Date(now);
+      if (todaySeconds >= startSec) {
+        // After 6 AM today - end is 2 AM tomorrow
+        end.setHours(2, 0, 0, 0);
+        end.setDate(end.getDate() + 1);
+      } else {
+        // Before 6 AM - still within previous day's window, end is 2 AM today
+        end.setHours(2, 0, 0, 0);
+      }
+      return end;
+    }
+
+    function isOfferActive() {
+      var now = new Date();
+      var h = now.getHours();
+      // Active from 6 AM (h>=6) until 2 AM next day (h<2)
+      return h >= 6 || h < 2;
+    }
+
+    function formatCountdown(ms) {
+      if (ms <= 0) return '00:00:00';
+      var totalSec = Math.floor(ms / 1000);
+      var hh = Math.floor(totalSec / 3600);
+      var mm = Math.floor((totalSec % 3600) / 60);
+      var ss = totalSec % 60;
+      return String(hh).padStart(2,'0') + ':' + String(mm).padStart(2,'0') + ':' + String(ss).padStart(2,'0');
+    }
+
+    function tickCountdowns() {
+      var spans = document.querySelectorAll('.op-countdown');
+      if (!spans.length) return;
+      if (!isOfferActive()) {
+        spans.forEach(function(el) { el.textContent = 'Starts at 6:00 AM'; });
+        return;
+      }
+      var end = getDailyOfferEnd();
+      var remaining = end - new Date();
+      var text = formatCountdown(remaining);
+      spans.forEach(function(el) { el.textContent = text; });
+    }
+
+    tickCountdowns();
+    setInterval(tickCountdowns, 1000);
+  </script>
 </body>
 </html>
