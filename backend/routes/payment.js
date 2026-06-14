@@ -7,6 +7,7 @@ const express = require('express');
 const router  = express.Router();
 const { query } = require('../config/db');
 const https   = require('https');
+const { sendInvoiceEmail, sendWelcomePaymentEmail } = require('../services/paymentEmailService');
 
 /* ── Coupon catalogue ────────────────────────────────────── */
 const COUPONS = {
@@ -179,10 +180,16 @@ router.get('/verify', async (req, res) => {
     const paid  = order.order_status === 'PAID';
 
     if (paid) {
-      await query(
-        `UPDATE enrollments SET status = 'paid', paid_at = NOW(), cf_payment_id = $1 WHERE order_id = $2`,
+      const updateResult = await query(
+        `UPDATE enrollments SET status = 'paid', paid_at = NOW(), cf_payment_id = $1 WHERE order_id = $2 AND status != 'paid' RETURNING *`,
         [order.cf_order_id || order_id, order_id]
       );
+
+      if (updateResult.rows.length > 0) {
+        const enrollment = updateResult.rows[0];
+        sendInvoiceEmail(enrollment).catch(e => console.error('[invoice email]', e.message));
+        sendWelcomePaymentEmail(enrollment).catch(e => console.error('[welcome email]', e.message));
+      }
     }
 
     // Fetch enrollment details
