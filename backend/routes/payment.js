@@ -27,14 +27,14 @@ function applyCoupon(coupon, originalPrice) {
 /* ── Program catalogue ───────────────────────────────────── */
 const PROGRAMS = {
   'rssb-jen-diploma-test-series': {
-    name:      'RSSB JEN 2026 - Civil Diploma Offline Test Series',
-    shortName: 'RSSB JEN Diploma Test Series',
+    name:      'RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Diploma Offline',
+    shortName: 'RSSB JE 2026 Diploma Test Series',
     price:     2999,
     mrp:       4999,
   },
   'rssb-jen-degree-test-series': {
-    name:      'RSSB JEN 2026-27 - Civil Degree Offline Test Series',
-    shortName: 'RSSB JEN Degree Test Series',
+    name:      'RSSB JEN 2026 - Jaspal Sir Ki Test Series - Civil Degree Offline',
+    shortName: 'RSSB JEN 2026 Degree Test Series',
     price:     2999,
     mrp:       4999,
   },

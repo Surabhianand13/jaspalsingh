@@ -17,7 +17,7 @@
 
 ## Project Structure
 
-- `frontend/` — HTML/CSS/JS pages served by Vercel
+- `frontend/` — HTML/CSS/JS pages served by Cloudflare Pages
 - `backend/` — Node.js + Express API served by Render
 - `images/` — Static images (banners etc.) served by Express at `/images/`
 
