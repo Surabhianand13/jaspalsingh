@@ -18,6 +18,7 @@
   <link rel="stylesheet" href="/css/learner-auth.css" />
   <link rel="stylesheet" href="/css/profile.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" />
+<script src="/js/loader.js"></script>
 </head>
 <body>
   <a href="#main-content" class="skip-to-main">Skip to main content</a>
@@ -36,7 +37,7 @@
 
       <!-- Center: Desktop Navigation -->
       <nav class="main-nav" aria-label="Main navigation">
-        <a href="/" class="nav-link">Home</a>
+        <a href="/" class="nav-link active">Home</a>
 
         <div class="nav-item-dropdown">
           <button class="nav-dropdown-trigger" aria-haspopup="true" aria-expanded="false">
@@ -44,7 +45,71 @@
           </button>
           <div class="nav-dropdown-menu" role="menu">
 
-            <!-- Column 1: Offline Batches -->
+            <!-- Column 1: Test Series -->
+            <div class="dd-column">
+              <div class="dd-col-header dd-col-header--blue">
+                <span class="dd-col-header-icon"><i class="fas fa-clipboard-list"></i></span>
+                <span class="dd-col-header-text">Offline Test Series</span>
+              </div>
+              <div class="dd-cards">
+                <a href="/programs/rssb-jen-diploma-test-series/" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#EFF6FF;--icon-color:#0284C7"><i class="fas fa-clipboard-list"></i></span>
+                  <span class="dd-card-label">RSSB JE Diploma <span style="font-size:8px;font-weight:800;color:#C81240;background:rgba(200,18,64,.1);border-radius:8px;padding:1px 6px;vertical-align:middle;">NEW</span></span>
+                </a>
+                <a href="/programs/rssb-jen-degree-test-series/" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#F0FDFA;--icon-color:#0D9488"><i class="fas fa-clipboard-check"></i></span>
+                  <span class="dd-card-label">RSSB JE Degree <span style="font-size:8px;font-weight:800;color:#C81240;background:rgba(200,18,64,.1);border-radius:8px;padding:1px 6px;vertical-align:middle;">NEW</span></span>
+                </a>
+                <a href="/programs?type=test-series&amp;exam=gate" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#FFF4ED;--icon-color:#E8580A"><i class="fas fa-graduation-cap"></i></span>
+                  <span class="dd-card-label">GATE</span>
+                </a>
+                <a href="/programs?type=test-series&amp;exam=ese" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#F5F3FF;--icon-color:#7C3AED"><i class="fas fa-graduation-cap"></i></span>
+                  <span class="dd-card-label">ESE</span>
+                </a>
+                <a href="/programs?type=test-series&amp;exam=psus" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#FFF1F2;--icon-color:#BE123C"><i class="fas fa-industry"></i></span>
+                  <span class="dd-card-label">PSUs</span>
+                </a>
+                <a href="/programs?type=test-series&amp;exam=rajasthan-je" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#F0F9FF;--icon-color:#0284C7"><i class="fas fa-drafting-compass"></i></span>
+                  <span class="dd-card-label">Rajasthan JE</span>
+                </a>
+                <a href="/programs?type=test-series&amp;exam=rajasthan-ae" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#F0FDF4;--icon-color:#16A34A"><i class="fas fa-building"></i></span>
+                  <span class="dd-card-label">Rajasthan AE</span>
+                </a>
+                <a href="/programs?type=test-series&amp;exam=other-state" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#FFF7ED;--icon-color:#D97706"><i class="fas fa-map-marker-alt"></i></span>
+                  <span class="dd-card-label">Other State AE/JEs</span>
+                </a>
+              </div>
+            </div>
+
+            <!-- Column 2: Interview Programs -->
+            <div class="dd-column">
+              <div class="dd-col-header dd-col-header--magenta">
+                <span class="dd-col-header-icon"><i class="fas fa-user-tie"></i></span>
+                <span class="dd-col-header-text">Offline Interview Programs</span>
+              </div>
+              <div class="dd-cards">
+                <a href="/programs?type=interview&amp;exam=ese" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#FFF4ED;--icon-color:#E8580A"><i class="fas fa-graduation-cap"></i></span>
+                  <span class="dd-card-label">ESE</span>
+                </a>
+                <a href="/programs?type=interview&amp;exam=rpsc-ae" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#F0FDF4;--icon-color:#16A34A"><i class="fas fa-building"></i></span>
+                  <span class="dd-card-label">RPSC AE</span>
+                </a>
+                <a href="/programs?type=interview&amp;exam=psus" class="dd-card">
+                  <span class="dd-card-icon" style="--icon-bg:#FFF1F2;--icon-color:#BE123C"><i class="fas fa-industry"></i></span>
+                  <span class="dd-card-label">PSUs</span>
+                </a>
+              </div>
+            </div>
+
+            <!-- Column 3: Offline Batches -->
             <div class="dd-column">
               <div class="dd-col-header dd-col-header--orange">
                 <span class="dd-col-header-icon"><i class="fas fa-chalkboard-teacher"></i></span>
@@ -74,62 +139,6 @@
                 <a href="/programs?type=batch&amp;exam=psus" class="dd-card">
                   <span class="dd-card-icon" style="--icon-bg:#FFF1F2;--icon-color:#BE123C"><i class="fas fa-industry"></i></span>
                   <span class="dd-card-label">PSUs</span>
-                </a>
-              </div>
-            </div>
-
-            <!-- Column 2: Interview Programs -->
-            <div class="dd-column">
-              <div class="dd-col-header dd-col-header--magenta">
-                <span class="dd-col-header-icon"><i class="fas fa-user-tie"></i></span>
-                <span class="dd-col-header-text">Interview Programs</span>
-              </div>
-              <div class="dd-cards">
-                <a href="/programs?type=interview&amp;exam=ese" class="dd-card">
-                  <span class="dd-card-icon" style="--icon-bg:#FFF4ED;--icon-color:#E8580A"><i class="fas fa-graduation-cap"></i></span>
-                  <span class="dd-card-label">ESE</span>
-                </a>
-                <a href="/programs?type=interview&amp;exam=rpsc-ae" class="dd-card">
-                  <span class="dd-card-icon" style="--icon-bg:#F0FDF4;--icon-color:#16A34A"><i class="fas fa-building"></i></span>
-                  <span class="dd-card-label">RPSC AE</span>
-                </a>
-                <a href="/programs?type=interview&amp;exam=psus" class="dd-card">
-                  <span class="dd-card-icon" style="--icon-bg:#FFF1F2;--icon-color:#BE123C"><i class="fas fa-industry"></i></span>
-                  <span class="dd-card-label">PSUs</span>
-                </a>
-              </div>
-            </div>
-
-            <!-- Column 3: Test Series -->
-            <div class="dd-column">
-              <div class="dd-col-header dd-col-header--blue">
-                <span class="dd-col-header-icon"><i class="fas fa-clipboard-list"></i></span>
-                <span class="dd-col-header-text">Test Series</span>
-              </div>
-              <div class="dd-cards">
-                <a href="/programs?type=test-series&amp;exam=gate" class="dd-card">
-                  <span class="dd-card-icon" style="--icon-bg:#FFF4ED;--icon-color:#E8580A"><i class="fas fa-graduation-cap"></i></span>
-                  <span class="dd-card-label">GATE</span>
-                </a>
-                <a href="/programs?type=test-series&amp;exam=ese" class="dd-card">
-                  <span class="dd-card-icon" style="--icon-bg:#F5F3FF;--icon-color:#7C3AED"><i class="fas fa-graduation-cap"></i></span>
-                  <span class="dd-card-label">ESE</span>
-                </a>
-                <a href="/programs?type=test-series&amp;exam=psus" class="dd-card">
-                  <span class="dd-card-icon" style="--icon-bg:#FFF1F2;--icon-color:#BE123C"><i class="fas fa-industry"></i></span>
-                  <span class="dd-card-label">PSUs</span>
-                </a>
-                <a href="/programs?type=test-series&amp;exam=rajasthan-je" class="dd-card">
-                  <span class="dd-card-icon" style="--icon-bg:#F0F9FF;--icon-color:#0284C7"><i class="fas fa-drafting-compass"></i></span>
-                  <span class="dd-card-label">Rajasthan JE</span>
-                </a>
-                <a href="/programs?type=test-series&amp;exam=rajasthan-ae" class="dd-card">
-                  <span class="dd-card-icon" style="--icon-bg:#F0FDF4;--icon-color:#16A34A"><i class="fas fa-building"></i></span>
-                  <span class="dd-card-label">Rajasthan AE</span>
-                </a>
-                <a href="/programs?type=test-series&amp;exam=other-state" class="dd-card">
-                  <span class="dd-card-icon" style="--icon-bg:#FFF7ED;--icon-color:#D97706"><i class="fas fa-map-marker-alt"></i></span>
-                  <span class="dd-card-label">Other State AE/JEs</span>
                 </a>
               </div>
             </div>
@@ -492,54 +501,86 @@
   </main>
 
   <!-- FOOTER -->
-    <footer class="site-footer" role="contentinfo">
-    <div class="container footer-inner">
-      <div class="footer-brand">
-        <a href="/" class="footer-wordmark">Dr. Jaspal Singh</a>
-        <p class="footer-tagline">Because Har Aspirant Deserves a Teacher Who Truly Cares.</p>
-      </div>
-      <div class="footer-nav-col footer-nav-col--wide">
-        <div class="footer-top-link-row">
-          <a href="/" class="footer-link footer-home-link">Home</a>
-        </div>
-        <div class="footer-programs-grid">
-          <div class="footer-prog-col">
-            <span class="footer-link-group-label">Offline Batches</span>
-            <a href="/programs?type=batch&amp;exam=gate-ese" class="footer-link footer-sub-link">GATE / ESE</a>
-            <a href="/programs?type=batch&amp;exam=rajasthan-ae" class="footer-link footer-sub-link">Rajasthan AE</a>
-            <a href="/programs?type=batch&amp;exam=rajasthan-je" class="footer-link footer-sub-link">Rajasthan JE</a>
-            <a href="/programs?type=batch&amp;exam=ssc-je" class="footer-link footer-sub-link">SSC JE</a>
-            <a href="/programs?type=batch&amp;exam=rrb-je" class="footer-link footer-sub-link">RRB JE</a>
-            <a href="/programs?type=batch&amp;exam=psus" class="footer-link footer-sub-link">PSUs</a>
-          </div>
-          <div class="footer-prog-col">
-            <span class="footer-link-group-label">Offline Test Series</span>
-            <a href="/programs?type=test-series&amp;exam=gate" class="footer-link footer-sub-link">GATE</a>
-            <a href="/programs?type=test-series&amp;exam=ese" class="footer-link footer-sub-link">ESE</a>
-            <a href="/programs?type=test-series&amp;exam=psus" class="footer-link footer-sub-link">PSUs</a>
-            <a href="/programs?type=test-series&amp;exam=rajasthan-je" class="footer-link footer-sub-link">Rajasthan JE</a>
-            <a href="/programs?type=test-series&amp;exam=rajasthan-ae" class="footer-link footer-sub-link">Rajasthan AE</a>
-            <a href="/programs?type=test-series&amp;exam=other-state" class="footer-link footer-sub-link">Other State AE/JEs</a>
-          </div>
-          <div class="footer-prog-col">
-            <span class="footer-link-group-label">Interview Programs</span>
-            <a href="/programs?type=interview&amp;exam=ese" class="footer-link footer-sub-link">ESE</a>
-            <a href="/programs?type=interview&amp;exam=rpsc-ae" class="footer-link footer-sub-link">RPSC AE</a>
-            <a href="/programs?type=interview&amp;exam=psus" class="footer-link footer-sub-link">PSUs</a>
-          </div>
+    <footer class="site-footer" role="contentinfo" style="background:#0D0F1A;padding:56px 0 0;">
+    <div class="container" style="display:grid;grid-template-columns:220px 1fr 240px;gap:48px;padding-bottom:48px;border-bottom:1px solid rgba(255,255,255,0.06);">
+
+      <!-- Brand -->
+      <div>
+        <a href="/" style="font-size:22px;font-weight:800;color:#fff;text-decoration:none;letter-spacing:-0.3px;">Dr. <span style="color:#C81240;">Jaspal Singh</span></a>
+        <p style="font-size:13px;color:rgba(255,255,255,0.38);line-height:1.6;margin-top:10px;">Because Har Aspirant Deserves a Teacher Who Truly Cares.</p>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:18px;">
+          <span style="font-size:10px;font-weight:700;letter-spacing:.06em;padding:3px 10px;border-radius:20px;background:rgba(200,18,64,0.15);color:#E8547A;border:1px solid rgba(200,18,64,0.2);">ESE AIR-04</span>
+          <span style="font-size:10px;font-weight:700;letter-spacing:.06em;padding:3px 10px;border-radius:20px;background:rgba(200,18,64,0.15);color:#E8547A;border:1px solid rgba(200,18,64,0.2);">GATE AIR-06</span>
+          <span style="font-size:10px;font-weight:700;letter-spacing:.06em;padding:3px 10px;border-radius:20px;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.45);border:1px solid rgba(255,255,255,0.08);">PhD Civil Engg</span>
+          <span style="font-size:10px;font-weight:700;letter-spacing:.06em;padding:3px 10px;border-radius:20px;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.45);border:1px solid rgba(255,255,255,0.08);">15+ Yrs Teaching</span>
         </div>
       </div>
-      <div class="footer-connect-col">
-        <h3 class="footer-col-title">Contact</h3>
-        <a href="tel:+919829133317" class="footer-contact-link"><i class="fas fa-phone"></i> +91 98291 33317</a>
-        <a href="https://wa.me/919829133317" target="_blank" rel="noopener" class="footer-contact-link footer-contact-wa"><i class="fab fa-whatsapp"></i> WhatsApp Us</a>
+
+      <!-- Nav -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:32px;">
+        <div>
+          <div style="font-size:10px;font-weight:800;letter-spacing:.14em;color:rgba(255,255,255,0.3);text-transform:uppercase;margin-bottom:14px;">Offline Test Series</div>
+          <a href="/programs/rssb-jen-2026-jaspalsirki-testseries-diploma-civil/" style="display:block;font-size:13px;color:rgba(255,255,255,0.55);text-decoration:none;padding:4px 0;">RSSB JE Diploma <span style="font-size:9px;font-weight:800;color:#C81240;background:rgba(200,18,64,0.12);border-radius:6px;padding:1px 5px;">NEW</span></a>
+          <a href="/programs/rssb-je-jaspalsirki-testseries-degree-civil/" style="display:block;font-size:13px;color:rgba(255,255,255,0.55);text-decoration:none;padding:4px 0;">RSSB JE Degree <span style="font-size:9px;font-weight:800;color:#C81240;background:rgba(200,18,64,0.12);border-radius:6px;padding:1px 5px;">NEW</span></a>
+          <a href="/programs?type=test-series&amp;exam=gate" style="display:block;font-size:13px;color:rgba(255,255,255,0.55);text-decoration:none;padding:4px 0;">GATE</a>
+          <a href="/programs?type=test-series&amp;exam=ese" style="display:block;font-size:13px;color:rgba(255,255,255,0.55);text-decoration:none;padding:4px 0;">ESE</a>
+          <a href="/programs?type=test-series&amp;exam=psus" style="display:block;font-size:13px;color:rgba(255,255,255,0.55);text-decoration:none;padding:4px 0;">PSUs</a>
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:800;letter-spacing:.14em;color:rgba(255,255,255,0.3);text-transform:uppercase;margin-bottom:14px;">Interview Programs</div>
+          <a href="/programs?type=interview&amp;exam=ese" style="display:block;font-size:13px;color:rgba(255,255,255,0.55);text-decoration:none;padding:4px 0;">ESE</a>
+          <a href="/programs/rpsc-ae-interview/" style="display:block;font-size:13px;color:rgba(255,255,255,0.55);text-decoration:none;padding:4px 0;">RPSC AE</a>
+          <a href="/programs?type=interview&amp;exam=psus" style="display:block;font-size:13px;color:rgba(255,255,255,0.55);text-decoration:none;padding:4px 0;">PSUs</a>
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:800;letter-spacing:.14em;color:rgba(255,255,255,0.3);text-transform:uppercase;margin-bottom:14px;">Offline Batches</div>
+          <a href="/programs?type=batch&amp;exam=gate-ese" style="display:block;font-size:13px;color:rgba(255,255,255,0.55);text-decoration:none;padding:4px 0;">GATE / ESE</a>
+          <a href="/programs?type=batch&amp;exam=rajasthan-ae" style="display:block;font-size:13px;color:rgba(255,255,255,0.55);text-decoration:none;padding:4px 0;">Rajasthan AE</a>
+          <a href="/programs?type=batch&amp;exam=rajasthan-je" style="display:block;font-size:13px;color:rgba(255,255,255,0.55);text-decoration:none;padding:4px 0;">Rajasthan JE</a>
+          <a href="/programs?type=batch&amp;exam=ssc-je" style="display:block;font-size:13px;color:rgba(255,255,255,0.55);text-decoration:none;padding:4px 0;">SSC JE</a>
+          <a href="/programs?type=batch&amp;exam=rrb-je" style="display:block;font-size:13px;color:rgba(255,255,255,0.55);text-decoration:none;padding:4px 0;">RRB JE</a>
+        </div>
+      </div>
+
+      <!-- Contact -->
+      <div>
+        <div style="font-size:10px;font-weight:800;letter-spacing:.14em;color:rgba(255,255,255,0.3);text-transform:uppercase;margin-bottom:16px;">Contact</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <div style="width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-phone" style="font-size:11px;color:#C81240;"></i></div>
+          <a href="tel:+919829133317" style="font-size:12.5px;color:rgba(255,255,255,0.55);text-decoration:none;">+91 98291 33317</a>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <div style="width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fab fa-whatsapp" style="font-size:11px;color:#C81240;"></i></div>
+          <a href="https://wa.me/919829133317" target="_blank" rel="noopener" style="font-size:12.5px;color:rgba(255,255,255,0.55);text-decoration:none;">WhatsApp Us</a>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <div style="width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-envelope" style="font-size:11px;color:#C81240;"></i></div>
+          <a href="mailto:team@jaspalsingh.in" style="font-size:12.5px;color:rgba(255,255,255,0.55);text-decoration:none;">team@jaspalsingh.in</a>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:16px;">
+          <div style="width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;"><i class="fas fa-map-marker-alt" style="font-size:11px;color:#C81240;"></i></div>
+          <span style="font-size:12.5px;color:rgba(255,255,255,0.55);line-height:1.6;">Tower N, Jewels of India<br>Bajaj Nagar, Jaipur<br>Rajasthan 302020</span>
+        </div>
+        <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(200,18,64,0.1);border:1px solid rgba(200,18,64,0.2);border-radius:20px;padding:5px 12px;">
+          <span style="width:6px;height:6px;border-radius:50%;background:#C81240;display:inline-block;animation:ftPulse 1.5s ease infinite;"></span>
+          <span style="font-size:11px;font-weight:700;color:#E8547A;">Enquiry: 2 - 4 PM daily</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Gradient divider -->
+    <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(200,18,64,0.35),rgba(255,107,53,0.2),transparent);"></div>
+
+    <!-- Bottom bar -->
+    <div class="container" style="display:flex;align-items:center;justify-content:space-between;padding:18px 0;flex-wrap:wrap;gap:12px;">
+      <p style="font-size:11.5px;color:rgba(255,255,255,0.25);">© 2026 Dr. Jaspal Singh · jaspalsingh.in · Empowering Civil Engineering aspirants across India.</p>
+      <div style="display:flex;gap:20px;">
+        <a href="/privacy-policy" style="font-size:11.5px;color:rgba(255,255,255,0.3);text-decoration:none;">Privacy Policy</a>
+        <a href="/terms" style="font-size:11.5px;color:rgba(255,255,255,0.3);text-decoration:none;">Terms &amp; Conditions</a>
       </div>
     </div>
-    <div class="footer-bottom">
-      <div class="container">
-        <p>© 2026 Dr. Jaspal Singh · jaspalsingh.in · Empowering Civil Engineering aspirants across India. &nbsp;|&nbsp; <a href="/privacy-policy" style="color:inherit;text-decoration:underline;">Privacy Policy</a> &nbsp;|&nbsp; <a href="/terms" style="color:inherit;text-decoration:underline;">Terms &amp; Conditions</a></p>
-      </div>
-    </div>
+    <style>@keyframes ftPulse{0%,100%{opacity:1}50%{opacity:0.3}}</style>
   </footer>
 
   <script src="/js/main.js"></script>
