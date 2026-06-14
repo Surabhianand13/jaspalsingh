@@ -283,20 +283,18 @@ ul, ol {
 .phone-icon {
   position: relative;
   z-index: 1;
-  width: 34px !important;
-  height: 34px !important;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   background: var(--gradient);
-  color: #fff !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  font-size: 13px !important;
-  line-height: 34px !important;
+  color: #fff;
+  display: inline-block;
   text-align: center;
+  line-height: 34px;
+  font-size: 13px;
   box-shadow: 0 3px 14px rgba(200,18,64,0.35);
   animation: phoneShake 3s ease-in-out infinite;
-  flex-shrink: 0;
+  vertical-align: middle;
 }
 
 .phone-text {
