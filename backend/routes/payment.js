@@ -7,6 +7,7 @@ const express = require('express');
 const router  = express.Router();
 const { query } = require('../config/db');
 const https   = require('https');
+const crypto  = require('crypto');
 const { sendInvoiceEmail, sendWelcomePaymentEmail } = require('../services/paymentEmailService');
 
 /* ── Coupon catalogue ────────────────────────────────────── */
@@ -218,6 +219,22 @@ router.get('/verify', async (req, res) => {
 /* ── POST /api/payment/webhook ───────────────────────────── */
 router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   try {
+    // Verify Cashfree webhook signature
+    const ts  = req.headers['x-webhook-timestamp'];
+    const sig = req.headers['x-webhook-signature'];
+    if (!ts || !sig) {
+      console.warn('[webhook] Missing signature headers');
+      return res.status(401).json({ error: 'Missing signature.' });
+    }
+    const expected = crypto
+      .createHmac('sha256', process.env.CASHFREE_SECRET_KEY)
+      .update(ts + req.body.toString())
+      .digest('base64');
+    if (sig !== expected) {
+      console.warn('[webhook] Signature mismatch');
+      return res.status(401).json({ error: 'Invalid signature.' });
+    }
+
     const event = JSON.parse(req.body);
     if (event?.data?.order?.order_status === 'PAID') {
       const order_id = event.data.order.order_id;

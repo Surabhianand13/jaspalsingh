@@ -248,12 +248,16 @@
       document.getElementById('stateLoading').style.display = 'none';
       document.getElementById('stateSuccess').style.display = 'block';
 
+      function escHtml(s) {
+        return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      }
+
       const details = document.getElementById('successDetails');
       details.innerHTML = `
-        <div class="ps-detail-row"><span class="ps-dk">Name</span><span class="ps-dv">${data.student_name || '-'}</span></div>
-        <div class="ps-detail-row"><span class="ps-dk">Program</span><span class="ps-dv">${data.program_name || '-'}</span></div>
+        <div class="ps-detail-row"><span class="ps-dk">Name</span><span class="ps-dv">${escHtml(data.student_name) || '-'}</span></div>
+        <div class="ps-detail-row"><span class="ps-dk">Program</span><span class="ps-dv">${escHtml(data.program_name) || '-'}</span></div>
         <div class="ps-detail-row"><span class="ps-dk">Amount Paid</span><span class="ps-dv green">&#8377;${Number(data.amount || 0).toLocaleString('en-IN')}</span></div>
-        <div class="ps-detail-row"><span class="ps-dk">Order ID</span><span class="ps-dv" style="font-size:11px;">${data.order_id}</span></div>
+        <div class="ps-detail-row"><span class="ps-dk">Order ID</span><span class="ps-dv" style="font-size:11px;">${escHtml(data.order_id)}</span></div>
         <div class="ps-detail-row"><span class="ps-dk">Status</span><span class="ps-dv green"><i class="fas fa-check-circle"></i> Confirmed</span></div>
       `;
 

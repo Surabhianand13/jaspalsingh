@@ -13,6 +13,10 @@ const SITE   = 'https://jaspalsingh.in';
 
 const TALLY_FORM_URL = process.env.TALLY_FORM_URL || 'https://tally.so/r/XXXXXXX';
 
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 function fmtDate(iso) {
   return new Date(iso || Date.now()).toLocaleString('en-IN', {
     day: 'numeric', month: 'long', year: 'numeric',
@@ -56,7 +60,7 @@ function baseHtml(body) {
 /* ── 1. Invoice Receipt ──────────────────────────────────────── */
 
 async function sendInvoiceEmail(enrollment) {
-  const firstName = (enrollment.student_name || 'there').split(' ')[0];
+  const firstName = esc((enrollment.student_name || 'there').split(' ')[0]);
   const paidAt    = fmtDate(enrollment.paid_at);
 
   const body = `
@@ -76,17 +80,17 @@ async function sendInvoiceEmail(enrollment) {
         <div style="font-size:11px;font-weight:800;letter-spacing:.12em;color:#94a3b8;text-transform:uppercase;">Payment Receipt</div>
       </td></tr>
       <tr><td style="padding:10px 0 4px;font-size:13px;color:#64748b;">Program</td>
-          <td style="padding:10px 0 4px;font-size:14px;color:#1A1A2E;font-weight:700;text-align:right;">${enrollment.program_name}</td></tr>
+          <td style="padding:10px 0 4px;font-size:14px;color:#1A1A2E;font-weight:700;text-align:right;">${esc(enrollment.program_name)}</td></tr>
       <tr><td style="padding:4px 0;font-size:13px;color:#64748b;">Order ID</td>
-          <td style="padding:4px 0;font-size:13px;color:#475569;font-family:monospace;text-align:right;">${enrollment.order_id}</td></tr>
+          <td style="padding:4px 0;font-size:13px;color:#475569;font-family:monospace;text-align:right;">${esc(enrollment.order_id)}</td></tr>
       <tr><td style="padding:4px 0;font-size:13px;color:#64748b;">Date</td>
           <td style="padding:4px 0;font-size:13px;color:#475569;text-align:right;">${paidAt}</td></tr>
       <tr><td style="padding:4px 0;font-size:13px;color:#64748b;">Name</td>
-          <td style="padding:4px 0;font-size:13px;color:#475569;text-align:right;">${enrollment.student_name}</td></tr>
+          <td style="padding:4px 0;font-size:13px;color:#475569;text-align:right;">${esc(enrollment.student_name)}</td></tr>
       <tr><td style="padding:4px 0;font-size:13px;color:#64748b;">Phone</td>
-          <td style="padding:4px 0;font-size:13px;color:#475569;text-align:right;">${enrollment.student_phone || '-'}</td></tr>
+          <td style="padding:4px 0;font-size:13px;color:#475569;text-align:right;">${esc(enrollment.student_phone) || '-'}</td></tr>
       ${enrollment.coupon_code ? `<tr><td style="padding:4px 0;font-size:13px;color:#64748b;">Coupon</td>
-          <td style="padding:4px 0;font-size:13px;color:#16a34a;font-weight:600;text-align:right;">${enrollment.coupon_code}</td></tr>` : ''}
+          <td style="padding:4px 0;font-size:13px;color:#16a34a;font-weight:600;text-align:right;">${esc(enrollment.coupon_code)}</td></tr>` : ''}
       <tr><td colspan="2" style="padding-top:14px;border-top:1px solid #e2e8f0;"></td></tr>
       <tr><td style="padding:4px 0;font-size:15px;font-weight:800;color:#1A1A2E;">Amount Paid</td>
           <td style="padding:4px 0;font-size:18px;font-weight:800;color:#C81240;text-align:right;">${fmtAmount(enrollment.amount)}</td></tr>
@@ -118,14 +122,14 @@ async function sendInvoiceEmail(enrollment) {
 /* ── 2. Welcome + Details Form Email ────────────────────────── */
 
 async function sendWelcomePaymentEmail(enrollment) {
-  const firstName = (enrollment.student_name || 'there').split(' ')[0];
+  const firstName = esc((enrollment.student_name || 'there').split(' ')[0]);
 
   const formUrl = `${TALLY_FORM_URL}?name=${encodeURIComponent(enrollment.student_name)}&email=${encodeURIComponent(enrollment.student_email)}&order=${encodeURIComponent(enrollment.order_id)}&program=${encodeURIComponent(enrollment.program_name)}`;
 
   const body = `
     <h2 style="margin:0 0 8px;font-size:22px;color:#1A1A2E;font-weight:800;">Welcome aboard, ${firstName}!</h2>
     <p style="margin:0 0 24px;font-size:15px;color:#374151;line-height:1.75;">
-      You are now enrolled in <strong>${enrollment.program_name}</strong>. We are excited to have you.
+      You are now enrolled in <strong>${esc(enrollment.program_name)}</strong>. We are excited to have you.
     </p>
 
     <div style="background:#fff8f0;border:1px solid #fed7aa;border-radius:12px;padding:20px 24px;margin-bottom:28px;">
@@ -157,7 +161,7 @@ async function sendWelcomePaymentEmail(enrollment) {
     </div>
 
     <p style="font-size:13px;color:#9ca3af;margin:0 0 6px;">
-      Your Order ID: <span style="font-family:monospace;color:#475569;">${enrollment.order_id}</span>
+      Your Order ID: <span style="font-family:monospace;color:#475569;">${esc(enrollment.order_id)}</span>
     </p>
     <p style="font-size:13px;color:#9ca3af;margin:0 0 24px;">
       Keep this email for your records. Your receipt has been sent in a separate email.
