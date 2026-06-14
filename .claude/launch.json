@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "jaspalsingh-frontend",
-      "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "5500", "--directory", "frontend"],
+      "runtimeExecutable": "node",
+      "runtimeArgs": [".claude/static-server.js"],
       "port": 5500
     }
   ]
