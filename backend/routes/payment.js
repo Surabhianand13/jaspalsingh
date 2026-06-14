@@ -187,6 +187,7 @@ router.get('/verify', async (req, res) => {
 
       if (updateResult.rows.length > 0) {
         const enrollment = updateResult.rows[0];
+
         sendInvoiceEmail(enrollment).catch(e => console.error('[invoice email]', e.message));
         sendWelcomePaymentEmail(enrollment).catch(e => console.error('[welcome email]', e.message));
       }
