@@ -10,7 +10,8 @@ const https   = require('https');
 
 /* ── Coupon catalogue ────────────────────────────────────── */
 const COUPONS = {
-  'FIRST': { discountedPrice: 1, label: 'First-time offer' },
+  'FIRST':     { discountedPrice: 1,    label: 'First-time offer' },
+  'JASPALSIR': { discountedPrice: 2799, label: 'Early Bird - First 100 Learners' },
 };
 
 function applyCoupon(coupon, originalPrice) {
