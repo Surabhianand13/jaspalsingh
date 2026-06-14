@@ -385,6 +385,13 @@
       document.title = 'Enroll - ' + program.name;
       document.getElementById('loadingState').style.display  = 'none';
       document.getElementById('checkoutGrid').style.display  = 'grid';
+
+      // Auto-apply coupon from URL param (e.g. ?coupon=JASPALSIR)
+      const urlCoupon = params.get('coupon');
+      if (urlCoupon) {
+        document.getElementById('inp-coupon').value = urlCoupon.toUpperCase();
+        document.getElementById('couponApplyBtn').click();
+      }
     }
 
     // Coupon apply
