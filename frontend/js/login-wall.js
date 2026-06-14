@@ -100,7 +100,7 @@
       + '<div class="lw-title">Join 1 Lakh+ Aspirants</div>'
       + '<p class="lw-sub">Create a free account to access study resources and stay updated on upcoming batches.</p>'
       + '<div class="lw-benefits">'
-      +   '<div class="lw-benefit"><i class="fas fa-file-alt"></i> Free Civil Engineering notes &amp; resources</div>'
+      +   '<div class="lw-benefit"><i class="fas fa-bullseye"></i> Clear your target exam with expert guidance</div>'
       +   '<div class="lw-benefit"><i class="fas fa-bell"></i> Batch opening alerts on WhatsApp</div>'
       +   '<div class="lw-benefit"><i class="fas fa-graduation-cap"></i> Exam strategy from the Expert</div>'
       + '</div>'
