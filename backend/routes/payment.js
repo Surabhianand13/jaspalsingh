@@ -29,14 +29,14 @@ const PROGRAMS = {
   'rssb-jen-diploma-test-series': {
     name:      'RSSB JE 2026 - Jaspal Sir Ki Test Series Offline',
     shortName: 'RSSB JE 2026 Test Series',
-    price:     2999,
-    mrp:       4999,
+    price:     3999,
+    mrp:       7999,
   },
   'rssb-jen-degree-test-series': {
     name:      'RSSB JE 2026 - Jaspal Sir Ki Test Series Offline',
     shortName: 'RSSB JE 2026 Test Series',
-    price:     2999,
-    mrp:       4999,
+    price:     3999,
+    mrp:       7999,
   },
   'rpsc-ae-interview': {
     name:      'RPSC AE 2024 - Interview Guidance Programme',

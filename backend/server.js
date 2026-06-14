@@ -241,8 +241,8 @@ async function migrate() {
   const pCount = await query(`SELECT COUNT(*)::int AS n FROM programs`);
   if (pCount.rows[0].n === 0) {
     const seed = [
-      ['rssb-jen-diploma-test-series','RSSB JE 2026 - Jaspal Sir Ki Test Series Offline','test-series','RSSB JE 2026','Diploma (Civil)','enrolling',2999,4999,'blue',1],
-      ['rssb-jen-degree-test-series','RSSB JE 2026 - Jaspal Sir Ki Test Series Offline','test-series','RSSB JE 2026','Degree (Civil)','enrolling',2999,4999,'teal',2],
+      ['rssb-jen-diploma-test-series','RSSB JE 2026 - Jaspal Sir Ki Test Series Offline','test-series','RSSB JE 2026','Diploma (Civil)','enrolling',3999,7999,'blue',1],
+      ['rssb-jen-degree-test-series','RSSB JE 2026 - Jaspal Sir Ki Test Series Offline','test-series','RSSB JE 2026','Degree (Civil)','enrolling',3999,7999,'teal',2],
       ['rpsc-ae-interview','RPSC AE 2024 - Interview Guidance Programme','interview','RPSC AE 2024','Interview / Viva','enrolling',4999,8999,'purple',3],
       ['rssb-jen-crash-course','RSSB JEN 2026-27 Offline Crash Course','course','RSSB JEN 2026-27','Crash Course','coming_soon',null,null,'orange',4],
       ['gate-ese-foundation','GATE / ESE 2028 - Offline Foundation Course','course','GATE / ESE 2028','Degree (Civil)','coming_soon',null,null,'green',5],
@@ -259,8 +259,8 @@ async function migrate() {
 
   await query(`ALTER TABLE contact_messages ADD COLUMN IF NOT EXISTS phone VARCHAR(20)`);
 
-  // Rename both test series programs to unified name
-  await query(`UPDATE programs SET title='RSSB JE 2026 - Jaspal Sir Ki Test Series Offline', exam='RSSB JE 2026' WHERE slug IN ('rssb-jen-diploma-test-series','rssb-jen-degree-test-series')`);
+  // Rename both test series programs to unified name and update pricing
+  await query(`UPDATE programs SET title='RSSB JE 2026 - Jaspal Sir Ki Test Series Offline', exam='RSSB JE 2026', price=3999, mrp=7999 WHERE slug IN ('rssb-jen-diploma-test-series','rssb-jen-degree-test-series')`);
 
   console.log('✅ Migration: enrollments, leads, events, programs, banners ensured');
 }
