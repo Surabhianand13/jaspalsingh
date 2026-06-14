@@ -13,8 +13,8 @@ const COMING_SOON_PROGRAMS = {
 };
 
 const LIVE_PROGRAMS = {
-  'rssb-jen-diploma-test-series': 'RSSB JEN 2026 - Civil Diploma Offline Test Series',
-  'rssb-jen-degree-test-series':  'RSSB JEN 2026-27 - Civil Degree Offline Test Series',
+  'rssb-jen-diploma-test-series': 'RSSB JE 2026 - Jaspal Sir Ki Test Series Offline',
+  'rssb-jen-degree-test-series':  'RSSB JE 2026 - Jaspal Sir Ki Test Series Offline',
   'rpsc-ae-interview':            'RPSC AE 2024 - Interview Guidance Programme',
 };
 
