@@ -133,13 +133,15 @@
       top: 24px;
     }
     .co-summary-thumb {
-      height: 120px;
+      height: 180px;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 42px;
       color: rgba(255,255,255,.9);
       position: relative;
+      overflow: hidden;
+      border-radius: 16px 16px 0 0;
     }
     .co-summary-thumb::before {
       content: '';
@@ -313,19 +315,22 @@
         name: 'RSSB JE 2026 - Jaspal Sir Ki Test Series Offline',
         price: 3799, mrp: 7999,
         icon: 'fa-clipboard-list',
-        color: 'linear-gradient(145deg,#0369A1,#0284C7)'
+        color: 'linear-gradient(145deg,#0369A1,#0284C7)',
+        thumb: '/assets/images/thumb-rssb-je-test-series.jpg'
       },
       'rssb-jen-degree-test-series': {
         name: 'RSSB JE 2026 - Jaspal Sir Ki Test Series Offline',
         price: 3999, mrp: 7999,
         icon: 'fa-clipboard-check',
-        color: 'linear-gradient(145deg,#0F766E,#0D9488)'
+        color: 'linear-gradient(145deg,#0F766E,#0D9488)',
+        thumb: '/assets/images/thumb-rssb-je-test-series.jpg'
       },
       'rpsc-ae-interview': {
         name: 'RPSC AE 2024 - Interview Guidance Programme',
         price: 4999, mrp: 8999,
         icon: 'fa-user-tie',
-        color: 'linear-gradient(145deg,#6D28D9,#7C3AED)'
+        color: 'linear-gradient(145deg,#6D28D9,#7C3AED)',
+        thumb: '/assets/images/thumb-rpsc-ae-interview.jpg'
       },
     };
 
@@ -380,8 +385,25 @@
       document.getElementById('summaryName').textContent  = program.name;
       document.getElementById('summaryMrp').textContent   = '₹' + program.mrp.toLocaleString('en-IN');
       updatePriceDisplay(program.price);
-      document.getElementById('summaryThumb').style.background = program.color;
-      document.getElementById('summaryIcon').className    = 'fas ' + program.icon;
+      const thumbEl = document.getElementById('summaryThumb');
+      if (program.thumb) {
+        const img = new Image();
+        img.onload = function() {
+          thumbEl.style.background = 'none';
+          thumbEl.style.padding = '0';
+          thumbEl.innerHTML = '<img src="'+program.thumb+'" alt="'+program.name+'" style="width:100%;height:100%;object-fit:cover;display:block;" />';
+        };
+        img.onerror = function() {
+          thumbEl.style.background = program.color;
+          document.getElementById('summaryIcon').className = 'fas ' + program.icon;
+        };
+        img.src = program.thumb;
+        thumbEl.style.background = program.color;
+        document.getElementById('summaryIcon').className = 'fas ' + program.icon;
+      } else {
+        thumbEl.style.background = program.color;
+        document.getElementById('summaryIcon').className = 'fas ' + program.icon;
+      }
       document.title = 'Enroll - ' + program.name;
       document.getElementById('loadingState').style.display  = 'none';
       document.getElementById('checkoutGrid').style.display  = 'grid';
