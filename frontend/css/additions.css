@@ -200,6 +200,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  flex: 1;
 }
 .op-features li {
   display: flex;
@@ -1442,17 +1443,36 @@ a.ticker-item:hover i { color: #fff; }
   .whatsapp-float { width: 52px; height: 52px; font-size: 26px; }
 }
 
-/* ── Limited Period Offer strip (below CTA) ── */
+/* ── Early Bird offer chip (below CTA) ── */
 .op-limited-offer {
-  border-top: 1px solid rgba(200,18,64,0.15);
-  padding: 9px 16px;
+  margin: 0 12px 12px;
+  border-radius: 10px;
+  background: #fff8f9;
+  border: 1.5px solid rgba(200,18,64,0.18);
+  padding: 8px 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  background: rgba(200,18,64,0.04);
 }
 .op-lo-left {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.op-lo-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #C81240;
+  flex-shrink: 0;
+  animation: lo-pulse 1.4s ease-in-out infinite;
+}
+@keyframes lo-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(200,18,64,0.5); }
+  50% { box-shadow: 0 0 0 5px rgba(200,18,64,0); }
+}
+.op-lo-main {
   display: flex;
   flex-direction: column;
   gap: 1px;
@@ -1462,30 +1482,37 @@ a.ticker-item:hover i { color: #fff; }
   font-weight: 800;
   color: #C81240;
   text-transform: uppercase;
-  letter-spacing: 0.6px;
+  letter-spacing: 0.7px;
+  line-height: 1;
 }
-.op-lo-tag i { margin-right: 3px; }
-.op-lo-text {
-  font-size: 12px;
+.op-lo-price {
+  font-size: 13px;
+  font-weight: 800;
   color: #1A1A2E;
-  line-height: 1.4;
+  line-height: 1.2;
 }
-.op-lo-text strong { color: #C81240; font-weight: 700; }
-.op-lo-timer {
-  font-size: 10px;
-  color: #6b6b8a;
+.op-lo-price span { color: #C81240; }
+.op-countdown-wrap {
   display: flex;
-  align-items: center;
-  gap: 3px;
-  white-space: nowrap;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
   flex-shrink: 0;
 }
-.op-lo-timer i { color: #C81240; font-size: 9px; }
+.op-lo-ends {
+  font-size: 8px;
+  font-weight: 600;
+  color: #9b9bbb;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
 .op-countdown {
   font-weight: 800;
   color: #C81240;
+  font-size: 14px;
   font-variant-numeric: tabular-nums;
-  font-size: 12px;
+  letter-spacing: 0.5px;
+  line-height: 1;
 }
 
 /* ── Small phones ── */
