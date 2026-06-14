@@ -288,13 +288,13 @@ ul, ol {
   border-radius: 50%;
   background: var(--gradient);
   color: #fff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: inline-block;
+  text-align: center;
+  line-height: 34px;
   font-size: 13px;
-  line-height: 1;
   box-shadow: 0 3px 14px rgba(200,18,64,0.35);
   animation: phoneShake 3s ease-in-out infinite;
+  vertical-align: middle;
 }
 
 .phone-text {
