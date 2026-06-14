@@ -8,7 +8,7 @@ const router  = express.Router();
 const { query } = require('../config/db');
 
 const COMING_SOON_PROGRAMS = {
-  'rssb-jen-crash-course':  'RSSB JEN 2026-27 - Offline Crash Course',
+  'rssb-jen-crash-course':  'RSSB JEN 2026-27 Offline Crash Course',
   'gate-ese-foundation':    'GATE / ESE 2028 - Offline Foundation Course',
 };
 

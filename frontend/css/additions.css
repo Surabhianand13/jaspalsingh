@@ -452,6 +452,42 @@
   white-space: nowrap;
 }
 
+/* NEW launch badge — top-right corner of thumbnail */
+.op-thumb-new-badge {
+  position: absolute;
+  top: 13px;
+  right: 13px;
+  font-family: var(--font-heading);
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #fff;
+  background: var(--magenta);
+  padding: 3px 9px;
+  border-radius: 20px;
+  z-index: 3;
+  box-shadow: 0 2px 8px rgba(200,18,64,.45);
+}
+
+/* NEW inline label next to type eyebrow */
+.op-new-label {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-heading);
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--magenta);
+  background: rgba(200,18,64,.08);
+  border: 1px solid rgba(200,18,64,.18);
+  padding: 2px 8px;
+  border-radius: 12px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
 /* Large centred icon */
 .op-thumb-icon {
   font-size: 48px;
