@@ -93,6 +93,27 @@
     .detail-sidebar { position:sticky; top:calc(var(--header-h) + 24px); }
     .location-pills { display:flex; flex-wrap:wrap; gap:6px; }
     .loc-pill { display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:700; padding:4px 10px; border-radius:20px; background:rgba(2,132,199,.09); color:#0284C7; border:1px solid rgba(2,132,199,.18); }
+    .loc-pill.more { background:rgba(37,211,102,.08); color:#1a7a40; border-color:rgba(37,211,102,.2); cursor:pointer; }
+    /* Early Bird Offer Block */
+    .early-bird-block { background:linear-gradient(135deg,#7c0a24 0%,#C81240 100%); border-radius:12px; padding:14px 16px; margin-bottom:14px; position:relative; overflow:hidden; }
+    .early-bird-block::before { content:''; position:absolute; top:-20px; right:-20px; width:80px; height:80px; background:rgba(255,255,255,.07); border-radius:50%; }
+    .eb-seats { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.8px; color:rgba(255,255,255,.7); margin-bottom:4px; display:flex; align-items:center; gap:5px; }
+    .eb-pulse { width:6px; height:6px; border-radius:50%; background:#fff; animation:lo-pulse 1.4s ease-in-out infinite; display:inline-block; }
+    .eb-price-row { display:flex; align-items:baseline; gap:8px; margin-bottom:6px; }
+    .eb-price { font-family:var(--font-heading); font-size:26px; font-weight:800; color:#fff; line-height:1; }
+    .eb-was { font-size:13px; color:rgba(255,255,255,.55); text-decoration:line-through; }
+    .eb-save { font-size:12px; color:rgba(255,255,255,.85); margin-bottom:10px; }
+    .eb-coupon-row { display:flex; align-items:center; gap:8px; }
+    .eb-coupon-label { font-size:11px; color:rgba(255,255,255,.7); font-weight:600; }
+    .eb-coupon-code { font-family:monospace; font-size:14px; font-weight:800; color:#fff; background:rgba(255,255,255,.15); border:1.5px dashed rgba(255,255,255,.4); border-radius:6px; padding:3px 10px; letter-spacing:1px; }
+    .eb-timer-row { display:flex; align-items:center; gap:5px; margin-top:8px; font-size:11px; color:rgba(255,255,255,.75); }
+    .eb-timer-row i { font-size:10px; }
+    .eb-countdown-inline { font-weight:800; color:#fff; font-variant-numeric:tabular-nums; }
+    /* Location request note */
+    .loc-request-note { display:flex; align-items:flex-start; gap:9px; background:rgba(37,211,102,.07); border:1px solid rgba(37,211,102,.18); border-radius:10px; padding:10px 12px; margin-top:10px; }
+    .loc-request-note i { color:#1a7a40; font-size:13px; margin-top:2px; flex-shrink:0; }
+    .loc-request-note p { font-size:12.5px; color:#1a7a40; line-height:1.55; margin:0; font-weight:500; }
+    .loc-request-note a { color:#1a7a40; font-weight:700; text-decoration:underline; }
     .schedule-note { font-size:12.5px; color:var(--body-color); background:rgba(245,158,11,.07); border:1px solid rgba(245,158,11,.2); border-radius:8px; padding:12px 14px; margin-top:14px; line-height:1.6; }
     @media (max-width:900px) { .hero-layout,.detail-layout { grid-template-columns:1fr; } .enroll-card { position:static; } .detail-sidebar { position:static; } .for-grid { grid-template-columns:1fr; } }
     @media (max-width:600px) { .prog-detail-hero { padding-top:calc(var(--header-h) + 36px + 36px); } }
@@ -158,6 +179,10 @@
                   <span class="loc-pill"><i class="fas fa-map-marker-alt"></i> Bikaner</span>
                   <span class="loc-pill"><i class="fas fa-map-marker-alt"></i> Kota</span>
                 </div>
+                <div class="loc-request-note" style="margin-top:8px;">
+                  <i class="fab fa-whatsapp"></i>
+                  <p>Your city not listed? <a href="https://wa.me/919829133317?text=I want to request a test series center in my city for RSSB JE 2026 Civil Diploma" target="_blank" rel="noopener">Request on WhatsApp</a> - new centers are added based on demand.</p>
+                </div>
               </div>
               <div class="hm-item"><span class="hm-label">Status</span><span class="hm-val" style="color:var(--green);">Enrolling Now</span></div>
             </div>
@@ -184,12 +209,24 @@
                 </div>
                 <div class="enroll-row"><span class="er-key">Enrollment</span><span class="er-val green">Open</span></div>
               </div>
-              <div class="price-block">
-                <div class="price-mrp">MRP <span>&#8377;7,999</span></div>
-                <div class="price-offer">&#8377;3,999</div>
-                <div class="price-save"><i class="fas fa-tag"></i> You save &#8377;4,000 (50% off)</div>
+              <div class="early-bird-block">
+                <div class="eb-seats"><span class="eb-pulse"></span> Early Bird - First 100 Learners Only</div>
+                <div class="eb-price-row">
+                  <span class="eb-price">&#8377;2,999</span>
+                  <span class="eb-was">&#8377;7,999</span>
+                </div>
+                <div class="eb-save">Save &#8377;5,000 (63% off) - Limited period</div>
+                <div class="eb-coupon-row">
+                  <span class="eb-coupon-label">Use coupon</span>
+                  <span class="eb-coupon-code">JASPALSIR</span>
+                </div>
+                <div class="eb-timer-row"><i class="fas fa-clock"></i> Offer ends in: <span class="eb-countdown-inline op-countdown" data-end="diploma"></span></div>
               </div>
-              <a href="/checkout/?program=rssb-jen-diploma-test-series" class="enroll-btn">Enroll Now</a>
+              <div class="price-block" style="margin-bottom:10px;">
+                <div class="price-mrp">Regular price: MRP <span>&#8377;7,999</span></div>
+                <div class="price-offer" style="font-size:18px;">&#8377;3,999 <span style="font-size:12px;color:var(--body-color);font-weight:500;">without coupon</span></div>
+              </div>
+              <a href="/checkout/?program=rssb-jen-diploma-test-series" class="enroll-btn">Enroll Now - Apply Coupon at Checkout</a>
               <a href="https://wa.me/919829133317?text=I want more details about RSSB JE 2026 Civil Diploma Offline Test Series" target="_blank" rel="noopener" class="enroll-wa"><i class="fab fa-whatsapp"></i> Ask on WhatsApp</a>
             </div>
           </div>
