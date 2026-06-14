@@ -11,16 +11,19 @@ const https   = require('https');
 /* ── Coupon catalogue ────────────────────────────────────── */
 const COUPONS = {
   'FIRST':     { discountedPrice: 1,    label: 'First-time offer' },
-  'JASPALSIR': { discountedPrice: 2799, label: 'Early Bird - First 100 Learners' },
+  'JASPALSIR': { discount: 1000,        label: 'Get Rs 1,000 off' },
 };
 
 function applyCoupon(coupon, originalPrice) {
   if (!coupon) return { finalPrice: originalPrice, discount: 0, label: null };
   const c = COUPONS[coupon.toUpperCase()];
   if (!c) return null; // invalid
+  const discountAmt = c.discountedPrice != null
+    ? originalPrice - c.discountedPrice
+    : c.discount;
   return {
-    finalPrice: c.discountedPrice,
-    discount:   originalPrice - c.discountedPrice,
+    finalPrice: originalPrice - discountAmt,
+    discount:   discountAmt,
     label:      c.label,
   };
 }
@@ -30,7 +33,7 @@ const PROGRAMS = {
   'rssb-jen-diploma-test-series': {
     name:      'RSSB JE 2026 - Jaspal Sir Ki Test Series Offline',
     shortName: 'RSSB JE 2026 Test Series',
-    price:     3999,
+    price:     3799,
     mrp:       7999,
   },
   'rssb-jen-degree-test-series': {
