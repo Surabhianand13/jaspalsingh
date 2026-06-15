@@ -202,7 +202,7 @@
 /* ── Trust Stats Strip ──────────────────────────────────── */
 .trust-stats-strip {
   background: #f9f9fc;
-  padding: 40px 0;
+  padding: 20px 0;
   border-bottom: 1px solid #eceef5;
 }
 
@@ -214,11 +214,11 @@
 
 .ts-card {
   border-radius: 16px;
-  padding: 28px 16px 24px;
+  padding: 18px 16px 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   position: relative;
   overflow: hidden;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -260,8 +260,8 @@
 
 .ts-arc-wrap {
   position: relative;
-  width: 110px;
-  height: 110px;
+  width: 90px;
+  height: 90px;
   flex-shrink: 0;
 }
 
@@ -910,8 +910,8 @@
   overflow: hidden;
   display: block;
   height: calc(100vh - var(--header-h) - 52px);
-  max-height: 560px;
-  min-height: 340px;
+  max-height: 480px;
+  min-height: 300px;
 }
 
 /* ── Full-width banner image ── */
