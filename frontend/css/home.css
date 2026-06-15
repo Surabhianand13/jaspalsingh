@@ -968,21 +968,26 @@
 .carousel-prev { left: 20px; }
 .carousel-next { right: 20px; }
 
-/* ── Progress dots — dark on light ── */
+/* ── Progress dots - overlaid on image bottom ── */
 .carousel-dots-bar {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 14px 0 18px;
-  background: rgba(0,0,0,0.03);
+  padding: 0;
+  background: none;
 }
 
 .carousel-dot-btn {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  background: rgba(26,26,46,0.18);
+  background: rgba(255,255,255,0.55);
   cursor: pointer;
   border: none;
   padding: 0;
@@ -991,9 +996,9 @@
 }
 
 .carousel-dot-btn.active {
-  width: 28px;
+  width: 24px;
   border-radius: 4px;
-  background: var(--magenta);
+  background: #fff;
 }
 
 /* Hero exam chips */
