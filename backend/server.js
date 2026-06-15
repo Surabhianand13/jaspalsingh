@@ -81,8 +81,9 @@ app.use('/api/payment',      require('./routes/payment'));
 app.use('/api/leads',        require('./routes/leads'));
 app.use('/api/enrollment',   require('./routes/enrollment-account'));
 app.use('/api/events',       require('./routes/events'));
-app.use('/api/programs',     require('./routes/programs'));
-app.use('/api/banners',      require('./routes/banners'));
+app.use('/api/programs',      require('./routes/programs'));
+app.use('/api/banners',       require('./routes/banners'));
+app.use('/api/tally-webhook', require('./routes/tally-webhook'));
 
 /* ── Health Check ────────────────────────────────────────── */
 
