@@ -441,6 +441,8 @@
 
   /* ── Show login modal after 1 min if visitor not logged in ── */
   (function () {
+    var noAutoPages = ['/profile', '/reset-password', '/checkout', '/payment-success', '/admin'];
+    if (noAutoPages.some(function(p){ return window.location.pathname.startsWith(p); })) return;
     var SESSION_KEY = 'lauth_auto_prompted';
     if (isLoggedIn() || sessionStorage.getItem(SESSION_KEY)) return;
     setTimeout(function () {
