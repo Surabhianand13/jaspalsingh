@@ -3,10 +3,13 @@
    Parses response, generates admit card PDF, sends email
    ============================================================ */
 
-const express      = require('express');
-const router       = express.Router();
-const nodemailer   = require('nodemailer');
-const PDFDocument  = require('pdfkit');
+const express       = require('express');
+const router        = express.Router();
+const { Resend }    = require('resend');
+const PDFDocument   = require('pdfkit');
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+const FROM   = 'Dr. Jaspal Singh <team@jaspalsingh.in>';
 
 /* ── Centre data ─────────────────────────────────────────── */
 
@@ -273,17 +276,6 @@ function formatScheduleText(schedule) {
     .join('\n');
 }
 
-/* ── Mailer setup ────────────────────────────────────────── */
-
-function createTransporter() {
-  return nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_APP_PASS,
-    },
-  });
-}
 
 /* ── Process and send email (runs async after responding) ── */
 
@@ -407,23 +399,26 @@ async function processSubmission(fields) {
 </body>
 </html>`;
 
-  /* Send email */
-  const transporter = createTransporter();
-  await transporter.sendMail({
-    from:        `"Dr. Jaspal Singh" <${process.env.GMAIL_USER}>`,
+  /* Send email via Resend */
+  const { error } = await resend.emails.send({
+    from:        FROM,
     to:          email,
     subject:     `Confirmed! Your Admit Card for ${seriesName}`,
     html:        htmlBody,
     attachments: [
       {
         filename:    `AdmitCard_${rollNumber}.pdf`,
-        content:     pdfBuffer,
+        content:     pdfBuffer.toString('base64'),
         contentType: 'application/pdf',
       },
     ],
   });
 
-  console.log(`[tally-webhook] Email sent to ${email} | Roll: ${rollNumber}`);
+  if (error) {
+    console.error('[tally-webhook] Resend error:', error);
+  } else {
+    console.log(`[tally-webhook] Email sent to ${email} | Roll: ${rollNumber}`);
+  }
 }
 
 /* ── POST /api/tally-webhook ─────────────────────────────── */
