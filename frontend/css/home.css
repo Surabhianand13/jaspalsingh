@@ -912,7 +912,7 @@
   min-width: 100%;
   position: relative;
   display: block;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 3 / 1;
 }
 
 /* ── Full-width banner image ── */
