@@ -390,6 +390,11 @@
     let appliedCoupon = null;
     let finalPrice    = program ? program.price : 0;
 
+    // Detect login state at outer scope so submit handler can access it
+    const _token    = localStorage.getItem('jaspal_learner_token');
+    const _learner  = (function(){ try { return JSON.parse(localStorage.getItem('jaspal_learner')); } catch(e){ return null; } })();
+    const _loggedIn = !!_token && !!_learner;
+
     function updatePriceDisplay(price) {
       finalPrice = price;
       document.getElementById('summaryPrice').textContent = '₹' + price.toLocaleString('en-IN');
@@ -421,11 +426,7 @@
       document.getElementById('loadingState').style.display  = 'none';
       document.getElementById('checkoutGrid').style.display  = 'grid';
 
-      // ── Detect login state and adapt form ──────────────────
-      const _token   = localStorage.getItem('jaspal_learner_token');
-      const _learner = (function(){ try { return JSON.parse(localStorage.getItem('jaspal_learner')); } catch(e){ return null; } })();
-      const _loggedIn = !!_token && !!_learner;
-
+      // ── Adapt form based on login state ─────────────────────
       if (_loggedIn) {
         // Pre-fill and lock email + phone; hide password; show banner
         const phoneEl = document.getElementById('inp-phone');
