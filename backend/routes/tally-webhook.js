@@ -13,17 +13,17 @@ const PDFDocument  = require('pdfkit');
 const CENTRES = {
   kota: {
     name: 'Kota',
-    address: 'Jaspal Sir Classes, Near Kunhadi, Kota, Rajasthan - 324001',
+    address: 'Achievers Point, D-24, Main Road, Near Sarvottam Library, Shrinathpuram, Kota, Rajasthan - 324010',
     mapsLink: 'https://maps.app.goo.gl/fW4XGF3S7r5LYGMv5',
   },
   bikaner: {
     name: 'Bikaner',
-    address: 'Jaspal Sir Classes, Bikaner, Rajasthan - 334001',
+    address: 'Holy Mission Public Sec. School, 2-E-24, Sector-2, Opposite Reliance Smart - Baba Bhawan, Pawanpuri, Bikaner - 334003',
     mapsLink: 'https://maps.app.goo.gl/Qdz84DDnmgokcugC8',
   },
   jaipur: {
     name: 'Jaipur',
-    address: 'Jaspal Sir Classes, Jaipur, Rajasthan - 302001',
+    address: '311, Apex Mall, Lalkothi, Jaipur - 302015',
     mapsLink: 'https://maps.app.goo.gl/MzosW13pcH9pQ2Zn7',
   },
 };
@@ -224,7 +224,7 @@ function generateAdmitCard({ name, govtId, rollNumber, centre, targetExam, phone
     /* Footer */
     doc.rect(0, doc.page.height - 60, W, 60).fill('#f1f5f9');
     doc.fillColor('#64748b').font('Helvetica').fontSize(9)
-      .text('This is a computer-generated admit card. No signature required.  |  jaspalsingh.in  |  For queries call: +91-XXXXXXXXXX',
+      .text('This is a computer-generated admit card. No signature required.  |  jaspalsingh.in  |  For queries call: +91 98291 33317',
         50, doc.page.height - 42, { align: 'center' });
 
     doc.end();
