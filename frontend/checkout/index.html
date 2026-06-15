@@ -231,20 +231,38 @@
       <!-- Left: Form -->
       <div class="co-form-card">
         <h1 class="co-form-title">Complete Your Enrollment</h1>
-        <p class="co-form-sub">Fill in your details to proceed to payment</p>
+        <p class="co-form-sub" id="coFormSub">Fill in your details to proceed to payment</p>
+
+        <!-- Logged-in user banner -->
+        <div id="loggedInBanner" style="display:none;background:rgba(22,163,74,.08);border:1.5px solid rgba(22,163,74,.2);border-radius:10px;padding:12px 16px;margin-bottom:20px;display:none;align-items:center;gap:10px;">
+          <i class="fas fa-user-check" style="color:#16a34a;font-size:15px;"></i>
+          <span style="font-size:13px;color:#15803d;font-weight:600;" id="loggedInMsg">Logged in - your details are pre-filled</span>
+          <a href="/profile" style="margin-left:auto;font-size:12px;color:#6b6b8a;text-decoration:underline;">Change</a>
+        </div>
 
         <form id="enrollForm" autocomplete="on">
+          <!-- Aadhaar name - always shown -->
           <div class="form-group">
             <label class="form-label" for="inp-name">Student Name (as per Aadhaar) *</label>
             <input class="form-input" type="text" id="inp-name" name="name" placeholder="Exact name as on your Aadhaar Card" required autocomplete="name" />
           </div>
-          <div class="form-group">
-            <label class="form-label" for="inp-phone">Mobile Number *</label>
+
+          <!-- Phone - hidden for logged-in users, pre-filled -->
+          <div class="form-group" id="grp-phone">
+            <label class="form-label" for="inp-phone">WhatsApp Mobile Number *</label>
             <input class="form-input" type="tel" id="inp-phone" name="phone" placeholder="10-digit mobile number" required autocomplete="tel" maxlength="10" />
           </div>
-          <div class="form-group">
+
+          <!-- Email - hidden for logged-in users, pre-filled -->
+          <div class="form-group" id="grp-email">
             <label class="form-label" for="inp-email">Email ID *</label>
             <input class="form-input" type="email" id="inp-email" name="email" placeholder="your@email.com" required autocomplete="email" />
+          </div>
+
+          <!-- Password - only for guests (creates account on purchase) -->
+          <div class="form-group" id="grp-password" style="display:none;">
+            <label class="form-label" for="inp-password">Create Password * <span style="font-size:11px;font-weight:400;color:#9999b0;">(sets up your free account)</span></label>
+            <input class="form-input" type="password" id="inp-password" name="password" placeholder="Min 6 characters" autocomplete="new-password" />
           </div>
 
           <div class="form-group" style="margin-bottom:6px;">
@@ -403,6 +421,33 @@
       document.getElementById('loadingState').style.display  = 'none';
       document.getElementById('checkoutGrid').style.display  = 'grid';
 
+      // ── Detect login state and adapt form ──────────────────
+      const _token   = localStorage.getItem('jaspal_learner_token');
+      const _learner = (function(){ try { return JSON.parse(localStorage.getItem('jaspal_learner')); } catch(e){ return null; } })();
+      const _loggedIn = !!_token && !!_learner;
+
+      if (_loggedIn) {
+        // Pre-fill and lock email + phone; hide password; show banner
+        const phoneEl = document.getElementById('inp-phone');
+        const emailEl = document.getElementById('inp-email');
+        phoneEl.value = _learner.phone || '';
+        emailEl.value = _learner.email || '';
+        phoneEl.readOnly = true;
+        emailEl.readOnly = true;
+        phoneEl.style.background = '#f5f5f8';
+        emailEl.style.background = '#f5f5f8';
+        phoneEl.style.color = '#6b6b8a';
+        emailEl.style.color = '#6b6b8a';
+        document.getElementById('loggedInBanner').style.display = 'flex';
+        document.getElementById('loggedInMsg').textContent =
+          'Logged in as ' + (_learner.name || _learner.email) + ' - your details are pre-filled';
+        document.getElementById('coFormSub').textContent = 'Just confirm your Aadhaar name to proceed to payment';
+      } else {
+        // Guest: show password field so account is created at purchase
+        document.getElementById('grp-password').style.display = 'block';
+        document.getElementById('coFormSub').textContent = 'Fill in your details - we\'ll create your free account too';
+      }
+
       // Auto-apply coupon from URL param (e.g. ?coupon=JASPALSIR)
       const urlCoupon = params.get('coupon');
       if (urlCoupon) {
@@ -454,26 +499,53 @@
     // Form submit
     document.getElementById('enrollForm').addEventListener('submit', async function(e) {
       e.preventDefault();
-      const btn   = document.getElementById('payBtn');
-      const errEl = document.getElementById('formError');
-      const name  = document.getElementById('inp-name').value.trim();
-      const phone = document.getElementById('inp-phone').value.trim().replace(/\D/g,'');
-      const email = document.getElementById('inp-email').value.trim();
+      const btn      = document.getElementById('payBtn');
+      const errEl    = document.getElementById('formError');
+      const name     = document.getElementById('inp-name').value.trim();
+      const phone    = document.getElementById('inp-phone').value.trim().replace(/\D/g,'');
+      const email    = document.getElementById('inp-email').value.trim();
+      const password = document.getElementById('inp-password').value;
+      const tnc      = document.getElementById('inp-tnc').checked;
 
-      const tnc = document.getElementById('inp-tnc').checked;
       errEl.style.display = 'none';
       if (!name)               { showError('Please enter your name as per Aadhaar.'); return; }
       if (phone.length !== 10) { showError('Please enter a valid 10-digit mobile number.'); return; }
       if (!email)              { showError('Please enter your email ID.'); return; }
+      if (!_loggedIn && password.length < 6) { showError('Please set a password (min 6 characters) to create your account.'); return; }
       if (!tnc)                { showError('Please read and accept the Terms & Conditions to proceed.'); return; }
 
       btn.disabled = true;
       document.getElementById('payBtnText').textContent = 'Please wait...';
 
       try {
+        // Flow 2: guest - create account first, then pay
+        if (!_loggedIn) {
+          document.getElementById('payBtnText').textContent = 'Creating your account...';
+          const regRes  = await fetch(API + '/api/learners/register', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, email, phone, password }),
+          });
+          const regData = await regRes.json();
+          if (regRes.ok && regData.token) {
+            localStorage.setItem('jaspal_learner_token', regData.token);
+            localStorage.setItem('jaspal_learner', JSON.stringify(regData.learner));
+          } else if (regRes.status !== 409) {
+            // 409 = email already exists - still proceed to payment
+            showError(regData.error || 'Account creation failed. Please try again.');
+            btn.disabled = false;
+            document.getElementById('payBtnText').textContent = 'Pay ₹' + finalPrice.toLocaleString('en-IN');
+            return;
+          }
+        }
+
+        // Flow 1 + 2: create payment order
+        document.getElementById('payBtnText').textContent = 'Setting up payment...';
+        const token = localStorage.getItem('jaspal_learner_token') || '';
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = 'Bearer ' + token;
+
         const res  = await fetch(API + '/api/payment/create-order', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: 'POST', headers,
           body: JSON.stringify({ program_slug: slug, name, email, phone, coupon_code: appliedCoupon }),
         });
         const data = await res.json();
@@ -485,7 +557,7 @@
           return;
         }
 
-        checkoutCompleted = true; // proceeding to payment - don't log as exit
+        checkoutCompleted = true;
         const cashfree = Cashfree({ mode: 'production' });
         cashfree.checkout({ paymentSessionId: data.payment_session_id, redirectTarget: '_self' });
 
