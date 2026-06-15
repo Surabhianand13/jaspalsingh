@@ -407,31 +407,75 @@
     </div>
 
     <!-- ─── TRUST STATS ──────────────────────────────── -->
-    <section class="trust-stats-strip" aria-label="Credentials at a glance" data-reveal="fade">
+    <section class="trust-stats-strip" aria-label="Credentials at a glance">
       <div class="container trust-stats-inner">
 
-        <div class="ts-card ts-c1">
-          <div class="ts-icon-wrap"><i class="fas fa-chalkboard-teacher"></i></div>
-          <div class="ts-number">15<span>+</span></div>
-          <div class="ts-label">Years of Teaching</div>
+        <div class="ts-card ts-c1" data-delay="0">
+          <div class="ts-eyebrow">Experience</div>
+          <div class="ts-arc-wrap">
+            <svg viewBox="0 0 110 110" aria-hidden="true">
+              <circle class="ts-arc-bg" cx="55" cy="55" r="47"/>
+              <circle class="ts-arc-pulse" cx="55" cy="55" r="47"/>
+              <circle class="ts-arc-line" cx="55" cy="55" r="47"/>
+            </svg>
+            <div class="ts-arc-inner">
+              <span class="ts-num" data-target="15">0</span>
+              <span class="ts-unit">+ Years</span>
+            </div>
+          </div>
+          <div class="ts-title">Teaching</div>
+          <div class="ts-sub">Dedicated classroom<br>experience</div>
         </div>
 
-        <div class="ts-card ts-c2">
-          <div class="ts-icon-wrap"><i class="fas fa-users"></i></div>
-          <div class="ts-number">5L<span>+</span></div>
-          <div class="ts-label">Students Mentored</div>
+        <div class="ts-card ts-c2" data-delay="250">
+          <div class="ts-eyebrow">Impact</div>
+          <div class="ts-arc-wrap">
+            <svg viewBox="0 0 110 110" aria-hidden="true">
+              <circle class="ts-arc-bg" cx="55" cy="55" r="47"/>
+              <circle class="ts-arc-pulse" cx="55" cy="55" r="47"/>
+              <circle class="ts-arc-line" cx="55" cy="55" r="47"/>
+            </svg>
+            <div class="ts-arc-inner">
+              <span class="ts-num ts-num-static">5L<span class="ts-unit-inline">+</span></span>
+              <span class="ts-unit">Students</span>
+            </div>
+          </div>
+          <div class="ts-title">Mentored</div>
+          <div class="ts-sub">Across India's top<br>engineering exams</div>
         </div>
 
-        <div class="ts-card ts-c3">
-          <div class="ts-icon-wrap"><i class="fas fa-trophy"></i></div>
-          <div class="ts-number">AIR&#8209;04</div>
-          <div class="ts-label">ESE Rank · GATE AIR-06</div>
+        <div class="ts-card ts-c3" data-delay="500">
+          <div class="ts-eyebrow">All-India Rank</div>
+          <div class="ts-arc-wrap">
+            <svg viewBox="0 0 110 110" aria-hidden="true">
+              <circle class="ts-arc-bg" cx="55" cy="55" r="47"/>
+              <circle class="ts-arc-pulse" cx="55" cy="55" r="47"/>
+              <circle class="ts-arc-line" cx="55" cy="55" r="47"/>
+            </svg>
+            <div class="ts-arc-inner">
+              <span class="ts-num ts-num-sm">AIR-04</span>
+              <span class="ts-unit ts-unit-xs">ESE / IES</span>
+            </div>
+          </div>
+          <div class="ts-title">GATE AIR-06</div>
+          <div class="ts-sub">PhD &middot; Ex-IES Officer</div>
         </div>
 
-        <div class="ts-card ts-c4">
-          <div class="ts-icon-wrap"><i class="fas fa-medal"></i></div>
-          <div class="ts-number">#1</div>
-          <div class="ts-label">Asian Book of Records · Highest IES Mentor Success Rate</div>
+        <div class="ts-card ts-c4" data-delay="750">
+          <div class="ts-eyebrow">Recognition</div>
+          <div class="ts-arc-wrap">
+            <svg viewBox="0 0 110 110" aria-hidden="true">
+              <circle class="ts-arc-bg" cx="55" cy="55" r="47"/>
+              <circle class="ts-arc-pulse" cx="55" cy="55" r="47"/>
+              <circle class="ts-arc-line" cx="55" cy="55" r="47"/>
+            </svg>
+            <div class="ts-arc-inner">
+              <span class="ts-num ts-num-static">#1</span>
+              <span class="ts-unit ts-unit-xs">in India</span>
+            </div>
+          </div>
+          <div class="ts-title">Highest Success Rate</div>
+          <div class="ts-badge">Asian Book of Records</div>
         </div>
 
       </div>
@@ -950,6 +994,47 @@
   <script src="/js/login-wall.js" defer></script>
   <script src="/js/track.js" defer></script>
   <script src="js/home.js"></script>
+  <script>
+    /* ── Arc credentials animation ── */
+    (function() {
+      var animated = false;
+      function runArcs() {
+        if (animated) return;
+        animated = true;
+        document.querySelectorAll('.ts-card[data-delay]').forEach(function(card) {
+          var delay = parseInt(card.getAttribute('data-delay'));
+          var arc   = card.querySelector('.ts-arc-line');
+          var pulse = card.querySelector('.ts-arc-pulse');
+          var num   = card.querySelector('.ts-num[data-target]');
+          setTimeout(function() {
+            arc.style.strokeDashoffset = '0';
+            setTimeout(function() { pulse.classList.add('ts-pulsing'); }, 1600);
+          }, delay + 200);
+          if (num) {
+            var target = parseInt(num.getAttribute('data-target'));
+            var st = null;
+            setTimeout(function() {
+              function step(ts) {
+                if (!st) st = ts;
+                var p = Math.min((ts - st) / 1500, 1);
+                num.textContent = Math.round((1 - Math.pow(1 - p, 3)) * target);
+                if (p < 1) requestAnimationFrame(step);
+              }
+              requestAnimationFrame(step);
+            }, delay + 200);
+          }
+        });
+      }
+      var strip = document.querySelector('.trust-stats-strip');
+      if (strip && 'IntersectionObserver' in window) {
+        new IntersectionObserver(function(entries, obs) {
+          if (entries[0].isIntersecting) { runArcs(); obs.disconnect(); }
+        }, { threshold: 0.3 }).observe(strip);
+      } else {
+        setTimeout(runArcs, 800);
+      }
+    })();
+  </script>
   <script>
     /* ── Exam chip selector ────────────────────── */
     function examSelect(exam) {
