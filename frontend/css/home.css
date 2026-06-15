@@ -792,172 +792,30 @@
 
 .carousel-slide {
   min-width: 100%;
-  height: 540px;
   position: relative;
   overflow: hidden;
-  display: flex;
-  align-items: center;
-}
-
-.carousel-slide-inner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 40px;
-  max-width: var(--container);
-  width: 100%;
-  margin: 0 auto;
-  padding: 0 80px;
-  position: relative;
-  z-index: 2;
-}
-
-.cs-text { flex: 1; min-width: 0; }
-
-/* ── Badge ── */
-.cs-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font-family: var(--font-heading);
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 1.6px;
-  text-transform: uppercase;
-  padding: 6px 14px;
-  border-radius: var(--radius-pill);
-  margin-bottom: 14px;
-  width: fit-content;
-  border: 1.5px solid;
-  /* colours set per-slide below */
-}
-
-.cs-title {
-  font-family: var(--font-heading);
-  font-size: clamp(26px, 3vw, 46px);
-  font-weight: 800;
-  line-height: 1.08;
-  letter-spacing: -1px;
-  margin-bottom: 12px;
-}
-
-.cs-sub {
-  font-size: 15px;
-  line-height: 1.68;
-  max-width: 520px;
-  margin-bottom: 28px;
-}
-
-.cs-ctas { display: flex; gap: 12px; flex-wrap: wrap; }
-
-.cs-cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 13px 28px;
-  border-radius: var(--radius-pill);
-  font-family: var(--font-heading);
-  font-weight: 700;
-  font-size: 14px;
-  text-decoration: none;
-  transition: var(--transition);
-  border: 2px solid transparent;
-}
-
-/* Primary CTA — always brand red */
-.cs-cta.cta-primary {
-  background: var(--gradient);
-  color: #fff;
-  box-shadow: 0 4px 18px rgba(200,18,64,0.30);
-}
-.cs-cta.cta-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 28px rgba(200,18,64,0.45);
-  color: #fff;
-}
-
-/* Secondary CTA — dark outline for light slides */
-.cs-cta.cta-outline {
-  background: transparent;
-  border-color: rgba(26,26,46,0.25);
-  color: var(--heading-color);
-}
-.cs-cta.cta-outline:hover {
-  background: rgba(26,26,46,0.07);
-  transform: translateY(-2px);
-  color: var(--heading-color);
-}
-
-/* WhatsApp CTA (used in some slides) */
-.cs-cta.cta-wa {
-  background: #25c354;
-  color: #fff;
-  border-color: transparent;
-  box-shadow: 0 4px 14px rgba(37,195,84,0.30);
-}
-.cs-cta.cta-wa:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(37,195,84,0.42); color: #fff; }
-
-/* ── Per-slide light backgrounds ── */
-.cs-slide-1 { background: linear-gradient(135deg, #EBF4FF 0%, #D6EAFF 100%); }
-.cs-slide-2 { background: linear-gradient(135deg, #FFF8EC 0%, #FFEFD0 100%); }
-.cs-slide-3 { background: linear-gradient(135deg, #F5EEFF 0%, #E8D6FF 100%); }
-.cs-slide-4 { background: linear-gradient(135deg, #EDFFF5 0%, #CCF0DF 100%); }
-.cs-slide-5 { background: linear-gradient(135deg, #FFF4EE 0%, #FFE2D0 100%); }
-
-/* ── Per-slide text colours ── */
-.cs-slide-1 .cs-title { color: #0A2560; }
-.cs-slide-1 .cs-sub   { color: #2D4A8A; }
-.cs-slide-1 .cs-badge { color: #1565C0; background: rgba(21,101,192,0.10); border-color: rgba(21,101,192,0.25); }
-
-.cs-slide-2 .cs-title { color: #5C3000; }
-.cs-slide-2 .cs-sub   { color: #8B5000; }
-.cs-slide-2 .cs-badge { color: #C06800; background: rgba(192,104,0,0.10); border-color: rgba(192,104,0,0.25); }
-
-.cs-slide-3 .cs-title { color: #2D0870; }
-.cs-slide-3 .cs-sub   { color: #5A209A; }
-.cs-slide-3 .cs-badge { color: #7C3AED; background: rgba(124,58,237,0.10); border-color: rgba(124,58,237,0.25); }
-
-.cs-slide-4 .cs-title { color: #053D20; }
-.cs-slide-4 .cs-sub   { color: #0A6030; }
-.cs-slide-4 .cs-badge { color: #16A34A; background: rgba(22,163,74,0.10); border-color: rgba(22,163,74,0.25); }
-
-.cs-slide-5 .cs-title { color: #5C2500; }
-.cs-slide-5 .cs-sub   { color: #8B4000; }
-.cs-slide-5 .cs-badge { color: #EA580C; background: rgba(234,88,12,0.10); border-color: rgba(234,88,12,0.25); }
-
-/* ── Banner image — right column ── */
-.cs-banner-img-wrap {
-  flex-shrink: 0;
-  width: 520px;
   display: block;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.18);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  text-decoration: none;
 }
-.cs-banner-img-wrap:hover {
-  transform: translateY(-4px) scale(1.01);
-  box-shadow: 0 28px 72px rgba(0,0,0,0.24);
+
+.cs-banner-link {
+  display: block;
+  width: 100%;
+  line-height: 0;
+}
+
+
+/* ── Full-width banner image ── */
+.cs-banner-link {
+  display: block;
+  width: 100%;
+  text-decoration: none;
+  line-height: 0;
+  cursor: pointer;
 }
 .cs-banner-img {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
   display: block;
-}
-
-/* Outline CTA — dark border for light slides */
-.cs-cta.cta-outline {
-  background: transparent;
-  border-color: rgba(26,26,46,0.28);
-  color: var(--heading-color);
-}
-.cs-cta.cta-outline:hover {
-  background: rgba(26,26,46,0.06);
-  border-color: rgba(26,26,46,0.5);
-  transform: translateY(-2px);
-  color: var(--heading-color);
 }
 
 /* ── Arrow buttons — dark on light slides ── */
@@ -1071,19 +929,7 @@
    CAROUSEL RESPONSIVE
    ============================================================ */
 
-@media (max-width: 900px) {
-  .carousel-slide { height: 480px; }
-  .carousel-slide-inner { padding: 0 56px; gap: 24px; }
-  .cs-visual { width: 160px; height: 160px; }
-  .cs-visual-icon { font-size: 58px; }
-}
-
 @media (max-width: 640px) {
-  .home-carousel-wrap { padding-top: calc(var(--header-h) + 0px); }
-  .carousel-slide { height: auto; padding: 48px 0 36px; }
-  .carousel-slide-inner { padding: 0 48px; flex-direction: column; align-items: flex-start; gap: 18px; }
-  .cs-visual { display: none; }
   .carousel-prev { left: 6px; }
   .carousel-next { right: 6px; }
-  .cs-title { font-size: 24px; }
 }
