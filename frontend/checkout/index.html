@@ -432,11 +432,14 @@
         const emailEl = document.getElementById('inp-email');
         phoneEl.value = _learner.phone || '';
         emailEl.value = _learner.email || '';
-        phoneEl.readOnly = true;
+        // Lock fields only if they actually have a value
+        if (_learner.phone) {
+          phoneEl.readOnly = true;
+          phoneEl.style.background = '#f5f5f8';
+          phoneEl.style.color = '#6b6b8a';
+        }
         emailEl.readOnly = true;
-        phoneEl.style.background = '#f5f5f8';
         emailEl.style.background = '#f5f5f8';
-        phoneEl.style.color = '#6b6b8a';
         emailEl.style.color = '#6b6b8a';
         document.getElementById('loggedInBanner').style.display = 'flex';
         document.getElementById('loggedInMsg').textContent =
