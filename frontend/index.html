@@ -1154,19 +1154,31 @@
   <script>
   (function() {
     var purchases = [
-      { name: "Ritu S.",    city: "Bikaner", course: "RSSB JE 2026 - Civil Diploma Offline",  time: "just now" },
-      { name: "Aakash M.", city: "Jaipur",  course: "RSSB JE 2026 - Civil Degree Offline",   time: "2 min ago" },
-      { name: "Deepak V.", city: "Kota",    course: "RSSB JE 2026 - Civil Diploma Offline",   time: "10 min ago" },
-      { name: "Priya R.",  city: "Jaipur",  course: "RSSB JE 2026 - Civil Degree Offline",   time: "1 hour ago" },
-      { name: "Rahul K.",  city: "Bikaner", course: "RSSB JE 2026 - Civil Diploma Offline",   time: "just now" },
-      { name: "Sneha T.",  city: "Kota",    course: "RSSB JE 2026 - Civil Degree Offline",   time: "25 min ago" },
-      { name: "Mohit S.",  city: "Jaipur",  course: "RSSB JE 2026 - Civil Diploma Offline",   time: "5 min ago" },
-      { name: "Anjali P.", city: "Bikaner", course: "RSSB JE 2026 - Civil Degree Offline",   time: "45 min ago" },
-      { name: "Vikram J.", city: "Kota",    course: "RSSB JE 2026 - Civil Diploma Offline",   time: "just now" },
-      { name: "Neha B.",   city: "Jaipur",  course: "RSSB JE 2026 - Civil Degree Offline",   time: "15 min ago" },
-      { name: "Suresh P.", city: "Bikaner", course: "RSSB JE 2026 - Civil Diploma Offline",   time: "2 hours ago" },
-      { name: "Kavya M.",  city: "Kota",    course: "RSSB JE 2026 - Civil Degree Offline",   time: "8 min ago" },
+      { name: "Ramesh C.",   city: "Jaipur",  course: "RSSB JE 2026 - Civil Diploma Offline",  time: "just now" },
+      { name: "Sunita B.",   city: "Bikaner", course: "RSSB JE 2026 - Civil Degree Offline",   time: "3 min ago" },
+      { name: "Mahesh G.",   city: "Kota",    course: "RSSB JE 2026 - Civil Diploma Offline",  time: "12 min ago" },
+      { name: "Kavita S.",   city: "Jaipur",  course: "RSSB JE 2026 - Civil Degree Offline",   time: "1 hour ago" },
+      { name: "Dinesh P.",   city: "Bikaner", course: "RSSB JE 2026 - Civil Diploma Offline",  time: "just now" },
+      { name: "Pooja M.",    city: "Kota",    course: "RSSB JE 2026 - Civil Degree Offline",   time: "28 min ago" },
+      { name: "Vikas J.",    city: "Jaipur",  course: "RSSB JE 2026 - Civil Diploma Offline",  time: "6 min ago" },
+      { name: "Rekha D.",    city: "Bikaner", course: "RSSB JE 2026 - Civil Degree Offline",   time: "50 min ago" },
+      { name: "Sunil K.",    city: "Kota",    course: "RSSB JE 2026 - Civil Diploma Offline",  time: "just now" },
+      { name: "Anita R.",    city: "Jaipur",  course: "RSSB JE 2026 - Civil Degree Offline",   time: "18 min ago" },
+      { name: "Bharat S.",   city: "Bikaner", course: "RSSB JE 2026 - Civil Diploma Offline",  time: "2 hours ago" },
+      { name: "Geeta V.",    city: "Kota",    course: "RSSB JE 2026 - Civil Degree Offline",   time: "9 min ago" },
+      { name: "Rajesh M.",   city: "Jaipur",  course: "RSSB JE 2026 - Civil Diploma Offline",  time: "35 min ago" },
+      { name: "Manju T.",    city: "Bikaner", course: "RSSB JE 2026 - Civil Degree Offline",   time: "just now" },
+      { name: "Prakash N.",  city: "Kota",    course: "RSSB JE 2026 - Civil Diploma Offline",  time: "1 hour ago" },
+      { name: "Seema L.",    city: "Jaipur",  course: "RSSB JE 2026 - Civil Degree Offline",   time: "4 min ago" },
+      { name: "Harish O.",   city: "Bikaner", course: "RSSB JE 2026 - Civil Diploma Offline",  time: "22 min ago" },
+      { name: "Lata G.",     city: "Kota",    course: "RSSB JE 2026 - Civil Degree Offline",   time: "just now" },
+      { name: "Mohan B.",    city: "Jaipur",  course: "RSSB JE 2026 - Civil Diploma Offline",  time: "45 min ago" },
+      { name: "Pushpa C.",   city: "Bikaner", course: "RSSB JE 2026 - Civil Degree Offline",   time: "7 min ago" },
     ];
+    for (var i = purchases.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = purchases[i]; purchases[i] = purchases[j]; purchases[j] = tmp;
+    }
     var avatarStyles = [
       { bg: '#fff0f3', color: '#C81240' },
       { bg: '#f3f0ff', color: '#7C3AED' },
