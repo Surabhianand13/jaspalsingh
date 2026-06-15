@@ -8,7 +8,7 @@
 
 (function() {
   var API = 'https://jaspalsingh.onrender.com';
-  var INTERVAL = 10000; // 10 seconds
+  var INTERVAL = 30000; // 30 seconds
 
   var path = window.location.pathname;
   var token = localStorage.getItem('jaspal_learner_token');
@@ -104,7 +104,7 @@
       +   '<div class="lw-benefit"><i class="fas fa-bell"></i> Batch opening alerts on WhatsApp</div>'
       +   '<div class="lw-benefit"><i class="fas fa-graduation-cap"></i> Exam strategy from the Expert</div>'
       + '</div>'
-      + '<a href="/profile" class="lw-btn-primary"><i class="fas fa-user-plus"></i> Create Free Account</a>'
+      + '<a href="/profile?tab=register" class="lw-btn-primary"><i class="fas fa-user-plus"></i> Create Free Account</a>'
       + '<a href="/profile?tab=login" class="lw-btn-secondary">Already have an account? Log In</a>'
       + '<div><span class="lw-skip" id="lwSkip">Continue browsing &rarr;</span></div>';
   }
@@ -131,7 +131,7 @@
     overlay.addEventListener('click', function(e){ if (e.target === overlay) close(); });
   }
 
-  /* ── Repeat every 10s ────────────────────────────────────── */
+  /* ── Repeat every 30s ────────────────────────────────────── */
   function startWall(mode) {
     function tick() {
       setTimeout(function(){
