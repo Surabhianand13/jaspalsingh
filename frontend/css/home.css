@@ -793,7 +793,9 @@
   position: relative;
   overflow: hidden;
   display: block;
-  height: 420px;
+  height: calc(100vh - var(--header-h) - 52px);
+  max-height: 560px;
+  min-height: 340px;
 }
 
 /* ── Full-width banner image ── */
