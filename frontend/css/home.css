@@ -892,12 +892,15 @@
 
 .home-carousel-wrap {
   position: relative;
-  overflow: hidden;
   background: #f4f6fb;
   margin-top: var(--header-h);
+  padding: 16px 40px 0;
 }
 
-.carousel-track-outer { overflow: hidden; }
+.carousel-track-outer {
+  overflow: hidden;
+  border-radius: 16px;
+}
 
 .carousel-track {
   display: flex;
@@ -910,7 +913,7 @@
   position: relative;
   display: block;
   aspect-ratio: 16 / 9;
-  max-height: 540px;
+  max-height: 520px;
 }
 
 /* ── Full-width banner image ── */
