@@ -279,7 +279,8 @@ function formatScheduleText(schedule) {
 
 /* ── Process and send email (runs async after responding) ── */
 
-async function processSubmission(fields) {
+/* programType: 'degree' | 'diploma' | null (auto-detect from field) */
+async function processSubmission(fields, programType) {
   const { name, govtId, centre: centreRaw, targetExam, phone, email } = parseTallyFields(fields);
 
   if (!email) {
@@ -290,9 +291,13 @@ async function processSubmission(fields) {
   const centreKey  = getCentreKey(centreRaw);
   const centreInfo = CENTRES[centreKey] || { name: centreRaw || 'TBD', address: 'TBD', mapsLink: '#' };
 
-  const isDegreeCourse = (targetExam || '').toLowerCase().includes('degree');
-  const schedule       = isDegreeCourse ? SCHEDULE_DEGREE : SCHEDULE_DIPLOMA;
-  const seriesName     = isDegreeCourse
+  const isDegreeCourse = programType === 'degree'
+    ? true
+    : programType === 'diploma'
+      ? false
+      : (targetExam || '').toLowerCase().includes('degree');
+  const schedule   = isDegreeCourse ? SCHEDULE_DEGREE : SCHEDULE_DIPLOMA;
+  const seriesName = isDegreeCourse
     ? 'RSSB JE 2026 - Degree (Civil) - Offline Test Series'
     : 'RSSB JE 2026 - Diploma (Civil) - Offline Test Series';
 
@@ -427,21 +432,17 @@ async function processSubmission(fields) {
   }
 }
 
-/* ── POST /api/tally-webhook ─────────────────────────────── */
+/* ── POST /api/tally-webhook (legacy combined form) ─────── */
 
 router.post('/', (req, res) => {
   const eventType = req.body.eventType;
-
-  /* Respond immediately so Tally doesn't time out */
   res.status(200).json({ ok: true });
-
   if (eventType !== 'FORM_RESPONSE') return;
-
   const fields = req.body.data?.fields || [];
-
-  processSubmission(fields).catch(err => {
+  processSubmission(fields, null).catch(err => {
     console.error('[tally-webhook] Error processing submission:', err);
   });
 });
 
 module.exports = router;
+module.exports.processSubmission = processSubmission;

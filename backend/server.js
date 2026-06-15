@@ -84,6 +84,8 @@ app.use('/api/events',       require('./routes/events'));
 app.use('/api/programs',      require('./routes/programs'));
 app.use('/api/banners',       require('./routes/banners'));
 app.use('/api/tally-webhook', require('./routes/tally-webhook'));
+app.use('/api/tally-diploma', require('./routes/tally-diploma'));
+app.use('/api/tally-degree',  require('./routes/tally-degree'));
 
 /* ── Health Check ────────────────────────────────────────── */
 
@@ -236,6 +238,18 @@ async function migrate() {
   await query(`
     UPDATE programs SET title = 'RSSB JEN 2026-27 Offline Crash Course'
     WHERE slug = 'rssb-jen-crash-course' AND title = 'RSSB JEN 2026-27 - Offline Crash Course'
+  `);
+
+  /* ── Point old RSSB test series slugs to new canonical program pages ── */
+  await query(`
+    UPDATE programs SET detail_url = '/programs/rssb-jen-2026-jaspalsirki-testseries-diploma-civil/'
+    WHERE slug = 'rssb-jen-diploma-test-series'
+      AND (detail_url IS NULL OR detail_url = '/programs/rssb-jen-diploma-test-series/')
+  `);
+  await query(`
+    UPDATE programs SET detail_url = '/programs/rssb-je-jaspalsirki-testseries-degree-civil/'
+    WHERE slug = 'rssb-jen-degree-test-series'
+      AND (detail_url IS NULL OR detail_url = '/programs/rssb-jen-degree-test-series/')
   `);
 
   /* ── Seed programs once (only if table is empty) ── */
