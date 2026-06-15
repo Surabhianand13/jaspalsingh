@@ -503,7 +503,7 @@
         <div class="progs-grid">
 
           <!-- 1. RSSB JEN Diploma Test Series -->
-          <article class="op-card" data-cat="test-series">
+          <article class="op-card" data-cat="test-series" data-slug="rssb-jen-diploma-test-series">
             <div class="op-thumb" style="background:linear-gradient(145deg,#0369A1,#0284C7)">
               <span class="op-thumb-exam">RSSB JE 2026</span>
               <i class="fas fa-clipboard-list op-thumb-icon"></i>
@@ -543,7 +543,7 @@
           </article>
 
           <!-- 2. RSSB JEN Degree Test Series -->
-          <article class="op-card" data-cat="test-series">
+          <article class="op-card" data-cat="test-series" data-slug="rssb-jen-degree-test-series">
             <div class="op-thumb" style="background:linear-gradient(145deg,#0F766E,#0D9488)">
               <span class="op-thumb-exam">RSSB JEN 2026</span>
               <i class="fas fa-clipboard-check op-thumb-icon"></i>
@@ -864,11 +864,11 @@
           var visible = {};
           list.forEach(function(p) { visible[p.slug] = p; });
 
-          // Map existing hardcoded cards by slug from their CTA href
+          // Map existing hardcoded cards by slug (data-slug attr takes priority over href)
           var existing = {};
           grid.querySelectorAll('.op-card').forEach(function(card) {
             var cta = card.querySelector('.op-card-cta');
-            var slug = cta ? slugFromHref(cta.getAttribute('href')) : '';
+            var slug = card.getAttribute('data-slug') || (cta ? slugFromHref(cta.getAttribute('href')) : '');
             if (slug) existing[slug] = card;
             // Hide hardcoded cards that the admin has toggled off / removed
             if (slug && !visible[slug]) card.remove();
