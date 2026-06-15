@@ -95,7 +95,7 @@ DOs:
 - Reach the centre at least 15 minutes before the test start time
 - Bring a valid Govt Photo ID (Aadhar, Voter ID, Driving Licence, Passport)
 - Use only a blue or black ballpoint pen
-- Attempt all 120 questions - there is NO negative marking
+- Negative Marking: 0.33 marks deducted per wrong answer
 - Review your answers before the time limit ends
 - Collect your Detailed Solution Booklet after each test
 
@@ -246,7 +246,7 @@ function generateAdmitCard({ name, govtId, rollNumber, centre, targetExam, phone
       'Carry this admit card (printed or digital) to every test session.',
       'Reach the centre at least 15 minutes before the test start time.',
       'Bring a valid Govt Photo ID (Aadhar / Voter ID / Passport).',
-      'Attempt all 120 questions - there is NO negative marking.',
+      'Negative Marking: 0.33 marks deducted per wrong answer.',
       'No mobile phones or electronic devices inside the exam hall.',
       'Detailed Solution Booklet will be distributed after each test.',
       'Schedule may be revised after official RSSB JE 2026 exam date announcement.',
@@ -371,8 +371,14 @@ async function processSubmission(fields) {
       <li>Reach the centre at least <strong>15 minutes before</strong> the test start time</li>
       <li>Bring a valid Govt Photo ID (Aadhar, Voter ID, Driving Licence, Passport)</li>
       <li>Use only a <strong>blue or black ballpoint pen</strong></li>
-      <li>Attempt all 120 questions - there is <strong>NO negative marking</strong></li>
+      <li>Negative Marking: <strong>0.33 marks deducted per wrong answer</strong></li>
       <li>Collect your Detailed Solution Booklet after each test</li>
+      ${!isDegreeCourse ? `
+      <li style="margin-top:10px;color:#1e40af;"><strong>Hindi Instructions (Diploma):</strong></li>
+      <li>9. यदि आप प्रश्न का उत्तर नहीं देना चाहते हैं तो उत्तर-पत्रक में पाँचवें (5) विकल्प को गहरा करें। यदि पाँच में से कोई भी गोला गहरा नहीं किया जाता है, तो ऐसे प्रश्न के लिये प्रश्न अंक का 1/3 भाग काटा जायेगा।</li>
+      <li>10. प्रश्न-पत्र हल करने के उपरान्त अभ्यर्थी अनिवार्य रूप से ओ.एम.आर. उत्तर-पत्रक जाँच लें कि समस्त प्रश्नों के लिये एक विकल्प (गोला) भर दिया गया है। इसके लिये ही निर्धारित समय से 10 मिनट का अतिरिक्त समय दिया गया है।</li>
+      <li>11. यदि अभ्यर्थी 10% से अधिक प्रश्नों में पाँच विकल्पों में से कोई भी विकल्प अंकित नहीं करता है तो उसको अयोग्य माना जायेगा।</li>
+      ` : ''}
     </ul>
     <p style="font-size:13px;font-weight:bold;margin:10px 0 6px;color:#dc2626;">DON'Ts:</p>
     <ul style="margin:0;padding-left:20px;font-size:13px;line-height:1.7;">
