@@ -7,6 +7,8 @@ const express       = require('express');
 const router        = express.Router();
 const { Resend }    = require('resend');
 const PDFDocument   = require('pdfkit');
+const https         = require('https');
+const http          = require('http');
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM   = 'Dr. Jaspal Singh <team@jaspalsingh.in>';
@@ -165,6 +167,13 @@ function parseTallyFields(fields) {
     if (label.includes('email')) {
       result.email = value;
     }
+    if (label.includes('photo') || label.includes('photograph') || label.includes('picture') || label.includes('image')) {
+      // Tally file uploads come as array of objects with a url property
+      const raw = field.value;
+      if (Array.isArray(raw) && raw.length && raw[0].url) result.photoUrl = raw[0].url;
+      else if (typeof raw === 'object' && raw && raw.url) result.photoUrl = raw.url;
+      else if (typeof raw === 'string' && raw.startsWith('http')) result.photoUrl = raw;
+    }
   }
 
   console.log('[tally-webhook] Parsed:', result);
@@ -181,92 +190,201 @@ function getCentreKey(centreValue) {
   return null;
 }
 
+/* ── Fetch remote image as buffer ────────────────────────── */
+
+function fetchImageBuffer(url) {
+  return new Promise((resolve) => {
+    if (!url) return resolve(null);
+    const lib = url.startsWith('https') ? https : http;
+    lib.get(url, (res) => {
+      if (res.statusCode !== 200) return resolve(null);
+      const chunks = [];
+      res.on('data', c => chunks.push(c));
+      res.on('end', () => resolve(Buffer.concat(chunks)));
+      res.on('error', () => resolve(null));
+    }).on('error', () => resolve(null));
+  });
+}
+
 /* ── Generate admit card PDF buffer ─────────────────────── */
 
-function generateAdmitCard({ name, govtId, rollNumber, centre, targetExam, phone }) {
+function generateAdmitCard({ name, govtId, rollNumber, centre, targetExam, phone, email, photoBuffer, seriesName, lastTestDate }) {
   return new Promise((resolve, reject) => {
-    const doc    = new PDFDocument({ size: 'A4', margin: 50 });
+    const M   = 32;
+    const doc = new PDFDocument({ size: 'A4', margin: M });
     const chunks = [];
-    doc.on('data',  chunk => chunks.push(chunk));
-    doc.on('end',   ()    => resolve(Buffer.concat(chunks)));
-    doc.on('error', err   => reject(err));
+    doc.on('data',  c => chunks.push(c));
+    doc.on('end',   () => resolve(Buffer.concat(chunks)));
+    doc.on('error', err => reject(err));
 
-    const W = doc.page.width;
+    const W = doc.page.width;   // 595
+    const H = doc.page.height;  // 841
+    const CW = W - M * 2;       // content width
 
-    /* Header band */
-    doc.rect(0, 0, W, 120).fill('#0f172a');
-    doc.fillColor('#ffffff')
-      .font('Helvetica-Bold')
-      .fontSize(22)
-      .text('Dr. Jaspal Singh', 50, 28, { align: 'center' });
-    doc.font('Helvetica')
-      .fontSize(11)
-      .fillColor('#94a3b8')
-      .text('RSSB JE Test Series 2026  -  jaspalsingh.in', 50, 58, { align: 'center' });
-    doc.fillColor('#f8fafc')
-      .fontSize(13)
-      .font('Helvetica-Bold')
-      .text('ADMIT CARD', 50, 84, { align: 'center' });
+    const RED   = '#C81240';
+    const DARK  = '#1e293b';
+    const MID   = '#475569';
+    const LIGHT = '#94a3b8';
+    const BG    = '#f8fafc';
+    const WHITE = '#ffffff';
+    const BORD  = '#e2e8f0';
 
-    /* Divider */
-    doc.rect(50, 138, W - 100, 2).fill('#c81240');
+    /* ── White page background ── */
+    doc.rect(0, 0, W, H).fill(WHITE);
 
-    /* Student details */
-    const details = [
-      ['Candidate Name',  name],
-      ['Roll Number',     rollNumber],
-      ['Govt ID',         govtId],
-      ['Exam Centre',     centre],
-      ['Target Exam',     targetExam],
-      ['Mobile',          phone],
-    ];
+    /* ── Header: red top strip + brand ── */
+    doc.rect(0, 0, W, 6).fill(RED);
+    doc.rect(0, 6, W, 74).fill(BG);
 
-    let y = 158;
-    doc.font('Helvetica-Bold').fontSize(14).fillColor('#0f172a')
-      .text('Student Details', 50, y);
-    y += 24;
+    // Brand name
+    doc.fillColor(DARK).font('Helvetica-Bold').fontSize(20)
+       .text('Dr. Jaspal Singh', M, 18, { width: CW, align: 'center' });
+    doc.fillColor(MID).font('Helvetica').fontSize(9)
+       .text('RSSB JE 2026 Offline Test Series  -  jaspalsingh.in', M, 42, { width: CW, align: 'center' });
 
-    for (const [label, value] of details) {
-      doc.fillColor('#64748b').font('Helvetica').fontSize(10).text(label, 50, y);
-      doc.fillColor('#0f172a').font('Helvetica-Bold').fontSize(11).text(value || 'N/A', 200, y);
-      y += 22;
+    // ADMIT CARD badge
+    const badgeW = 110, badgeH = 20, badgeX = (W - badgeW) / 2, badgeY = 56;
+    doc.rect(badgeX, badgeY, badgeW, badgeH).fill(RED);
+    doc.fillColor(WHITE).font('Helvetica-Bold').fontSize(9)
+       .text('A D M I T   C A R D', badgeX, badgeY + 5.5, { width: badgeW, align: 'center' });
+
+    /* ── Red divider ── */
+    doc.rect(M, 82, CW, 1.5).fill(RED);
+
+    /* ── Student details section ── */
+    let y = 92;
+    const PHOTO_W = 90, PHOTO_H = 110;
+    const detailsW = CW - PHOTO_W - 12;
+
+    // Photo box (right side)
+    const photoX = W - M - PHOTO_W;
+    doc.rect(photoX, y, PHOTO_W, PHOTO_H).lineWidth(1).strokeColor(BORD).stroke();
+    if (photoBuffer) {
+      try {
+        doc.image(photoBuffer, photoX + 1, y + 1, { width: PHOTO_W - 2, height: PHOTO_H - 2, cover: [PHOTO_W - 2, PHOTO_H - 2] });
+      } catch(e) {
+        doc.fillColor(LIGHT).font('Helvetica').fontSize(7)
+           .text('Photo', photoX, y + PHOTO_H / 2 - 4, { width: PHOTO_W, align: 'center' });
+      }
+    } else {
+      doc.rect(photoX, y, PHOTO_W, PHOTO_H).fill('#f1f5f9');
+      doc.fillColor(LIGHT).font('Helvetica').fontSize(7)
+         .text('Photograph', photoX, y + PHOTO_H / 2 - 4, { width: PHOTO_W, align: 'center' });
     }
 
-    /* Divider */
-    y += 8;
-    doc.rect(50, y, W - 100, 1).fill('#e2e8f0');
-    y += 16;
+    // Details rows (left of photo)
+    const details = [
+      ['Candidate Name', name],
+      ['Roll Number',    rollNumber],
+      ['Govt ID',        govtId],
+      ['Mobile',         phone],
+      ['Email',          email],
+      ['Exam Centre',    centre],
+      ['Program',        seriesName],
+    ];
 
-    /* Important instructions */
-    doc.font('Helvetica-Bold').fontSize(13).fillColor('#0f172a')
-      .text('Important Instructions', 50, y);
-    y += 20;
+    doc.font('Helvetica-Bold').fontSize(10).fillColor(RED)
+       .text('STUDENT DETAILS', M, y);
+    y += 14;
+
+    for (const [lbl, val] of details) {
+      doc.fillColor(MID).font('Helvetica').fontSize(8).text(lbl, M, y, { width: 90 });
+      doc.fillColor(DARK).font('Helvetica-Bold').fontSize(8.5)
+         .text(val || 'N/A', M + 95, y, { width: detailsW - 95 });
+      y += 13;
+    }
+
+    y = 92 + PHOTO_H + 10;
+
+    /* ── Centre box ── */
+    doc.rect(M, y, CW, 28).fill(BG).stroke();
+    doc.rect(M, y, 3, 28).fill(RED);
+    doc.fillColor(DARK).font('Helvetica-Bold').fontSize(8.5)
+       .text('EXAM CENTRE', M + 8, y + 4);
+    doc.fillColor(MID).font('Helvetica').fontSize(8)
+       .text(centre || 'TBD', M + 8, y + 15, { width: CW - 16 });
+    y += 36;
+
+    /* ── Test schedule (compact) ── */
+    doc.fillColor(RED).font('Helvetica-Bold').fontSize(9)
+       .text('TEST SCHEDULE', M, y);
+    y += 10;
+
+    const schedule = typeof lastTestDate !== 'undefined' ? null : null; // passed via seriesName context
+    const colW = [42, 72, CW - 114];
+
+    // Header row
+    doc.rect(M, y, CW, 14).fill(DARK);
+    doc.fillColor(WHITE).font('Helvetica-Bold').fontSize(7.5)
+       .text('Test', M + 4, y + 3.5, { width: colW[0] })
+       .text('Date', M + colW[0] + 4, y + 3.5, { width: colW[1] })
+       .text('Syllabus / Topic', M + colW[0] + colW[1] + 4, y + 3.5, { width: colW[2] });
+    y += 14;
+
+    const scheduleData = generateAdmitCard._schedule || [];
+    scheduleData.forEach((r, i) => {
+      const rowH = 12;
+      doc.rect(M, y, CW, rowH).fill(i % 2 === 0 ? WHITE : BG);
+      doc.rect(M, y, CW, rowH).lineWidth(0.3).strokeColor(BORD).stroke();
+      doc.fillColor(DARK).font('Helvetica').fontSize(6.5)
+         .text(r.test, M + 4, y + 2.5, { width: colW[0] })
+         .text(r.date, M + colW[0] + 4, y + 2.5, { width: colW[1] })
+         .text(r.syllabus, M + colW[0] + colW[1] + 4, y + 2.5, { width: colW[2] });
+      y += rowH;
+    });
+
+    y += 8;
+
+    /* ── Instructions ── */
+    doc.rect(M, y, CW, 1).fill(BORD);
+    y += 6;
+    doc.fillColor(RED).font('Helvetica-Bold').fontSize(9).text('IMPORTANT INSTRUCTIONS', M, y);
+    y += 11;
 
     const instructions = [
-      'Carry this admit card (printed or digital) to every test session.',
-      'Reach the centre at least 15 minutes before the test start time.',
+      'Carry this Admit Card (printed or on phone) to every test.',
+      'Reach centre at least 15 minutes before test start time.',
       'Bring a valid Govt Photo ID (Aadhar / Voter ID / Passport).',
       'Negative Marking: 0.33 marks deducted per wrong answer.',
       'No mobile phones or electronic devices inside the exam hall.',
       'Detailed Solution Booklet will be distributed after each test.',
-      'Schedule may be revised after official RSSB JE 2026 exam date announcement.',
     ];
 
-    for (const line of instructions) {
-      doc.font('Helvetica').fontSize(10).fillColor('#334155')
-        .text('  - ' + line, 50, y, { width: W - 100 });
-      y += 18;
-    }
+    instructions.forEach(line => {
+      doc.fillColor(DARK).font('Helvetica').fontSize(7.5)
+         .text('•  ' + line, M + 4, y, { width: CW - 8 });
+      y += 11;
+    });
 
-    /* Footer */
-    doc.rect(0, doc.page.height - 60, W, 60).fill('#f1f5f9');
-    doc.fillColor('#64748b').font('Helvetica').fontSize(9)
-      .text('This is a computer-generated admit card. No signature required.  |  jaspalsingh.in  |  For queries call: +91 98291 33317',
-        50, doc.page.height - 42, { align: 'center' });
+    y += 4;
+
+    /* ── Validity note ── */
+    doc.rect(M, y, CW, 22).fill('#fff7ed');
+    doc.rect(M, y, 3, 22).fill('#f59e0b');
+    doc.fillColor('#92400e').font('Helvetica-Bold').fontSize(7.5)
+       .text('VALIDITY & SCHEDULE NOTE', M + 8, y + 3);
+    doc.fillColor('#78350f').font('Helvetica').fontSize(7)
+       .text(
+         `This Admit Card is valid only for the ${seriesName} and remains valid till the last test of the series${lastTestDate ? ' (' + lastTestDate + ')' : ''}. ` +
+         'The test schedule and exam centre are subject to change; you will be informed in advance via email and WhatsApp if any such change occurs.',
+         M + 8, y + 12, { width: CW - 16 }
+       );
+    y += 28;
+
+    /* ── Footer ── */
+    doc.rect(0, H - 36, W, 36).fill(DARK);
+    doc.fillColor(WHITE).font('Helvetica').fontSize(7.5)
+       .text(
+         'Computer-generated admit card  |  No signature required  |  jaspalsingh.in  |  +91 98291 33317',
+         M, H - 24, { width: CW, align: 'center' }
+       );
 
     doc.end();
   });
 }
+
+// Attach schedule data before calling generate
+generateAdmitCard._schedule = [];
 
 /* ── Schedule rows as plain text for email ───────────────── */
 
@@ -281,7 +399,7 @@ function formatScheduleText(schedule) {
 
 /* programType: 'degree' | 'diploma' | null (auto-detect from field) */
 async function processSubmission(fields, programType) {
-  const { name, govtId, centre: centreRaw, targetExam, phone, email } = parseTallyFields(fields);
+  const { name, govtId, centre: centreRaw, targetExam, phone, email, photoUrl } = parseTallyFields(fields);
 
   if (!email) {
     console.warn('[tally-webhook] No email found in fields');
@@ -296,20 +414,28 @@ async function processSubmission(fields, programType) {
     : programType === 'diploma'
       ? false
       : (targetExam || '').toLowerCase().includes('degree');
-  const schedule   = isDegreeCourse ? SCHEDULE_DEGREE : SCHEDULE_DIPLOMA;
-  const seriesName = isDegreeCourse
+  const schedule     = isDegreeCourse ? SCHEDULE_DEGREE : SCHEDULE_DIPLOMA;
+  const seriesName   = isDegreeCourse
     ? 'RSSB JE 2026 - Degree (Civil) - Offline Test Series'
     : 'RSSB JE 2026 - Diploma (Civil) - Offline Test Series';
+  const lastTestDate = isDegreeCourse ? '10 January 2027 (Test-28)' : '29 November 2026 (Test-22)';
 
-  const rollNumber = generateRollNumber(centreKey || centreRaw, targetExam || '');
+  const rollNumber   = generateRollNumber(centreKey || centreRaw, targetExam || '');
+  const photoBuffer  = photoUrl ? await fetchImageBuffer(photoUrl) : null;
+
+  generateAdmitCard._schedule = schedule;
 
   const pdfBuffer = await generateAdmitCard({
-    name:       name || 'Student',
-    govtId:     govtId || 'N/A',
+    name:         name || 'Student',
+    govtId:       govtId || 'N/A',
     rollNumber,
-    centre:     centreInfo.name,
-    targetExam: targetExam || seriesName,
-    phone:      phone || 'N/A',
+    centre:       centreInfo.name,
+    targetExam:   targetExam || seriesName,
+    phone:        phone || 'N/A',
+    email:        email || 'N/A',
+    photoBuffer,
+    seriesName,
+    lastTestDate,
   });
 
   const htmlBody = `
