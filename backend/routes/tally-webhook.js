@@ -3,10 +3,13 @@
    Parses response, generates admit card PDF, sends email
    ============================================================ */
 
-const express      = require('express');
-const router       = express.Router();
-const nodemailer   = require('nodemailer');
-const PDFDocument  = require('pdfkit');
+const express       = require('express');
+const router        = express.Router();
+const { Resend }    = require('resend');
+const PDFDocument   = require('pdfkit');
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+const FROM   = 'Dr. Jaspal Singh <team@jaspalsingh.in>';
 
 /* ── Centre data ─────────────────────────────────────────── */
 
@@ -273,61 +276,38 @@ function formatScheduleText(schedule) {
     .join('\n');
 }
 
-/* ── Mailer setup ────────────────────────────────────────── */
 
-function createTransporter() {
-  return nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_APP_PASS,
-    },
+/* ── Process and send email (runs async after responding) ── */
+
+async function processSubmission(fields) {
+  const { name, govtId, centre: centreRaw, targetExam, phone, email } = parseTallyFields(fields);
+
+  if (!email) {
+    console.warn('[tally-webhook] No email found in fields');
+    return;
+  }
+
+  const centreKey  = getCentreKey(centreRaw);
+  const centreInfo = CENTRES[centreKey] || { name: centreRaw || 'TBD', address: 'TBD', mapsLink: '#' };
+
+  const isDegreeCourse = (targetExam || '').toLowerCase().includes('degree');
+  const schedule       = isDegreeCourse ? SCHEDULE_DEGREE : SCHEDULE_DIPLOMA;
+  const seriesName     = isDegreeCourse
+    ? 'RSSB JE 2026 - Degree (Civil) - Offline Test Series'
+    : 'RSSB JE 2026 - Diploma (Civil) - Offline Test Series';
+
+  const rollNumber = generateRollNumber(centreKey || centreRaw, targetExam || '');
+
+  const pdfBuffer = await generateAdmitCard({
+    name:       name || 'Student',
+    govtId:     govtId || 'N/A',
+    rollNumber,
+    centre:     centreInfo.name,
+    targetExam: targetExam || seriesName,
+    phone:      phone || 'N/A',
   });
-}
 
-/* ── POST /api/tally-webhook ─────────────────────────────── */
-
-router.post('/', async (req, res) => {
-  try {
-    /* Tally sends { eventType, data: { fields: [...] } } */
-    const eventType = req.body.eventType;
-    if (eventType !== 'FORM_RESPONSE') {
-      return res.status(200).json({ ok: true, skipped: true });
-    }
-
-    const fields = req.body.data?.fields || [];
-    const { name, govtId, centre: centreRaw, targetExam, phone, email } = parseTallyFields(fields);
-
-    if (!email) {
-      console.warn('[tally-webhook] No email in payload', { fields });
-      return res.status(200).json({ ok: true, note: 'no email found' });
-    }
-
-    const centreKey = getCentreKey(centreRaw);
-    const centreInfo = CENTRES[centreKey] || { name: centreRaw || 'TBD', address: 'TBD', mapsLink: '#' };
-
-    const isDegreeCourse = (targetExam || '').toLowerCase().includes('degree');
-    const schedule       = isDegreeCourse ? SCHEDULE_DEGREE : SCHEDULE_DIPLOMA;
-    const seriesName     = isDegreeCourse
-      ? 'RSSB JE 2026 - Degree (Civil) - Offline Test Series'
-      : 'RSSB JE 2026 - Diploma (Civil) - Offline Test Series';
-
-    const rollNumber = generateRollNumber(centreKey || centreRaw, targetExam || '');
-
-    /* Generate admit card PDF */
-    const pdfBuffer = await generateAdmitCard({
-      name:       name || 'Student',
-      govtId:     govtId || 'N/A',
-      rollNumber,
-      centre:     centreInfo.name,
-      targetExam: targetExam || seriesName,
-      phone:      phone || 'N/A',
-    });
-
-    /* Build email */
-    const scheduleText = formatScheduleText(schedule);
-
-    const htmlBody = `
+  const htmlBody = `
 <!DOCTYPE html>
 <html>
 <head><meta charset="UTF-8" /></head>
@@ -419,29 +399,43 @@ router.post('/', async (req, res) => {
 </body>
 </html>`;
 
-    /* Send email */
-    const transporter = createTransporter();
-    await transporter.sendMail({
-      from:        `"Dr. Jaspal Singh" <${process.env.GMAIL_USER}>`,
-      to:          email,
-      subject:     `Confirmed! Your Admit Card for ${seriesName}`,
-      html:        htmlBody,
-      attachments: [
-        {
-          filename:    `AdmitCard_${rollNumber}.pdf`,
-          content:     pdfBuffer,
-          contentType: 'application/pdf',
-        },
-      ],
-    });
+  /* Send email via Resend */
+  const { error } = await resend.emails.send({
+    from:        FROM,
+    to:          email,
+    subject:     `Confirmed! Your Admit Card for ${seriesName}`,
+    html:        htmlBody,
+    attachments: [
+      {
+        filename:    `AdmitCard_${rollNumber}.pdf`,
+        content:     pdfBuffer.toString('base64'),
+        contentType: 'application/pdf',
+      },
+    ],
+  });
 
+  if (error) {
+    console.error('[tally-webhook] Resend error:', error);
+  } else {
     console.log(`[tally-webhook] Email sent to ${email} | Roll: ${rollNumber}`);
-    res.status(200).json({ ok: true, rollNumber });
-
-  } catch (err) {
-    console.error('[tally-webhook] Error:', err);
-    res.status(500).json({ error: err.message });
   }
+}
+
+/* ── POST /api/tally-webhook ─────────────────────────────── */
+
+router.post('/', (req, res) => {
+  const eventType = req.body.eventType;
+
+  /* Respond immediately so Tally doesn't time out */
+  res.status(200).json({ ok: true });
+
+  if (eventType !== 'FORM_RESPONSE') return;
+
+  const fields = req.body.data?.fields || [];
+
+  processSubmission(fields).catch(err => {
+    console.error('[tally-webhook] Error processing submission:', err);
+  });
 });
 
 module.exports = router;
