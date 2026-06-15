@@ -932,7 +932,13 @@
 }
 
 @media (max-width: 768px) {
-  .carousel-slide { height: 220px; }
+  .home-carousel-wrap { padding: 10px 12px 0; }
+  .carousel-slide { height: auto; aspect-ratio: 3 / 1; }
+}
+
+@media (max-width: 480px) {
+  .home-carousel-wrap { padding: 8px 8px 0; }
+  .carousel-track-outer { border-radius: 10px; }
 }
 
 /* ── Arrow buttons — dark on light slides ── */
