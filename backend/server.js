@@ -240,6 +240,18 @@ async function migrate() {
     WHERE slug = 'rssb-jen-crash-course' AND title = 'RSSB JEN 2026-27 - Offline Crash Course'
   `);
 
+  /* ── Point old RSSB test series slugs to new canonical program pages ── */
+  await query(`
+    UPDATE programs SET detail_url = '/programs/rssb-jen-2026-jaspalsirki-testseries-diploma-civil/'
+    WHERE slug = 'rssb-jen-diploma-test-series'
+      AND (detail_url IS NULL OR detail_url = '/programs/rssb-jen-diploma-test-series/')
+  `);
+  await query(`
+    UPDATE programs SET detail_url = '/programs/rssb-je-jaspalsirki-testseries-degree-civil/'
+    WHERE slug = 'rssb-jen-degree-test-series'
+      AND (detail_url IS NULL OR detail_url = '/programs/rssb-jen-degree-test-series/')
+  `);
+
   /* ── Seed programs once (only if table is empty) ── */
   const pCount = await query(`SELECT COUNT(*)::int AS n FROM programs`);
   if (pCount.rows[0].n === 0) {

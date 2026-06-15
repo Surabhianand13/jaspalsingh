@@ -849,7 +849,7 @@
           '<div class="op-price-divider"></div>' +
           '<div class="op-price-row">' + priceRow + '</div>' +
         '</div>' +
-        '<a href="/programs/view/?slug=' + encodeURIComponent(p.slug) + '" class="op-card-cta">View Full Details <i class="fas fa-arrow-right"></i></a>';
+        '<a href="' + esc(p.detail_url || ('/programs/view/?slug=' + encodeURIComponent(p.slug))) + '" class="op-card-cta">View Full Details <i class="fas fa-arrow-right"></i></a>';
       return art;
     }
 
