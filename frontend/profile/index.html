@@ -330,8 +330,9 @@
         document.getElementById('tabRegister').classList.toggle('active', tab === 'register');
       }
 
-      // Auto-switch to login if ?tab=login
-      if (new URLSearchParams(window.location.search).get('tab') === 'login') showTab('login');
+      // Auto-switch tab based on ?tab= param
+      var urlTab = new URLSearchParams(window.location.search).get('tab');
+      if (urlTab === 'login' || urlTab === 'register') showTab(urlTab);
 
       function showAuthMsg(id, msg, type) {
         var el = document.getElementById(id);

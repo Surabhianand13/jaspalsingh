@@ -1,4 +1,11 @@
 (function () {
+  // Show on first visit of the session; on subsequent pages only show if load is slow (>800ms)
+  var firstVisit = !sessionStorage.getItem('jsl_visited');
+  sessionStorage.setItem('jsl_visited', '1');
+
+  var startTime = Date.now();
+  var mounted = false;
+
   var style = document.createElement('style');
   style.textContent = `
     #js-page-loader {
@@ -81,14 +88,28 @@
     </div>
   `;
 
-  document.documentElement.style.overflow = 'hidden';
-  document.body ? document.body.appendChild(el) : document.addEventListener('DOMContentLoaded', function () {
+  function mount() {
+    if (mounted) return;
+    mounted = true;
+    document.documentElement.style.overflow = 'hidden';
     document.body.appendChild(el);
-  });
+    setTimeout(function () {
+      el.classList.add('fade-out');
+      document.documentElement.style.overflow = '';
+      setTimeout(function () { el.remove(); }, 500);
+    }, 2400);
+  }
 
-  setTimeout(function () {
-    el.classList.add('fade-out');
-    document.documentElement.style.overflow = '';
-    setTimeout(function () { el.remove(); }, 500);
-  }, 2400);
+  if (firstVisit) {
+    // Always show the branded intro on the very first page of the session
+    document.body ? mount() : document.addEventListener('DOMContentLoaded', mount);
+  } else {
+    // On subsequent page navigations, only show if the page is taking noticeably long (>800ms)
+    var slowTimer = setTimeout(function () {
+      document.body ? mount() : document.addEventListener('DOMContentLoaded', mount);
+    }, 800);
+    document.addEventListener('DOMContentLoaded', function () {
+      clearTimeout(slowTimer);
+    });
+  }
 })();
