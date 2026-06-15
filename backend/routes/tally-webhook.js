@@ -116,21 +116,55 @@ function generateRollNumber(centre, targetExam) {
 
 /* ── Parse Tally webhook payload ─────────────────────────── */
 
+function resolveValue(field) {
+  const raw = field.value;
+  if (!raw && raw !== 0) return '';
+
+  /* Tally sends dropdown/multiple-choice as an array of option IDs.
+     Cross-reference with field.options to get the human-readable text. */
+  if (Array.isArray(raw)) {
+    const options = field.options || [];
+    const texts = raw.map(v => {
+      if (typeof v === 'object' && v !== null) return v.text || v.label || '';
+      const match = options.find(o => o.id === v);
+      return match ? match.text : String(v);
+    });
+    return texts.filter(Boolean).join(', ');
+  }
+
+  if (typeof raw === 'object' && raw !== null) return raw.text || raw.label || JSON.stringify(raw);
+  return String(raw).trim();
+}
+
 function parseTallyFields(fields) {
   const result = {};
+  console.log('[tally-webhook] Raw fields:', JSON.stringify(fields, null, 2));
+
   for (const field of fields) {
     const label = (field.label || '').toLowerCase().trim();
-    const value = Array.isArray(field.value)
-      ? field.value.join(', ')
-      : String(field.value || '').trim();
+    const value = resolveValue(field);
 
-    if (label.includes('name') && !label.includes('exam') && !label.includes('centre'))  result.name       = value;
-    if (label.includes('govt') || label.includes('id'))                                   result.govtId     = value;
-    if (label.includes('centre') || label.includes('center'))                             result.centre     = value;
-    if (label.includes('target') || (label.includes('exam') && !label.includes('centre'))) result.targetExam = value;
-    if (label.includes('phone') || label.includes('mobile'))                              result.phone      = value;
-    if (label.includes('email'))                                                           result.email      = value;
+    if (label.includes('name') && !label.includes('exam') && !label.includes('centre') && !label.includes('center')) {
+      result.name = value;
+    }
+    if (label.includes('govt') || label.includes('id proof') || label.includes('aadhar') || label.includes('voter')) {
+      result.govtId = value;
+    }
+    if (label.includes('centre') || label.includes('center') || label.includes('location')) {
+      result.centre = value;
+    }
+    if (label.includes('target') || label.includes('exam') || label.includes('course') || label.includes('degree') || label.includes('diploma')) {
+      if (!label.includes('centre') && !label.includes('center')) result.targetExam = value;
+    }
+    if (label.includes('phone') || label.includes('mobile') || label.includes('contact')) {
+      result.phone = value;
+    }
+    if (label.includes('email')) {
+      result.email = value;
+    }
   }
+
+  console.log('[tally-webhook] Parsed:', result);
   return result;
 }
 
