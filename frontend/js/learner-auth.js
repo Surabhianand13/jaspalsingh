@@ -151,6 +151,11 @@
                        ' required autocomplete="email" />',
               '</div>',
               '<div class="lauth-field">',
+                '<label for="lauthRegPhone">WhatsApp Mobile Number <span style="color:var(--magenta,#F0345A)">*</span></label>',
+                '<input type="tel" id="lauthRegPhone" placeholder="10-digit mobile number"',
+                       ' required autocomplete="tel" maxlength="10" inputmode="numeric" />',
+              '</div>',
+              '<div class="lauth-field">',
                 '<label for="lauthRegPass">Password <span style="color:var(--magenta,#F0345A)">*</span></label>',
                 '<input type="password" id="lauthRegPass" placeholder="Minimum 6 characters"',
                        ' required autocomplete="new-password" />',
@@ -324,11 +329,13 @@
 
     var name     = (document.getElementById('lauthRegName').value  || '').trim();
     var email    = (document.getElementById('lauthRegEmail').value || '').trim();
+    var phone    = (document.getElementById('lauthRegPhone').value || '').replace(/\D/g, '');
     var password = (document.getElementById('lauthRegPass').value  || '');
     var exam     = (document.getElementById('lauthRegExam').value  || 'General');
 
     if (!name)               { showError('Please enter your name.'); return; }
     if (!email)              { showError('Please enter your email.'); return; }
+    if (phone.length !== 10) { showError('Please enter a valid 10-digit mobile number.'); return; }
     if (password.length < 6) { showError('Password must be at least 6 characters.'); return; }
     if (password.length > 128) { showError('Password is too long (max 128 characters).'); return; }
 
@@ -336,7 +343,7 @@
     setBtnLoading(btn, true);
 
     authPost('/api/learners/register', {
-      name: name, email: email, password: password, target_exam: exam,
+      name: name, email: email, phone: phone, password: password, target_exam: exam,
     }).then(function (data) {
       setSession(data.token, data.learner);
       hideModal();

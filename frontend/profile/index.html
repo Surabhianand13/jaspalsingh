@@ -278,6 +278,10 @@
                 <input type="email" id="regEmail" class="auth-input" placeholder="your@email.com" autocomplete="email" />
               </div>
               <div class="auth-field">
+                <label>WhatsApp Mobile Number <span style="color:#C81240">*</span></label>
+                <input type="tel" id="regPhone" class="auth-input" placeholder="10-digit mobile number" autocomplete="tel" maxlength="10" inputmode="numeric" />
+              </div>
+              <div class="auth-field">
                 <label>Password</label>
                 <input type="password" id="regPassword" class="auth-input" placeholder="Min 6 characters" autocomplete="new-password" />
               </div>
@@ -370,14 +374,16 @@
       function doRegister() {
         var name = document.getElementById('regName').value.trim();
         var email = document.getElementById('regEmail').value.trim();
+        var phone = document.getElementById('regPhone').value.replace(/\D/g, '');
         var password = document.getElementById('regPassword').value;
         var btn = document.getElementById('registerBtn');
         if (!name || !email || !password) { showAuthMsg('registerMsg','All fields are required.','error'); return; }
+        if (phone.length !== 10) { showAuthMsg('registerMsg','Please enter a valid 10-digit mobile number.','error'); return; }
         if (password.length < 6) { showAuthMsg('registerMsg','Password must be at least 6 characters.','error'); return; }
         btn.disabled = true; btn.textContent = 'Creating account...';
         fetch(AUTH_API + '/api/learners/register', {
           method: 'POST', headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({name, email, password})
+          body: JSON.stringify({name, email, phone, password})
         }).then(r => r.json()).then(data => {
           if (data.token) {
             localStorage.setItem('jaspal_learner_token', data.token);
