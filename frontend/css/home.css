@@ -918,7 +918,7 @@
 /* ── Full-width banner image ── */
 .cs-banner-link {
   position: absolute;
-  inset: 0;
+  top: 0; right: 0; bottom: 0; left: 0;
   display: block;
   text-decoration: none;
   line-height: 0;
@@ -936,6 +936,7 @@
   height: 100%;
   display: block;
   object-fit: cover;
+  -webkit-object-fit: cover;
 }
 
 @media (max-width: 768px) {
@@ -944,7 +945,10 @@
 }
 
 @media (max-width: 640px) {
-  .carousel-slide { aspect-ratio: 9 / 16; }
+  .carousel-slide {
+    aspect-ratio: 9 / 16;
+    height: calc((100vw - 16px) * 16 / 9);
+  }
   .home-carousel-wrap { padding-bottom: 24px; }
 }
 
