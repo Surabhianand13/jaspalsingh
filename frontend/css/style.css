@@ -699,17 +699,9 @@ ul, ol {
   .main-nav { display: none; }
   .hamburger { display: flex !important; visibility: visible !important; opacity: 1 !important; }
   .header-inner {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 16px;
+    grid-template-columns: 1fr auto;
   }
-  .header-right {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    flex-shrink: 0;
-  }
+  .header-right { grid-column: 2; }
   .lw-h-wrap { display: none !important; }
   .phone-text { display: none; }
   .header-phone { gap: 0; }
