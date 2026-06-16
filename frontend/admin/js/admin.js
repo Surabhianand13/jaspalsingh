@@ -1544,13 +1544,13 @@
     var tbody = $('learnersTableBody');
     if (!tbody) return;
 
-    tbody.innerHTML = '<tr><td colspan="9"><div class="admin-table-empty"><i class="fas fa-spinner fa-spin"></i><p>Loading…</p></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7"><div class="admin-table-empty"><i class="fas fa-spinner fa-spin"></i><p>Loading…</p></div></td></tr>';
 
     adminFetch('GET', '/api/learners').then(function (data) {
       learnersState.items = Array.isArray(data) ? data : (data.learners || data.data || []);
       applyLearnerPeriodFilter();
     }).catch(function (err) {
-      tbody.innerHTML = '<tr><td colspan="8"><div class="admin-table-empty"><i class="fas fa-triangle-exclamation"></i><p>' + escapeHtml(err.message) + '</p></div></td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7"><div class="admin-table-empty"><i class="fas fa-triangle-exclamation"></i><p>' + escapeHtml(err.message) + '</p></div></td></tr>';
     });
   }
 
@@ -1560,7 +1560,7 @@
     if (!tbody) return;
 
     if (!items || items.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="9"><div class="admin-table-empty"><i class="fas fa-users"></i><p>No learners found.</p></div></td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7"><div class="admin-table-empty"><i class="fas fa-users"></i><p>No learners found.</p></div></td></tr>';
       return;
     }
 
@@ -1586,9 +1586,7 @@
           '<td><span class="text-sm">' + escapeHtml(l.phone || '-') + '</span></td>' +
           '<td>' + statusCell + '</td>' +
           '<td><span class="text-sm">' + escapeHtml(l.target_exam || l.exam_target || l.exam || '-') + '</span></td>' +
-          '<td><span class="fw-600">' + (l.download_count || 0) + '</span></td>' +
           '<td><span class="text-sm text-muted">' + fmtDate(l.created_at || l.createdAt) + '</span></td>' +
-          '<td><span class="text-sm text-muted">' + lastLogin + '</span></td>' +
           '<td>' + (isActive ? '<span class="badge badge-visible">Active</span>' : '<span class="badge badge-hidden">Inactive</span>') + '</td>' +
         '</tr>'
       );
