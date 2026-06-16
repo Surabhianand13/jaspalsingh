@@ -274,6 +274,16 @@ async function migrate() {
 
   await query(`ALTER TABLE contact_messages ADD COLUMN IF NOT EXISTS phone VARCHAR(20)`);
 
+  await query(`
+    CREATE TABLE IF NOT EXISTS email_otps (
+      email      VARCHAR(255) PRIMARY KEY,
+      otp        VARCHAR(6)   NOT NULL,
+      expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+      used       BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    )
+  `);
+
   // Rename both test series programs to unified name and update pricing
   await query(`UPDATE programs SET title='RSSB JE 2026 - Jaspal Sir Ki Test Series Offline', exam='RSSB JE 2026', price=3999, mrp=7999 WHERE slug IN ('rssb-jen-diploma-test-series','rssb-jen-degree-test-series')`);
 

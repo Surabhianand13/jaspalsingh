@@ -321,7 +321,9 @@
       });
   }
 
-  /* ── Register submit ────────────────────────────────────── */
+  /* ── Register: step 1 - collect details, send OTP ──────── */
+
+  var _regPending = null; // stores form data while waiting for OTP
 
   function onRegisterSubmit(e) {
     e.preventDefault();
@@ -342,17 +344,66 @@
     var btn = document.getElementById('lauthRegBtn');
     setBtnLoading(btn, true);
 
-    authPost('/api/learners/register', {
-      name: name, email: email, phone: phone, password: password, target_exam: exam,
-    }).then(function (data) {
-      setSession(data.token, data.learner);
-      hideModal();
-      updateHeaderUI();
-      if (_successCb) { var cb = _successCb; _successCb = null; cb(); }
-    }).catch(function (err) {
-      showError(err.message);
-      setBtnLoading(btn, false, '<i class="fas fa-user-plus"></i> Create Account & Download');
+    authPost('/api/learners/send-otp', { email: email })
+      .then(function () {
+        _regPending = { name: name, email: email, phone: phone, password: password, target_exam: exam };
+        showOtpStep(email);
+        setBtnLoading(btn, false, '<i class="fas fa-user-plus"></i> Create Account &amp; Download');
+      })
+      .catch(function (err) {
+        showError(err.message);
+        setBtnLoading(btn, false, '<i class="fas fa-user-plus"></i> Create Account &amp; Download');
+      });
+  }
+
+  function showOtpStep(email) {
+    var regSection = document.getElementById('lauthRegSection');
+    var existing   = document.getElementById('lauthOtpStep');
+    if (existing) existing.remove();
+
+    var html = '<div id="lauthOtpStep" style="margin-top:12px;">'
+      + '<p style="font-size:13px;color:#374151;margin:0 0 12px;">A 6-digit code was sent to <strong>' + email + '</strong>. Enter it below to verify your email.</p>'
+      + '<div class="lauth-field">'
+      +   '<label for="lauthOtpInput">Verification Code <span style="color:var(--magenta,#F0345A)">*</span></label>'
+      +   '<input type="text" id="lauthOtpInput" placeholder="Enter 6-digit code" maxlength="6" inputmode="numeric" autocomplete="one-time-code" style="letter-spacing:4px;font-size:20px;font-weight:700;text-align:center;" />'
+      + '</div>'
+      + '<button class="lauth-submit" id="lauthOtpBtn" type="button"><i class="fas fa-check-circle"></i> Verify &amp; Create Account</button>'
+      + '<p style="font-size:12px;color:#6b7280;margin:8px 0 0;text-align:center;">Didn\'t receive it? Check spam or <a href="#" id="lauthResendOtp" style="color:#C81240;">resend code</a>.</p>'
+      + '</div>';
+
+    regSection.insertAdjacentHTML('beforeend', html);
+
+    document.getElementById('lauthOtpBtn').addEventListener('click', onOtpVerify);
+    document.getElementById('lauthResendOtp').addEventListener('click', function (ev) {
+      ev.preventDefault();
+      if (!_regPending) return;
+      authPost('/api/learners/send-otp', { email: _regPending.email })
+        .then(function () { showError('New code sent to ' + _regPending.email + '. Check your inbox.'); })
+        .catch(function (err) { showError(err.message); });
     });
+  }
+
+  function onOtpVerify() {
+    clearError();
+    if (!_regPending) return;
+    var otp = (document.getElementById('lauthOtpInput').value || '').trim();
+    if (otp.length !== 6) { showError('Please enter the 6-digit code from your email.'); return; }
+
+    var btn = document.getElementById('lauthOtpBtn');
+    setBtnLoading(btn, true);
+
+    authPost('/api/learners/register', Object.assign({}, _regPending, { otp: otp }))
+      .then(function (data) {
+        _regPending = null;
+        setSession(data.token, data.learner);
+        hideModal();
+        updateHeaderUI();
+        if (_successCb) { var cb = _successCb; _successCb = null; cb(); }
+      })
+      .catch(function (err) {
+        showError(err.message);
+        setBtnLoading(btn, false, '<i class="fas fa-check-circle"></i> Verify &amp; Create Account');
+      });
   }
 
   /* ── Header learner pill ────────────────────────────────── */
