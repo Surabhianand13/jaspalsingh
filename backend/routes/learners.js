@@ -23,9 +23,15 @@ const { protectLearner }  = require('../middleware/learnerAuth');
 const rateLimit = require('express-rate-limit');
 
 const registerLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
+  windowMs: 60 * 60 * 1000,
   max: 10,
   message: { error: 'Too many registration attempts. Please try again later.' },
+});
+
+const otpLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  message: { error: 'Too many OTP requests. Please wait an hour before trying again.' },
 });
 
 const loginLimiter = rateLimit({
@@ -35,6 +41,7 @@ const loginLimiter = rateLimit({
 });
 
 /* Public */
+router.post('/send-otp',        otpLimiter,      ctrl.sendOtp);
 router.post('/register',        registerLimiter, ctrl.register);
 router.post('/login',           loginLimiter,    ctrl.login);
 router.post('/forgot-password', loginLimiter,    ctrl.forgotPassword);

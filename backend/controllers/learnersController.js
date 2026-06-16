@@ -20,6 +20,8 @@ const bcrypt  = require('bcryptjs');
 const jwt     = require('jsonwebtoken');
 const { query } = require('../config/db');
 const { sendWelcomeEmail, sendNewLearnerAlert } = require('../services/emailService');
+const { Resend } = require('resend');
+const _resend = new Resend(process.env.RESEND_API_KEY);
 
 const SALT_ROUNDS = 12;
 const TOKEN_TTL   = '30d'; // Learners stay logged in for 30 days
@@ -32,13 +34,58 @@ function signToken(learner) {
   );
 }
 
+/* ── POST /api/learners/send-otp ────────────────────────────── */
+const sendOtp = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailRe.test(email)) {
+      return res.status(400).json({ error: 'Please provide a valid email address.' });
+    }
+    const norm = email.toLowerCase().trim();
+
+    const existing = await query('SELECT id FROM learners WHERE email = $1', [norm]);
+    if (existing.rows.length) {
+      return res.status(409).json({ error: 'An account with this email already exists.' });
+    }
+
+    const otp = String(Math.floor(100000 + Math.random() * 900000));
+    await query(
+      `INSERT INTO email_otps (email, otp, expires_at)
+       VALUES ($1, $2, NOW() + INTERVAL '10 minutes')
+       ON CONFLICT (email) DO UPDATE SET otp = $2, expires_at = NOW() + INTERVAL '10 minutes', used = FALSE`,
+      [norm, otp]
+    );
+
+    await _resend.emails.send({
+      from:    'Dr. Jaspal Singh <team@jaspalsingh.in>',
+      to:      norm,
+      subject: 'Your verification code - jaspalsingh.in',
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;">
+          <h2 style="color:#C81240;margin:0 0 8px;">Verify your email</h2>
+          <p style="color:#374151;margin:0 0 24px;">Enter this code to complete your account registration:</p>
+          <div style="background:#f8fafc;border:2px solid #C81240;border-radius:12px;padding:24px;text-align:center;margin-bottom:24px;">
+            <span style="font-size:40px;font-weight:800;letter-spacing:10px;color:#0f172a;">${otp}</span>
+          </div>
+          <p style="color:#6b7280;font-size:13px;margin:0;">This code expires in 10 minutes. If you did not request this, please ignore this email.</p>
+          <p style="color:#6b7280;font-size:13px;margin:8px 0 0;">- Team jaspalsingh.in</p>
+        </div>`,
+    });
+
+    res.json({ message: 'OTP sent. Please check your email.' });
+  } catch (err) {
+    next(err);
+  }
+};
+
 /* ── POST /api/learners/register ────────────────────────────── */
 const register = async (req, res, next) => {
   try {
-    const { name, email, password, target_exam, phone } = req.body;
+    const { name, email, password, target_exam, phone, otp } = req.body;
 
-    if (!name || !email || !password) {
-      return res.status(400).json({ error: 'name, email and password are required.' });
+    if (!name || !email || !password || !otp) {
+      return res.status(400).json({ error: 'name, email, password and verification code are required.' });
     }
     if (password.length < 6) {
       return res.status(400).json({ error: 'Password must be at least 6 characters.' });
@@ -48,8 +95,23 @@ const register = async (req, res, next) => {
       return res.status(400).json({ error: 'Please provide a valid email address.' });
     }
 
-    // Check existing
-    const existing = await query('SELECT id FROM learners WHERE email = $1', [email.toLowerCase().trim()]);
+    const norm = email.toLowerCase().trim();
+
+    // Verify OTP
+    const otpRow = await query(
+      `SELECT otp, expires_at, used FROM email_otps WHERE email = $1`, [norm]
+    );
+    if (!otpRow.rows.length || otpRow.rows[0].used || new Date() > new Date(otpRow.rows[0].expires_at)) {
+      return res.status(400).json({ error: 'Verification code has expired. Please request a new one.' });
+    }
+    if (otpRow.rows[0].otp !== otp.trim()) {
+      return res.status(400).json({ error: 'Incorrect verification code. Please try again.' });
+    }
+
+    // Mark OTP used
+    await query(`UPDATE email_otps SET used = TRUE WHERE email = $1`, [norm]);
+
+    const existing = await query('SELECT id FROM learners WHERE email = $1', [norm]);
     if (existing.rows.length) {
       return res.status(409).json({ error: 'An account with this email already exists.' });
     }
@@ -59,7 +121,7 @@ const register = async (req, res, next) => {
       `INSERT INTO learners (name, email, password_hash, target_exam, phone)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING id, name, email, target_exam, created_at`,
-      [name.trim(), email.toLowerCase().trim(), password_hash, target_exam || 'General', phone || null]
+      [name.trim(), norm, password_hash, target_exam || 'General', phone || null]
     );
 
     const learner = result.rows[0];
@@ -71,7 +133,6 @@ const register = async (req, res, next) => {
       learner: { id: learner.id, name: learner.name, email: learner.email, target_exam: learner.target_exam },
     });
 
-    /* Fire-and-forget emails  -  failures must never break the API response */
     sendWelcomeEmail(learner).catch(() => {});
     sendNewLearnerAlert(learner).catch(() => {});
   } catch (err) {
@@ -321,4 +382,4 @@ const resetPassword = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { register, login, getMe, updateMe, getMyDownloads, adminGetAll, adminStats, forgotPassword, resetPassword };
+module.exports = { sendOtp, register, login, getMe, updateMe, getMyDownloads, adminGetAll, adminStats, forgotPassword, resetPassword };
