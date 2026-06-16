@@ -13,6 +13,9 @@ const path       = require('path');
 
 const app = express();
 
+// Render (and most cloud hosts) sit behind a proxy - trust the first hop
+app.set('trust proxy', 1);
+
 /* ── Security Middleware ─────────────────────────────────── */
 
 // Set secure HTTP headers
