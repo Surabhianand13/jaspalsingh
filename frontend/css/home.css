@@ -917,15 +917,15 @@
 
 /* ── Full-width banner image ── */
 .cs-banner-link {
+  position: absolute;
+  inset: 0;
   display: block;
-  width: 100%;
-  height: 100%;
   text-decoration: none;
   line-height: 0;
   cursor: pointer;
 }
 .cs-banner-link picture,
-.carousel-slide picture {
+.carousel-slide > picture {
   display: block;
   width: 100%;
   height: 100%;
