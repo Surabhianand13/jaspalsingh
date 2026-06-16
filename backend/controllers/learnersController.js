@@ -260,9 +260,14 @@ const adminGetAll = async (req, res, next) => {
     const result = await query(
       `SELECT l.id, l.name, l.email, l.target_exam, l.phone,
               l.notify_strategy, l.is_active, l.created_at, l.last_login,
-              COUNT(ld.id)::int AS download_count
+              COUNT(DISTINCT ld.id)::int AS download_count,
+              MAX(e.program_name) AS paid_program,
+              MAX(e.program_slug) AS paid_slug,
+              COUNT(DISTINCT e.id)::int AS paid_count
        FROM learners l
        LEFT JOIN learner_downloads ld ON ld.learner_id = l.id
+       LEFT JOIN enrollments e ON e.status = 'paid'
+         AND (e.learner_id = l.id OR e.student_email = l.email OR e.student_phone = l.phone)
        ${where}
        GROUP BY l.id
        ORDER BY l.created_at DESC

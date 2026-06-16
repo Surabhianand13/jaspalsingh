@@ -1544,7 +1544,7 @@
     var tbody = $('learnersTableBody');
     if (!tbody) return;
 
-    tbody.innerHTML = '<tr><td colspan="8"><div class="admin-table-empty"><i class="fas fa-spinner fa-spin"></i><p>Loading…</p></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9"><div class="admin-table-empty"><i class="fas fa-spinner fa-spin"></i><p>Loading…</p></div></td></tr>';
 
     adminFetch('GET', '/api/learners').then(function (data) {
       learnersState.items = Array.isArray(data) ? data : (data.learners || data.data || []);
@@ -1560,19 +1560,32 @@
     if (!tbody) return;
 
     if (!items || items.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="8"><div class="admin-table-empty"><i class="fas fa-users"></i><p>No learners found.</p></div></td></tr>';
+      tbody.innerHTML = '<tr><td colspan="9"><div class="admin-table-empty"><i class="fas fa-users"></i><p>No learners found.</p></div></td></tr>';
       return;
     }
 
     tbody.innerHTML = items.map(function (l) {
       var isActive = l.is_active !== undefined ? l.is_active : true;
       var lastLogin = (l.last_login || l.lastLogin) ? fmtDate(l.last_login || l.lastLogin) : 'Never';
+      var paidCount = parseInt(l.paid_count || 0, 10);
+      var statusCell;
+      if (paidCount > 0) {
+        var prog = l.paid_program || '';
+        var slug = l.paid_slug || '';
+        var tier = slug.includes('degree') ? 'Degree' : slug.includes('diploma') ? 'Diploma' : '';
+        var label = tier ? prog.replace('RSSB JE 2026 - Jaspal Sir Ki Test Series Offline', 'RSSB JE Test Series') + ' [' + tier + ']' : prog;
+        statusCell = '<span style="display:inline-block;background:#f0fdf4;color:#16a34a;border:1px solid #86efac;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;">Paid</span>' +
+          '<div style="font-size:11px;color:#6b7280;margin-top:3px;max-width:140px;line-height:1.3;">' + escapeHtml(label) + '</div>';
+      } else {
+        statusCell = '<span style="display:inline-block;background:#f8fafc;color:#64748b;border:1px solid #e2e8f0;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:600;">Free</span>';
+      }
       return (
-        '<tr data-id="' + (l.id || l.id) + '">' +
-          '<td><span class="fw-600">' + escapeHtml(l.name || l.full_name || ' - ') + '</span></td>' +
-          '<td><span class="text-sm">' + escapeHtml(l.email || ' - ') + '</span></td>' +
+        '<tr data-id="' + l.id + '">' +
+          '<td><span class="fw-600">' + escapeHtml(l.name || l.full_name || '-') + '</span></td>' +
+          '<td><span class="text-sm">' + escapeHtml(l.email || '-') + '</span></td>' +
           '<td><span class="text-sm">' + escapeHtml(l.phone || '-') + '</span></td>' +
-          '<td><span class="text-sm">' + escapeHtml(l.exam_target || l.exam || ' - ') + '</span></td>' +
+          '<td>' + statusCell + '</td>' +
+          '<td><span class="text-sm">' + escapeHtml(l.target_exam || l.exam_target || l.exam || '-') + '</span></td>' +
           '<td><span class="fw-600">' + (l.download_count || 0) + '</span></td>' +
           '<td><span class="text-sm text-muted">' + fmtDate(l.created_at || l.createdAt) + '</span></td>' +
           '<td><span class="text-sm text-muted">' + lastLogin + '</span></td>' +
