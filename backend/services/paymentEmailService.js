@@ -224,17 +224,21 @@ async function sendAdminPaymentNotification(enrollment) {
     timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   });
+  const slug = enrollment.program_slug || '';
+  const tier = slug.includes('degree') ? 'Degree' : slug.includes('diploma') ? 'Diploma' : '';
+  const programLabel = tier ? `${enrollment.program_name} [${tier}]` : enrollment.program_name;
+
   return gmailTransporter.sendMail({
     from: process.env.GMAIL_USER,
     to:   ADMIN_EMAIL,
-    subject: `New payment: ${enrollment.student_name} - Rs ${enrollment.amount} (${enrollment.program_name})`,
+    subject: `New payment: ${enrollment.student_name} - Rs ${enrollment.amount} | ${programLabel}`,
     text: [
       `New payment received on jaspalsingh.in`,
       ``,
       `Name:    ${enrollment.student_name}`,
       `Email:   ${enrollment.student_email}`,
       `Phone:   ${enrollment.student_phone || '-'}`,
-      `Program: ${enrollment.program_name}`,
+      `Program: ${programLabel}`,
       `Amount:  Rs ${enrollment.amount}`,
       `Order:   ${enrollment.order_id}`,
       `Paid at: ${paid} IST`,
