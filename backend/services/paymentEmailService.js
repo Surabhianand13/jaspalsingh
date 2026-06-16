@@ -6,10 +6,12 @@
    ============================================================ */
 
 const { Resend } = require('resend');
+const { transporter: gmailTransporter, isConfigured: gmailReady } = require('../config/mailer');
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM   = 'Dr. Jaspal Singh <team@jaspalsingh.in>';
 const SITE   = 'https://jaspalsingh.in';
+const ADMIN_EMAIL = 'jaspalsingh.pec@gmail.com';
 
 const TALLY_FORM_URL_DIPLOMA = process.env.TALLY_FORM_URL_DIPLOMA || 'https://tally.so/r/b5AY87';
 const TALLY_FORM_URL_DEGREE  = process.env.TALLY_FORM_URL_DEGREE  || 'https://tally.so/r/b5AD1Z';
@@ -214,4 +216,31 @@ async function sendWelcomePaymentEmail(enrollment) {
   });
 }
 
-module.exports = { sendInvoiceEmail, sendWelcomePaymentEmail };
+/* ── 3. Admin Payment Notification (Gmail - free) ────────────── */
+
+async function sendAdminPaymentNotification(enrollment) {
+  if (!gmailReady) return;
+  const paid = new Date(enrollment.paid_at || Date.now()).toLocaleString('en-IN', {
+    timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
+  return gmailTransporter.sendMail({
+    from: process.env.GMAIL_USER,
+    to:   ADMIN_EMAIL,
+    subject: `New payment: ${enrollment.student_name} - Rs ${enrollment.amount} (${enrollment.program_name})`,
+    text: [
+      `New payment received on jaspalsingh.in`,
+      ``,
+      `Name:    ${enrollment.student_name}`,
+      `Email:   ${enrollment.student_email}`,
+      `Phone:   ${enrollment.student_phone || '-'}`,
+      `Program: ${enrollment.program_name}`,
+      `Amount:  Rs ${enrollment.amount}`,
+      `Order:   ${enrollment.order_id}`,
+      `Paid at: ${paid} IST`,
+      enrollment.coupon_code ? `Coupon:  ${enrollment.coupon_code}` : '',
+    ].filter(Boolean).join('\n'),
+  });
+}
+
+module.exports = { sendInvoiceEmail, sendWelcomePaymentEmail, sendAdminPaymentNotification };
