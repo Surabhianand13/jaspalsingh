@@ -221,29 +221,123 @@ async function sendWelcomePaymentEmail(enrollment) {
 async function sendAdminPaymentNotification(enrollment) {
   if (!gmailReady) return;
   const paid = new Date(enrollment.paid_at || Date.now()).toLocaleString('en-IN', {
-    timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', year: 'numeric',
+    timeZone: 'Asia/Kolkata', day: 'numeric', month: 'long', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   });
   const slug = enrollment.program_slug || '';
   const tier = slug.includes('degree') ? 'Degree' : slug.includes('diploma') ? 'Diploma' : '';
   const programLabel = tier ? `${enrollment.program_name} [${tier}]` : enrollment.program_name;
+  const phone = (enrollment.student_phone || '').replace(/\D/g, '').slice(-10);
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/></head>
+<body style="margin:0;padding:0;background:#0f172a;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#0f172a;padding:32px 16px;">
+<tr><td align="center">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+
+  <!-- Header -->
+  <tr><td style="background:linear-gradient(135deg,#1e293b,#0f172a);border-radius:16px 16px 0 0;
+                 padding:28px 32px;text-align:center;border-bottom:1px solid #334155;">
+    <div style="font-size:11px;font-weight:800;color:#64748b;letter-spacing:.15em;text-transform:uppercase;margin-bottom:10px;">
+      jaspalsingh.in
+    </div>
+    <div style="display:inline-block;background:linear-gradient(135deg,#16a34a,#22c55e);
+                border-radius:50px;padding:8px 22px;margin-bottom:6px;">
+      <span style="font-size:13px;font-weight:800;color:#fff;letter-spacing:.05em;">
+        Payment Received
+      </span>
+    </div>
+    <div style="font-size:28px;font-weight:800;color:#fff;margin-top:12px;">
+      Rs ${Number(enrollment.amount).toLocaleString('en-IN')}
+    </div>
+    <div style="font-size:13px;color:#94a3b8;margin-top:4px;">${esc(paid)} IST</div>
+  </td></tr>
+
+  <!-- Body -->
+  <tr><td style="background:#1e293b;padding:28px 32px;">
+
+    <!-- Student info -->
+    <div style="background:#0f172a;border-radius:12px;padding:20px 22px;margin-bottom:20px;border:1px solid #334155;">
+      <div style="font-size:11px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:.1em;margin-bottom:14px;">
+        Student
+      </div>
+      <div style="font-size:18px;font-weight:800;color:#f1f5f9;margin-bottom:10px;">
+        ${esc(enrollment.student_name)}
+      </div>
+      <table cellpadding="0" cellspacing="0">
+        <tr><td style="padding:4px 0;">
+          <span style="font-size:13px;color:#64748b;min-width:60px;display:inline-block;">Email</span>
+          <span style="font-size:13px;color:#cbd5e1;">${esc(enrollment.student_email)}</span>
+        </td></tr>
+        <tr><td style="padding:4px 0;">
+          <span style="font-size:13px;color:#64748b;min-width:60px;display:inline-block;">Phone</span>
+          <span style="font-size:13px;color:#cbd5e1;">${phone ? '+91 ' + phone : '-'}</span>
+        </td></tr>
+      </table>
+    </div>
+
+    <!-- Program info -->
+    <div style="background:#0f172a;border-radius:12px;padding:20px 22px;margin-bottom:20px;border:1px solid #334155;">
+      <div style="font-size:11px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:.1em;margin-bottom:14px;">
+        Program
+      </div>
+      ${tier ? `<div style="display:inline-block;background:#C8124022;color:#f87171;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;margin-bottom:8px;">${esc(tier)}</div>` : ''}
+      <div style="font-size:15px;font-weight:700;color:#f1f5f9;margin-bottom:10px;line-height:1.4;">
+        ${esc(enrollment.program_name)}
+      </div>
+      <table cellpadding="0" cellspacing="0">
+        <tr><td style="padding:4px 0;">
+          <span style="font-size:13px;color:#64748b;min-width:70px;display:inline-block;">Order</span>
+          <span style="font-size:12px;color:#94a3b8;font-family:monospace;">${esc(enrollment.order_id)}</span>
+        </td></tr>
+        ${enrollment.coupon_code ? `<tr><td style="padding:4px 0;">
+          <span style="font-size:13px;color:#64748b;min-width:70px;display:inline-block;">Coupon</span>
+          <span style="font-size:13px;color:#4ade80;font-weight:700;">${esc(enrollment.coupon_code)}</span>
+        </td></tr>` : ''}
+      </table>
+    </div>
+
+    <!-- Quick actions -->
+    <table cellpadding="0" cellspacing="0" style="width:100%;">
+      <tr>
+        <td style="padding:0 5px 0 0;width:50%;">
+          <a href="https://jaspalsingh.in/admin/dashboard.html"
+             style="display:block;background:#C81240;color:#fff;border-radius:9px;padding:12px;
+                    font-size:13px;font-weight:700;text-decoration:none;text-align:center;">
+            Admin Dashboard
+          </a>
+        </td>
+        <td style="padding:0 0 0 5px;width:50%;">
+          <a href="https://wa.me/91${phone}"
+             style="display:block;background:#16a34a;color:#fff;border-radius:9px;padding:12px;
+                    font-size:13px;font-weight:700;text-decoration:none;text-align:center;">
+            WhatsApp Student
+          </a>
+        </td>
+      </tr>
+    </table>
+
+  </td></tr>
+
+  <!-- Footer -->
+  <tr><td style="background:#0f172a;border-radius:0 0 16px 16px;padding:16px 32px;text-align:center;
+                 border-top:1px solid #1e293b;">
+    <p style="margin:0;font-size:11px;color:#334155;">jaspalsingh.in - admin notification</p>
+  </td></tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>`;
 
   return gmailTransporter.sendMail({
-    from: process.env.GMAIL_USER,
-    to:   ADMIN_EMAIL,
-    subject: `New payment: ${enrollment.student_name} - Rs ${enrollment.amount} | ${programLabel}`,
-    text: [
-      `New payment received on jaspalsingh.in`,
-      ``,
-      `Name:    ${enrollment.student_name}`,
-      `Email:   ${enrollment.student_email}`,
-      `Phone:   ${enrollment.student_phone || '-'}`,
-      `Program: ${programLabel}`,
-      `Amount:  Rs ${enrollment.amount}`,
-      `Order:   ${enrollment.order_id}`,
-      `Paid at: ${paid} IST`,
-      enrollment.coupon_code ? `Coupon:  ${enrollment.coupon_code}` : '',
-    ].filter(Boolean).join('\n'),
+    from:    process.env.GMAIL_USER,
+    to:      ADMIN_EMAIL,
+    subject: `Rs ${Number(enrollment.amount).toLocaleString('en-IN')} - ${enrollment.student_name} | ${programLabel}`,
+    html,
   });
 }
 

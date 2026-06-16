@@ -186,66 +186,122 @@ async function sendWelcomeEmail(learner) {
 
   const firstName = (learner.name || 'there').split(' ')[0];
   const examLabel = {
-    'GATE':       'GATE CE',
-    'ESE':        'UPSC IES / ESE',
-    'SSC JE':     'SSC JE',
-    'State AE/JE':'State AE / JE',
-    'General':    'Civil Engineering exams',
+    'GATE':        'GATE CE',
+    'ESE':         'UPSC IES / ESE',
+    'SSC JE':      'SSC JE',
+    'State AE/JE': 'State AE / JE',
+    'General':     'Civil Engineering exams',
   }[learner.target_exam] || 'Civil Engineering exams';
 
   const content = `
-    <h2 style="margin:0 0 8px;font-size:22px;color:#1A1A2E;font-weight:800;">
-      Welcome, ${esc(firstName)}! 🎉
-    </h2>
-    <p style="margin:0 0 20px;font-size:15px;color:#374151;line-height:1.75;">
-      You're now part of Dr. Jaspal Singh's community of <strong>${examLabel}</strong> aspirants.
-      Your account is ready  -  everything is free, always.
-    </p>
+    <!-- Hero -->
+    <div style="text-align:center;margin-bottom:28px;">
+      <div style="display:inline-block;background:linear-gradient(135deg,#C81240,#F0345A);
+                  border-radius:50px;padding:8px 22px;margin-bottom:18px;">
+        <span style="font-size:13px;font-weight:800;color:#fff;letter-spacing:.06em;text-transform:uppercase;">
+          Account Activated
+        </span>
+      </div>
+      <h2 style="margin:0 0 10px;font-size:26px;color:#1A1A2E;font-weight:800;line-height:1.25;">
+        Welcome, ${esc(firstName)}!
+      </h2>
+      <p style="margin:0;font-size:15px;color:#6b7280;line-height:1.7;">
+        You are now part of <strong style="color:#1A1A2E;">Dr. Jaspal Singh's</strong> community of
+        <strong style="color:#C81240;">${examLabel}</strong> aspirants.
+      </p>
+    </div>
 
-    <div style="background:linear-gradient(135deg,#F0345A1a,#67C8E81a);border-radius:12px;
-                padding:22px 24px;margin-bottom:26px;border:1px solid rgba(240,52,90,0.12);">
-      <p style="margin:0 0 12px;font-size:14px;font-weight:700;color:#1A1A2E;">What you can do now:</p>
-      <table cellpadding="0" cellspacing="0">
-        <tr><td style="padding:5px 0;font-size:14px;color:#374151;">
-          <span style="color:#F0345A;margin-right:8px;">⬇</span>
-          Download all notes, formula books, PYQs  -  tracked in your account
+    <!-- What you get free -->
+    <div style="background:#f8fafc;border-radius:14px;padding:22px 24px;margin-bottom:24px;border:1px solid #e2e8f0;">
+      <p style="margin:0 0 14px;font-size:12px;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.1em;">
+        Free for you, always
+      </p>
+      <table cellpadding="0" cellspacing="0" style="width:100%;">
+        <tr><td style="padding:7px 0;border-bottom:1px solid #f1f5f9;">
+          <span style="font-size:16px;margin-right:10px;">📥</span>
+          <span style="font-size:14px;color:#1A1A2E;font-weight:600;">Notes, formula books &amp; PYQs</span>
+          <div style="font-size:12px;color:#6b7280;padding-left:26px;margin-top:2px;">GATE, ESE, SSC JE, State AE/JE - all subjects</div>
         </td></tr>
-        <tr><td style="padding:5px 0;font-size:14px;color:#374151;">
-          <span style="color:#F0345A;margin-right:8px;">📋</span>
-          Request a personalised strategy plan for ${esc(examLabel)}
+        <tr><td style="padding:7px 0;border-bottom:1px solid #f1f5f9;">
+          <span style="font-size:16px;margin-right:10px;">📋</span>
+          <span style="font-size:14px;color:#1A1A2E;font-weight:600;">Personalised strategy plan</span>
+          <div style="font-size:12px;color:#6b7280;padding-left:26px;margin-top:2px;">Tell us your exam and timeline - Dr. Jaspal responds personally</div>
         </td></tr>
-        <tr><td style="padding:5px 0;font-size:14px;color:#374151;">
-          <span style="color:#F0345A;margin-right:8px;">📢</span>
-          Get exam update notifications before anyone else
+        <tr><td style="padding:7px 0;">
+          <span style="font-size:16px;margin-right:10px;">🔔</span>
+          <span style="font-size:14px;color:#1A1A2E;font-weight:600;">Exam updates before anyone else</span>
+          <div style="font-size:12px;color:#6b7280;padding-left:26px;margin-top:2px;">Notifications, admit cards, cutoffs - directly to your inbox</div>
         </td></tr>
       </table>
     </div>
 
+    <!-- Active programs -->
+    <div style="margin-bottom:24px;">
+      <p style="margin:0 0 12px;font-size:12px;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.1em;">
+        Live offline programs
+      </p>
+      <!-- Program card 1 -->
+      <div style="border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;margin-bottom:10px;background:#fff;">
+        <div style="display:inline-block;background:#fef2f2;color:#C81240;border-radius:6px;
+                    padding:3px 10px;font-size:11px;font-weight:700;margin-bottom:8px;">RSSB JE 2026</div>
+        <div style="font-size:15px;font-weight:700;color:#1A1A2E;margin-bottom:4px;">
+          Jaspal Sir Ki Test Series - Diploma
+        </div>
+        <div style="font-size:13px;color:#6b7280;margin-bottom:12px;">
+          Offline test series at Jaipur, Kota &amp; Bikaner - taught by Dr. Jaspal Singh (ESE AIR-04)
+        </div>
+        <a href="${SITE_URL}/rssb-jen-diploma-test-series.html"
+           style="display:inline-block;background:#C81240;color:#fff;border-radius:8px;
+                  padding:9px 18px;font-size:13px;font-weight:700;text-decoration:none;">
+          View Program →
+        </a>
+      </div>
+      <!-- Program card 2 -->
+      <div style="border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;background:#fff;">
+        <div style="display:inline-block;background:#fef2f2;color:#C81240;border-radius:6px;
+                    padding:3px 10px;font-size:11px;font-weight:700;margin-bottom:8px;">RSSB JE 2026</div>
+        <div style="font-size:15px;font-weight:700;color:#1A1A2E;margin-bottom:4px;">
+          Jaspal Sir Ki Test Series - Degree
+        </div>
+        <div style="font-size:13px;color:#6b7280;margin-bottom:12px;">
+          Offline test series at Jaipur, Kota &amp; Bikaner - for degree holders
+        </div>
+        <a href="${SITE_URL}/rssb-jen-degree-test-series.html"
+           style="display:inline-block;background:#C81240;color:#fff;border-radius:8px;
+                  padding:9px 18px;font-size:13px;font-weight:700;text-decoration:none;">
+          View Program →
+        </a>
+      </div>
+    </div>
+
+    <!-- CTA buttons -->
     <table cellpadding="0" cellspacing="0" style="width:100%;margin-bottom:28px;">
       <tr>
-        <td style="padding:0 6px 0 0;width:50%;">
+        <td style="padding:0 5px 0 0;width:50%;">
           <a href="${SITE_URL}/resources.html"
-             style="display:block;background:#F0345A;color:#fff;border-radius:9px;padding:13px 16px;
-                    font-size:14px;font-weight:700;text-decoration:none;text-align:center;">
+             style="display:block;background:#1A1A2E;color:#fff;border-radius:10px;padding:13px 12px;
+                    font-size:13px;font-weight:700;text-decoration:none;text-align:center;">
             Browse Free Resources
           </a>
         </td>
-        <td style="padding:0 0 0 6px;width:50%;">
+        <td style="padding:0 0 0 5px;width:50%;">
           <a href="https://t.me/jaspalsirofficial"
-             style="display:block;background:#1a9fd8;color:#fff;border-radius:9px;padding:13px 16px;
-                    font-size:14px;font-weight:700;text-decoration:none;text-align:center;">
-            Join Telegram
+             style="display:block;background:linear-gradient(135deg,#1a9fd8,#28bce8);color:#fff;
+                    border-radius:10px;padding:13px 12px;font-size:13px;font-weight:700;
+                    text-decoration:none;text-align:center;">
+            Join Telegram Community
           </a>
         </td>
       </tr>
     </table>
 
+    <!-- Quote -->
     <div style="border-top:1px solid #f0f0f6;padding-top:20px;">
-      <p style="margin:0 0 6px;font-size:14px;color:#374151;font-style:italic;line-height:1.7;">
+      <p style="margin:0 0 6px;font-size:14px;color:#374151;font-style:italic;line-height:1.75;">
         "Har aspirant deserves a teacher who truly cares. I'm glad you're here."
       </p>
-      <p style="margin:0;font-size:13px;color:#F0345A;font-weight:700;">
-         -  Dr. Jaspal Singh · PhD · Ex-IES Officer (AIR-04)
+      <p style="margin:0;font-size:13px;color:#C81240;font-weight:700;">
+        - Dr. Jaspal Singh &nbsp;·&nbsp; ESE AIR-04 &nbsp;·&nbsp; GATE AIR-06
       </p>
     </div>
   `;
@@ -253,7 +309,7 @@ async function sendWelcomeEmail(learner) {
   return transporter.sendMail({
     from:    FROM_ADDRESS,
     to:      `"${learner.name}" <${learner.email}>`,
-    subject: `Welcome to Dr. Jaspal Singh's community  -  your account is ready 🎉`,
+    subject: `Welcome to jaspalsingh.in - your free account is ready`,
     html:    baseEmail(content),
   });
 }
