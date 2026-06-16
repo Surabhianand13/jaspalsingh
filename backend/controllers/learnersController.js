@@ -114,6 +114,14 @@ const register = async (req, res, next) => {
       return res.status(409).json({ error: 'An account with this email already exists.' });
     }
 
+    if (phone) {
+      const normPhone = phone.replace(/\D/g, '').slice(-10);
+      const phoneExists = await query('SELECT id FROM learners WHERE phone = $1', [normPhone]);
+      if (phoneExists.rows.length) {
+        return res.status(409).json({ error: 'An account with this mobile number already exists. Please log in instead.' });
+      }
+    }
+
     const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
     const result = await query(
       `INSERT INTO learners (name, email, password_hash, target_exam, phone)
