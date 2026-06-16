@@ -68,8 +68,8 @@ const register = async (req, res, next) => {
   try {
     const { name, email, password, target_exam, phone, otp } = req.body;
 
-    if (!name || !email || !password || !otp) {
-      return res.status(400).json({ error: 'name, email, password and verification code are required.' });
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: 'name, email and password are required.' });
     }
     if (password.length < 6) {
       return res.status(400).json({ error: 'Password must be at least 6 characters.' });
@@ -81,19 +81,20 @@ const register = async (req, res, next) => {
 
     const norm = email.toLowerCase().trim();
 
-    // Verify OTP
-    const otpRow = await query(
-      `SELECT otp, expires_at, used FROM email_otps WHERE email = $1`, [norm]
-    );
-    if (!otpRow.rows.length || otpRow.rows[0].used || new Date() > new Date(otpRow.rows[0].expires_at)) {
-      return res.status(400).json({ error: 'Verification code has expired. Please request a new one.' });
+    // Verify OTP only when provided (profile signup flow)
+    // Checkout flow skips OTP - payment itself verifies intent
+    if (otp) {
+      const otpRow = await query(
+        `SELECT otp, expires_at, used FROM email_otps WHERE email = $1`, [norm]
+      );
+      if (!otpRow.rows.length || otpRow.rows[0].used || new Date() > new Date(otpRow.rows[0].expires_at)) {
+        return res.status(400).json({ error: 'Verification code has expired. Please request a new one.' });
+      }
+      if (otpRow.rows[0].otp !== otp.trim()) {
+        return res.status(400).json({ error: 'Incorrect verification code. Please try again.' });
+      }
+      await query(`UPDATE email_otps SET used = TRUE WHERE email = $1`, [norm]);
     }
-    if (otpRow.rows[0].otp !== otp.trim()) {
-      return res.status(400).json({ error: 'Incorrect verification code. Please try again.' });
-    }
-
-    // Mark OTP used
-    await query(`UPDATE email_otps SET used = TRUE WHERE email = $1`, [norm]);
 
     const existing = await query('SELECT id FROM learners WHERE email = $1', [norm]);
     if (existing.rows.length) {
