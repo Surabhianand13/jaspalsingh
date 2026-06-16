@@ -110,13 +110,18 @@ app.get('/api/backfill-notifications', async (req, res) => {
     return res.status(403).json({ error: 'Forbidden' });
   }
   if (!isConfigured) {
-    return res.status(500).json({ error: 'Gmail not configured' });
+    return res.status(500).json({ error: 'Gmail not configured - set GMAIL_USER and GMAIL_APP_PASSWORD in Render env vars' });
   }
   try {
     const { query } = require('./config/db');
     const result = await query(`SELECT * FROM enrollments WHERE status = 'paid' ORDER BY paid_at ASC`);
     const enrollments = result.rows;
-    let sent = 0, failed = 0, errors = [];
+
+    // Respond immediately so the request doesn't time out
+    res.json({ message: 'Backfill started', total: enrollments.length });
+
+    // Process in background
+    let sent = 0, failed = 0;
     for (const enrollment of enrollments) {
       try {
         const paid = new Date(enrollment.paid_at || enrollment.created_at || Date.now())
@@ -142,15 +147,17 @@ app.get('/api/backfill-notifications', async (req, res) => {
           ].filter(Boolean).join('\n'),
         });
         sent++;
-        await new Promise(r => setTimeout(r, 400));
+        console.log(`[backfill] Sent ${sent}/${enrollments.length} - ${enrollment.student_name}`);
+        await new Promise(r => setTimeout(r, 300));
       } catch (e) {
         failed++;
-        errors.push(`${enrollment.order_id}: ${e.message}`);
+        console.error(`[backfill] Failed for ${enrollment.order_id}:`, e.message);
       }
     }
-    res.json({ total: enrollments.length, sent, failed, errors });
+    console.log(`[backfill] Done. Sent: ${sent}, Failed: ${failed}`);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[backfill] Error:', err.message);
+    if (!res.headersSent) res.status(500).json({ error: err.message });
   }
 });
 
