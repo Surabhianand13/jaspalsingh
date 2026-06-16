@@ -697,11 +697,20 @@ ul, ol {
 
 @media (max-width: 900px) {
   .main-nav { display: none; }
-  .hamburger { display: flex; }
+  .hamburger { display: flex !important; visibility: visible !important; opacity: 1 !important; }
   .header-inner {
-    grid-template-columns: 1fr auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 16px;
   }
-  .header-right { grid-column: 2; }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .lw-h-wrap { display: none !important; }
   .phone-text { display: none; }
   .header-phone { gap: 0; }
 
