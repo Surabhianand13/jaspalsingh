@@ -358,22 +358,34 @@
 
   function showOtpStep(email) {
     var regSection = document.getElementById('lauthRegSection');
+    var form       = document.getElementById('lauthRegForm');
     var existing   = document.getElementById('lauthOtpStep');
     if (existing) existing.remove();
+    if (form) form.style.display = 'none';
 
-    var html = '<div id="lauthOtpStep" style="margin-top:12px;">'
-      + '<p style="font-size:13px;color:#374151;margin:0 0 12px;">A 6-digit code was sent to <strong>' + email + '</strong>. Enter it below to verify your email.</p>'
+    var html = '<div id="lauthOtpStep">'
+      + '<p style="font-size:14px;color:#374151;margin:0 0 16px;text-align:center;">A 6-digit code was sent to<br><strong>' + email + '</strong></p>'
       + '<div class="lauth-field">'
       +   '<label for="lauthOtpInput">Verification Code <span style="color:var(--magenta,#F0345A)">*</span></label>'
-      +   '<input type="text" id="lauthOtpInput" placeholder="Enter 6-digit code" maxlength="6" inputmode="numeric" autocomplete="one-time-code" style="letter-spacing:4px;font-size:20px;font-weight:700;text-align:center;" />'
+      +   '<input type="text" id="lauthOtpInput" placeholder="_ _ _ _ _ _" maxlength="6" inputmode="numeric" autocomplete="one-time-code" style="letter-spacing:8px;font-size:24px;font-weight:700;text-align:center;" />'
       + '</div>'
       + '<button class="lauth-submit" id="lauthOtpBtn" type="button"><i class="fas fa-check-circle"></i> Verify &amp; Create Account</button>'
-      + '<p style="font-size:12px;color:#6b7280;margin:8px 0 0;text-align:center;">Didn\'t receive it? Check spam or <a href="#" id="lauthResendOtp" style="color:#C81240;">resend code</a>.</p>'
+      + '<p style="font-size:12px;color:#6b7280;margin:10px 0 0;text-align:center;">Didn\'t receive it? Check spam or <a href="#" id="lauthResendOtp" style="color:#C81240;">resend code</a>.</p>'
+      + '<p style="font-size:12px;color:#6b7280;margin:6px 0 0;text-align:center;"><a href="#" id="lauthBackToForm" style="color:#6b7280;">&#8592; Go back</a></p>'
       + '</div>';
 
     regSection.insertAdjacentHTML('beforeend', html);
 
+    document.getElementById('lauthBackToForm').addEventListener('click', function (ev) {
+      ev.preventDefault();
+      document.getElementById('lauthOtpStep').remove();
+      if (form) form.style.display = '';
+      _regPending = null;
+      clearError();
+    });
+
     document.getElementById('lauthOtpBtn').addEventListener('click', onOtpVerify);
+    setTimeout(function () { var i = document.getElementById('lauthOtpInput'); if (i) i.focus(); }, 50);
     document.getElementById('lauthResendOtp').addEventListener('click', function (ev) {
       ev.preventDefault();
       if (!_regPending) return;
