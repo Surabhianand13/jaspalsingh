@@ -100,6 +100,60 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+/* ── One-time backfill: admin payment notifications ──────────
+   Hit GET /api/backfill-notifications?secret=<BACKFILL_SECRET>
+   Remove this route after running once.                        */
+app.get('/api/backfill-notifications', async (req, res) => {
+  const { transporter, isConfigured } = require('./config/mailer');
+  const secret = process.env.BACKFILL_SECRET;
+  if (!secret || req.query.secret !== secret) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  if (!isConfigured) {
+    return res.status(500).json({ error: 'Gmail not configured' });
+  }
+  try {
+    const { query } = require('./config/db');
+    const result = await query(`SELECT * FROM enrollments WHERE status = 'paid' ORDER BY paid_at ASC`);
+    const enrollments = result.rows;
+    let sent = 0, failed = 0, errors = [];
+    for (const enrollment of enrollments) {
+      try {
+        const paid = new Date(enrollment.paid_at || enrollment.created_at || Date.now())
+          .toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const slug = enrollment.program_slug || '';
+        const tier = slug.includes('degree') ? 'Degree' : slug.includes('diploma') ? 'Diploma' : '';
+        const programLabel = tier ? `${enrollment.program_name} [${tier}]` : enrollment.program_name;
+        await transporter.sendMail({
+          from: process.env.GMAIL_USER,
+          to:   'jaspalsingh.pec@gmail.com',
+          subject: `[Past payment] ${enrollment.student_name} - Rs ${enrollment.amount} | ${programLabel}`,
+          text: [
+            `Past payment (backfill) from jaspalsingh.in`,
+            ``,
+            `Name:    ${enrollment.student_name}`,
+            `Email:   ${enrollment.student_email}`,
+            `Phone:   ${enrollment.student_phone || '-'}`,
+            `Program: ${programLabel}`,
+            `Amount:  Rs ${enrollment.amount}`,
+            `Order:   ${enrollment.order_id}`,
+            `Paid at: ${paid} IST`,
+            enrollment.coupon_code ? `Coupon:  ${enrollment.coupon_code}` : '',
+          ].filter(Boolean).join('\n'),
+        });
+        sent++;
+        await new Promise(r => setTimeout(r, 400));
+      } catch (e) {
+        failed++;
+        errors.push(`${enrollment.order_id}: ${e.message}`);
+      }
+    }
+    res.json({ total: enrollments.length, sent, failed, errors });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 /* ── 404 Handler ─────────────────────────────────────────── */
 
 app.use((req, res) => {
