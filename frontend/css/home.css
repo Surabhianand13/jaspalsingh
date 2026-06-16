@@ -883,6 +883,7 @@
   .ts-card { padding: 16px 10px; }
   .ts-arc-wrap { width: 68px; height: 68px; }
   .ts-num { font-size: 20px; }
+  .ts-num-sm { font-size: 13px; white-space: nowrap; }
   .contact-cta-btn { min-width: 0; }
 }
 
@@ -947,16 +948,22 @@
 }
 
 @media (max-width: 640px) {
-  .carousel-slide {
-    aspect-ratio: 9 / 16;
+  .home-carousel-wrap { padding-bottom: 16px; }
+  .carousel-track-outer {
     height: calc((100vw - 16px) * 16 / 9);
+    position: relative;
+  }
+  .carousel-track { height: 100%; }
+  .carousel-slide {
+    height: 100%;
+    aspect-ratio: unset;
   }
   .cs-banner-link,
   .cs-banner-link picture,
-  .carousel-slide > picture {
-    height: calc((100vw - 16px) * 16 / 9);
+  .carousel-slide > picture,
+  .cs-banner-img {
+    height: 100%;
   }
-  .home-carousel-wrap { padding-bottom: 16px; }
 }
 
 @media (max-width: 480px) {
