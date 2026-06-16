@@ -100,6 +100,28 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+/* ── Gmail test endpoint ─────────────────────────────────────
+   GET /api/test-gmail?secret=<BACKFILL_SECRET>
+   Sends one test email and returns success or exact error.     */
+app.get('/api/test-gmail', async (req, res) => {
+  const { transporter, isConfigured } = require('./config/mailer');
+  const secret = process.env.BACKFILL_SECRET;
+  if (!secret || req.query.secret !== secret) return res.status(403).json({ error: 'Forbidden' });
+  if (!isConfigured) return res.json({ configured: false, GMAIL_USER: !!process.env.GMAIL_USER, GMAIL_APP_PASSWORD: !!process.env.GMAIL_APP_PASSWORD });
+  try {
+    await transporter.verify();
+    await transporter.sendMail({
+      from: process.env.GMAIL_USER,
+      to: 'jaspalsingh.pec@gmail.com',
+      subject: 'Gmail test from jaspalsingh.in',
+      text: 'If you see this, Gmail SMTP is working correctly.',
+    });
+    res.json({ success: true, from: process.env.GMAIL_USER });
+  } catch (err) {
+    res.json({ success: false, error: err.message, code: err.code });
+  }
+});
+
 /* ── One-time backfill: admin payment notifications ──────────
    Hit GET /api/backfill-notifications?secret=<BACKFILL_SECRET>
    Remove this route after running once.                        */
