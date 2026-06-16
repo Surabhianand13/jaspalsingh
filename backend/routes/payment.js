@@ -8,7 +8,7 @@ const router  = express.Router();
 const { query } = require('../config/db');
 const https   = require('https');
 const crypto  = require('crypto');
-const { sendInvoiceEmail, sendWelcomePaymentEmail } = require('../services/paymentEmailService');
+const { sendInvoiceEmail, sendWelcomePaymentEmail, sendAdminPaymentNotification } = require('../services/paymentEmailService');
 
 /* ── Coupon catalogue ────────────────────────────────────── */
 const COUPONS = {
@@ -212,6 +212,7 @@ router.get('/verify', async (req, res) => {
         const enrollment = updateResult.rows[0];
         sendInvoiceEmail(enrollment).catch(e => console.error('[invoice email]', e.message));
         sendWelcomePaymentEmail(enrollment).catch(e => console.error('[welcome email]', e.message));
+        sendAdminPaymentNotification(enrollment).catch(e => console.error('[admin notify]', e.message));
       }
     }
 
@@ -271,6 +272,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
       if (result.rows.length > 0) {
         const enrollment = result.rows[0];
         sendWelcomePaymentEmail(enrollment).catch(e => console.error('[webhook welcome email]', e.message));
+        sendAdminPaymentNotification(enrollment).catch(e => console.error('[webhook admin notify]', e.message));
       }
     }
     res.json({ status: 'ok' });
