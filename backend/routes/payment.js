@@ -181,9 +181,14 @@ router.get('/verify', async (req, res) => {
     const paid  = order.order_status === 'PAID';
 
     if (paid) {
+      const formToken = crypto.randomBytes(32).toString('hex');
       const updateResult = await query(
-        `UPDATE enrollments SET status = 'paid', paid_at = NOW(), cf_payment_id = $1 WHERE order_id = $2 AND status != 'paid' RETURNING *`,
-        [order.cf_order_id || order_id, order_id]
+        `UPDATE enrollments
+         SET status = 'paid', paid_at = NOW(), cf_payment_id = $1,
+             form_token = COALESCE(form_token, $3)
+         WHERE order_id = $2 AND status != 'paid'
+         RETURNING *`,
+        [order.cf_order_id || order_id, order_id, formToken]
       );
 
       if (updateResult.rows.length > 0) {
@@ -237,11 +242,20 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
 
     const event = JSON.parse(req.body);
     if (event?.data?.order?.order_status === 'PAID') {
-      const order_id = event.data.order.order_id;
-      await query(
-        `UPDATE enrollments SET status = 'paid', paid_at = NOW() WHERE order_id = $1`,
-        [order_id]
+      const order_id  = event.data.order.order_id;
+      const formToken = crypto.randomBytes(32).toString('hex');
+      const result = await query(
+        `UPDATE enrollments
+         SET status = 'paid', paid_at = NOW(),
+             form_token = COALESCE(form_token, $2)
+         WHERE order_id = $1 AND status != 'paid'
+         RETURNING *`,
+        [order_id, formToken]
       );
+      if (result.rows.length > 0) {
+        const enrollment = result.rows[0];
+        sendWelcomePaymentEmail(enrollment).catch(e => console.error('[webhook welcome email]', e.message));
+      }
     }
     res.json({ status: 'ok' });
   } catch (err) {

@@ -180,7 +180,8 @@ router.get('/admin/all', protect, async (req, res, next) => {
     if (status) { params.push(status); where = `WHERE status = $${params.length}`; }
     const rows = await query(
       `SELECT id, order_id, program_slug, program_name, amount, student_name,
-              student_email, student_phone, status, coupon_code, paid_at, created_at
+              student_email, student_phone, status, coupon_code, paid_at, created_at,
+              form_token IS NOT NULL AS has_form_token, form_used, form_used_at
        FROM enrollments ${where} ORDER BY created_at DESC`, params);
     const summary = await query(
       `SELECT
@@ -189,6 +190,38 @@ router.get('/admin/all', protect, async (req, res, next) => {
          COALESCE(SUM(amount) FILTER (WHERE status='paid'),0)::int AS revenue
        FROM enrollments`);
     res.json({ enrollments: rows.rows, total: rows.rowCount, summary: summary.rows[0] });
+  } catch (err) { next(err); }
+});
+
+/* ── POST /api/enrollment/admin/reissue-form ─────────────────
+   Admin only - resets form_token and resends welcome email
+   so a genuine learner gets a second chance to fill the form  */
+const crypto = require('crypto');
+const { sendWelcomePaymentEmail } = require('../services/paymentEmailService');
+
+router.post('/admin/reissue-form', protect, async (req, res, next) => {
+  try {
+    const { enrollment_id } = req.body;
+    if (!enrollment_id) return res.status(400).json({ error: 'enrollment_id required.' });
+
+    const newToken = crypto.randomBytes(32).toString('hex');
+
+    const result = await query(
+      `UPDATE enrollments
+       SET form_token = $1, form_used = FALSE, form_used_at = NULL
+       WHERE id = $2 AND status = 'paid'
+       RETURNING *`,
+      [newToken, enrollment_id]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({ error: 'Paid enrollment not found.' });
+    }
+
+    const enrollment = result.rows[0];
+    await sendWelcomePaymentEmail(enrollment);
+
+    res.json({ message: `New form link sent to ${enrollment.student_email}` });
   } catch (err) { next(err); }
 });
 

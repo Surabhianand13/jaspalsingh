@@ -174,6 +174,9 @@ function parseTallyFields(fields) {
       else if (typeof raw === 'object' && raw && raw.url) result.photoUrl = raw.url;
       else if (typeof raw === 'string' && raw.startsWith('http')) result.photoUrl = raw;
     }
+    if (label === 'token' || label.includes('form token') || label.includes('enrollment token')) {
+      result.token = value;
+    }
   }
 
   console.log('[tally-webhook] Parsed:', result);
@@ -411,16 +414,118 @@ function formatScheduleText(schedule) {
 }
 
 
+/* ── Send rejection email ─────────────────────────────────── */
+
+async function sendRejectionEmail(toEmail, reason, contactLink) {
+  await resend.emails.send({
+    from: FROM,
+    to:   toEmail,
+    subject: 'Enrollment form - action needed | jaspalsingh.in',
+    html: `<!DOCTYPE html><html><head><meta charset="UTF-8"/></head>
+<body style="margin:0;padding:0;background:#f4f5f8;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f5f8;padding:32px 16px;">
+<tr><td align="center"><table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+  <tr><td style="background:#0F1117;border-radius:14px 14px 0 0;padding:24px 36px;text-align:center;">
+    <div style="font-size:20px;font-weight:800;color:#fff;">Dr. <span style="color:#C81240;">Jaspal Singh</span></div>
+    <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:4px;letter-spacing:1.5px;text-transform:uppercase;">jaspalsingh.in</div>
+  </td></tr>
+  <tr><td style="background:#fff;padding:32px 36px;">
+    <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:10px;padding:18px 22px;margin-bottom:20px;">
+      <p style="margin:0 0 8px;font-size:15px;font-weight:700;color:#991b1b;">Your form submission could not be processed</p>
+      <p style="margin:0;font-size:14px;color:#7f1d1d;line-height:1.65;">${reason}</p>
+    </div>
+    <p style="font-size:14px;color:#374151;line-height:1.7;margin:0 0 20px;">
+      If you believe this is an error or need help, please contact us immediately on WhatsApp so we can resolve it quickly.
+    </p>
+    <a href="https://wa.me/919829133317?text=${encodeURIComponent('Hi, I need help with my enrollment form submission for jaspalsingh.in')}"
+       style="display:inline-block;background:#25D366;color:#fff;border-radius:10px;padding:12px 24px;font-size:14px;font-weight:700;text-decoration:none;">
+      WhatsApp Us Now →
+    </a>
+  </td></tr>
+  <tr><td style="background:#f4f5f8;border-radius:0 0 14px 14px;padding:16px 36px;text-align:center;">
+    <p style="margin:0;font-size:12px;color:#9ca3af;">jaspalsingh.in | +91 98291 33317</p>
+  </td></tr>
+</table></td></tr></table>
+</body></html>`,
+  }).catch(e => console.error('[rejection email]', e.message));
+}
+
+/* ── Require DB for token validation ─────────────────────── */
+const { query } = require('../config/db');
+
 /* ── Process and send email (runs async after responding) ── */
 
 /* programType: 'degree' | 'diploma' | null (auto-detect from field) */
 async function processSubmission(fields, programType) {
-  const { name, govtId, centre: centreRaw, targetExam, phone, email, photoUrl } = parseTallyFields(fields);
+  const { name, govtId, centre: centreRaw, targetExam, phone, email, photoUrl, token } = parseTallyFields(fields);
 
   if (!email) {
     console.warn('[tally-webhook] No email found in fields');
     return;
   }
+
+  /* ── Token + payment verification ─────────────────────── */
+  const normEmail = email.toLowerCase().trim();
+  const normPhone = (phone || '').replace(/\D/g, '').slice(-10);
+
+  if (!token) {
+    console.warn('[tally-webhook] No token in submission - rejecting');
+    await sendRejectionEmail(email,
+      'Your submission did not include a valid enrollment token. This form must be opened using the personal link sent to you in your enrollment email. Please check your email for the "Fill Details Form" button and use that link.'
+    );
+    return;
+  }
+
+  // Look up token in DB
+  const enrResult = await query(
+    `SELECT id, student_email, student_phone, form_used, form_token FROM enrollments WHERE form_token = $1`,
+    [token]
+  );
+
+  if (!enrResult.rows.length) {
+    console.warn('[tally-webhook] Invalid token:', token);
+    await sendRejectionEmail(email,
+      'The enrollment token in your submission is invalid or does not match any paid enrollment. Please use the original link sent in your enrollment email.'
+    );
+    return;
+  }
+
+  const enrollment = enrResult.rows[0];
+
+  if (enrollment.form_used) {
+    console.warn('[tally-webhook] Token already used, enrollment:', enrollment.id);
+    await sendRejectionEmail(email,
+      'This enrollment form has already been submitted. Each enrollment allows only one submission. If you made a mistake in your earlier submission, please contact us on WhatsApp immediately and we will assist you.'
+    );
+    return;
+  }
+
+  // Verify email matches payment
+  const expectedEmail = (enrollment.student_email || '').toLowerCase().trim();
+  if (normEmail !== expectedEmail) {
+    console.warn('[tally-webhook] Email mismatch - submitted:', normEmail, 'expected:', expectedEmail);
+    await sendRejectionEmail(email,
+      `The email address you entered (${email}) does not match the email used during payment (${enrollment.student_email}). Please re-open the form using the link in your enrollment email and enter the same email address you used at checkout.`
+    );
+    return;
+  }
+
+  // Verify phone matches payment (last 10 digits)
+  const expectedPhone = (enrollment.student_phone || '').replace(/\D/g, '').slice(-10);
+  if (normPhone && expectedPhone && normPhone !== expectedPhone) {
+    console.warn('[tally-webhook] Phone mismatch - submitted:', normPhone, 'expected:', expectedPhone);
+    await sendRejectionEmail(email,
+      `The mobile number you entered does not match the number used during payment (+91 ${expectedPhone}). Please re-open the form using the link in your enrollment email and enter the same mobile number you used at checkout.`
+    );
+    return;
+  }
+
+  // All checks passed - mark token as used
+  await query(
+    `UPDATE enrollments SET form_used = TRUE, form_used_at = NOW() WHERE form_token = $1`,
+    [token]
+  );
+  console.log('[tally-webhook] Token validated, processing enrollment:', enrollment.id);
 
   const centreKey  = getCentreKey(centreRaw);
   const centreInfo = CENTRES[centreKey] || { name: centreRaw || 'TBD', address: 'TBD', mapsLink: '#' };
