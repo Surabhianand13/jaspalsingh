@@ -291,6 +291,21 @@
               <p class="auth-switch">Already have an account? <span onclick="showTab('login')">Log in &rarr;</span></p>
             </div>
 
+            <!-- OTP verification step (shown after form submission) -->
+            <div id="authOtpStep" class="auth-box" style="display:none;">
+              <h2 class="auth-title">Verify Your Email</h2>
+              <div id="otpMsg" class="auth-msg" style="display:none;"></div>
+              <p id="otpEmailHint" style="font-size:13.5px;color:#6b7280;margin:-8px 0 20px;"></p>
+              <div class="auth-field">
+                <label>Verification Code <span style="color:#C81240">*</span></label>
+                <input type="text" id="otpInput" class="auth-input" placeholder="_ _ _ _ _ _" maxlength="6" inputmode="numeric" autocomplete="one-time-code" style="letter-spacing:8px;font-size:24px;font-weight:700;text-align:center;" />
+              </div>
+              <button class="auth-btn" id="otpBtn" onclick="doVerifyOtp()">
+                Verify &amp; Create Account &nbsp;&rarr;
+              </button>
+              <p class="auth-switch">Didn't receive it? Check spam or <span onclick="doResendOtp()">resend code</span>. &nbsp;|&nbsp; <span onclick="showRegisterForm()">Go back</span></p>
+            </div>
+
           </div>
 
           <!-- Trust badges -->
@@ -371,32 +386,76 @@
         });
       }
 
+      var _regData = null;
+
       function doRegister() {
-        var name = document.getElementById('regName').value.trim();
-        var email = document.getElementById('regEmail').value.trim();
-        var phone = document.getElementById('regPhone').value.replace(/\D/g, '');
+        var name     = document.getElementById('regName').value.trim();
+        var email    = document.getElementById('regEmail').value.trim();
+        var phone    = document.getElementById('regPhone').value.replace(/\D/g, '');
         var password = document.getElementById('regPassword').value;
-        var btn = document.getElementById('registerBtn');
+        var btn      = document.getElementById('registerBtn');
         if (!name || !email || !password) { showAuthMsg('registerMsg','All fields are required.','error'); return; }
         if (phone.length !== 10) { showAuthMsg('registerMsg','Please enter a valid 10-digit mobile number.','error'); return; }
         if (password.length < 6) { showAuthMsg('registerMsg','Password must be at least 6 characters.','error'); return; }
-        btn.disabled = true; btn.textContent = 'Creating account...';
+        btn.disabled = true; btn.textContent = 'Sending code...';
+        fetch(AUTH_API + '/api/learners/send-otp', {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ email })
+        }).then(r => r.json()).then(data => {
+          if (data.error) {
+            showAuthMsg('registerMsg', data.error, 'error');
+            btn.disabled = false; btn.textContent = 'Create Account →';
+            return;
+          }
+          _regData = { name, email, phone, password };
+          document.getElementById('authRegister').style.display = 'none';
+          document.getElementById('authOtpStep').style.display = '';
+          document.getElementById('otpEmailHint').textContent = 'A 6-digit code was sent to ' + email + '. Enter it below.';
+          setTimeout(function(){ var i = document.getElementById('otpInput'); if(i) i.focus(); }, 50);
+          btn.disabled = false; btn.textContent = 'Create Account →';
+        }).catch(() => {
+          showAuthMsg('registerMsg','Network error. Try again.','error');
+          btn.disabled = false; btn.textContent = 'Create Account →';
+        });
+      }
+
+      function doVerifyOtp() {
+        if (!_regData) return;
+        var otp = (document.getElementById('otpInput').value || '').trim();
+        var btn = document.getElementById('otpBtn');
+        if (otp.length !== 6) { showAuthMsg('otpMsg','Please enter the 6-digit code from your email.','error'); return; }
+        btn.disabled = true; btn.textContent = 'Verifying...';
         fetch(AUTH_API + '/api/learners/register', {
           method: 'POST', headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({name, email, phone, password})
+          body: JSON.stringify(Object.assign({}, _regData, { otp }))
         }).then(r => r.json()).then(data => {
           if (data.token) {
             localStorage.setItem('jaspal_learner_token', data.token);
             localStorage.setItem('jaspal_learner', JSON.stringify(data.learner));
             window.location.reload();
           } else {
-            showAuthMsg('registerMsg', data.error || 'Registration failed.', 'error');
-            btn.disabled = false; btn.innerHTML = '<i class="fas fa-user-plus"></i> Create Account';
+            showAuthMsg('otpMsg', data.error || 'Verification failed.', 'error');
+            btn.disabled = false; btn.textContent = 'Verify & Create Account →';
           }
         }).catch(() => {
-          showAuthMsg('registerMsg','Network error. Try again.','error');
-          btn.disabled = false; btn.innerHTML = '<i class="fas fa-user-plus"></i> Create Account';
+          showAuthMsg('otpMsg','Network error. Try again.','error');
+          btn.disabled = false; btn.textContent = 'Verify & Create Account →';
         });
+      }
+
+      function doResendOtp() {
+        if (!_regData) return;
+        fetch(AUTH_API + '/api/learners/send-otp', {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ email: _regData.email })
+        }).then(() => showAuthMsg('otpMsg','New code sent. Check your inbox.','success'))
+          .catch(() => showAuthMsg('otpMsg','Could not resend. Try again.','error'));
+      }
+
+      function showRegisterForm() {
+        _regData = null;
+        document.getElementById('authOtpStep').style.display = 'none';
+        document.getElementById('authRegister').style.display = '';
       }
 
       // Allow Enter key
