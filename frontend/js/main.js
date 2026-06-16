@@ -133,9 +133,18 @@
   wrap.addEventListener('mouseenter', function () { clearInterval(timer); });
   wrap.addEventListener('mouseleave', startAuto);
 
-  /* Touch swipe */
+  /* Touch swipe - prevent horizontal page scroll while swiping carousel */
   var touchStartX = 0;
-  wrap.addEventListener('touchstart', function (e) { touchStartX = e.touches[0].clientX; }, { passive: true });
+  var touchStartY = 0;
+  wrap.addEventListener('touchstart', function (e) {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  }, { passive: true });
+  wrap.addEventListener('touchmove', function (e) {
+    var dx = e.touches[0].clientX - touchStartX;
+    var dy = e.touches[0].clientY - touchStartY;
+    if (Math.abs(dx) > Math.abs(dy)) e.preventDefault();
+  }, { passive: false });
   wrap.addEventListener('touchend', function (e) {
     var dx = e.changedTouches[0].clientX - touchStartX;
     if (Math.abs(dx) > 40) { goTo(dx < 0 ? current + 1 : current - 1); startAuto(); }
