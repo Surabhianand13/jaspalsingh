@@ -945,10 +945,11 @@
 
 @media (max-width: 640px) {
   .carousel-slide { aspect-ratio: 9 / 16; }
+  .home-carousel-wrap { padding-bottom: 24px; }
 }
 
 @media (max-width: 480px) {
-  .home-carousel-wrap { padding: 8px 8px 0; }
+  .home-carousel-wrap { padding: 8px 8px 24px; }
   .carousel-track-outer { border-radius: 10px; }
 }
 
