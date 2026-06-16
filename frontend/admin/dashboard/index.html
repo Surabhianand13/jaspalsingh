@@ -59,19 +59,9 @@
           Dashboard
         </button>
 
-        <button class="admin-nav-link" data-section="resources">
-          <i class="fas fa-file-pdf" aria-hidden="true"></i>
-          Resources
-        </button>
-
         <button class="admin-nav-link" data-section="blog">
           <i class="fas fa-pen-to-square" aria-hidden="true"></i>
           Blog
-        </button>
-
-        <button class="admin-nav-link" data-section="testimonials">
-          <i class="fas fa-star" aria-hidden="true"></i>
-          Testimonials
         </button>
       </div>
 
@@ -88,11 +78,6 @@
           Enrollments
         </button>
 
-        <button class="admin-nav-link" data-section="programleads">
-          <i class="fas fa-hand-pointer" aria-hidden="true"></i>
-          Interest / Leads
-        </button>
-
         <button class="admin-nav-link" data-section="banners">
           <i class="fas fa-image" aria-hidden="true"></i>
           Banners
@@ -101,16 +86,6 @@
         <button class="admin-nav-link" data-section="analytics">
           <i class="fas fa-chart-line" aria-hidden="true"></i>
           Analytics
-        </button>
-      </div>
-
-      <div class="admin-nav-section" style="margin-top:8px;">
-        <span class="admin-nav-label">Community</span>
-
-        <button class="admin-nav-link" data-section="messages" id="navMessages">
-          <i class="fas fa-envelope" aria-hidden="true"></i>
-          Messages
-          <!-- Unread badge injected by JS -->
         </button>
 
         <button class="admin-nav-link" data-section="learners">
@@ -171,48 +146,47 @@
 
         <!-- Stat cards -->
         <div class="stats-grid" id="statsGrid">
-          <!-- Injected by admin.js -->
-          <div class="stat-card" style="--stat-color:#F0345A;--stat-bg:rgba(240,52,90,0.1);">
-            <div class="stat-card-icon"><i class="fas fa-file-pdf"></i></div>
-            <div class="stat-card-label">Resources</div>
-            <div class="stat-card-value" id="statResources"> - </div>
+          <div class="stat-card" style="--stat-color:#16a34a;--stat-bg:rgba(22,163,74,0.1);">
+            <div class="stat-card-icon"><i class="fas fa-indian-rupee-sign"></i></div>
+            <div class="stat-card-label">Total Revenue (Rs)</div>
+            <div class="stat-card-value" id="statRevenue"> - </div>
           </div>
-          <div class="stat-card" style="--stat-color:#67C8E8;--stat-bg:rgba(103,200,232,0.1);">
-            <div class="stat-card-icon"><i class="fas fa-pen-to-square"></i></div>
-            <div class="stat-card-label">Blog Posts</div>
-            <div class="stat-card-value" id="statBlog"> - </div>
+          <div class="stat-card" style="--stat-color:#C81240;--stat-bg:rgba(200,18,64,0.1);">
+            <div class="stat-card-icon"><i class="fas fa-calendar-day"></i></div>
+            <div class="stat-card-label">Today's Revenue (Rs)</div>
+            <div class="stat-card-value" id="statTodayRevenue"> - </div>
           </div>
-          <div class="stat-card" style="--stat-color:#f59e0b;--stat-bg:rgba(245,158,11,0.1);">
-            <div class="stat-card-icon"><i class="fas fa-star"></i></div>
-            <div class="stat-card-label">Testimonials</div>
-            <div class="stat-card-value" id="statTestis"> - </div>
+          <div class="stat-card" style="--stat-color:#7c3aed;--stat-bg:rgba(124,58,237,0.1);">
+            <div class="stat-card-icon"><i class="fas fa-graduation-cap"></i></div>
+            <div class="stat-card-label">Total Enrollments (paid)</div>
+            <div class="stat-card-value" id="statEnrollments"> - </div>
           </div>
-          <div class="stat-card" style="--stat-color:#8b5cf6;--stat-bg:rgba(139,92,246,0.1);">
-            <div class="stat-card-icon"><i class="fas fa-envelope"></i></div>
-            <div class="stat-card-label">Unread Messages</div>
-            <div class="stat-card-value" id="statUnread"> - </div>
+          <div class="stat-card" style="--stat-color:#0891b2;--stat-bg:rgba(8,145,178,0.1);">
+            <div class="stat-card-icon"><i class="fas fa-user-plus"></i></div>
+            <div class="stat-card-label">New Learners This Week</div>
+            <div class="stat-card-value" id="statWeekLearners"> - </div>
           </div>
           <div class="stat-card" style="--stat-color:#10b981;--stat-bg:rgba(16,185,129,0.1);">
             <div class="stat-card-icon"><i class="fas fa-users"></i></div>
-            <div class="stat-card-label">Learners</div>
+            <div class="stat-card-label">Total Learners</div>
             <div class="stat-card-value" id="statLearners"> - </div>
           </div>
-          <div class="stat-card" style="--stat-color:#ef4444;--stat-bg:rgba(239,68,68,0.1);">
-            <div class="stat-card-icon"><i class="fas fa-download"></i></div>
-            <div class="stat-card-label">Total Downloads</div>
-            <div class="stat-card-value" id="statDownloads"> - </div>
+          <div class="stat-card" style="--stat-color:#f59e0b;--stat-bg:rgba(245,158,11,0.1);">
+            <div class="stat-card-icon"><i class="fas fa-pen-to-square"></i></div>
+            <div class="stat-card-label">Blog Posts</div>
+            <div class="stat-card-value" id="statBlog"> - </div>
           </div>
         </div>
 
         <!-- Dashboard 2-col cards -->
         <div class="dashboard-grid">
-          <!-- Recent messages -->
+          <!-- Recent enrollments -->
           <div class="admin-card">
             <div class="admin-card-title">
-              <i class="fas fa-envelope"></i>
-              Recent Messages
+              <i class="fas fa-indian-rupee-sign"></i>
+              Recent Enrollments
             </div>
-            <div id="recentMessagesList">
+            <div id="recentEnrollmentsList">
               <div class="text-muted text-sm">Loading…</div>
             </div>
           </div>
@@ -449,12 +423,21 @@
           </div>
         </div>
 
+        <div class="filter-tabs" id="learnerPeriodTabs" style="margin-bottom:12px;">
+          <button class="filter-tab active" data-lperiod="all">All Time</button>
+          <button class="filter-tab" data-lperiod="today">Today</button>
+          <button class="filter-tab" data-lperiod="yesterday">Yesterday</button>
+          <button class="filter-tab" data-lperiod="3days">Last 3 Days</button>
+          <button class="filter-tab" data-lperiod="week">Last Week</button>
+        </div>
+
         <div class="admin-table-wrap">
           <table class="admin-table" id="learnersTable" aria-label="Learners table">
             <thead>
               <tr>
                 <th>Name</th>
                 <th>Email</th>
+                <th>Phone</th>
                 <th>Exam</th>
                 <th>Downloads</th>
                 <th>Joined</th>
@@ -464,7 +447,7 @@
             </thead>
             <tbody id="learnersTableBody">
               <tr>
-                <td colspan="7">
+                <td colspan="8">
                   <div class="admin-table-empty">
                     <i class="fas fa-users"></i>
                     <p>Loading learners…</p>
@@ -498,6 +481,13 @@
             <button class="btn-admin-secondary btn-admin-sm" id="btnRefreshEnrollments" type="button">Refresh</button>
           </div>
         </div>
+        <div class="filter-tabs" id="enrollPeriodTabs" style="margin-bottom:12px;">
+          <button class="filter-tab active" data-period="all">All Time</button>
+          <button class="filter-tab" data-period="today">Today</button>
+          <button class="filter-tab" data-period="3days">Last 3 Days</button>
+          <button class="filter-tab" data-period="week">This Week</button>
+          <button class="filter-tab" data-period="month">This Month</button>
+        </div>
         <div id="enrollSummary" class="admin-stat-row"></div>
         <div id="enrollmentsBody"><p class="admin-empty">Loading…</p></div>
       </section>
@@ -528,7 +518,13 @@
         <div class="section-header">
           <h2 class="section-title">Analytics</h2>
           <div class="section-actions">
-            <select id="analyticsDays" class="admin-input"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option></select>
+            <div style="display:flex;gap:8px;">
+              <button class="btn-admin-secondary btn-admin-sm anal-period active" data-days="1">Today</button>
+              <button class="btn-admin-secondary btn-admin-sm anal-period" data-days="2">Yesterday</button>
+              <button class="btn-admin-secondary btn-admin-sm anal-period" data-days="3">3 Days</button>
+              <button class="btn-admin-secondary btn-admin-sm anal-period" data-days="7">Week</button>
+              <button class="btn-admin-secondary btn-admin-sm anal-period" data-days="30">Month</button>
+            </div>
           </div>
         </div>
         <div id="analyticsBody"><p class="admin-empty">Loading…</p></div>

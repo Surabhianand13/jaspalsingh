@@ -369,20 +369,36 @@
     }
 
     /* Reset stat displays */
-    ['statResources', 'statBlog', 'statTestis', 'statUnread', 'statLearners', 'statDownloads'].forEach(function (id) {
+    ['statRevenue', 'statTodayRevenue', 'statEnrollments', 'statWeekLearners', 'statLearners', 'statBlog'].forEach(function (id) {
       var el = $(id);
       if (el) el.textContent = '…';
     });
 
-    /* 1. Resources analytics */
-    adminFetch('GET', '/api/resources/admin/analytics').then(function (data) {
-      var el = $('statResources');
-      if (el) el.textContent = data.total || 0;
-      var dlEl = $('statDownloads');
-      if (dlEl) dlEl.textContent = data.total_downloads || 0;
+    /* 1. Enrollment revenue stats */
+    adminFetch('GET', '/api/enrollment/admin/all?status=paid').then(function (data) {
+      var enrollments = data.enrollments || [];
+      var todayStr = new Date().toISOString().slice(0, 10);
+      var totalRevenue = 0;
+      var todayRevenue = 0;
+      enrollments.forEach(function (en) {
+        var amt = parseInt(en.amount) || 0;
+        totalRevenue += amt;
+        if (en.paid_at && en.paid_at.slice(0, 10) === todayStr) {
+          todayRevenue += amt;
+        }
+      });
+      var elRev = $('statRevenue');
+      if (elRev) elRev.textContent = inrIndian(totalRevenue);
+      var elToday = $('statTodayRevenue');
+      if (elToday) elToday.textContent = inrIndian(todayRevenue);
+      var elEnroll = $('statEnrollments');
+      if (elEnroll) elEnroll.textContent = enrollments.length;
+      /* Render recent enrollments list */
+      renderRecentEnrollments(enrollments.slice(0, 5));
     }).catch(function () {
-      var el = $('statResources');
-      if (el) el.textContent = 'Err';
+      ['statRevenue', 'statTodayRevenue', 'statEnrollments'].forEach(function (id) {
+        var el = $(id); if (el) el.textContent = 'Err';
+      });
     });
 
     /* 2. Blog count */
@@ -394,49 +410,48 @@
       if (el) el.textContent = 'Err';
     });
 
-    /* 3. Testimonials count */
-    adminFetch('GET', '/api/testimonials/admin/all').then(function (data) {
-      var el = $('statTestis');
-      if (el) el.textContent = Array.isArray(data) ? data.length : (data.total || 0);
-    }).catch(function () {
-      var el = $('statTestis');
-      if (el) el.textContent = 'Err';
-    });
-
-    /* 4. Unread messages count */
-    adminFetch('GET', '/api/contact?unread=true').then(function (data) {
-      var count = Array.isArray(data) ? data.length : (data.total || 0);
-      var el = $('statUnread');
-      if (el) el.textContent = count;
-      updateMessagesBadge(count);
-    }).catch(function () {
-      var el = $('statUnread');
-      if (el) el.textContent = 'Err';
-    });
-
-    /* 5. Learner stats */
+    /* 3. Learner stats */
     adminFetch('GET', '/api/learners/stats').then(function (data) {
       var el = $('statLearners');
       if (el) el.textContent = data.total || 0;
+      var elWeek = $('statWeekLearners');
+      if (elWeek) elWeek.textContent = data.last_7d || 0;
       /* Quick stats summary */
       renderQuickStats(data);
     }).catch(function () {
-      var el = $('statLearners');
-      if (el) el.textContent = 'Err';
-    });
-
-    /* 6. Recent messages (3) */
-    adminFetch('GET', '/api/contact?limit=3').then(function (data) {
-      var items = Array.isArray(data) ? data : (data.messages || data.data || []);
-      renderRecentMessages(items.slice(0, 3));
-    }).catch(function () {
-      var el = $('recentMessagesList');
-      if (el) el.innerHTML = '<div class="text-muted text-sm">Could not load messages.</div>';
+      ['statLearners', 'statWeekLearners'].forEach(function (id) {
+        var el = $(id); if (el) el.textContent = 'Err';
+      });
     });
 
     /* Load analytics charts */
     bindChartRangeButtons();
     loadDashboardCharts(14);
+  }
+
+  /** Render the 5 most recent paid enrollments in the dashboard card */
+  function renderRecentEnrollments(items) {
+    var el = $('recentEnrollmentsList');
+    if (!el) return;
+
+    if (!items || items.length === 0) {
+      el.innerHTML = '<div class="empty-state" style="padding:24px;"><i class="fas fa-inbox"></i><p>No enrollments yet.</p></div>';
+      return;
+    }
+
+    var rows = items.map(function (en) {
+      var prog = (en.program_name || '').slice(0, 30) + ((en.program_name || '').length > 30 ? '…' : '');
+      return '<tr>' +
+        '<td style="font-size:13px;">' + escapeHtml(en.student_name || '-') + '</td>' +
+        '<td style="font-size:12px;color:#6b6b8a;">' + escapeHtml(prog) + '</td>' +
+        '<td style="font-size:13px;font-weight:600;color:#16a34a;">Rs ' + escapeHtml(String(en.amount || 0)) + '</td>' +
+        '<td style="font-size:12px;color:#9999b0;">' + fmtDate(en.paid_at || en.created_at) + '</td>' +
+        '</tr>';
+    }).join('');
+
+    el.innerHTML = '<div class="admin-table-wrap"><table class="admin-table" style="font-size:13px;">' +
+      '<thead><tr><th>Name</th><th>Program</th><th>Amount</th><th>Date</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody></table></div>';
   }
 
   /** Render the 3 most recent messages in the dashboard card */
@@ -472,8 +487,8 @@
 
     var rows = [
       { label: 'Total Learners',   value: data.total || 0,           icon: 'fa-users',        color: '#10b981' },
-      { label: 'Active (30 days)', value: data.active_30d || 0,       icon: 'fa-user-check',   color: '#67C8E8' },
-      { label: 'New This Month',   value: data.new_this_month || 0,   icon: 'fa-user-plus',    color: '#8b5cf6' }
+      { label: 'New (Last 7 Days)', value: data.last_7d || 0,          icon: 'fa-user-check',   color: '#67C8E8' },
+      { label: 'New This Month',   value: data.new_this_month || data.last_7d || 0, icon: 'fa-user-plus', color: '#8b5cf6' }
     ];
 
     el.innerHTML = rows.map(function (r) {
@@ -1529,13 +1544,13 @@
     var tbody = $('learnersTableBody');
     if (!tbody) return;
 
-    tbody.innerHTML = '<tr><td colspan="7"><div class="admin-table-empty"><i class="fas fa-spinner fa-spin"></i><p>Loading…</p></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8"><div class="admin-table-empty"><i class="fas fa-spinner fa-spin"></i><p>Loading…</p></div></td></tr>';
 
     adminFetch('GET', '/api/learners').then(function (data) {
       learnersState.items = Array.isArray(data) ? data : (data.learners || data.data || []);
-      renderLearnersTable(learnersState.items);
+      applyLearnerPeriodFilter();
     }).catch(function (err) {
-      tbody.innerHTML = '<tr><td colspan="7"><div class="admin-table-empty"><i class="fas fa-triangle-exclamation"></i><p>' + escapeHtml(err.message) + '</p></div></td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8"><div class="admin-table-empty"><i class="fas fa-triangle-exclamation"></i><p>' + escapeHtml(err.message) + '</p></div></td></tr>';
     });
   }
 
@@ -1545,20 +1560,22 @@
     if (!tbody) return;
 
     if (!items || items.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7"><div class="admin-table-empty"><i class="fas fa-users"></i><p>No learners found.</p></div></td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8"><div class="admin-table-empty"><i class="fas fa-users"></i><p>No learners found.</p></div></td></tr>';
       return;
     }
 
     tbody.innerHTML = items.map(function (l) {
       var isActive = l.is_active !== undefined ? l.is_active : true;
+      var lastLogin = (l.last_login || l.lastLogin) ? fmtDate(l.last_login || l.lastLogin) : 'Never';
       return (
         '<tr data-id="' + (l.id || l.id) + '">' +
           '<td><span class="fw-600">' + escapeHtml(l.name || l.full_name || ' - ') + '</span></td>' +
           '<td><span class="text-sm">' + escapeHtml(l.email || ' - ') + '</span></td>' +
+          '<td><span class="text-sm">' + escapeHtml(l.phone || '-') + '</span></td>' +
           '<td><span class="text-sm">' + escapeHtml(l.exam_target || l.exam || ' - ') + '</span></td>' +
           '<td><span class="fw-600">' + (l.download_count || 0) + '</span></td>' +
           '<td><span class="text-sm text-muted">' + fmtDate(l.created_at || l.createdAt) + '</span></td>' +
-          '<td><span class="text-sm text-muted">' + fmtDate(l.last_login || l.lastLogin) + '</span></td>' +
+          '<td><span class="text-sm text-muted">' + lastLogin + '</span></td>' +
           '<td>' + (isActive ? '<span class="badge badge-visible">Active</span>' : '<span class="badge badge-hidden">Inactive</span>') + '</td>' +
         '</tr>'
       );
@@ -1616,6 +1633,39 @@
     return s;
   }
 
+  /** Filter learners by period based on created_at */
+  function applyLearnerPeriodFilter() {
+    var activeBtn = document.querySelector('#learnerPeriodTabs .filter-tab.active');
+    var period = activeBtn ? activeBtn.getAttribute('data-lperiod') : 'all';
+    var now = new Date();
+    var filtered = learnersState.items.filter(function (l) {
+      if (period === 'all') return true;
+      var d = new Date(l.created_at || l.createdAt);
+      if (isNaN(d)) return false;
+      var todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      if (period === 'today') return d >= todayStart;
+      if (period === 'yesterday') {
+        var yStart = new Date(todayStart); yStart.setDate(yStart.getDate() - 1);
+        return d >= yStart && d < todayStart;
+      }
+      if (period === '3days') { var t3 = new Date(todayStart); t3.setDate(t3.getDate() - 3); return d >= t3; }
+      if (period === 'week') { var tw = new Date(todayStart); tw.setDate(tw.getDate() - 7); return d >= tw; }
+      return true;
+    });
+    /* Also apply search filter if active */
+    var searchEl = $('learnerSearch');
+    var query = searchEl ? searchEl.value.toLowerCase().trim() : '';
+    if (query) {
+      filtered = filtered.filter(function (l) {
+        return (l.name || l.full_name || '').toLowerCase().includes(query) ||
+               (l.email || '').toLowerCase().includes(query) ||
+               (l.phone || '').toLowerCase().includes(query) ||
+               (l.exam_target || l.exam || '').toLowerCase().includes(query);
+      });
+    }
+    renderLearnersTable(filtered);
+  }
+
   /** Bind learners section controls */
   function bindLearnersSection() {
     var exportBtn = $('btnExportCSV');
@@ -1623,19 +1673,21 @@
       exportBtn.addEventListener('click', exportLearnersCSV);
     }
 
+    /* Period filter tabs */
+    var periodTabs = document.querySelectorAll('#learnerPeriodTabs .filter-tab');
+    periodTabs.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        periodTabs.forEach(function (b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        applyLearnerPeriodFilter();
+      });
+    });
+
     /* Live search filter */
     var searchEl = $('learnerSearch');
     if (searchEl) {
       searchEl.addEventListener('input', function () {
-        var query = this.value.toLowerCase().trim();
-        var filtered = query
-          ? learnersState.items.filter(function (l) {
-              return (l.name || l.full_name || '').toLowerCase().includes(query) ||
-                     (l.email || '').toLowerCase().includes(query) ||
-                     (l.exam_target || l.exam || '').toLowerCase().includes(query);
-            })
-          : learnersState.items;
-        renderLearnersTable(filtered);
+        applyLearnerPeriodFilter();
       });
     }
   }
@@ -1674,6 +1726,7 @@
      ============================================================ */
   function e(s){ return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function inr(n){ return '₹' + Number(n||0).toLocaleString('en-IN'); }
+  function inrIndian(n){ return Number(n||0).toLocaleString('en-IN'); }
   /* (uses the existing top-level fmtDate helper) */
 
   var STATUS_LABELS = { enrolling:'Enrolling', coming_soon:'Coming Soon', closed:'Closed' };
@@ -1755,8 +1808,13 @@
   /* ── ENROLLMENTS ── */
   function loadEnrollments(){
     var f = (document.getElementById('enrollFilter')||{}).value || '';
+    var periodBtn = document.querySelector('#enrollPeriodTabs .filter-tab.active');
+    var period = periodBtn ? periodBtn.getAttribute('data-period') : 'all';
     var body = document.getElementById('enrollmentsBody');
-    adminFetch('GET','/api/enrollment/admin/all'+(f?('?status='+f):'')).then(function(d){
+    var qs = [];
+    if (f) qs.push('status=' + f);
+    if (period && period !== 'all') qs.push('period=' + period);
+    adminFetch('GET','/api/enrollment/admin/all' + (qs.length ? ('?' + qs.join('&')) : '')).then(function(d){
       var s = d.summary||{};
       document.getElementById('enrollSummary').innerHTML =
         statCard('Revenue', inr(s.revenue)) + statCard('Paid', s.paid_count||0) + statCard('Pending', s.pending_count||0);
@@ -1834,17 +1892,31 @@
   }
   function openBannerModal(b){
     b = b || {}; var isEdit = !!b.id;
+    var isVisible = b.is_visible !== undefined ? b.is_visible : true;
     document.getElementById('bannerModalTitle').textContent = isEdit?'Edit Banner':'New Banner';
     document.getElementById('bannerModalBody').innerHTML =
-      fld('Image URL','bm_img',b.image_url||'') +
+      fld('Image URL *','bm_img',b.image_url||'') +
+      '<div class="admin-form-hint" style="margin-top:-8px;margin-bottom:12px;">Paste a Cloudinary URL or any direct image link.</div>' +
       fld('Title (optional)','bm_title',b.title||'') +
       fld('Link URL (optional)','bm_link',b.link_url||'') +
-      sel('Placement','bm_place',['home_carousel','promo_strip','programs_banner'],b.placement||'home_carousel') +
-      fld('Sort order','bm_sort',b.sort_order||0) +
-      '<button class="btn" id="bm_save" style="margin-top:8px;">'+(isEdit?'Save':'Create')+'</button>';
+      sel('Placement','bm_place',['home_carousel','program_page','announcement'],b.placement||'home_carousel') +
+      fld('Sort Order (lower = first)','bm_sort',b.sort_order||0) +
+      '<label class="admin-field" style="flex-direction:row;align-items:center;gap:10px;">' +
+        '<input type="checkbox" id="bm_visible"' + (isVisible?' checked':'') + ' style="width:auto;"> ' +
+        '<span>Visible</span>' +
+      '</label>' +
+      '<button class="btn" id="bm_save" style="margin-top:12px;">'+(isEdit?'Save Changes':'Create Banner')+'</button>';
     document.getElementById('bannerModal').style.display='flex';
     document.getElementById('bm_save').onclick=function(){
-      var payload={image_url:val('bm_img'),title:val('bm_title'),link_url:val('bm_link'),placement:val('bm_place'),sort_order:parseInt(val('bm_sort')||'0',10)};
+      var visibleEl = document.getElementById('bm_visible');
+      var payload={
+        image_url: val('bm_img'),
+        title: val('bm_title'),
+        link_url: val('bm_link'),
+        placement: val('bm_place'),
+        sort_order: parseInt(val('bm_sort')||'0',10),
+        is_visible: visibleEl ? visibleEl.checked : true
+      };
       if(!payload.image_url){showToast('Image URL is required','error');return;}
       var req=isEdit?adminFetch('PUT','/api/banners/'+b.id,payload):adminFetch('POST','/api/banners',payload);
       req.then(function(){showToast(isEdit?'Saved':'Created','success');document.getElementById('bannerModal').style.display='none';loadBanners();}).catch(function(e){showToast(e.message,'error');});
@@ -1853,7 +1925,8 @@
 
   /* ── ANALYTICS ── */
   function loadBizAnalytics(){
-    var days = (document.getElementById('analyticsDays')||{}).value || '30';
+    var activeBtn = document.querySelector('.anal-period.active');
+    var days = activeBtn ? activeBtn.getAttribute('data-days') : '7';
     var body = document.getElementById('analyticsBody');
     adminFetch('GET','/api/events/summary?days='+days).then(function(d){
       var f = d.funnel||{};
@@ -1891,7 +1964,26 @@
     var bc=document.getElementById('bannerModalClose'); if(bc) bc.onclick=function(){document.getElementById('bannerModal').style.display='none';};
     var ef=document.getElementById('enrollFilter'); if(ef) ef.onchange=loadEnrollments;
     var re=document.getElementById('btnRefreshEnrollments'); if(re) re.onclick=loadEnrollments;
-    var ad=document.getElementById('analyticsDays'); if(ad) ad.onchange=loadBizAnalytics;
+
+    /* Enrollment period tabs */
+    var enrollPeriodBtns = document.querySelectorAll('#enrollPeriodTabs .filter-tab');
+    enrollPeriodBtns.forEach(function(btn){
+      btn.addEventListener('click', function(){
+        enrollPeriodBtns.forEach(function(b){ b.classList.remove('active'); });
+        btn.classList.add('active');
+        loadEnrollments();
+      });
+    });
+
+    /* Analytics period buttons */
+    var analBtns = document.querySelectorAll('.anal-period');
+    analBtns.forEach(function(btn){
+      btn.addEventListener('click', function(){
+        analBtns.forEach(function(b){ b.classList.remove('active'); });
+        btn.classList.add('active');
+        loadBizAnalytics();
+      });
+    });
   }
 
 })();

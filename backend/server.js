@@ -378,6 +378,22 @@ async function migrate() {
   // Rename both test series programs to unified name and update pricing
   await query(`UPDATE programs SET title='RSSB JE 2026 - Jaspal Sir Ki Test Series Offline', exam='RSSB JE 2026', price=3999, mrp=7999 WHERE slug IN ('rssb-jen-diploma-test-series','rssb-jen-degree-test-series')`);
 
+  /* ── Seed second admin user (jaspalsingh.pec@gmail.com) ── */
+  {
+    const bcrypt = require('bcryptjs');
+    const secondAdminEmail = 'jaspalsingh.pec@gmail.com';
+    const secondAdminPassword = 'Jaspal@2026';
+    const existing = await query('SELECT id FROM admin_users WHERE email = $1', [secondAdminEmail]);
+    if (existing.rows.length === 0) {
+      const hash = await bcrypt.hash(secondAdminPassword, 12);
+      await query(
+        'INSERT INTO admin_users (email, password_hash) VALUES ($1, $2) ON CONFLICT (email) DO NOTHING',
+        [secondAdminEmail, hash]
+      );
+      console.log('✅ Seeded second admin: ' + secondAdminEmail);
+    }
+  }
+
   console.log('✅ Migration: enrollments, leads, events, programs, banners ensured');
 }
 

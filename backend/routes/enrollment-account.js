@@ -175,14 +175,25 @@ const { protect } = require('../middleware/auth');
 router.get('/admin/all', protect, async (req, res, next) => {
   try {
     const status = req.query.status; // optional filter: paid | pending
+    const period = req.query.period; // optional: today | 3days | week | month
+    const limit  = req.query.limit ? parseInt(req.query.limit, 10) : null;
     const params = [];
-    let where = '';
-    if (status) { params.push(status); where = `WHERE status = $${params.length}`; }
+    const conditions = [];
+    if (status) { params.push(status); conditions.push(`status = $${params.length}`); }
+    const periodMap = {
+      today:  `paid_at >= CURRENT_DATE`,
+      '3days': `paid_at >= NOW() - INTERVAL '3 days'`,
+      week:   `paid_at >= DATE_TRUNC('week', NOW())`,
+      month:  `paid_at >= DATE_TRUNC('month', NOW())`,
+    };
+    if (period && periodMap[period]) { conditions.push(periodMap[period]); }
+    const where = conditions.length ? ('WHERE ' + conditions.join(' AND ')) : '';
+    const limitClause = limit ? `LIMIT ${limit}` : '';
     const rows = await query(
       `SELECT id, order_id, program_slug, program_name, amount, student_name,
               student_email, student_phone, status, coupon_code, paid_at, created_at,
               form_token IS NOT NULL AS has_form_token, form_used, form_used_at
-       FROM enrollments ${where} ORDER BY created_at DESC`, params);
+       FROM enrollments ${where} ORDER BY created_at DESC ${limitClause}`, params);
     const summary = await query(
       `SELECT
          COUNT(*) FILTER (WHERE status='paid')::int    AS paid_count,
