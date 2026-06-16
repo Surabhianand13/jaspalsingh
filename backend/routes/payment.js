@@ -171,6 +171,23 @@ router.get('/verify', async (req, res) => {
     const { order_id } = req.query;
     if (!order_id) return res.status(400).json({ error: 'order_id required.' });
 
+    // Check DB first - webhook may have already confirmed and marked paid
+    const dbCheck = await query(
+      `SELECT * FROM enrollments WHERE order_id = $1`, [order_id]
+    );
+    if (dbCheck.rows.length && dbCheck.rows[0].status === 'paid') {
+      const enr = dbCheck.rows[0];
+      return res.json({
+        paid: true,
+        order_id,
+        program_name:  enr.program_name || '',
+        amount:        enr.amount || 0,
+        student_name:  enr.student_name || '',
+        student_phone: enr.student_phone || '',
+      });
+    }
+
+    // DB not yet updated - ask Cashfree directly
     const cf = await cashfreeRequest('GET', `/pg/orders/${order_id}`);
 
     if (cf.status !== 200) {
@@ -193,7 +210,6 @@ router.get('/verify', async (req, res) => {
 
       if (updateResult.rows.length > 0) {
         const enrollment = updateResult.rows[0];
-
         sendInvoiceEmail(enrollment).catch(e => console.error('[invoice email]', e.message));
         sendWelcomePaymentEmail(enrollment).catch(e => console.error('[welcome email]', e.message));
       }
