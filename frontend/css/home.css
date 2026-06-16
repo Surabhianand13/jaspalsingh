@@ -924,6 +924,13 @@
   line-height: 0;
   cursor: pointer;
 }
+.cs-banner-link picture,
+.carousel-slide picture {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 .cs-banner-img {
   width: 100%;
   height: 100%;
