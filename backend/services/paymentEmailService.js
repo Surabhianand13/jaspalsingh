@@ -126,47 +126,76 @@ async function sendWelcomePaymentEmail(enrollment) {
   const firstName = esc((enrollment.student_name || 'there').split(' ')[0]);
 
   const tallyBase = (enrollment.program_slug || '').includes('degree') ? TALLY_FORM_URL_DEGREE : TALLY_FORM_URL_DIPLOMA;
-  const formUrl = `${tallyBase}?name=${encodeURIComponent(enrollment.student_name)}&email=${encodeURIComponent(enrollment.student_email)}&order=${encodeURIComponent(enrollment.order_id)}&program=${encodeURIComponent(enrollment.program_name)}`;
+  const formUrl = `${tallyBase}?name=${encodeURIComponent(enrollment.student_name)}&email=${encodeURIComponent(enrollment.student_email)}&phone=${encodeURIComponent(enrollment.student_phone || '')}&order=${encodeURIComponent(enrollment.order_id)}&token=${encodeURIComponent(enrollment.form_token || '')}`;
+
+  const normPhone = (enrollment.student_phone || '').replace(/\D/g, '').slice(-10);
 
   const body = `
     <h2 style="margin:0 0 8px;font-size:22px;color:#1A1A2E;font-weight:800;">Welcome aboard, ${firstName}!</h2>
-    <p style="margin:0 0 24px;font-size:15px;color:#374151;line-height:1.75;">
+    <p style="margin:0 0 20px;font-size:15px;color:#374151;line-height:1.75;">
       You are now enrolled in <strong>${esc(enrollment.program_name)}</strong>. We are excited to have you.
     </p>
 
+    <!-- ONE CHANCE WARNING -->
+    <div style="background:#fef2f2;border:2px solid #fca5a5;border-radius:12px;padding:18px 22px;margin-bottom:22px;">
+      <div style="font-size:13px;font-weight:800;color:#991b1b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">
+        ⚠️ Important - Read Before Filling
+      </div>
+      <p style="margin:0 0 10px;font-size:14px;color:#7f1d1d;line-height:1.7;font-weight:600;">
+        You have <u>ONE chance</u> to fill the details form below. It cannot be re-submitted.
+      </p>
+      <p style="margin:0 0 6px;font-size:13px;color:#991b1b;line-height:1.65;">
+        Use <strong>exactly</strong> the same email and mobile number you used during payment:
+      </p>
+      <table cellpadding="0" cellspacing="0" style="margin:8px 0 12px;">
+        <tr><td style="padding:3px 0;font-size:13px;color:#7f1d1d;">
+          Email: <strong>${esc(enrollment.student_email)}</strong>
+        </td></tr>
+        <tr><td style="padding:3px 0;font-size:13px;color:#7f1d1d;">
+          Mobile: <strong>${normPhone ? '+91 ' + normPhone : esc(enrollment.student_phone || 'as entered at checkout')}</strong>
+        </td></tr>
+      </table>
+      <p style="margin:0;font-size:12px;color:#b91c1c;">
+        If the details don't match your payment, your admit card will NOT be generated. Contact us on WhatsApp (+91 98291 33317) if you need help.
+      </p>
+    </div>
+
+    <!-- ACTION REQUIRED -->
     <div style="background:#fff8f0;border:1px solid #fed7aa;border-radius:12px;padding:20px 24px;margin-bottom:28px;">
       <div style="font-size:13px;font-weight:800;color:#c2410c;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">
-        Action Required
+        Action Required - Complete Your Enrollment
       </div>
-      <p style="margin:0 0 16px;font-size:14px;color:#374151;line-height:1.7;">
-        Please fill in your details so we can complete your enrollment and set up your seat.
-        This takes less than 2 minutes.
+      <p style="margin:0 0 14px;font-size:14px;color:#374151;line-height:1.7;">
+        Fill in your details so we can set up your seat and send your Admit Card. Takes less than 2 minutes.
       </p>
       <p style="margin:0 0 8px;font-size:13px;color:#6b7280;">We need:</p>
       <table cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
         <tr><td style="padding:4px 0;font-size:13px;color:#374151;">
-          <span style="color:#C81240;margin-right:8px;font-weight:700;">1.</span> Preferred test center location
+          <span style="color:#C81240;margin-right:8px;font-weight:700;">1.</span> Preferred test centre location (Jaipur / Kota / Bikaner)
         </td></tr>
         <tr><td style="padding:4px 0;font-size:13px;color:#374151;">
-          <span style="color:#C81240;margin-right:8px;font-weight:700;">2.</span> Full name as on your photo ID
+          <span style="color:#C81240;margin-right:8px;font-weight:700;">2.</span> Full name as on your Govt Photo ID
         </td></tr>
         <tr><td style="padding:4px 0;font-size:13px;color:#374151;">
-          <span style="color:#C81240;margin-right:8px;font-weight:700;">3.</span> A photo matching your ID (for test hall verification)
+          <span style="color:#C81240;margin-right:8px;font-weight:700;">3.</span> Your photo (passport size, same as on your ID)
         </td></tr>
         <tr><td style="padding:4px 0;font-size:13px;color:#374151;">
           <span style="color:#C81240;margin-right:8px;font-weight:700;">4.</span> WhatsApp number for batch updates
         </td></tr>
       </table>
       <a href="${formUrl}" style="display:inline-block;background:#C81240;color:#fff;border-radius:10px;padding:14px 28px;font-size:15px;font-weight:700;text-decoration:none;">
-        Complete Your Enrollment →
+        Fill Details Form (One Time Only) →
       </a>
+      <p style="margin:14px 0 0;font-size:12px;color:#9ca3af;">
+        This link is unique to your enrollment. Do not share it.
+      </p>
     </div>
 
     <p style="font-size:13px;color:#9ca3af;margin:0 0 6px;">
-      Your Order ID: <span style="font-family:monospace;color:#475569;">${esc(enrollment.order_id)}</span>
+      Order ID: <span style="font-family:monospace;color:#475569;">${esc(enrollment.order_id)}</span>
     </p>
     <p style="font-size:13px;color:#9ca3af;margin:0 0 24px;">
-      Keep this email for your records. Your receipt has been sent in a separate email.
+      Your payment receipt has been sent in a separate email.
     </p>
 
     <div style="border-top:1px solid #f0f0f6;padding-top:20px;">
@@ -180,7 +209,7 @@ async function sendWelcomePaymentEmail(enrollment) {
   return resend.emails.send({
     from:    FROM,
     to:      enrollment.student_email,
-    subject: `Welcome to ${enrollment.program_name} - complete your enrollment`,
+    subject: `Action required - fill your details to get your Admit Card | ${enrollment.program_name}`,
     html:    baseHtml(body),
   });
 }
