@@ -161,8 +161,8 @@ function parseTallyFields(fields) {
     if (label.includes('target') || label.includes('exam') || label.includes('course') || label.includes('degree') || label.includes('diploma')) {
       if (!label.includes('centre') && !label.includes('center')) result.targetExam = value;
     }
-    if (label.includes('phone') || label.includes('mobile') || label.includes('contact')) {
-      result.phone = value;
+    if (label.includes('phone') || label.includes('mobile') || label.includes('contact') || label.includes('whatsapp') || label.includes('number')) {
+      if (!result.phone) result.phone = value;
     }
     if (label.includes('email')) {
       result.email = value;
@@ -305,36 +305,6 @@ function generateAdmitCard({ name, govtId, rollNumber, centre, targetExam, phone
        .text(centre || 'TBD', M + 8, y + 15, { width: CW - 16 });
     y += 36;
 
-    /* ── Test schedule (compact) ── */
-    doc.fillColor(RED).font('Helvetica-Bold').fontSize(9)
-       .text('TEST SCHEDULE', M, y);
-    y += 10;
-
-    const schedule = typeof lastTestDate !== 'undefined' ? null : null; // passed via seriesName context
-    const colW = [42, 72, CW - 114];
-
-    // Header row
-    doc.rect(M, y, CW, 14).fill(DARK);
-    doc.fillColor(WHITE).font('Helvetica-Bold').fontSize(7.5)
-       .text('Test', M + 4, y + 3.5, { width: colW[0] })
-       .text('Date', M + colW[0] + 4, y + 3.5, { width: colW[1] })
-       .text('Syllabus / Topic', M + colW[0] + colW[1] + 4, y + 3.5, { width: colW[2] });
-    y += 14;
-
-    const scheduleData = generateAdmitCard._schedule || [];
-    scheduleData.forEach((r, i) => {
-      const rowH = 12;
-      doc.rect(M, y, CW, rowH).fill(i % 2 === 0 ? WHITE : BG);
-      doc.rect(M, y, CW, rowH).lineWidth(0.3).strokeColor(BORD).stroke();
-      doc.fillColor(DARK).font('Helvetica').fontSize(6.5)
-         .text(r.test, M + 4, y + 2.5, { width: colW[0] })
-         .text(r.date, M + colW[0] + 4, y + 2.5, { width: colW[1] })
-         .text(r.syllabus, M + colW[0] + colW[1] + 4, y + 2.5, { width: colW[2] });
-      y += rowH;
-    });
-
-    y += 8;
-
     /* ── Instructions ── */
     doc.rect(M, y, CW, 1).fill(BORD);
     y += 6;
@@ -383,8 +353,6 @@ function generateAdmitCard({ name, govtId, rollNumber, centre, targetExam, phone
   });
 }
 
-// Attach schedule data before calling generate
-generateAdmitCard._schedule = [];
 
 /* ── Schedule rows as plain text for email ───────────────── */
 
@@ -422,8 +390,6 @@ async function processSubmission(fields, programType) {
 
   const rollNumber   = generateRollNumber(centreKey || centreRaw, targetExam || '');
   const photoBuffer  = photoUrl ? await fetchImageBuffer(photoUrl) : null;
-
-  generateAdmitCard._schedule = schedule;
 
   const pdfBuffer = await generateAdmitCard({
     name:         name || 'Student',
