@@ -210,106 +210,142 @@ function fetchImageBuffer(url) {
 
 function generateAdmitCard({ name, govtId, rollNumber, centre, targetExam, phone, email, photoBuffer, seriesName, lastTestDate }) {
   return new Promise((resolve, reject) => {
-    const M   = 32;
-    const doc = new PDFDocument({ size: 'A4', margin: M });
+    const doc = new PDFDocument({ size: 'A4', margin: 0, autoFirstPage: true });
     const chunks = [];
     doc.on('data',  c => chunks.push(c));
     doc.on('end',   () => resolve(Buffer.concat(chunks)));
     doc.on('error', err => reject(err));
 
-    const W = doc.page.width;   // 595
-    const H = doc.page.height;  // 841
-    const CW = W - M * 2;       // content width
+    const W  = doc.page.width;   // 595
+    const H  = doc.page.height;  // 841
+    const M  = 30;               // side margin
+    const CW = W - M * 2;
 
-    const RED   = '#C81240';
-    const DARK  = '#1e293b';
-    const MID   = '#475569';
-    const LIGHT = '#94a3b8';
-    const BG    = '#f8fafc';
-    const WHITE = '#ffffff';
-    const BORD  = '#e2e8f0';
+    /* ── Palette ── */
+    const RED    = '#C81240';
+    const DARK   = '#0f172a';
+    const NAVY   = '#1A1A2E';
+    const MID    = '#475569';
+    const LIGHT  = '#94a3b8';
+    const BG     = '#f8fafc';
+    const WHITE  = '#ffffff';
+    const BORD   = '#e2e8f0';
+    const AMBER  = '#f59e0b';
+    const AMBERB = '#78350f';
+    const AMBERG = '#fff7ed';
 
-    /* ── White page background ── */
-    doc.rect(0, 0, W, H).fill(WHITE);
+    /* ══════════════════════════════════════════════
+       HEADER  (dark gradient band, 0 - 110)
+    ══════════════════════════════════════════════ */
+    // Dark background
+    doc.rect(0, 0, W, 110).fill(NAVY);
+    // Accent red stripe at very top
+    doc.rect(0, 0, W, 4).fill(RED);
 
-    /* ── Header: red top strip + brand ── */
-    doc.rect(0, 0, W, 6).fill(RED);
-    doc.rect(0, 6, W, 74).fill(BG);
+    // Watermark-style large text (low opacity simulation via light grey)
+    doc.fillColor('#ffffff').opacity(0.04).font('Helvetica-Bold').fontSize(72)
+       .text('ADMIT', 60, 20, { lineBreak: false });
+    doc.opacity(1);
 
-    // Brand name
-    doc.fillColor(DARK).font('Helvetica-Bold').fontSize(20)
-       .text('Dr. Jaspal Singh', M, 18, { width: CW, align: 'center' });
-    doc.fillColor(MID).font('Helvetica').fontSize(9)
-       .text('RSSB JE 2026 Offline Test Series  -  jaspalsingh.in', M, 42, { width: CW, align: 'center' });
+    // Brand
+    doc.fillColor(WHITE).font('Helvetica-Bold').fontSize(22)
+       .text('Dr. Jaspal Singh', M, 18, { width: CW, align: 'center', lineBreak: false });
+    doc.fillColor(LIGHT).font('Helvetica').fontSize(8.5)
+       .text(seriesName + '  |  jaspalsingh.in', M, 46, { width: CW, align: 'center', lineBreak: false });
 
-    // ADMIT CARD badge
-    const badgeW = 110, badgeH = 20, badgeX = (W - badgeW) / 2, badgeY = 56;
-    doc.rect(badgeX, badgeY, badgeW, badgeH).fill(RED);
-    doc.fillColor(WHITE).font('Helvetica-Bold').fontSize(9)
-       .text('A D M I T   C A R D', badgeX, badgeY + 5.5, { width: badgeW, align: 'center' });
+    // ADMIT CARD pill badge
+    const bW = 126, bH = 22, bX = (W - bW) / 2, bY = 62;
+    doc.roundedRect(bX, bY, bW, bH, 11).fill(RED);
+    doc.fillColor(WHITE).font('Helvetica-Bold').fontSize(8.5)
+       .text('A D M I T   C A R D', bX, bY + 6.5, { width: bW, align: 'center', lineBreak: false });
 
-    /* ── Red divider ── */
-    doc.rect(M, 82, CW, 1.5).fill(RED);
+    // Subtle bottom border for header
+    doc.rect(0, 109, W, 1.5).fill(RED);
 
-    /* ── Student details section ── */
-    let y = 92;
-    const PHOTO_W = 90, PHOTO_H = 110;
-    const detailsW = CW - PHOTO_W - 12;
+    /* ══════════════════════════════════════════════
+       MAIN CONTENT  starts at y = 120
+    ══════════════════════════════════════════════ */
+    doc.rect(0, 110, W, H - 110).fill(WHITE);
 
-    // Photo box (right side)
-    const photoX = W - M - PHOTO_W;
-    doc.rect(photoX, y, PHOTO_W, PHOTO_H).lineWidth(1).strokeColor(BORD).stroke();
+    let y = 120;
+
+    /* ── Roll number highlight bar ── */
+    doc.rect(M, y, CW, 30).fill(BG);
+    doc.rect(M, y, 3, 30).fill(RED);
+    // Roll label
+    doc.fillColor(MID).font('Helvetica').fontSize(7.5)
+       .text('ROLL NUMBER', M + 12, y + 5, { lineBreak: false });
+    doc.fillColor(DARK).font('Helvetica-Bold').fontSize(14)
+       .text(rollNumber, M + 12, y + 14, { lineBreak: false });
+    // Series on right
+    doc.fillColor(MID).font('Helvetica').fontSize(7.5)
+       .text('EXAM CENTRE', M + 200, y + 5, { lineBreak: false });
+    doc.fillColor(DARK).font('Helvetica-Bold').fontSize(11)
+       .text(centre || 'TBD', M + 200, y + 16, { lineBreak: false });
+
+    y += 38;
+
+    /* ── Student details + photo ── */
+    const PHOTO_W = 88, PHOTO_H = 108;
+    const photoX  = W - M - PHOTO_W;
+    const detailsW = CW - PHOTO_W - 16;
+
+    // Photo box
+    doc.roundedRect(photoX, y, PHOTO_W, PHOTO_H, 4)
+       .lineWidth(1.5).strokeColor(BORD).stroke();
     if (photoBuffer) {
       try {
-        doc.image(photoBuffer, photoX + 1, y + 1, { width: PHOTO_W - 2, height: PHOTO_H - 2, cover: [PHOTO_W - 2, PHOTO_H - 2] });
+        doc.save();
+        doc.roundedRect(photoX + 1.5, y + 1.5, PHOTO_W - 3, PHOTO_H - 3, 3).clip();
+        doc.image(photoBuffer, photoX + 1.5, y + 1.5, { width: PHOTO_W - 3, height: PHOTO_H - 3, cover: [PHOTO_W - 3, PHOTO_H - 3] });
+        doc.restore();
       } catch(e) {
         doc.fillColor(LIGHT).font('Helvetica').fontSize(7)
-           .text('Photo', photoX, y + PHOTO_H / 2 - 4, { width: PHOTO_W, align: 'center' });
+           .text('Photo', photoX, y + PHOTO_H / 2 - 4, { width: PHOTO_W, align: 'center', lineBreak: false });
       }
     } else {
-      doc.rect(photoX, y, PHOTO_W, PHOTO_H).fill('#f1f5f9');
+      doc.roundedRect(photoX, y, PHOTO_W, PHOTO_H, 4).fill('#f1f5f9');
       doc.fillColor(LIGHT).font('Helvetica').fontSize(7)
-         .text('Photograph', photoX, y + PHOTO_H / 2 - 4, { width: PHOTO_W, align: 'center' });
+         .text('Photograph', photoX, y + PHOTO_H / 2 - 4, { width: PHOTO_W, align: 'center', lineBreak: false });
     }
+    // Photo caption
+    doc.fillColor(LIGHT).font('Helvetica').fontSize(6.5)
+       .text('Candidate Photo', photoX, y + PHOTO_H + 3, { width: PHOTO_W, align: 'center', lineBreak: false });
 
-    // Details rows (left of photo)
+    // Section heading
+    doc.fillColor(RED).font('Helvetica-Bold').fontSize(8)
+       .text('STUDENT DETAILS', M, y, { lineBreak: false });
+    y += 13;
+
     const details = [
       ['Candidate Name', name],
-      ['Roll Number',    rollNumber],
-      ['Govt ID',        govtId],
+      ['Govt ID',        govtId || 'N/A'],
       ['Mobile',         phone],
       ['Email',          email],
-      ['Exam Centre',    centre],
       ['Program',        seriesName],
     ];
 
-    doc.font('Helvetica-Bold').fontSize(10).fillColor(RED)
-       .text('STUDENT DETAILS', M, y);
-    y += 14;
-
     for (const [lbl, val] of details) {
-      doc.fillColor(MID).font('Helvetica').fontSize(8).text(lbl, M, y, { width: 90 });
+      doc.fillColor(LIGHT).font('Helvetica').fontSize(7)
+         .text(lbl, M, y, { width: detailsW, lineBreak: false });
+      y += 9;
       doc.fillColor(DARK).font('Helvetica-Bold').fontSize(8.5)
-         .text(val || 'N/A', M + 95, y, { width: detailsW - 95 });
-      y += 13;
+         .text(val || 'N/A', M, y, { width: detailsW, lineBreak: false });
+      y += 14;
     }
 
-    y = 92 + PHOTO_H + 10;
+    // Move y below photo if content is shorter
+    const photoBottom = 158 + PHOTO_H + 14;
+    if (y < photoBottom) y = photoBottom;
 
-    /* ── Centre box ── */
-    doc.rect(M, y, CW, 28).fill(BG).stroke();
-    doc.rect(M, y, 3, 28).fill(RED);
-    doc.fillColor(DARK).font('Helvetica-Bold').fontSize(8.5)
-       .text('EXAM CENTRE', M + 8, y + 4);
-    doc.fillColor(MID).font('Helvetica').fontSize(8)
-       .text(centre || 'TBD', M + 8, y + 15, { width: CW - 16 });
-    y += 36;
+    /* ── Divider ── */
+    doc.rect(M, y, CW, 0.75).fill(BORD);
+    y += 12;
 
-    /* ── Instructions ── */
-    doc.rect(M, y, CW, 1).fill(BORD);
-    y += 6;
-    doc.fillColor(RED).font('Helvetica-Bold').fontSize(9).text('IMPORTANT INSTRUCTIONS', M, y);
-    y += 11;
+    /* ── Instructions in 2 columns ── */
+    doc.fillColor(RED).font('Helvetica-Bold').fontSize(8.5)
+       .text('IMPORTANT INSTRUCTIONS', M, y, { lineBreak: false });
+    y += 13;
 
     const instructions = [
       'Carry this Admit Card (printed or on phone) to every test.',
@@ -320,33 +356,45 @@ function generateAdmitCard({ name, govtId, rollNumber, centre, targetExam, phone
       'Detailed Solution Booklet will be distributed after each test.',
     ];
 
-    instructions.forEach(line => {
+    const colW = (CW - 12) / 2;
+    const startY = y;
+    instructions.forEach((line, i) => {
+      const col = i < 3 ? 0 : 1;
+      const cx  = M + col * (colW + 12);
+      const cy  = startY + (i % 3) * 16;
+      // Bullet dot
+      doc.roundedRect(cx, cy + 3.5, 4, 4, 2).fill(RED);
       doc.fillColor(DARK).font('Helvetica').fontSize(7.5)
-         .text('•  ' + line, M + 4, y, { width: CW - 8 });
-      y += 11;
+         .text(line, cx + 9, cy, { width: colW - 9, lineBreak: false });
     });
+    y = startY + 3 * 16 + 8;
 
-    y += 4;
+    /* ── Divider ── */
+    doc.rect(M, y, CW, 0.75).fill(BORD);
+    y += 10;
 
-    /* ── Validity note ── */
-    doc.rect(M, y, CW, 22).fill('#fff7ed');
-    doc.rect(M, y, 3, 22).fill('#f59e0b');
-    doc.fillColor('#92400e').font('Helvetica-Bold').fontSize(7.5)
-       .text('VALIDITY & SCHEDULE NOTE', M + 8, y + 3);
-    doc.fillColor('#78350f').font('Helvetica').fontSize(7)
+    /* ── Validity note (single line, contained) ── */
+    const validityText = `Valid for: ${seriesName}${lastTestDate ? '  |  Valid till: ' + lastTestDate : ''}  |  Schedule subject to change - notified via email & WhatsApp.`;
+    doc.rect(M, y, CW, 22).fill(AMBERG);
+    doc.rect(M, y, 3, 22).fill(AMBER);
+    doc.fillColor(AMBERB).font('Helvetica-Bold').fontSize(7)
+       .text('VALIDITY NOTE  ', M + 10, y + 7.5, { continued: true, lineBreak: false })
+       .font('Helvetica').fontSize(7)
+       .text(validityText, { width: CW - 20, lineBreak: false });
+    y += 30;
+
+    /* ── Signature line ── */
+    doc.rect(M + CW - 120, y, 120, 0.75).fill(DARK);
+    doc.fillColor(MID).font('Helvetica').fontSize(7)
+       .text('Authorised Signatory', M + CW - 120, y + 3, { width: 120, align: 'center', lineBreak: false });
+    y += 22;
+
+    /* ── Footer band (placed after content, not absolute) ── */
+    doc.rect(0, y, W, 28).fill(DARK);
+    doc.fillColor(LIGHT).font('Helvetica').fontSize(7)
        .text(
-         `This Admit Card is valid only for the ${seriesName} and remains valid till the last test of the series${lastTestDate ? ' (' + lastTestDate + ')' : ''}. ` +
-         'The test schedule and exam centre are subject to change; you will be informed in advance via email and WhatsApp if any such change occurs.',
-         M + 8, y + 12, { width: CW - 16 }
-       );
-    y += 28;
-
-    /* ── Footer ── */
-    doc.rect(0, H - 36, W, 36).fill(DARK);
-    doc.fillColor(WHITE).font('Helvetica').fontSize(7.5)
-       .text(
-         'Computer-generated admit card  |  No signature required  |  jaspalsingh.in  |  +91 98291 33317',
-         M, H - 24, { width: CW, align: 'center' }
+         'Computer-generated  |  No signature required  |  jaspalsingh.in  |  +91 98291 33317',
+         M, y + 9.5, { width: CW, align: 'center', lineBreak: false }
        );
 
     doc.end();
