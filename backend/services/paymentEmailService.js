@@ -11,7 +11,8 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM   = 'Dr. Jaspal Singh <team@jaspalsingh.in>';
 const SITE   = 'https://jaspalsingh.in';
 
-const TALLY_FORM_URL = process.env.TALLY_FORM_URL || 'https://tally.so/r/XXXXXXX';
+const TALLY_FORM_URL_DIPLOMA = process.env.TALLY_FORM_URL_DIPLOMA || 'https://tally.so/r/b5AY87';
+const TALLY_FORM_URL_DEGREE  = process.env.TALLY_FORM_URL_DEGREE  || 'https://tally.so/r/b5AD1Z';
 
 function esc(s) {
   return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -124,7 +125,8 @@ async function sendInvoiceEmail(enrollment) {
 async function sendWelcomePaymentEmail(enrollment) {
   const firstName = esc((enrollment.student_name || 'there').split(' ')[0]);
 
-  const formUrl = `${TALLY_FORM_URL}?name=${encodeURIComponent(enrollment.student_name)}&email=${encodeURIComponent(enrollment.student_email)}&order=${encodeURIComponent(enrollment.order_id)}&program=${encodeURIComponent(enrollment.program_name)}`;
+  const tallyBase = (enrollment.program_slug || '').includes('degree') ? TALLY_FORM_URL_DEGREE : TALLY_FORM_URL_DIPLOMA;
+  const formUrl = `${tallyBase}?name=${encodeURIComponent(enrollment.student_name)}&email=${encodeURIComponent(enrollment.student_email)}&order=${encodeURIComponent(enrollment.order_id)}&program=${encodeURIComponent(enrollment.program_name)}`;
 
   const body = `
     <h2 style="margin:0 0 8px;font-size:22px;color:#1A1A2E;font-weight:800;">Welcome aboard, ${firstName}!</h2>
