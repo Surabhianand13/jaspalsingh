@@ -185,9 +185,10 @@
       .lw-menu-item.lw-logout { color:#C81240; }
       .lw-menu-item.lw-logout i { color:#C81240; }
 
+      @media (max-width:900px){
+        .lw-btn-login, .lw-btn-signup { display:none; }
+      }
       @media (max-width:600px){
-        .lw-btn-login { padding:7px 15px; font-size:12.5px; }
-        .lw-btn-signup { padding:8px 15px; font-size:12.5px; }
         .lw-h-wrap { margin-left:8px; }
         .lw-menu { right:-8px; }
       }
@@ -241,6 +242,22 @@
       headerRight.insertBefore(wrap, hamburger);
     } else {
       host.appendChild(wrap);
+    }
+
+    // Inject auth links into mobile drawer
+    var drawerSocial = document.querySelector('.drawer-social');
+    if (drawerSocial && !document.getElementById('lwDrawerAuth')) {
+      var drawerAuth = document.createElement('div');
+      drawerAuth.id = 'lwDrawerAuth';
+      drawerAuth.style.cssText = 'padding:16px 20px 0;display:flex;gap:10px;';
+      if (token && user) {
+        drawerAuth.innerHTML = '<a href="/profile" style="flex:1;display:block;text-align:center;padding:11px 0;background:linear-gradient(135deg,#C81240,#9B1230);color:#fff;border-radius:10px;font-weight:700;font-size:14px;text-decoration:none;">My Profile</a>';
+      } else {
+        drawerAuth.innerHTML =
+          '<a href="/profile?tab=login" style="flex:1;display:block;text-align:center;padding:11px 0;border:1.5px solid #C81240;color:#C81240;border-radius:10px;font-weight:700;font-size:14px;text-decoration:none;">Login</a>' +
+          '<a href="/profile" style="flex:1;display:block;text-align:center;padding:11px 0;background:linear-gradient(135deg,#C81240,#9B1230);color:#fff;border-radius:10px;font-weight:700;font-size:14px;text-decoration:none;">Sign Up</a>';
+      }
+      drawerSocial.parentNode.insertBefore(drawerAuth, drawerSocial);
     }
 
     // Wire up dropdown
