@@ -294,10 +294,11 @@ async function sendNewLearnerAlert(learner) {
 }
 
 async function sendOtpEmail(email, otp) {
-  if (!isConfigured) throw new Error('Email not configured');
-  return transporter.sendMail({
-    from:    FROM_ADDRESS,
-    to:      email,
+  const { Resend } = require('resend');
+  const resend = new Resend(process.env.RESEND_API_KEY);
+  return resend.emails.send({
+    from: 'Dr. Jaspal Singh <team@jaspalsingh.in>',
+    to:   email,
     subject: 'Your verification code - jaspalsingh.in',
     html: `
       <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;">
