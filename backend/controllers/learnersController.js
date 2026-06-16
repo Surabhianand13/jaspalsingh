@@ -20,8 +20,6 @@ const bcrypt  = require('bcryptjs');
 const jwt     = require('jsonwebtoken');
 const { query } = require('../config/db');
 const { sendWelcomeEmail, sendNewLearnerAlert } = require('../services/emailService');
-const { Resend } = require('resend');
-const _resend = new Resend(process.env.RESEND_API_KEY);
 
 const SALT_ROUNDS = 12;
 const TOKEN_TTL   = '30d'; // Learners stay logged in for 30 days
@@ -57,7 +55,7 @@ const sendOtp = async (req, res, next) => {
       [norm, otp]
     );
 
-    await _resend.emails.send({
+    await resend.emails.send({
       from:    'Dr. Jaspal Singh <team@jaspalsingh.in>',
       to:      norm,
       subject: 'Your verification code - jaspalsingh.in',
