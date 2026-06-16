@@ -293,9 +293,29 @@ async function sendNewLearnerAlert(learner) {
   });
 }
 
+async function sendOtpEmail(email, otp) {
+  if (!isConfigured) throw new Error('Email not configured');
+  return transporter.sendMail({
+    from:    FROM_ADDRESS,
+    to:      email,
+    subject: 'Your verification code - jaspalsingh.in',
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;">
+        <h2 style="color:#C81240;margin:0 0 8px;">Verify your email</h2>
+        <p style="color:#374151;margin:0 0 24px;">Enter this code to complete your account registration on jaspalsingh.in:</p>
+        <div style="background:#f8fafc;border:2px solid #C81240;border-radius:12px;padding:24px;text-align:center;margin-bottom:24px;">
+          <span style="font-size:40px;font-weight:800;letter-spacing:10px;color:#0f172a;">${otp}</span>
+        </div>
+        <p style="color:#6b7280;font-size:13px;margin:0;">This code expires in 10 minutes. If you did not request this, please ignore this email.</p>
+        <p style="color:#6b7280;font-size:13px;margin:8px 0 0;">- Team jaspalsingh.in</p>
+      </div>`,
+  });
+}
+
 module.exports = {
   sendContactNotification,
   sendContactAutoReply,
   sendWelcomeEmail,
   sendNewLearnerAlert,
+  sendOtpEmail,
 };
