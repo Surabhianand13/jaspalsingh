@@ -161,8 +161,8 @@ function parseTallyFields(fields) {
     if (label.includes('target') || label.includes('exam') || label.includes('course') || label.includes('degree') || label.includes('diploma')) {
       if (!label.includes('centre') && !label.includes('center')) result.targetExam = value;
     }
-    if (label.includes('phone') || label.includes('mobile') || label.includes('contact')) {
-      result.phone = value;
+    if (label.includes('phone') || label.includes('mobile') || label.includes('contact') || label.includes('whatsapp') || label.includes('number')) {
+      if (!result.phone) result.phone = value;
     }
     if (label.includes('email')) {
       result.email = value;
