@@ -186,10 +186,10 @@
       .lw-menu-item.lw-logout i { color:#C81240; }
 
       @media (max-width:900px){
-        .lw-btn-login, .lw-btn-signup { display:none; }
+        .lw-btn-login, .lw-btn-signup { display:none !important; }
+        .lw-h-wrap { display:none !important; }
       }
       @media (max-width:600px){
-        .lw-h-wrap { margin-left:8px; }
         .lw-menu { right:-8px; }
       }
     `;
