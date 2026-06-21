@@ -16,6 +16,10 @@ const ADMIN_EMAIL = 'jaspalsingh.pec@gmail.com';
 const TALLY_FORM_URL_DIPLOMA = process.env.TALLY_FORM_URL_DIPLOMA || 'https://tally.so/r/b5AY87';
 const TALLY_FORM_URL_DEGREE  = process.env.TALLY_FORM_URL_DEGREE  || 'https://tally.so/r/b5AD1Z';
 
+const WA_GROUP_DIPLOMA = 'https://chat.whatsapp.com/Iq5hz6qm9kPFdjOEESK4Ka?s=sh&p=a&ilr=4';
+const WA_GROUP_DEGREE  = 'https://chat.whatsapp.com/K0Upt2jTmdQLkaI5c0CvM0?s=sh&p=a&ilr=4';
+const WA_GROUP_RPSC_AE = '';
+
 function esc(s) {
   return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
@@ -127,8 +131,11 @@ async function sendInvoiceEmail(enrollment) {
 async function sendWelcomePaymentEmail(enrollment) {
   const firstName = esc((enrollment.student_name || 'there').split(' ')[0]);
 
-  const tallyBase = (enrollment.program_slug || '').includes('degree') ? TALLY_FORM_URL_DEGREE : TALLY_FORM_URL_DIPLOMA;
+  const slug = enrollment.program_slug || '';
+  const tallyBase = slug.includes('degree') ? TALLY_FORM_URL_DEGREE : TALLY_FORM_URL_DIPLOMA;
   const formUrl = `${tallyBase}?name=${encodeURIComponent(enrollment.student_name)}&email=${encodeURIComponent(enrollment.student_email)}&phone=${encodeURIComponent(enrollment.student_phone || '')}&order=${encodeURIComponent(enrollment.order_id)}&token=${encodeURIComponent(enrollment.form_token || '')}`;
+
+  const waGroup = slug.includes('degree') ? WA_GROUP_DEGREE : slug.includes('diploma') ? WA_GROUP_DIPLOMA : WA_GROUP_RPSC_AE;
 
   const normPhone = (enrollment.student_phone || '').replace(/\D/g, '').slice(-10);
 
@@ -192,6 +199,24 @@ async function sendWelcomePaymentEmail(enrollment) {
         This link is unique to your enrollment. Do not share it.
       </p>
     </div>
+
+    ${waGroup ? `
+    <!-- WHATSAPP GROUP -->
+    <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:12px;padding:20px 24px;margin-bottom:28px;">
+      <div style="font-size:13px;font-weight:800;color:#166534;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">
+        Join Your WhatsApp Batch Group
+      </div>
+      <p style="margin:0 0 16px;font-size:14px;color:#374151;line-height:1.7;">
+        Get live updates, schedule notifications, and connect with your batch. Join using the link below.
+      </p>
+      <a href="${waGroup}" style="display:inline-block;background:#25D366;color:#fff;border-radius:10px;padding:13px 24px;font-size:15px;font-weight:700;text-decoration:none;">
+        Join WhatsApp Group →
+      </a>
+      <p style="margin:10px 0 0;font-size:12px;color:#6b7280;">
+        This is a one-time invite link for your program. Do not share it publicly.
+      </p>
+    </div>
+    ` : ''}
 
     <p style="font-size:13px;color:#9ca3af;margin:0 0 6px;">
       Order ID: <span style="font-family:monospace;color:#475569;">${esc(enrollment.order_id)}</span>
