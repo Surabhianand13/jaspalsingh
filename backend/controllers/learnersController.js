@@ -81,20 +81,20 @@ const register = async (req, res, next) => {
 
     const norm = email.toLowerCase().trim();
 
-    // Verify OTP only when provided (profile signup flow)
-    // Checkout flow skips OTP - payment itself verifies intent
-    if (otp) {
-      const otpRow = await query(
-        `SELECT otp, expires_at, used FROM email_otps WHERE email = $1`, [norm]
-      );
-      if (!otpRow.rows.length || otpRow.rows[0].used || new Date() > new Date(otpRow.rows[0].expires_at)) {
-        return res.status(400).json({ error: 'Verification code has expired. Please request a new one.' });
-      }
-      if (otpRow.rows[0].otp !== otp.trim()) {
-        return res.status(400).json({ error: 'Incorrect verification code. Please try again.' });
-      }
-      await query(`UPDATE email_otps SET used = TRUE WHERE email = $1`, [norm]);
+    // OTP is mandatory - verifies the caller owns the email address
+    if (!otp) {
+      return res.status(400).json({ error: 'Email verification code is required.' });
     }
+    const otpRow = await query(
+      `SELECT otp, expires_at, used FROM email_otps WHERE email = $1`, [norm]
+    );
+    if (!otpRow.rows.length || otpRow.rows[0].used || new Date() > new Date(otpRow.rows[0].expires_at)) {
+      return res.status(400).json({ error: 'Verification code has expired. Please request a new one.' });
+    }
+    if (otpRow.rows[0].otp !== otp.trim()) {
+      return res.status(400).json({ error: 'Incorrect verification code. Please try again.' });
+    }
+    await query(`UPDATE email_otps SET used = TRUE WHERE email = $1`, [norm]);
 
     const existing = await query('SELECT id FROM learners WHERE email = $1', [norm]);
     if (existing.rows.length) {
@@ -193,6 +193,15 @@ const getMe = async (req, res, next) => {
 const updateMe = async (req, res, next) => {
   try {
     const { name, target_exam, phone, dob, gender, graduation_college, notify_strategy, city, photo_url } = req.body;
+
+    if (photo_url !== undefined && photo_url !== null && photo_url !== '') {
+      try {
+        const u = new URL(photo_url);
+        if (u.protocol !== 'https:') throw new Error();
+      } catch {
+        return res.status(400).json({ error: 'photo_url must be a valid https:// URL.' });
+      }
+    }
     const result = await query(
       `UPDATE learners
        SET name               = COALESCE($1, name),
