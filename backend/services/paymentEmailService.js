@@ -219,7 +219,6 @@ async function sendWelcomePaymentEmail(enrollment) {
 /* ── 3. Admin Payment Notification (Gmail - free) ────────────── */
 
 async function sendAdminPaymentNotification(enrollment) {
-  if (!gmailReady) return;
   const paid = new Date(enrollment.paid_at || Date.now()).toLocaleString('en-IN', {
     timeZone: 'Asia/Kolkata', day: 'numeric', month: 'long', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
@@ -333,8 +332,8 @@ async function sendAdminPaymentNotification(enrollment) {
 </body>
 </html>`;
 
-  return gmailTransporter.sendMail({
-    from:    process.env.GMAIL_USER,
+  return resend.emails.send({
+    from:    FROM,
     to:      ADMIN_EMAIL,
     subject: `Rs ${Number(enrollment.amount).toLocaleString('en-IN')} - ${enrollment.student_name} | ${programLabel}`,
     html,
