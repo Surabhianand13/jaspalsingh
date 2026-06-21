@@ -14,14 +14,15 @@ const { query } = require('../config/db');
    so the UI can skip the password step.                          */
 router.get('/account-status', async (req, res) => {
   try {
-    const { order_id } = req.query;
-    if (!order_id) return res.status(400).json({ error: 'order_id required.' });
+    const { form_token } = req.query;
+    if (!form_token) return res.status(400).json({ error: 'Setup link is invalid.' });
 
     const enrR = await query(
-      `SELECT student_email, student_phone, student_name FROM enrollments WHERE order_id = $1 AND status = 'paid'`,
-      [order_id]
+      `SELECT student_email, student_phone, student_name, form_used FROM enrollments WHERE form_token = $1 AND status = 'paid'`,
+      [form_token]
     );
-    if (!enrR.rows.length) return res.status(404).json({ error: 'No completed enrollment found.' });
+    if (!enrR.rows.length) return res.status(404).json({ error: 'Setup link is invalid or has already been used.' });
+    if (enrR.rows[0].form_used) return res.status(409).json({ error: 'This setup link has already been used.' });
 
     const enr = enrR.rows[0];
     const existing = await query(
@@ -41,24 +42,31 @@ router.get('/account-status', async (req, res) => {
 
 /* ── POST /api/enrollment/create-account ────────────────────
    Handles both new accounts (password required) and existing
-   accounts (password skipped). Saves profile details either way. */
+   accounts (password skipped). Saves profile details either way.
+   Requires form_token (one-time-use 64-char hex from welcome email)
+   to prevent account takeover via guessable order IDs.            */
 router.post('/create-account', async (req, res) => {
   try {
-    const { order_id, password, target_exam, city, college, dob } = req.body;
+    const { form_token, password, target_exam, city, college, dob } = req.body;
 
-    if (!order_id) {
-      return res.status(400).json({ error: 'order_id is required.' });
+    if (!form_token) {
+      return res.status(400).json({ error: 'Setup link is invalid. Please use the link from your welcome email.' });
     }
 
-    // Fetch enrollment
+    // Fetch enrollment by form_token (not order_id) - prevents enumeration attacks
     const enrResult = await query(
-      `SELECT * FROM enrollments WHERE order_id = $1 AND status = 'paid'`,
-      [order_id]
+      `SELECT * FROM enrollments WHERE form_token = $1 AND status = 'paid'`,
+      [form_token]
     );
     if (!enrResult.rows.length) {
-      return res.status(404).json({ error: 'No completed enrollment found for this order.' });
+      return res.status(404).json({ error: 'Setup link is invalid or has already been used.' });
     }
     const enr = enrResult.rows[0];
+
+    // Enforce one-time use
+    if (enr.form_used) {
+      return res.status(409).json({ error: 'This setup link has already been used. Contact support if you need help.' });
+    }
 
     // Profile fields (optional, applied in both paths)
     const prof = {
@@ -109,6 +117,12 @@ router.post('/create-account', async (req, res) => {
       `UPDATE enrollments SET learner_id = $1
        WHERE learner_id IS NULL AND (student_email = $2 OR student_phone = $3)`,
       [learner.id, enr.student_email, enr.student_phone]
+    );
+
+    // Mark this setup link as used (one-time-use enforcement)
+    await query(
+      `UPDATE enrollments SET form_used = TRUE, form_used_at = NOW() WHERE id = $1`,
+      [enr.id]
     );
 
     const token = jwt.sign(
@@ -176,7 +190,8 @@ router.get('/admin/all', protect, async (req, res, next) => {
   try {
     const status = req.query.status; // optional filter: paid | pending
     const period = req.query.period; // optional: today | 3days | week | month
-    const limit  = req.query.limit ? parseInt(req.query.limit, 10) : null;
+    const rawLimit = parseInt(req.query.limit, 10);
+    const limit = (!isNaN(rawLimit) && rawLimit > 0 && rawLimit <= 1000) ? rawLimit : null;
     const params = [];
     const conditions = [];
     if (status) { params.push(status); conditions.push(`status = $${params.length}`); }
@@ -188,7 +203,8 @@ router.get('/admin/all', protect, async (req, res, next) => {
     };
     if (period && periodMap[period]) { conditions.push(periodMap[period]); }
     const where = conditions.length ? ('WHERE ' + conditions.join(' AND ')) : '';
-    const limitClause = limit ? `LIMIT ${limit}` : '';
+    if (limit) { params.push(limit); }
+    const limitClause = limit ? `LIMIT $${params.length}` : '';
     const rows = await query(
       `SELECT id, order_id, program_slug, program_name, amount, student_name,
               student_email, student_phone, status, coupon_code, paid_at, created_at,

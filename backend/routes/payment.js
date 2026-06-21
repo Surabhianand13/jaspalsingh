@@ -178,12 +178,10 @@ router.get('/verify', async (req, res) => {
     if (dbCheck.rows.length && dbCheck.rows[0].status === 'paid') {
       const enr = dbCheck.rows[0];
       return res.json({
-        paid: true,
+        paid:         true,
         order_id,
-        program_name:  enr.program_name || '',
-        amount:        enr.amount || 0,
-        student_name:  enr.student_name || '',
-        student_phone: enr.student_phone || '',
+        program_name: enr.program_name || '',
+        amount:       enr.amount || 0,
       });
     }
 
@@ -224,12 +222,10 @@ router.get('/verify', async (req, res) => {
 
     res.json({
       paid,
-      order_status:  order.order_status,
+      order_status: order.order_status,
       order_id,
-      program_name:  enr.rows[0]?.program_name || '',
-      amount:        enr.rows[0]?.amount || 0,
-      student_name:  enr.rows[0]?.student_name || '',
-      student_phone: enr.rows[0]?.student_phone || '',
+      program_name: enr.rows[0]?.program_name || '',
+      amount:       enr.rows[0]?.amount || 0,
     });
 
   } catch (err) {

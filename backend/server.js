@@ -28,10 +28,18 @@ const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:5500')
   .map(o => o.trim())
   .filter(Boolean);
 
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (curl, Postman, server-to-server)
-    if (!origin) return callback(null, true);
+    // In production, require an explicit origin on all browser requests.
+    // No-origin requests (curl, Postman) are blocked in production to reduce
+    // the automated-attack surface. Cashfree webhooks use raw POST with no
+    // origin but are protected by HMAC signature verification independently.
+    if (!origin) {
+      if (IS_PRODUCTION) return callback(new Error('Direct API access not allowed.'));
+      return callback(null, true);
+    }
     if (allowedOrigins.indexOf(origin) !== -1) return callback(null, true);
     callback(new Error('Not allowed by CORS: ' + origin));
   },
@@ -378,19 +386,21 @@ async function migrate() {
   // Rename both test series programs to unified name and update pricing
   await query(`UPDATE programs SET title='RSSB JE 2026 - Jaspal Sir Ki Test Series Offline', exam='RSSB JE 2026', price=3999, mrp=7999 WHERE slug IN ('rssb-jen-diploma-test-series','rssb-jen-degree-test-series')`);
 
-  /* ── Seed second admin user (jaspalsingh.pec@gmail.com) ── */
+  /* ── Seed second admin user from env var (never hardcode passwords) ── */
   {
     const bcrypt = require('bcryptjs');
-    const secondAdminEmail = 'jaspalsingh.pec@gmail.com';
-    const secondAdminPassword = 'Jaspal@2026';
-    const existing = await query('SELECT id FROM admin_users WHERE email = $1', [secondAdminEmail]);
-    if (existing.rows.length === 0) {
-      const hash = await bcrypt.hash(secondAdminPassword, 12);
-      await query(
-        'INSERT INTO admin_users (email, password_hash) VALUES ($1, $2) ON CONFLICT (email) DO NOTHING',
-        [secondAdminEmail, hash]
-      );
-      console.log('✅ Seeded second admin: ' + secondAdminEmail);
+    const secondAdminEmail    = process.env.SECOND_ADMIN_EMAIL;
+    const secondAdminPassword = process.env.SECOND_ADMIN_PASSWORD;
+    if (secondAdminEmail && secondAdminPassword) {
+      const existing = await query('SELECT id FROM admin_users WHERE email = $1', [secondAdminEmail]);
+      if (existing.rows.length === 0) {
+        const hash = await bcrypt.hash(secondAdminPassword, 12);
+        await query(
+          'INSERT INTO admin_users (email, password_hash) VALUES ($1, $2) ON CONFLICT (email) DO NOTHING',
+          [secondAdminEmail, hash]
+        );
+        console.log('✅ Seeded second admin: ' + secondAdminEmail);
+      }
     }
   }
 
