@@ -178,13 +178,20 @@ router.post('/create-order', async (req, res) => {
   }
 });
 
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
 /* ── sendAllPaymentEmails ─────────────────────────────────
    Sends invoice + welcome + admin emails for a paid enrollment.
-   Awaits the welcome email and marks welcome_sent = TRUE on success.
-   Invoice and admin are fire-and-forget (non-critical for retry).    */
+   Staggered 700 ms apart to stay under Resend's 2 req/sec limit.    */
 async function sendAllPaymentEmails(enrollment, { sendInvoice = true } = {}) {
   if (sendInvoice) {
-    sendInvoiceEmail(enrollment).catch(e => console.error('[invoice email]', e.message));
+    try {
+      await sendInvoiceEmail(enrollment);
+      console.log(`[invoice email] sent OK for ${enrollment.order_id}`);
+    } catch (e) {
+      console.error('[invoice email]', e.message);
+    }
+    await sleep(700);
   }
 
   try {
@@ -195,8 +202,10 @@ async function sendAllPaymentEmails(enrollment, { sendInvoice = true } = {}) {
     );
     console.log(`[welcome email] sent OK for ${enrollment.order_id}`);
   } catch (e) {
-    console.error(`[welcome email] FAILED for ${enrollment.order_id} - will retry on next verify:`, e.message);
+    console.error(`[welcome email] FAILED for ${enrollment.order_id}:`, e.message);
   }
+
+  await sleep(700);
 
   sendAdminPaymentNotification(enrollment).catch(e => console.error('[admin notify]', e.message));
 }
