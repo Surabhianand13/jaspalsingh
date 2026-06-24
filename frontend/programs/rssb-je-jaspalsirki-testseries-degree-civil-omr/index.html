@@ -54,6 +54,31 @@
     .er-key { color:var(--body-color); font-weight:500; }
     .er-val { font-family:var(--font-heading); font-weight:700; color:var(--heading-color); font-size:13px; }
     .er-val.green { color:var(--green); }
+    .sched-phase { margin-bottom:24px; }
+    .sched-phase-header { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+    .sched-phase-pill { font-family:var(--font-heading); font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:1px; padding:4px 12px; border-radius:20px; }
+    .sched-phase-pill.subject { background:rgba(99,102,241,.1); color:#6366F1; border:1px solid rgba(99,102,241,.2); }
+    .sched-phase-pill.full { background:rgba(200,18,64,.09); color:#C81240; border:1px solid rgba(200,18,64,.18); }
+    .sched-phase-line { flex:1; height:1px; background:rgba(26,26,46,.08); }
+    .sched-cards { display:flex; flex-direction:column; gap:8px; }
+    .sched-card { display:grid; grid-template-columns:52px 100px 1fr 48px; align-items:center; gap:14px; padding:13px 16px; background:#fff; border:1.5px solid rgba(26,26,46,.07); border-radius:12px; transition:box-shadow .18s,border-color .18s; }
+    .sched-card:hover { border-color:rgba(99,102,241,.25); box-shadow:0 4px 16px rgba(26,26,46,.07); }
+    .sched-card.full-card { border-color:rgba(200,18,64,.1); }
+    .sched-card.full-card:hover { border-color:rgba(200,18,64,.28); }
+    .sched-num { width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-family:var(--font-heading); font-size:13px; font-weight:800; flex-shrink:0; }
+    .sched-num.subj { background:rgba(99,102,241,.1); color:#6366F1; }
+    .sched-num.full { background:rgba(200,18,64,.09); color:#C81240; }
+    .sched-date { font-family:var(--font-heading); font-size:12px; font-weight:700; color:var(--body-color); white-space:nowrap; }
+    .sched-syllabus { font-size:13.5px; color:var(--heading-color); line-height:1.5; font-weight:500; }
+    .sched-qs { font-family:var(--font-heading); font-size:13px; font-weight:800; color:var(--heading-color); text-align:right; white-space:nowrap; }
+    .sched-qs span { font-size:10px; font-weight:600; color:var(--body-color); display:block; }
+    .sched-disclaimer { margin-top:14px; display:flex; flex-direction:column; gap:6px; }
+    .sched-disc-item { font-size:13px; color:var(--body-color); display:flex; align-items:flex-start; gap:7px; line-height:1.6; }
+    .sched-disc-item i { color:var(--green); margin-top:3px; flex-shrink:0; font-size:11px; }
+    .for-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .for-item { display:flex; gap:12px; align-items:flex-start; padding:14px; border:1.5px solid rgba(26,26,46,.07); border-radius:var(--radius-sm); background:var(--white); }
+    .for-check { color:var(--green); font-size:14px; margin-top:2px; flex-shrink:0; }
+    .for-text { font-size:13.5px; color:var(--heading-color); line-height:1.55; font-weight:500; }
     .omr-price-block { background:linear-gradient(135deg,#312e81 0%,#4338CA 100%); border-radius:12px; padding:16px 18px; margin-bottom:14px; position:relative; overflow:hidden; }
     .omr-price-block::before { content:''; position:absolute; top:-20px; right:-20px; width:80px; height:80px; background:rgba(255,255,255,.07); border-radius:50%; }
     .omr-price-row { display:flex; align-items:baseline; gap:10px; margin-bottom:6px; }
