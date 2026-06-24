@@ -31,6 +31,26 @@ const CENTRES = {
     address: '311, Apex Mall, Lalkothi, Jaipur - 302015',
     mapsLink: 'https://maps.app.goo.gl/MzosW13pcH9pQ2Zn7',
   },
+  sikar: {
+    name: 'Sikar',
+    address: 'Dev Library, Near Shree Balaji Hospital, Piprali Road, Sikar, Rajasthan',
+    mapsLink: 'https://maps.app.goo.gl/sWNomYeyfFjDc8xK6?g_st=iw',
+  },
+  jodhpur: {
+    name: 'Jodhpur',
+    address: '2nd Floor, 19-B, UIT Road, Near Bhaskar Circle, Ratanada, Jodhpur, Rajasthan - 342001',
+    mapsLink: 'https://share.google/fPw3qqIjy1A1jTsin',
+  },
+  alwar: {
+    name: 'Alwar',
+    address: 'To be announced - contact us on WhatsApp for details',
+    mapsLink: 'https://wa.me/919829133317',
+  },
+  ajmer: {
+    name: 'Ajmer',
+    address: 'To be announced - contact us on WhatsApp for details',
+    mapsLink: 'https://wa.me/919829133317',
+  },
 };
 
 /* ── Schedule content ────────────────────────────────────── */
@@ -190,6 +210,10 @@ function getCentreKey(centreValue) {
   if (v.includes('kota'))    return 'kota';
   if (v.includes('bikaner')) return 'bikaner';
   if (v.includes('jaipur'))  return 'jaipur';
+  if (v.includes('sikar'))   return 'sikar';
+  if (v.includes('jodhpur')) return 'jodhpur';
+  if (v.includes('alwar'))   return 'alwar';
+  if (v.includes('ajmer'))   return 'ajmer';
   return null;
 }
 
