@@ -177,6 +177,23 @@ router.get('/verify', async (req, res) => {
     );
     if (dbCheck.rows.length && dbCheck.rows[0].status === 'paid') {
       const enr = dbCheck.rows[0];
+
+      // If webhook marked paid but form_token was never generated, fix it now
+      // and send the welcome email the learner missed
+      if (!enr.form_token) {
+        const formToken = crypto.randomBytes(32).toString('hex');
+        const fixed = await query(
+          `UPDATE enrollments SET form_token = $1 WHERE order_id = $2 AND form_token IS NULL RETURNING *`,
+          [formToken, order_id]
+        );
+        if (fixed.rows.length > 0) {
+          const fixedEnr = fixed.rows[0];
+          sendInvoiceEmail(fixedEnr).catch(e => console.error('[verify-fix invoice]', e.message));
+          sendWelcomePaymentEmail(fixedEnr).catch(e => console.error('[verify-fix welcome]', e.message));
+          sendAdminPaymentNotification(fixedEnr).catch(e => console.error('[verify-fix admin]', e.message));
+        }
+      }
+
       return res.json({
         paid:         true,
         order_id,
