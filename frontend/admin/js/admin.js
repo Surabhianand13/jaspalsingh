@@ -1838,6 +1838,9 @@
             : x.form_token
               ? '<span class="admin-badge admin-badge--orange">Awaiting form</span>'
               : '<span class="admin-badge" style="background:#f1f5f9;color:#64748b;">No token yet</span>';
+        var emailBadge = (x.status === 'paid' && x.welcome_sent === false)
+          ? '<br><span class="admin-badge" style="background:#fef2f2;color:#b91c1c;font-size:10px;" title="Welcome email failed - will retry on next payment-success page load">Email not sent</span>'
+          : '';
         var reissueBtn = (x.status === 'paid')
           ? '<button class="btn-admin-secondary btn-admin-sm" style="margin-top:6px;font-size:11px;" data-reissue="'+x.id+'" title="Reset form token and resend welcome email">Re-issue form link</button>'
           : '';
@@ -1847,7 +1850,7 @@
         return '<tr><td>'+e(x.student_name)+'<br><span style="color:#9999b0;font-size:12px;">'+e(x.student_phone)+(x.student_email?' · '+e(x.student_email):'')+'</span></td>' +
           '<td>'+e(x.program_name)+'</td><td>'+inr(x.amount)+(x.coupon_code?'<br><span style="color:#16a34a;font-size:11px;">'+e(x.coupon_code)+'</span>':'')+'</td>' +
           '<td><span class="admin-badge admin-badge--'+(x.status==='paid'?'green':'orange')+'">'+e(x.status)+'</span></td>' +
-          '<td>'+formBadge+reissueBtn+markBtn+'</td>'+
+          '<td>'+formBadge+emailBadge+reissueBtn+markBtn+'</td>'+
           '<td>'+fmtDate(x.paid_at||x.created_at)+'</td><td style="font-size:11px;color:#9999b0;">'+e(x.order_id)+'</td></tr>';
       }).join('');
       body.innerHTML = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Student</th><th>Program</th><th>Amount</th><th>Status</th><th>Form</th><th>Date</th><th>Order</th></tr></thead><tbody>'+rows+'</tbody></table></div>';

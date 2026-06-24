@@ -208,7 +208,7 @@ router.get('/admin/all', protect, async (req, res, next) => {
     const rows = await query(
       `SELECT id, order_id, program_slug, program_name, amount, student_name,
               student_email, student_phone, status, coupon_code, paid_at, created_at,
-              form_token IS NOT NULL AS has_form_token, form_used, form_used_at
+              form_token IS NOT NULL AS has_form_token, form_used, form_used_at, welcome_sent
        FROM enrollments ${where} ORDER BY created_at DESC ${limitClause}`, params);
     const summary = await query(
       `SELECT
@@ -235,7 +235,7 @@ router.post('/admin/reissue-form', protect, async (req, res, next) => {
 
     const result = await query(
       `UPDATE enrollments
-       SET form_token = $1, form_used = FALSE, form_used_at = NULL
+       SET form_token = $1, form_used = FALSE, form_used_at = NULL, welcome_sent = FALSE
        WHERE id = $2 AND status = 'paid'
        RETURNING *`,
       [newToken, enrollment_id]

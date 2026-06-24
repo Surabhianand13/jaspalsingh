@@ -165,6 +165,29 @@ router.post('/create-order', async (req, res) => {
   }
 });
 
+/* ── sendAllPaymentEmails ─────────────────────────────────
+   Sends invoice + welcome + admin emails for a paid enrollment.
+   Awaits the welcome email and marks welcome_sent = TRUE on success.
+   Invoice and admin are fire-and-forget (non-critical for retry).    */
+async function sendAllPaymentEmails(enrollment, { sendInvoice = true } = {}) {
+  if (sendInvoice) {
+    sendInvoiceEmail(enrollment).catch(e => console.error('[invoice email]', e.message));
+  }
+
+  try {
+    await sendWelcomePaymentEmail(enrollment);
+    await query(
+      `UPDATE enrollments SET welcome_sent = TRUE WHERE order_id = $1`,
+      [enrollment.order_id]
+    );
+    console.log(`[welcome email] sent OK for ${enrollment.order_id}`);
+  } catch (e) {
+    console.error(`[welcome email] FAILED for ${enrollment.order_id} - will retry on next verify:`, e.message);
+  }
+
+  sendAdminPaymentNotification(enrollment).catch(e => console.error('[admin notify]', e.message));
+}
+
 /* ── GET /api/payment/verify ─────────────────────────────── */
 router.get('/verify', async (req, res) => {
   try {
@@ -178,20 +201,22 @@ router.get('/verify', async (req, res) => {
     if (dbCheck.rows.length && dbCheck.rows[0].status === 'paid') {
       const enr = dbCheck.rows[0];
 
-      // If webhook marked paid but form_token was never generated, fix it now
-      // and send the welcome email the learner missed
-      if (!enr.form_token) {
-        const formToken = crypto.randomBytes(32).toString('hex');
-        const fixed = await query(
-          `UPDATE enrollments SET form_token = $1 WHERE order_id = $2 AND form_token IS NULL RETURNING *`,
-          [formToken, order_id]
-        );
-        if (fixed.rows.length > 0) {
-          const fixedEnr = fixed.rows[0];
-          sendInvoiceEmail(fixedEnr).catch(e => console.error('[verify-fix invoice]', e.message));
-          sendWelcomePaymentEmail(fixedEnr).catch(e => console.error('[verify-fix welcome]', e.message));
-          sendAdminPaymentNotification(fixedEnr).catch(e => console.error('[verify-fix admin]', e.message));
+      // Self-heal: generate form_token if missing, or resend welcome if it failed previously
+      if (!enr.form_token || !enr.welcome_sent) {
+        let targetEnr = enr;
+
+        if (!enr.form_token) {
+          const formToken = crypto.randomBytes(32).toString('hex');
+          const fixed = await query(
+            `UPDATE enrollments SET form_token = $1
+             WHERE order_id = $2 AND form_token IS NULL RETURNING *`,
+            [formToken, order_id]
+          );
+          if (fixed.rows.length > 0) targetEnr = fixed.rows[0];
         }
+
+        // Run async so verify response is not delayed
+        sendAllPaymentEmails(targetEnr, { sendInvoice: !enr.welcome_sent }).catch(() => {});
       }
 
       return res.json({
@@ -224,10 +249,7 @@ router.get('/verify', async (req, res) => {
       );
 
       if (updateResult.rows.length > 0) {
-        const enrollment = updateResult.rows[0];
-        sendInvoiceEmail(enrollment).catch(e => console.error('[invoice email]', e.message));
-        sendWelcomePaymentEmail(enrollment).catch(e => console.error('[welcome email]', e.message));
-        sendAdminPaymentNotification(enrollment).catch(e => console.error('[admin notify]', e.message));
+        sendAllPaymentEmails(updateResult.rows[0]).catch(() => {});
       }
     }
 
@@ -283,9 +305,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         [order_id, formToken]
       );
       if (result.rows.length > 0) {
-        const enrollment = result.rows[0];
-        sendWelcomePaymentEmail(enrollment).catch(e => console.error('[webhook welcome email]', e.message));
-        sendAdminPaymentNotification(enrollment).catch(e => console.error('[webhook admin notify]', e.message));
+        sendAllPaymentEmails(result.rows[0], { sendInvoice: false }).catch(() => {});
       }
     }
     res.json({ status: 'ok' });
