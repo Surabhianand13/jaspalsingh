@@ -33,13 +33,13 @@ const CENTRES = {
   },
   sikar: {
     name: 'Sikar',
-    address: 'To be announced - contact us on WhatsApp for details',
-    mapsLink: 'https://wa.me/919829133317',
+    address: 'Dev Library, Near Shree Balaji Hospital, Piprali Road, Sikar, Rajasthan',
+    mapsLink: 'https://maps.app.goo.gl/sWNomYeyfFjDc8xK6?g_st=iw',
   },
   jodhpur: {
     name: 'Jodhpur',
-    address: 'To be announced - contact us on WhatsApp for details',
-    mapsLink: 'https://wa.me/919829133317',
+    address: '2nd Floor, 19-B, UIT Road, Near Bhaskar Circle, Ratanada, Jodhpur, Rajasthan - 342001',
+    mapsLink: 'https://share.google/fPw3qqIjy1A1jTsin',
   },
   alwar: {
     name: 'Alwar',
