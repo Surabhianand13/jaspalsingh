@@ -1605,16 +1605,19 @@
       return;
     }
 
-    var headers = ['Name', 'Email', 'Exam Target', 'Downloads', 'Joined', 'Last Login', 'Active'];
+    var headers = ['Name', 'Email', 'Phone', 'Status', 'Program', 'Exam', 'Joined', 'Active'];
 
     var rows = items.map(function (l) {
+      var status = l.paid_program ? 'Paid' : 'Free';
+      var program = l.paid_program || '';
       return [
-        csvEscape(l.name || l.full_name || ''),
+        csvEscape(l.name || ''),
         csvEscape(l.email || ''),
-        csvEscape(l.exam_target || l.exam || ''),
-        l.download_count || 0,
-        csvEscape(fmtDate(l.created_at || l.createdAt)),
-        csvEscape(fmtDate(l.last_login || l.lastLogin)),
+        csvEscape(l.phone || ''),
+        csvEscape(status),
+        csvEscape(program),
+        csvEscape(l.target_exam || ''),
+        csvEscape(fmtDate(l.created_at)),
         (l.is_active !== false) ? 'Yes' : 'No'
       ].join(',');
     });
