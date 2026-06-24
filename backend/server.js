@@ -94,9 +94,11 @@ app.use('/api/enrollment',   require('./routes/enrollment-account'));
 app.use('/api/events',       require('./routes/events'));
 app.use('/api/programs',      require('./routes/programs'));
 app.use('/api/banners',       require('./routes/banners'));
-app.use('/api/tally-webhook', require('./routes/tally-webhook'));
-app.use('/api/tally-diploma', require('./routes/tally-diploma'));
-app.use('/api/tally-degree',  require('./routes/tally-degree'));
+app.use('/api/tally-webhook',   require('./routes/tally-webhook'));
+app.use('/api/tally-diploma',  require('./routes/tally-diploma'));
+app.use('/api/tally-degree',   require('./routes/tally-degree'));
+app.use('/api/tally-omr-degree',  require('./routes/tally-omr-degree'));
+app.use('/api/tally-omr-diploma', require('./routes/tally-omr-diploma'));
 
 /* ── Health Check ────────────────────────────────────────── */
 

@@ -277,4 +277,165 @@ router.post('/admin/mark-submitted', protect, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/* ── POST /api/enrollment/admin/send-omr-papers ──────────────
+   Admin endpoint to send a test paper PDF (from Google Drive)
+   to all paid enrollments for a given OMR program slug.
+   Watermarks each PDF with the learner's email and phone.
+   Body: { program_slug, pdf_url }
+   Returns: { sent: N, failed: M }
+   ─────────────────────────────────────────────────────────── */
+
+const https = require('https');
+const http  = require('http');
+const { Resend }   = require('resend');
+const { PDFDocument, rgb, degrees } = require('pdf-lib');
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+const OMR_FROM = 'Dr. Jaspal Singh <team@jaspalsingh.in>';
+
+/* Convert Google Drive share URL to direct download URL */
+function toDriveDownloadUrl(url) {
+  const fileIdMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if (fileIdMatch) return `https://drive.google.com/uc?export=download&id=${fileIdMatch[1]}`;
+  const openMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (openMatch) return `https://drive.google.com/uc?export=download&id=${openMatch[1]}`;
+  return url; // return as-is if pattern not matched
+}
+
+/* Fetch URL as Buffer */
+function fetchBuffer(url) {
+  return new Promise((resolve, reject) => {
+    const lib = url.startsWith('https') ? https : http;
+    lib.get(url, { headers: { 'User-Agent': 'jaspalsingh.in/1.0' } }, (res) => {
+      if (res.statusCode === 301 || res.statusCode === 302) {
+        return fetchBuffer(res.headers.location).then(resolve).catch(reject);
+      }
+      if (res.statusCode !== 200) return reject(new Error(`HTTP ${res.statusCode} fetching PDF`));
+      const chunks = [];
+      res.on('data', c => chunks.push(c));
+      res.on('end', () => resolve(Buffer.concat(chunks)));
+      res.on('error', reject);
+    }).on('error', reject);
+  });
+}
+
+/* Watermark every page of a PDF with "email | phone" diagonal text */
+async function watermarkPdf(pdfBytes, email, phone) {
+  const pdfDoc  = await PDFDocument.load(pdfBytes);
+  const pages   = pdfDoc.getPages();
+  const watermarkText = `${email} | ${phone}`;
+
+  for (const page of pages) {
+    const { width, height } = page.getSize();
+    /* Draw diagonal watermark text across the page center */
+    page.drawText(watermarkText, {
+      x:        width  * 0.10,
+      y:        height * 0.45,
+      size:     18,
+      color:    rgb(0.6, 0.6, 0.6),
+      opacity:  0.18,
+      rotate:   degrees(35),
+      maxWidth: width * 0.85,
+    });
+    /* Second instance slightly offset for coverage */
+    page.drawText(watermarkText, {
+      x:        width  * 0.15,
+      y:        height * 0.20,
+      size:     14,
+      color:    rgb(0.6, 0.6, 0.6),
+      opacity:  0.13,
+      rotate:   degrees(35),
+      maxWidth: width * 0.75,
+    });
+  }
+
+  return Buffer.from(await pdfDoc.save());
+}
+
+router.post('/admin/send-omr-papers', async (req, res) => {
+  try {
+    const { program_slug, pdf_url } = req.body;
+
+    if (!program_slug || !pdf_url) {
+      return res.status(400).json({ error: 'program_slug and pdf_url are required.' });
+    }
+
+    /* Fetch all paid enrollments for this program */
+    const enrResult = await query(
+      `SELECT id, student_name, student_email, student_phone
+       FROM enrollments
+       WHERE program_slug = $1 AND status = 'paid'
+       ORDER BY id ASC`,
+      [program_slug]
+    );
+
+    if (!enrResult.rows.length) {
+      return res.json({ sent: 0, failed: 0, message: 'No paid enrollments found for this program.' });
+    }
+
+    const enrollments = enrResult.rows;
+    const downloadUrl = toDriveDownloadUrl(pdf_url);
+
+    /* Download the source PDF once */
+    let sourcePdfBytes;
+    try {
+      sourcePdfBytes = await fetchBuffer(downloadUrl);
+    } catch (err) {
+      return res.status(502).json({ error: `Failed to download PDF: ${err.message}` });
+    }
+
+    /* Respond immediately so the request does not time out */
+    res.json({
+      message: `Sending papers to ${enrollments.length} learners in background...`,
+      total: enrollments.length,
+    });
+
+    /* Process each learner async in background */
+    let sent = 0, failed = 0;
+    for (const enr of enrollments) {
+      try {
+        const email = enr.student_email;
+        const phone = (enr.student_phone || '').replace(/\D/g, '').slice(-10);
+        const name  = enr.student_name || 'Learner';
+
+        const watermarked = await watermarkPdf(sourcePdfBytes, email, phone);
+
+        const { error } = await resend.emails.send({
+          from:    OMR_FROM,
+          to:      email,
+          subject: `Test Paper - ${program_slug} | jaspalsingh.in`,
+          html: `<p>Dear <strong>${name}</strong>,</p>
+<p>Please find your test paper attached. Attempt it and submit your completed OMR sheet by <strong>end of day today</strong> by replying to this email.</p>
+<p>Good luck!<br/><strong>Dr. Jaspal Singh</strong></p>`,
+          attachments: [
+            {
+              filename:    `TestPaper_${program_slug}.pdf`,
+              content:     watermarked.toString('base64'),
+              contentType: 'application/pdf',
+            },
+          ],
+        });
+
+        if (error) {
+          console.error(`[send-omr-papers] Resend error for ${email}:`, error);
+          failed++;
+        } else {
+          sent++;
+          console.log(`[send-omr-papers] Sent to ${email} (${sent}/${enrollments.length})`);
+        }
+      } catch (err) {
+        failed++;
+        console.error(`[send-omr-papers] Failed for enrollment ${enr.id}:`, err.message);
+      }
+      /* Small delay between sends to respect rate limits */
+      await new Promise(r => setTimeout(r, 250));
+    }
+
+    console.log(`[send-omr-papers] Done. Sent: ${sent}, Failed: ${failed}`);
+  } catch (err) {
+    console.error('[send-omr-papers]', err);
+    if (!res.headersSent) res.status(500).json({ error: 'Server error.' });
+  }
+});
+
 module.exports = router;
