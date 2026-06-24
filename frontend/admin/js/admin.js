@@ -1850,10 +1850,13 @@
         var markBtn = (x.status === 'paid' && !x.form_used)
           ? '<button class="btn-admin-secondary btn-admin-sm" style="margin-top:4px;font-size:11px;color:#059669;border-color:#059669;" data-marksubmit="'+x.id+'" title="Manually mark as submitted (use when learner filled form but webhook failed)">Mark as submitted</button>'
           : '';
+        var admitBtn = (x.status === 'paid' && x.form_used)
+          ? '<button class="btn-admin-secondary btn-admin-sm" style="margin-top:4px;font-size:11px;color:#7c3aed;border-color:#7c3aed;" data-admitcard="'+x.id+'" data-slug="'+(x.program_slug||'')+'" title="Generate and resend admit card PDF">Send Admit Card</button>'
+          : '';
         return '<tr><td>'+e(x.student_name)+'<br><span style="color:#9999b0;font-size:12px;">'+e(x.student_phone)+(x.student_email?' · '+e(x.student_email):'')+'</span></td>' +
           '<td>'+e(x.program_name)+'</td><td>'+inr(x.amount)+(x.coupon_code?'<br><span style="color:#16a34a;font-size:11px;">'+e(x.coupon_code)+'</span>':'')+'</td>' +
           '<td><span class="admin-badge admin-badge--'+(x.status==='paid'?'green':'orange')+'">'+e(x.status)+'</span></td>' +
-          '<td>'+formBadge+emailBadge+reissueBtn+markBtn+'</td>'+
+          '<td>'+formBadge+emailBadge+reissueBtn+markBtn+admitBtn+'</td>'+
           '<td>'+fmtDate(x.paid_at||x.created_at)+'</td><td style="font-size:11px;color:#9999b0;">'+e(x.order_id)+'</td></tr>';
       }).join('');
       body.innerHTML = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Student</th><th>Program</th><th>Amount</th><th>Status</th><th>Form</th><th>Date</th><th>Order</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
@@ -1879,7 +1882,89 @@
             .catch(function(err){ showToast(err.message || 'Failed', 'error'); btn.disabled = false; btn.textContent = 'Mark as submitted'; });
         });
       });
+      // Wire up send-admit-card buttons
+      body.querySelectorAll('[data-admitcard]').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          var id   = btn.getAttribute('data-admitcard');
+          var slug = btn.getAttribute('data-slug') || '';
+          showAdmitCardModal(parseInt(id), slug.includes('degree'));
+        });
+      });
     }).catch(function(err){ body.innerHTML='<p class="admin-empty">'+e(err.message)+'</p>'; });
+  }
+
+  /* ── Admit Card modal ── */
+  function showAdmitCardModal(enrollmentId, isDegree) {
+    var existing = document.getElementById('admitCardModal');
+    if (existing) existing.remove();
+
+    var modal = document.createElement('div');
+    modal.id = 'admitCardModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+    modal.innerHTML =
+      '<div style="background:#fff;border-radius:14px;padding:28px 32px;max-width:480px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">' +
+          '<h3 style="margin:0;font-size:17px;color:#1A1A2E;">Send Admit Card</h3>' +
+          '<button id="admitCardClose" style="border:none;background:none;font-size:22px;cursor:pointer;color:#9ca3af;">&times;</button>' +
+        '</div>' +
+        '<p style="font-size:13px;color:#6b7280;margin:0 0 20px;">Fill in details from the Tally form responses (Google Sheet). The PDF will be generated and emailed to the learner.</p>' +
+        '<div style="display:flex;flex-direction:column;gap:12px;">' +
+          '<div><label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Full Name (as on Govt ID) *</label>' +
+            '<input id="ac_name" type="text" placeholder="e.g. Tanu Sharma" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;"/></div>' +
+          '<div><label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Govt ID number (optional)</label>' +
+            '<input id="ac_govtid" type="text" placeholder="Aadhaar / Voter ID number" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;"/></div>' +
+          '<div><label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Test Centre *</label>' +
+            '<select id="ac_centre" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;">' +
+              '<option value="">Select centre...</option>' +
+              '<option value="jaipur">Jaipur</option><option value="kota">Kota</option>' +
+              '<option value="bikaner">Bikaner</option><option value="sikar">Sikar</option>' +
+              '<option value="jodhpur">Jodhpur</option><option value="alwar">Alwar</option><option value="ajmer">Ajmer</option>' +
+            '</select></div>' +
+          '<div><label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Program Type *</label>' +
+            '<select id="ac_type" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;">' +
+              '<option value="' + (isDegree ? 'degree' : 'diploma') + '">' + (isDegree ? 'Degree' : 'Diploma') + '</option>' +
+              '<option value="' + (isDegree ? 'diploma' : 'degree') + '">' + (isDegree ? 'Diploma' : 'Degree') + '</option>' +
+            '</select></div>' +
+          '<div><label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Photo URL from Tally (optional)</label>' +
+            '<input id="ac_photo" type="text" placeholder="https://..." style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;"/></div>' +
+        '</div>' +
+        '<div style="display:flex;gap:10px;margin-top:24px;">' +
+          '<button id="admitCardSend" style="flex:1;background:#7c3aed;color:#fff;border:none;border-radius:9px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;">Generate &amp; Send Admit Card</button>' +
+          '<button id="admitCardCancel" style="background:#f1f5f9;color:#374151;border:none;border-radius:9px;padding:12px 18px;font-size:14px;font-weight:600;cursor:pointer;">Cancel</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(modal);
+
+    document.getElementById('admitCardClose').onclick  = function(){ modal.remove(); };
+    document.getElementById('admitCardCancel').onclick = function(){ modal.remove(); };
+    modal.addEventListener('click', function(ev){ if (ev.target === modal) modal.remove(); });
+
+    document.getElementById('admitCardSend').addEventListener('click', function(){
+      var name   = document.getElementById('ac_name').value.trim();
+      var govtId = document.getElementById('ac_govtid').value.trim();
+      var centre = document.getElementById('ac_centre').value;
+      var type   = document.getElementById('ac_type').value;
+      var photo  = document.getElementById('ac_photo').value.trim();
+
+      if (!name || !centre) { showToast('Name and centre are required', 'error'); return; }
+
+      var sendBtn = document.getElementById('admitCardSend');
+      sendBtn.disabled = true; sendBtn.textContent = 'Generating...';
+
+      var payload = { enrollment_id: enrollmentId, name: name, centre: centre, program_type: type };
+      if (govtId) payload.govt_id  = govtId;
+      if (photo)  payload.photo_url = photo;
+
+      adminFetch('POST', '/api/enrollment/admin/resend-admit-card', payload)
+        .then(function(d){
+          modal.remove();
+          showToast((d.message || 'Admit card sent') + (d.roll_number ? ' | Roll: ' + d.roll_number : ''), 'success');
+        })
+        .catch(function(err){
+          showToast(err.message || 'Failed to send admit card', 'error');
+          sendBtn.disabled = false; sendBtn.textContent = 'Generate & Send Admit Card';
+        });
+    });
   }
 
   /* ── LEADS ── */

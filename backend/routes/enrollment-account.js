@@ -277,6 +277,82 @@ router.post('/admin/mark-submitted', protect, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/* ── POST /api/enrollment/admin/resend-admit-card ─────────────
+   Admin only - generate and resend admit card for a specific enrollment.
+   Used when the admit card email failed (e.g. Resend rate limit).
+   Body: { enrollment_id, name, govt_id, centre, program_type, photo_url } */
+router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
+  try {
+    const { enrollment_id, name, govt_id, centre, program_type, photo_url } = req.body;
+    if (!enrollment_id) return res.status(400).json({ error: 'enrollment_id required.' });
+    if (!name || !centre)  return res.status(400).json({ error: 'name and centre are required.' });
+
+    const enrResult = await query(
+      `SELECT id, student_name, student_email, student_phone, program_slug
+       FROM enrollments WHERE id = $1 AND status = 'paid'`,
+      [enrollment_id]
+    );
+    if (!enrResult.rows.length) return res.status(404).json({ error: 'Paid enrollment not found.' });
+    const enr = enrResult.rows[0];
+
+    const {
+      generateAdmitCard, buildAdmitCardHtml, fetchImageBuffer,
+      getCentreKey, CENTRES, SCHEDULE_DEGREE, SCHEDULE_DIPLOMA,
+    } = require('./tally-webhook');
+
+    const slug = enr.program_slug || '';
+    const isDegreeCourse = program_type === 'degree' ? true
+      : program_type === 'diploma' ? false
+      : slug.includes('degree');
+
+    const centreKey  = getCentreKey(centre);
+    const centreInfo = CENTRES[centreKey] || { name: centre, address: 'TBD', mapsLink: '#' };
+    const schedule   = isDegreeCourse ? SCHEDULE_DEGREE : SCHEDULE_DIPLOMA;
+    const seriesName = isDegreeCourse
+      ? 'RSSB JE 2026 - Degree (Civil) - Offline Test Series'
+      : 'RSSB JE 2026 - Diploma (Civil) - Offline Test Series';
+    const lastTestDate = isDegreeCourse ? '10 January 2027 (Test-28)' : '29 November 2026 (Test-22)';
+
+    const prefix     = (centreKey || centre || 'JSP').slice(0, 3).toUpperCase();
+    const examCode   = isDegreeCourse ? 'DEG' : 'DIP';
+    const rollNumber = `${prefix}-${examCode}-${Math.floor(10000 + Math.random() * 90000)}`;
+
+    const photoBuffer = photo_url ? await fetchImageBuffer(photo_url) : null;
+
+    const pdfBuffer = await generateAdmitCard({
+      name:         name || enr.student_name,
+      govtId:       govt_id || 'N/A',
+      rollNumber,
+      centre:       centreInfo.name,
+      targetExam:   seriesName,
+      phone:        enr.student_phone || 'N/A',
+      email:        enr.student_email,
+      photoBuffer,
+      seriesName,
+      lastTestDate,
+    });
+
+    const { Resend } = require('resend');
+    const resendClient = new Resend(process.env.RESEND_API_KEY);
+
+    const { error } = await resendClient.emails.send({
+      from:        'Dr. Jaspal Singh <team@jaspalsingh.in>',
+      to:          enr.student_email,
+      subject:     `Confirmed! Your Admit Card for ${seriesName}`,
+      html:        buildAdmitCardHtml({ name: name || enr.student_name, seriesName, centreInfo, schedule, isDegreeCourse }),
+      attachments: [{ filename: `AdmitCard_${rollNumber}.pdf`, content: pdfBuffer.toString('base64'), contentType: 'application/pdf' }],
+    });
+
+    if (error) {
+      console.error('[resend-admit-card] Resend error:', error);
+      return res.status(502).json({ error: `Email send failed: ${error.message}` });
+    }
+
+    console.log(`[resend-admit-card] Sent to ${enr.student_email} | Roll: ${rollNumber}`);
+    res.json({ message: `Admit card sent to ${enr.student_email}`, roll_number: rollNumber });
+  } catch (err) { next(err); }
+});
+
 /* ── POST /api/enrollment/admin/send-omr-papers ──────────────
    Admin endpoint to send a test paper PDF (from Google Drive)
    to all paid enrollments for a given OMR program slug.
