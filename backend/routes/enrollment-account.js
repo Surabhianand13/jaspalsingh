@@ -252,4 +252,29 @@ router.post('/admin/reissue-form', protect, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/* ── POST /api/enrollment/admin/mark-submitted ───────────────
+   Admin only - manually marks an enrollment as form submitted.
+   Used when learner filled the form but webhook rejected it
+   (e.g. form_token was NULL at submission time due to cold start).  */
+router.post('/admin/mark-submitted', protect, async (req, res, next) => {
+  try {
+    const { enrollment_id } = req.body;
+    if (!enrollment_id) return res.status(400).json({ error: 'enrollment_id required.' });
+
+    const result = await query(
+      `UPDATE enrollments
+       SET form_used = TRUE, form_used_at = NOW()
+       WHERE id = $1 AND status = 'paid'
+       RETURNING id, student_name, student_email`,
+      [enrollment_id]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({ error: 'Paid enrollment not found.' });
+    }
+
+    res.json({ message: `Marked as submitted for ${result.rows[0].student_name}` });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;
