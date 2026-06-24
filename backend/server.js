@@ -389,6 +389,21 @@ async function migrate() {
   // Rename both test series programs to unified name and update pricing
   await query(`UPDATE programs SET title='RSSB JE 2026 - Jaspal Sir Ki Test Series Offline', exam='RSSB JE 2026', price=3999, mrp=7999 WHERE slug IN ('rssb-jen-diploma-test-series','rssb-jen-degree-test-series')`);
 
+  // Seed OMR online programs (upsert - safe to run every startup)
+  await query(`
+    INSERT INTO programs (slug,title,category,exam,level,status,price,mrp,accent,sort_order,detail_url,is_visible)
+    VALUES
+      ('rssb-je-omr-degree-test-series',
+       'RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Degree (OMR Based Online Test Series)',
+       'test-series','RSSB JE 2026','Degree (Civil)','enrolling',1999,2999,'purple',6,
+       '/programs/rssb-je-jaspalsirki-testseries-degree-civil-omr/',TRUE),
+      ('rssb-jen-omr-diploma-test-series',
+       'RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Diploma (OMR Based Online Test Series)',
+       'test-series','RSSB JE 2026','Diploma (Civil)','enrolling',1999,2999,'purple',7,
+       '/programs/rssb-jen-2026-jaspalsirki-testseries-diploma-civil-omr/',TRUE)
+    ON CONFLICT (slug) DO NOTHING
+  `);
+
   /* ── Seed second admin user from env var (never hardcode passwords) ── */
   {
     const bcrypt = require('bcryptjs');
