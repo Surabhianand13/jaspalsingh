@@ -208,7 +208,7 @@ router.get('/admin/all', protect, async (req, res, next) => {
     const rows = await query(
       `SELECT id, order_id, program_slug, program_name, amount, student_name,
               student_email, student_phone, status, coupon_code, paid_at, created_at,
-              form_token IS NOT NULL AS has_form_token, form_used, form_used_at
+              form_token IS NOT NULL AS has_form_token, form_used, form_used_at, welcome_sent
        FROM enrollments ${where} ORDER BY created_at DESC ${limitClause}`, params);
     const summary = await query(
       `SELECT
@@ -235,7 +235,7 @@ router.post('/admin/reissue-form', protect, async (req, res, next) => {
 
     const result = await query(
       `UPDATE enrollments
-       SET form_token = $1, form_used = FALSE, form_used_at = NULL
+       SET form_token = $1, form_used = FALSE, form_used_at = NULL, welcome_sent = FALSE
        WHERE id = $2 AND status = 'paid'
        RETURNING *`,
       [newToken, enrollment_id]
@@ -249,6 +249,31 @@ router.post('/admin/reissue-form', protect, async (req, res, next) => {
     await sendWelcomePaymentEmail(enrollment);
 
     res.json({ message: `New form link sent to ${enrollment.student_email}` });
+  } catch (err) { next(err); }
+});
+
+/* ── POST /api/enrollment/admin/mark-submitted ───────────────
+   Admin only - manually marks an enrollment as form submitted.
+   Used when learner filled the form but webhook rejected it
+   (e.g. form_token was NULL at submission time due to cold start).  */
+router.post('/admin/mark-submitted', protect, async (req, res, next) => {
+  try {
+    const { enrollment_id } = req.body;
+    if (!enrollment_id) return res.status(400).json({ error: 'enrollment_id required.' });
+
+    const result = await query(
+      `UPDATE enrollments
+       SET form_used = TRUE, form_used_at = NOW()
+       WHERE id = $1 AND status = 'paid'
+       RETURNING id, student_name, student_email`,
+      [enrollment_id]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({ error: 'Paid enrollment not found.' });
+    }
+
+    res.json({ message: `Marked as submitted for ${result.rows[0].student_name}` });
   } catch (err) { next(err); }
 });
 

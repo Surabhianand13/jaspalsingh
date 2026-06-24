@@ -1605,16 +1605,19 @@
       return;
     }
 
-    var headers = ['Name', 'Email', 'Exam Target', 'Downloads', 'Joined', 'Last Login', 'Active'];
+    var headers = ['Name', 'Email', 'Phone', 'Status', 'Program', 'Exam', 'Joined', 'Active'];
 
     var rows = items.map(function (l) {
+      var status = l.paid_program ? 'Paid' : 'Free';
+      var program = l.paid_program || '';
       return [
-        csvEscape(l.name || l.full_name || ''),
+        csvEscape(l.name || ''),
         csvEscape(l.email || ''),
-        csvEscape(l.exam_target || l.exam || ''),
-        l.download_count || 0,
-        csvEscape(fmtDate(l.created_at || l.createdAt)),
-        csvEscape(fmtDate(l.last_login || l.lastLogin)),
+        csvEscape(l.phone || ''),
+        csvEscape(status),
+        csvEscape(program),
+        csvEscape(l.target_exam || ''),
+        csvEscape(fmtDate(l.created_at)),
         (l.is_active !== false) ? 'Yes' : 'No'
       ].join(',');
     });
@@ -1838,13 +1841,19 @@
             : x.form_token
               ? '<span class="admin-badge admin-badge--orange">Awaiting form</span>'
               : '<span class="admin-badge" style="background:#f1f5f9;color:#64748b;">No token yet</span>';
+        var emailBadge = (x.status === 'paid' && x.welcome_sent === false)
+          ? '<br><span class="admin-badge" style="background:#fef2f2;color:#b91c1c;font-size:10px;" title="Welcome email failed - will retry on next payment-success page load">Email not sent</span>'
+          : '';
         var reissueBtn = (x.status === 'paid')
           ? '<button class="btn-admin-secondary btn-admin-sm" style="margin-top:6px;font-size:11px;" data-reissue="'+x.id+'" title="Reset form token and resend welcome email">Re-issue form link</button>'
+          : '';
+        var markBtn = (x.status === 'paid' && !x.form_used)
+          ? '<button class="btn-admin-secondary btn-admin-sm" style="margin-top:4px;font-size:11px;color:#059669;border-color:#059669;" data-marksubmit="'+x.id+'" title="Manually mark as submitted (use when learner filled form but webhook failed)">Mark as submitted</button>'
           : '';
         return '<tr><td>'+e(x.student_name)+'<br><span style="color:#9999b0;font-size:12px;">'+e(x.student_phone)+(x.student_email?' · '+e(x.student_email):'')+'</span></td>' +
           '<td>'+e(x.program_name)+'</td><td>'+inr(x.amount)+(x.coupon_code?'<br><span style="color:#16a34a;font-size:11px;">'+e(x.coupon_code)+'</span>':'')+'</td>' +
           '<td><span class="admin-badge admin-badge--'+(x.status==='paid'?'green':'orange')+'">'+e(x.status)+'</span></td>' +
-          '<td>'+formBadge+reissueBtn+'</td>'+
+          '<td>'+formBadge+emailBadge+reissueBtn+markBtn+'</td>'+
           '<td>'+fmtDate(x.paid_at||x.created_at)+'</td><td style="font-size:11px;color:#9999b0;">'+e(x.order_id)+'</td></tr>';
       }).join('');
       body.innerHTML = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Student</th><th>Program</th><th>Amount</th><th>Status</th><th>Form</th><th>Date</th><th>Order</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
@@ -1857,6 +1866,17 @@
           adminFetch('POST', '/api/enrollment/admin/reissue-form', { enrollment_id: parseInt(id) })
             .then(function(d){ showToast(d.message || 'Form link re-issued', 'success'); loadEnrollments(); })
             .catch(function(err){ showToast(err.message || 'Failed', 'error'); btn.disabled = false; btn.textContent = 'Re-issue form link'; });
+        });
+      });
+      // Wire up mark-as-submitted buttons
+      body.querySelectorAll('[data-marksubmit]').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          var id = btn.getAttribute('data-marksubmit');
+          if (!confirm('Mark this enrollment as form submitted? Use this only if you have verified the learner\'s details manually.')) return;
+          btn.disabled = true; btn.textContent = 'Saving...';
+          adminFetch('POST', '/api/enrollment/admin/mark-submitted', { enrollment_id: parseInt(id) })
+            .then(function(d){ showToast(d.message || 'Marked as submitted', 'success'); loadEnrollments(); })
+            .catch(function(err){ showToast(err.message || 'Failed', 'error'); btn.disabled = false; btn.textContent = 'Mark as submitted'; });
         });
       });
     }).catch(function(err){ body.innerHTML='<p class="admin-empty">'+e(err.message)+'</p>'; });

@@ -255,6 +255,7 @@ async function migrate() {
   await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS form_used_at TIMESTAMPTZ`);
   await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS cf_payment_id TEXT`);
   await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS paid_at TIMESTAMPTZ`);
+  await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS welcome_sent BOOLEAN DEFAULT FALSE`);
   await query(`ALTER TABLE learners ADD COLUMN IF NOT EXISTS city VARCHAR(100)`);
   await query(`ALTER TABLE learners ADD COLUMN IF NOT EXISTS photo_url VARCHAR(1000)`);
 
