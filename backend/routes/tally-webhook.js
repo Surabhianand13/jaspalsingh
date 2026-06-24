@@ -429,13 +429,99 @@ function generateAdmitCard({ name, govtId, rollNumber, centre, targetExam, phone
 }
 
 
-/* ── Schedule rows as plain text for email ───────────────── */
+/* ── Build admit card email HTML ─────────────────────────── */
 
-function formatScheduleText(schedule) {
-  return schedule
-    .map(r => `  ${r.test.padEnd(8)}  ${r.date.padEnd(20)}  ${r.syllabus}`)
-    .join('\n');
+function buildAdmitCardHtml({ name, seriesName, centreInfo, schedule, isDegreeCourse }) {
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8" /></head>
+<body style="font-family:Arial,sans-serif;color:#0f172a;max-width:620px;margin:0 auto;padding:20px;">
+
+  <div style="background:#0f172a;border-radius:12px;padding:28px 32px;margin-bottom:24px;text-align:center;">
+    <h1 style="color:#fff;margin:0;font-size:22px;">Dr. Jaspal Singh</h1>
+    <p style="color:#94a3b8;margin:6px 0 0;font-size:13px;">jaspalsingh.in</p>
+  </div>
+
+  <p style="font-size:16px;">Dear <strong>${name || 'Student'}</strong>,</p>
+  <p>Congratulations! Your registration for the <strong>${seriesName}</strong> has been confirmed.</p>
+  <p>Please find your <strong>Admit Card attached</strong> to this email as a PDF. Carry it (printed or on your phone) to every test.</p>
+
+  <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:20px 24px;margin:20px 0;">
+    <h2 style="font-size:15px;margin:0 0 12px;color:#c81240;">Your Exam Centre</h2>
+    <p style="margin:4px 0;"><strong>Centre:</strong> ${centreInfo.name}</p>
+    <p style="margin:4px 0;"><strong>Address:</strong> ${centreInfo.address}</p>
+    <p style="margin:8px 0 0;">
+      <a href="${centreInfo.mapsLink}" style="background:#c81240;color:#fff;text-decoration:none;padding:8px 18px;border-radius:6px;font-size:13px;font-weight:bold;">
+        View on Google Maps
+      </a>
+    </p>
+  </div>
+
+  <div style="margin:20px 0;">
+    <h2 style="font-size:15px;color:#c81240;margin-bottom:12px;">Test Schedule</h2>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="background:#0f172a;color:#fff;">
+          <th style="padding:8px 10px;text-align:left;">Test</th>
+          <th style="padding:8px 10px;text-align:left;">Date</th>
+          <th style="padding:8px 10px;text-align:left;">Syllabus</th>
+          <th style="padding:8px 10px;text-align:center;">Qs</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${schedule.map((r, i) => `
+        <tr style="background:${i % 2 === 0 ? '#fff' : '#f8fafc'};">
+          <td style="padding:7px 10px;border-bottom:1px solid #e2e8f0;">${r.test}</td>
+          <td style="padding:7px 10px;border-bottom:1px solid #e2e8f0;white-space:nowrap;">${r.date}</td>
+          <td style="padding:7px 10px;border-bottom:1px solid #e2e8f0;">${r.syllabus}</td>
+          <td style="padding:7px 10px;border-bottom:1px solid #e2e8f0;text-align:center;">${r.questions}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    <p style="font-size:12px;color:#64748b;margin-top:8px;">
+      * Schedule may be revised after the official RSSB JE 2026 examination date announcement.
+    </p>
+  </div>
+
+  <div style="background:#fefce8;border:1px solid #fde68a;border-radius:10px;padding:20px 24px;margin:20px 0;">
+    <h2 style="font-size:15px;margin:0 0 12px;color:#92400e;">Do's and Don'ts</h2>
+    <p style="font-size:13px;font-weight:bold;margin:10px 0 6px;color:#15803d;">DOs:</p>
+    <ul style="margin:0 0 12px;padding-left:20px;font-size:13px;line-height:1.7;">
+      <li>Carry this Admit Card (printed or on phone) to every test</li>
+      <li>Reach the centre at least <strong>15 minutes before</strong> the test start time</li>
+      <li>Bring a valid Govt Photo ID (Aadhar, Voter ID, Driving Licence, Passport)</li>
+      <li>Use only a <strong>blue or black ballpoint pen</strong></li>
+      <li>Negative Marking: <strong>0.33 marks deducted per wrong answer</strong></li>
+      <li>Collect your Detailed Solution Booklet after each test</li>
+      ${!isDegreeCourse ? `
+      <li style="margin-top:10px;color:#1e40af;"><strong>Hindi Instructions (Diploma):</strong></li>
+      <li>9. यदि आप प्रश्न का उत्तर नहीं देना चाहते हैं तो उत्तर-पत्रक में पाँचवें (5) विकल्प को गहरा करें।</li>
+      <li>10. प्रश्न-पत्र हल करने के उपरान्त अभ्यर्थी अनिवार्य रूप से ओ.एम.आर. उत्तर-पत्रक जाँच लें।</li>
+      <li>11. यदि अभ्यर्थी 10% से अधिक प्रश्नों में कोई विकल्प अंकित नहीं करता है तो उसको अयोग्य माना जायेगा।</li>
+      ` : ''}
+    </ul>
+    <p style="font-size:13px;font-weight:bold;margin:10px 0 6px;color:#dc2626;">DON'Ts:</p>
+    <ul style="margin:0;padding-left:20px;font-size:13px;line-height:1.7;">
+      <li>Do NOT bring mobile phones, smartwatches, or electronic devices inside the exam hall</li>
+      <li>Do NOT use pencil, gel pens, or whitener on the OMR sheet</li>
+      <li>Do NOT arrive late - latecomers may not be allowed entry</li>
+      <li>Do NOT carry books, notes, or study material into the exam hall</li>
+    </ul>
+  </div>
+
+  <p style="font-size:14px;">For any queries, feel free to reach out on WhatsApp or call us directly.</p>
+  <p style="font-size:14px;margin-top:20px;">
+    Best wishes for your preparation!<br/>
+    <strong>Dr. Jaspal Singh</strong><br/>
+    <a href="https://jaspalsingh.in" style="color:#c81240;">jaspalsingh.in</a>
+  </p>
+  <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0;" />
+  <p style="font-size:11px;color:#94a3b8;text-align:center;">This is an automated confirmation email. Please do not reply to this email.</p>
+</body>
+</html>`;
 }
+
+/* ── Schedule rows as plain text for email ───────────────── */
 
 
 /* ── Send rejection email ─────────────────────────────────── */
@@ -581,103 +667,7 @@ async function processSubmission(fields, programType) {
     lastTestDate,
   });
 
-  const htmlBody = `
-<!DOCTYPE html>
-<html>
-<head><meta charset="UTF-8" /></head>
-<body style="font-family:Arial,sans-serif;color:#0f172a;max-width:620px;margin:0 auto;padding:20px;">
-
-  <!-- Header -->
-  <div style="background:#0f172a;border-radius:12px;padding:28px 32px;margin-bottom:24px;text-align:center;">
-    <h1 style="color:#fff;margin:0;font-size:22px;">Dr. Jaspal Singh</h1>
-    <p style="color:#94a3b8;margin:6px 0 0;font-size:13px;">jaspalsingh.in</p>
-  </div>
-
-  <p style="font-size:16px;">Dear <strong>${name || 'Student'}</strong>,</p>
-  <p>Congratulations! Your registration for the <strong>${seriesName}</strong> has been confirmed.</p>
-  <p>Please find your <strong>Admit Card attached</strong> to this email as a PDF. Carry it (printed or on your phone) to every test.</p>
-
-  <!-- Centre Info -->
-  <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:20px 24px;margin:20px 0;">
-    <h2 style="font-size:15px;margin:0 0 12px;color:#c81240;">Your Exam Centre</h2>
-    <p style="margin:4px 0;"><strong>Centre:</strong> ${centreInfo.name}</p>
-    <p style="margin:4px 0;"><strong>Address:</strong> ${centreInfo.address}</p>
-    <p style="margin:8px 0 0;">
-      <a href="${centreInfo.mapsLink}" style="background:#c81240;color:#fff;text-decoration:none;padding:8px 18px;border-radius:6px;font-size:13px;font-weight:bold;">
-        View on Google Maps
-      </a>
-    </p>
-  </div>
-
-  <!-- Schedule -->
-  <div style="margin:20px 0;">
-    <h2 style="font-size:15px;color:#c81240;margin-bottom:12px;">Test Schedule</h2>
-    <table style="width:100%;border-collapse:collapse;font-size:13px;">
-      <thead>
-        <tr style="background:#0f172a;color:#fff;">
-          <th style="padding:8px 10px;text-align:left;">Test</th>
-          <th style="padding:8px 10px;text-align:left;">Date</th>
-          <th style="padding:8px 10px;text-align:left;">Syllabus</th>
-          <th style="padding:8px 10px;text-align:center;">Qs</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${schedule.map((r, i) => `
-        <tr style="background:${i % 2 === 0 ? '#fff' : '#f8fafc'};">
-          <td style="padding:7px 10px;border-bottom:1px solid #e2e8f0;">${r.test}</td>
-          <td style="padding:7px 10px;border-bottom:1px solid #e2e8f0;white-space:nowrap;">${r.date}</td>
-          <td style="padding:7px 10px;border-bottom:1px solid #e2e8f0;">${r.syllabus}</td>
-          <td style="padding:7px 10px;border-bottom:1px solid #e2e8f0;text-align:center;">${r.questions}</td>
-        </tr>`).join('')}
-      </tbody>
-    </table>
-    <p style="font-size:12px;color:#64748b;margin-top:8px;">
-      * Schedule may be revised after the official RSSB JE 2026 examination date announcement.
-    </p>
-  </div>
-
-  <!-- Dos and Don'ts -->
-  <div style="background:#fefce8;border:1px solid #fde68a;border-radius:10px;padding:20px 24px;margin:20px 0;">
-    <h2 style="font-size:15px;margin:0 0 12px;color:#92400e;">Do's and Don'ts</h2>
-    <p style="font-size:13px;font-weight:bold;margin:10px 0 6px;color:#15803d;">DOs:</p>
-    <ul style="margin:0 0 12px;padding-left:20px;font-size:13px;line-height:1.7;">
-      <li>Carry this Admit Card (printed or on phone) to every test</li>
-      <li>Reach the centre at least <strong>15 minutes before</strong> the test start time</li>
-      <li>Bring a valid Govt Photo ID (Aadhar, Voter ID, Driving Licence, Passport)</li>
-      <li>Use only a <strong>blue or black ballpoint pen</strong></li>
-      <li>Negative Marking: <strong>0.33 marks deducted per wrong answer</strong></li>
-      <li>Collect your Detailed Solution Booklet after each test</li>
-      ${!isDegreeCourse ? `
-      <li style="margin-top:10px;color:#1e40af;"><strong>Hindi Instructions (Diploma):</strong></li>
-      <li>9. यदि आप प्रश्न का उत्तर नहीं देना चाहते हैं तो उत्तर-पत्रक में पाँचवें (5) विकल्प को गहरा करें। यदि पाँच में से कोई भी गोला गहरा नहीं किया जाता है, तो ऐसे प्रश्न के लिये प्रश्न अंक का 1/3 भाग काटा जायेगा।</li>
-      <li>10. प्रश्न-पत्र हल करने के उपरान्त अभ्यर्थी अनिवार्य रूप से ओ.एम.आर. उत्तर-पत्रक जाँच लें कि समस्त प्रश्नों के लिये एक विकल्प (गोला) भर दिया गया है। इसके लिये ही निर्धारित समय से 10 मिनट का अतिरिक्त समय दिया गया है।</li>
-      <li>11. यदि अभ्यर्थी 10% से अधिक प्रश्नों में पाँच विकल्पों में से कोई भी विकल्प अंकित नहीं करता है तो उसको अयोग्य माना जायेगा।</li>
-      ` : ''}
-    </ul>
-    <p style="font-size:13px;font-weight:bold;margin:10px 0 6px;color:#dc2626;">DON'Ts:</p>
-    <ul style="margin:0;padding-left:20px;font-size:13px;line-height:1.7;">
-      <li>Do NOT bring mobile phones, smartwatches, or electronic devices inside the exam hall</li>
-      <li>Do NOT use pencil, gel pens, or whitener on the OMR sheet</li>
-      <li>Do NOT arrive late - latecomers may not be allowed entry</li>
-      <li>Do NOT carry books, notes, or study material into the exam hall</li>
-    </ul>
-  </div>
-
-  <p style="font-size:14px;">
-    For any queries, feel free to reach out on WhatsApp or call us directly.
-  </p>
-  <p style="font-size:14px;margin-top:20px;">
-    Best wishes for your preparation!<br/>
-    <strong>Dr. Jaspal Singh</strong><br/>
-    <a href="https://jaspalsingh.in" style="color:#c81240;">jaspalsingh.in</a>
-  </p>
-
-  <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0;" />
-  <p style="font-size:11px;color:#94a3b8;text-align:center;">
-    This is an automated confirmation email. Please do not reply to this email.
-  </p>
-</body>
-</html>`;
+  const htmlBody = buildAdmitCardHtml({ name, seriesName, centreInfo, schedule, isDegreeCourse });
 
   /* Send email via Resend */
   const { error } = await resend.emails.send({
@@ -714,4 +704,11 @@ router.post('/', (req, res) => {
 });
 
 module.exports = router;
-module.exports.processSubmission = processSubmission;
+module.exports.processSubmission   = processSubmission;
+module.exports.generateAdmitCard   = generateAdmitCard;
+module.exports.buildAdmitCardHtml  = buildAdmitCardHtml;
+module.exports.fetchImageBuffer    = fetchImageBuffer;
+module.exports.getCentreKey        = getCentreKey;
+module.exports.CENTRES             = CENTRES;
+module.exports.SCHEDULE_DEGREE     = SCHEDULE_DEGREE;
+module.exports.SCHEDULE_DIPLOMA    = SCHEDULE_DIPLOMA;
