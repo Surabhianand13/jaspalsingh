@@ -31,6 +31,26 @@ const CENTRES = {
     address: '311, Apex Mall, Lalkothi, Jaipur - 302015',
     mapsLink: 'https://maps.app.goo.gl/MzosW13pcH9pQ2Zn7',
   },
+  sikar: {
+    name: 'Sikar',
+    address: 'To be announced - contact us on WhatsApp for details',
+    mapsLink: 'https://wa.me/919829133317',
+  },
+  jodhpur: {
+    name: 'Jodhpur',
+    address: 'To be announced - contact us on WhatsApp for details',
+    mapsLink: 'https://wa.me/919829133317',
+  },
+  alwar: {
+    name: 'Alwar',
+    address: 'To be announced - contact us on WhatsApp for details',
+    mapsLink: 'https://wa.me/919829133317',
+  },
+  ajmer: {
+    name: 'Ajmer',
+    address: 'To be announced - contact us on WhatsApp for details',
+    mapsLink: 'https://wa.me/919829133317',
+  },
 };
 
 /* ── Schedule content ────────────────────────────────────── */
@@ -190,6 +210,10 @@ function getCentreKey(centreValue) {
   if (v.includes('kota'))    return 'kota';
   if (v.includes('bikaner')) return 'bikaner';
   if (v.includes('jaipur'))  return 'jaipur';
+  if (v.includes('sikar'))   return 'sikar';
+  if (v.includes('jodhpur')) return 'jodhpur';
+  if (v.includes('alwar'))   return 'alwar';
+  if (v.includes('ajmer'))   return 'ajmer';
   return null;
 }
 
