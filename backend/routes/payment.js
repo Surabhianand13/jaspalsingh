@@ -14,7 +14,7 @@ const { sendInvoiceEmail, sendWelcomePaymentEmail, sendAdminPaymentNotification 
 const COUPONS = {
   'FIRST':     { discountedPrice: 1,    label: 'First-time offer' },
   'JASPALSIR': { discount: 1000,        label: 'Get Rs 1,000 off' },
-  'JASPAL200': { discount: 200,         label: 'Extra Rs 200 off' },
+  'JASPAL200': { discount: 1200,        label: 'Special Rs 1,200 off' },
 };
 
 function applyCoupon(coupon, originalPrice) {
