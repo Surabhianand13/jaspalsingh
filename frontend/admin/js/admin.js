@@ -1989,6 +1989,56 @@
   function statCard(label,v){ return '<div class="admin-stat-card"><div class="admin-stat-val">'+e(v)+'</div><div class="admin-stat-lbl">'+e(label)+'</div></div>'; }
 
   function bindBizSections(){
+    /* OMR Papers - send test papers to enrolled learners */
+    var omrBtn = document.getElementById('btnSendOmrPapers');
+    if (omrBtn) {
+      omrBtn.addEventListener('click', function() {
+        var slug   = (document.getElementById('omrProgramSelect')   || {}).value;
+        var pdfUrl = (document.getElementById('omrPdfUrl')          || {}).value;
+        var result = document.getElementById('omrPapersResult');
+        if (!slug) { alert('Please select a program.'); return; }
+        if (!pdfUrl || !pdfUrl.startsWith('http')) { alert('Please enter a valid Google Drive URL.'); return; }
+        omrBtn.disabled = true;
+        omrBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+        if (result) { result.style.display='none'; }
+        fetch(API + '/enrollment/admin/send-omr-papers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+          body: JSON.stringify({ program_slug: slug, pdf_url: pdfUrl }),
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+          if (result) {
+            result.style.display = 'block';
+            if (data.error) {
+              result.style.background = '#fef2f2';
+              result.style.border = '1px solid #fca5a5';
+              result.style.color = '#991b1b';
+              result.innerHTML = '<i class="fas fa-exclamation-circle"></i> Error: ' + data.error;
+            } else {
+              result.style.background = '#f0fdf4';
+              result.style.border = '1px solid #86efac';
+              result.style.color = '#166534';
+              result.innerHTML = '<i class="fas fa-check-circle"></i> ' + (data.message || ('Sending to ' + (data.total || '?') + ' learners in background.'));
+            }
+          }
+        })
+        .catch(function(err){
+          if (result) {
+            result.style.display = 'block';
+            result.style.background = '#fef2f2';
+            result.style.border = '1px solid #fca5a5';
+            result.style.color = '#991b1b';
+            result.innerHTML = '<i class="fas fa-exclamation-circle"></i> Request failed: ' + err.message;
+          }
+        })
+        .finally(function(){
+          omrBtn.disabled = false;
+          omrBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Papers to All Enrolled Learners';
+        });
+      });
+    }
+
     var np=document.getElementById('btnNewProgram'); if(np) np.onclick=function(){openProgramModal(null);};
     var nb=document.getElementById('btnNewBanner'); if(nb) nb.onclick=function(){openBannerModal(null);};
     var pc=document.getElementById('programModalClose'); if(pc) pc.onclick=function(){document.getElementById('programModal').style.display='none';};
