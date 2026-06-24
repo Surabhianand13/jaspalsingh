@@ -350,9 +350,8 @@ async function sendNewLearnerAlert(learner) {
 }
 
 async function sendOtpEmail(email, otp) {
-  const { Resend } = require('resend');
-  const resend = new Resend(process.env.RESEND_API_KEY);
-  return resend.emails.send({
+  const { send, PRIORITY } = require('./resendQueue');
+  return send({
     from: 'Dr. Jaspal Singh <team@jaspalsingh.in>',
     to:   email,
     subject: 'Your verification code - jaspalsingh.in',
@@ -366,7 +365,7 @@ async function sendOtpEmail(email, otp) {
         <p style="color:#6b7280;font-size:13px;margin:0;">This code expires in 10 minutes. If you did not request this, please ignore this email.</p>
         <p style="color:#6b7280;font-size:13px;margin:8px 0 0;">- Team jaspalsingh.in</p>
       </div>`,
-  });
+  }, PRIORITY.OTP);
 }
 
 module.exports = {

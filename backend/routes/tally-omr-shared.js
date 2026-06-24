@@ -5,10 +5,9 @@
    Does NOT generate an admit card PDF.
    ============================================================ */
 
-const { Resend } = require('resend');
 const { query }  = require('../config/db');
+const { send: resendSend, PRIORITY } = require('../services/resendQueue');
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM   = 'Dr. Jaspal Singh <team@jaspalsingh.in>';
 
 /* ── Parse Tally fields (simplified - only name, email, phone, token) ── */
@@ -53,7 +52,7 @@ function parseTallyFields(fields) {
 /* ── Send rejection email ── */
 
 async function sendRejectionEmail(toEmail, reason) {
-  await resend.emails.send({
+  await resendSend({
     from: FROM,
     to:   toEmail,
     subject: 'Enrollment form - action needed | jaspalsingh.in',
@@ -215,12 +214,12 @@ async function processOmrSubmission(fields, type) {
 </body>
 </html>`;
 
-  const { error } = await resend.emails.send({
+  const { error } = await resendSend({
     from:    FROM,
     to:      email,
     subject: `Identity Verified - You're enrolled in ${seriesName}`,
     html:    htmlBody,
-  });
+  }, PRIORITY.ACTION_REQUIRED);
 
   if (error) {
     console.error('[tally-omr] Resend error:', error);

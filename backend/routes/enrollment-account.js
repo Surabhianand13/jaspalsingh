@@ -332,20 +332,19 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
       lastTestDate,
     });
 
-    const { Resend } = require('resend');
-    const resendClient = new Resend(process.env.RESEND_API_KEY);
+    const { send: resendSend, PRIORITY } = require('../services/resendQueue');
 
-    const { error } = await resendClient.emails.send({
+    const result = await resendSend({
       from:        'Dr. Jaspal Singh <team@jaspalsingh.in>',
       to:          enr.student_email,
       subject:     `Confirmed! Your Admit Card for ${seriesName}`,
       html:        buildAdmitCardHtml({ name: name || enr.student_name, seriesName, centreInfo, schedule, isDegreeCourse }),
       attachments: [{ filename: `AdmitCard_${rollNumber}.pdf`, content: pdfBuffer.toString('base64'), contentType: 'application/pdf' }],
-    });
+    }, PRIORITY.ADMIT_CARD);
 
-    if (error) {
-      console.error('[resend-admit-card] Resend error:', error);
-      return res.status(502).json({ error: `Email send failed: ${error.message}` });
+    if (result.error) {
+      console.error('[resend-admit-card] Resend error:', result.error);
+      return res.status(502).json({ error: `Email send failed: ${result.error.message}` });
     }
 
     console.log(`[resend-admit-card] Sent to ${enr.student_email} | Roll: ${rollNumber}`);
@@ -363,10 +362,9 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
 
 const https = require('https');
 const http  = require('http');
-const { Resend }   = require('resend');
 const { PDFDocument, rgb, degrees } = require('pdf-lib');
+const { send: resendSend, PRIORITY } = require('../services/resendQueue');
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 const OMR_FROM = 'Dr. Jaspal Singh <team@jaspalsingh.in>';
 
 /* Convert Google Drive share URL to direct download URL */
@@ -476,7 +474,7 @@ router.post('/admin/send-omr-papers', async (req, res) => {
 
         const watermarked = await watermarkPdf(sourcePdfBytes, email, phone);
 
-        const { error } = await resend.emails.send({
+        const { error } = await resendSend({
           from:    OMR_FROM,
           to:      email,
           subject: `Test Paper - ${program_slug} | jaspalsingh.in`,
