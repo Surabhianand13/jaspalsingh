@@ -5,10 +5,9 @@
    - Welcome email with learner details form link
    ============================================================ */
 
-const { Resend } = require('resend');
 const { transporter: gmailTransporter, isConfigured: gmailReady } = require('../config/mailer');
+const { send: resendSend, PRIORITY } = require('./resendQueue');
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM   = 'Dr. Jaspal Singh <team@jaspalsingh.in>';
 const SITE   = 'https://jaspalsingh.in';
 const ADMIN_EMAIL = 'jaspalsingh.pec@gmail.com';
@@ -118,12 +117,12 @@ async function sendInvoiceEmail(enrollment) {
     </div>
   `;
 
-  return resend.emails.send({
+  return resendSend({
     from:    FROM,
     to:      enrollment.student_email,
     subject: `Payment confirmed - ${enrollment.program_name} | jaspalsingh.in`,
     html:    baseHtml(body),
-  });
+  }, PRIORITY.INVOICE);
 }
 
 /* ── 2. Welcome + Details Form Email ────────────────────────── */
@@ -233,12 +232,12 @@ async function sendWelcomePaymentEmail(enrollment) {
     </div>
   `;
 
-  return resend.emails.send({
+  return resendSend({
     from:    FROM,
     to:      enrollment.student_email,
     subject: `Action required - fill your details to get your Admit Card | ${enrollment.program_name}`,
     html:    baseHtml(body),
-  });
+  }, PRIORITY.ACTION_REQUIRED);
 }
 
 /* ── 3. Admin Payment Notification (Gmail - free) ────────────── */
@@ -357,12 +356,12 @@ async function sendAdminPaymentNotification(enrollment) {
 </body>
 </html>`;
 
-  return resend.emails.send({
+  return resendSend({
     from:    FROM,
     to:      ADMIN_EMAIL,
     subject: `Rs ${Number(enrollment.amount).toLocaleString('en-IN')} - ${enrollment.student_name} | ${programLabel}`,
     html,
-  });
+  }, PRIORITY.ADMIN_NOTIFY);
 }
 
 module.exports = { sendInvoiceEmail, sendWelcomePaymentEmail, sendAdminPaymentNotification };

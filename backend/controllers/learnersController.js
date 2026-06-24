@@ -311,8 +311,7 @@ const adminStats = async (req, res, next) => {
 
 /* ── POST /api/learners/forgot-password ─────────────────────── */
 const crypto = require('crypto');
-const { Resend } = require('resend');
-const resend = new Resend(process.env.RESEND_API_KEY);
+const { send: resendSend, PRIORITY } = require('../services/resendQueue');
 
 const forgotPassword = async (req, res, next) => {
   try {
@@ -335,11 +334,12 @@ const forgotPassword = async (req, res, next) => {
     const resetUrl = `https://www.jaspalsingh.in/reset-password/?token=${token}`;
     const firstName = (learner.name || 'there').split(' ')[0];
 
-    await resend.emails.send({
+    await resendSend({
       from: 'Dr. Jaspal Singh <team@jaspalsingh.in>',
       to: email,
       subject: 'Reset your password - jaspalsingh.in',
-      html: `<!DOCTYPE html><html><head><meta charset="UTF-8"/></head>
+      html: `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"/></head>
 <body style="margin:0;padding:0;background:#f4f5f8;font-family:'Segoe UI',Arial,sans-serif;">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f5f8;padding:32px 16px;">
 <tr><td align="center"><table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
@@ -360,7 +360,7 @@ const forgotPassword = async (req, res, next) => {
   </td></tr>
 </table></td></tr></table>
 </body></html>`,
-    });
+    }, PRIORITY.OTP);
 
     res.json({ message: 'If that email is registered, a reset link has been sent.' });
   } catch (err) { next(err); }

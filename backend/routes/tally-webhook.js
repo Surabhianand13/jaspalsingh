@@ -5,12 +5,11 @@
 
 const express       = require('express');
 const router        = express.Router();
-const { Resend }    = require('resend');
 const PDFDocument   = require('pdfkit');
 const https         = require('https');
 const http          = require('http');
+const { send: resendSend, PRIORITY } = require('../services/resendQueue');
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM   = 'Dr. Jaspal Singh <team@jaspalsingh.in>';
 
 /* ── Centre data ─────────────────────────────────────────── */
@@ -527,7 +526,7 @@ function buildAdmitCardHtml({ name, seriesName, centreInfo, schedule, isDegreeCo
 /* ── Send rejection email ─────────────────────────────────── */
 
 async function sendRejectionEmail(toEmail, reason, contactLink) {
-  await resend.emails.send({
+  await resendSend({
     from: FROM,
     to:   toEmail,
     subject: 'Enrollment form - action needed | jaspalsingh.in',
@@ -669,8 +668,8 @@ async function processSubmission(fields, programType) {
 
   const htmlBody = buildAdmitCardHtml({ name, seriesName, centreInfo, schedule, isDegreeCourse });
 
-  /* Send email via Resend */
-  const { error } = await resend.emails.send({
+  /* Send email via Resend queue */
+  const result = await resendSend({
     from:        FROM,
     to:          email,
     subject:     `Confirmed! Your Admit Card for ${seriesName}`,
@@ -682,10 +681,10 @@ async function processSubmission(fields, programType) {
         contentType: 'application/pdf',
       },
     ],
-  });
+  }, PRIORITY.ADMIT_CARD);
 
-  if (error) {
-    console.error('[tally-webhook] Resend error:', error);
+  if (result.error) {
+    console.error('[tally-webhook] Resend error:', result.error);
   } else {
     console.log(`[tally-webhook] Email sent to ${email} | Roll: ${rollNumber}`);
   }
