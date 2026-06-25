@@ -1820,20 +1820,34 @@
   }
 
   /* ── ENROLLMENTS ── */
-  function loadEnrollments(){
-    var f = (document.getElementById('enrollFilter')||{}).value || '';
-    var periodBtn = document.querySelector('#enrollPeriodTabs .filter-tab.active');
-    var period = periodBtn ? periodBtn.getAttribute('data-period') : 'all';
+  var allEnrollments = []; // cached for client-side filtering
+
+  function applyEnrollFilters() {
+    var program  = (document.getElementById('enrollProgramFilter')||{}).value || '';
+    var status   = (document.getElementById('enrollFilter')||{}).value || '';
+    var dateFrom = (document.getElementById('enrollDateFrom')||{}).value || '';
+    var dateTo   = (document.getElementById('enrollDateTo')||{}).value || '';
     var body = document.getElementById('enrollmentsBody');
-    var qs = [];
-    if (f) qs.push('status=' + f);
-    if (period && period !== 'all') qs.push('period=' + period);
-    adminFetch('GET','/api/enrollment/admin/all' + (qs.length ? ('?' + qs.join('&')) : '')).then(function(d){
-      var s = d.summary||{};
-      document.getElementById('enrollSummary').innerHTML =
-        statCard('Revenue', inr(s.revenue)) + statCard('Paid', s.paid_count||0) + statCard('Pending', s.pending_count||0);
-      var es = d.enrollments||[];
-      if (!es.length){ body.innerHTML='<p class="admin-empty">No enrollments yet.</p>'; return; }
+
+    var filtered = allEnrollments.filter(function(x) {
+      if (program && x.program_slug !== program) return false;
+      if (status  && x.status !== status) return false;
+      if (dateFrom || dateTo) {
+        var d = new Date((x.paid_at || x.created_at || '').split('T')[0]);
+        if (dateFrom && d < new Date(dateFrom)) return false;
+        if (dateTo   && d > new Date(dateTo))   return false;
+      }
+      return true;
+    });
+
+    if (!filtered.length) {
+      body.innerHTML = '<p class="admin-empty">No enrollments match the selected filters.</p>';
+      return;
+    }
+    renderEnrollmentRows(filtered, body);
+  }
+
+  function renderEnrollmentRows(es, body) {
       var rows = es.map(function(x){
         var formBadge = x.status !== 'paid' ? '' :
           x.form_used
@@ -1890,6 +1904,41 @@
           showAdmitCardModal(parseInt(id), slug.includes('degree'));
         });
       });
+  }
+
+  function loadEnrollments(){
+    var periodBtn = document.querySelector('#enrollPeriodTabs .filter-tab.active');
+    var period = periodBtn ? periodBtn.getAttribute('data-period') : 'all';
+    var body = document.getElementById('enrollmentsBody');
+    var qs = [];
+    if (period && period !== 'all') qs.push('period=' + period);
+    body.innerHTML = '<p class="admin-empty">Loading...</p>';
+    adminFetch('GET', '/api/enrollment/admin/all' + (qs.length ? ('?' + qs.join('&')) : '')).then(function(d){
+      var s = d.summary||{};
+      document.getElementById('enrollSummary').innerHTML =
+        statCard('Revenue', inr(s.revenue)) + statCard('Paid', s.paid_count||0) + statCard('Pending', s.pending_count||0);
+
+      allEnrollments = d.enrollments || [];
+
+      // Populate program dropdown from unique programs in this dataset
+      var progSel = document.getElementById('enrollProgramFilter');
+      if (progSel) {
+        var currentProg = progSel.value;
+        var seen = {};
+        var opts = '<option value="">All Programs</option>';
+        allEnrollments.forEach(function(x){
+          if (x.program_slug && !seen[x.program_slug]) {
+            seen[x.program_slug] = true;
+            // Shorten label: use slug-based short name
+            var label = x.program_name || x.program_slug;
+            if (label.length > 40) label = label.slice(0, 40) + '...';
+            opts += '<option value="'+e(x.program_slug)+'"'+(currentProg===x.program_slug?' selected':'')+'>'+e(label)+'</option>';
+          }
+        });
+        progSel.innerHTML = opts;
+      }
+
+      applyEnrollFilters();
     }).catch(function(err){ body.innerHTML='<p class="admin-empty">'+e(err.message)+'</p>'; });
   }
 
@@ -2139,7 +2188,19 @@
     var nb=document.getElementById('btnNewBanner'); if(nb) nb.onclick=function(){openBannerModal(null);};
     var pc=document.getElementById('programModalClose'); if(pc) pc.onclick=function(){document.getElementById('programModal').style.display='none';};
     var bc=document.getElementById('bannerModalClose'); if(bc) bc.onclick=function(){document.getElementById('bannerModal').style.display='none';};
-    var ef=document.getElementById('enrollFilter'); if(ef) ef.onchange=loadEnrollments;
+    // Status filter triggers client-side filter (no reload needed)
+    var ef=document.getElementById('enrollFilter'); if(ef) ef.onchange=applyEnrollFilters;
+    var pf=document.getElementById('enrollProgramFilter'); if(pf) pf.onchange=applyEnrollFilters;
+    var df=document.getElementById('enrollDateFrom'); if(df) df.onchange=applyEnrollFilters;
+    var dt=document.getElementById('enrollDateTo'); if(dt) dt.onchange=applyEnrollFilters;
+    var cf=document.getElementById('enrollClearFilters');
+    if(cf) cf.onclick=function(){
+      var pf2=document.getElementById('enrollProgramFilter'); if(pf2) pf2.value='';
+      var ef2=document.getElementById('enrollFilter'); if(ef2) ef2.value='';
+      var df2=document.getElementById('enrollDateFrom'); if(df2) df2.value='';
+      var dt2=document.getElementById('enrollDateTo'); if(dt2) dt2.value='';
+      applyEnrollFilters();
+    };
     var re=document.getElementById('btnRefreshEnrollments'); if(re) re.onclick=loadEnrollments;
 
     /* Enrollment period tabs */

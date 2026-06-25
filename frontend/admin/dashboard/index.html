@@ -512,7 +512,6 @@
         <div class="section-header">
           <h2 class="section-title">Enrollments</h2>
           <div class="section-actions">
-            <select id="enrollFilter" class="admin-input"><option value="">All</option><option value="paid">Paid</option><option value="pending">Pending</option></select>
             <button class="btn-admin-secondary btn-admin-sm" id="btnRefreshEnrollments" type="button">Refresh</button>
           </div>
         </div>
@@ -522,6 +521,34 @@
           <button class="filter-tab" data-period="3days">Last 3 Days</button>
           <button class="filter-tab" data-period="week">This Week</button>
           <button class="filter-tab" data-period="month">This Month</button>
+        </div>
+        <!-- Filter bar -->
+        <div id="enrollFilterBar" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;padding:14px 16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;">
+          <div style="display:flex;flex-direction:column;gap:4px;min-width:180px;flex:1;">
+            <label style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;">Program</label>
+            <select id="enrollProgramFilter" class="admin-input" style="font-size:13px;">
+              <option value="">All Programs</option>
+            </select>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;min-width:130px;">
+            <label style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;">Status</label>
+            <select id="enrollFilter" class="admin-input" style="font-size:13px;">
+              <option value="">All</option>
+              <option value="paid">Paid</option>
+              <option value="pending">Pending</option>
+            </select>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;min-width:130px;">
+            <label style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;">Date From</label>
+            <input type="date" id="enrollDateFrom" class="admin-input" style="font-size:13px;"/>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;min-width:130px;">
+            <label style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;">Date To</label>
+            <input type="date" id="enrollDateTo" class="admin-input" style="font-size:13px;"/>
+          </div>
+          <div style="display:flex;align-items:flex-end;">
+            <button id="enrollClearFilters" class="btn-admin-secondary btn-admin-sm" style="font-size:12px;white-space:nowrap;">Clear Filters</button>
+          </div>
         </div>
         <div id="enrollSummary" class="admin-stat-row"></div>
         <div id="enrollmentsBody"><p class="admin-empty">Loading…</p></div>
