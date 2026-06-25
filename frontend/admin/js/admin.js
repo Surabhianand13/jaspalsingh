@@ -2143,7 +2143,7 @@
       btn.disabled = true;
       btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
       resultEl.style.display = 'none';
-      fetch(API + '/enrollment/admin/send-omr-papers', {
+      fetch(API_BASE + '/api/enrollment/admin/send-omr-papers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
         body: JSON.stringify({ program_slug: slug, test_number: testNum, question_paper_url: qpUrl, omr_sheet_url: omrUrl }),
