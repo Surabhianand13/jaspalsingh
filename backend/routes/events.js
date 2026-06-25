@@ -57,43 +57,56 @@ router.post('/track', async (req, res) => {
 /* ── Admin guard ─────────────────────────────────────────── */
 const { protect } = require('../middleware/auth');
 
+/* ── IST day boundary helper ─────────────────────────────────
+   Returns {start, end} as UTC Date objects for a calendar day in IST.
+   offsetDays=0 → today IST, offsetDays=1 → yesterday IST           */
+function istDayBounds(offsetDays) {
+  const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000; // +5:30
+  const nowIST = new Date(Date.now() + IST_OFFSET_MS);
+  // Midnight IST for target day
+  const midnight = new Date(Date.UTC(
+    nowIST.getUTCFullYear(), nowIST.getUTCMonth(), nowIST.getUTCDate() - offsetDays
+  ));
+  const start = new Date(midnight.getTime() - IST_OFFSET_MS); // convert IST midnight → UTC
+  const end   = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+  return { start, end };
+}
+
 /* ── GET /api/events/summary  (admin) ────────────────────────
    Accepts either:
      ?period=today|yesterday   - IST calendar day
      ?days=N                   - rolling N-day window (default 7) */
 router.get('/summary', protect, async (req, res, next) => {
   try {
-    const period = req.query.period; // 'today' | 'yesterday'
+    const period = req.query.period;
     const days   = Math.min(parseInt(req.query.days || '7', 10), 365);
 
-    // Build WHERE clause for IST calendar boundaries
-    let whereClause;
-    let label;
+    let params, whereClause, label;
+
     if (period === 'today') {
-      // From IST midnight today to now
-      whereClause = `created_at >= (CURRENT_DATE AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
-                     AND created_at < NOW()`;
-      label = 'today';
+      const { start } = istDayBounds(0);
+      params      = [start.toISOString()];
+      whereClause = `created_at >= $1 AND created_at <= NOW()`;
+      label       = 'Today';
     } else if (period === 'yesterday') {
-      // From IST midnight yesterday to IST midnight today
-      whereClause = `created_at >= ((CURRENT_DATE - INTERVAL '1 day') AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
-                     AND created_at < (CURRENT_DATE AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'`;
-      label = 'yesterday';
+      const { start, end } = istDayBounds(1);
+      params      = [start.toISOString(), end.toISOString()];
+      whereClause = `created_at >= $1 AND created_at < $2`;
+      label       = 'Yesterday';
     } else {
-      whereClause = `created_at > NOW() - make_interval(days => ${days})`;
-      label = `${days}d`;
+      params      = [days];
+      whereClause = `created_at > NOW() - make_interval(days => $1)`;
+      label       = `${days}d`;
     }
 
     const [byType, funnel, active] = await Promise.all([
-      query(`SELECT type, COUNT(*)::int AS count
-             FROM events WHERE ${whereClause}
-             GROUP BY type ORDER BY count DESC`),
+      query(`SELECT type, COUNT(*)::int AS count FROM events WHERE ${whereClause} GROUP BY type ORDER BY count DESC`, params),
       query(`SELECT
                COUNT(*) FILTER (WHERE type='program_view')::int    AS program_views,
                COUNT(*) FILTER (WHERE type='checkout_start')::int  AS checkout_starts,
                COUNT(*) FILTER (WHERE type='checkout_exit')::int   AS checkout_exits,
                COUNT(*) FILTER (WHERE type='payment_success')::int AS payments
-             FROM events WHERE ${whereClause}`),
+             FROM events WHERE ${whereClause}`, params),
       query(`SELECT COUNT(DISTINCT session_id)::int AS active_sessions
              FROM events WHERE created_at > NOW() - INTERVAL '30 minutes'`),
     ]);
