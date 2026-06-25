@@ -81,20 +81,25 @@ const register = async (req, res, next) => {
 
     const norm = email.toLowerCase().trim();
 
-    // OTP is mandatory - verifies the caller owns the email address
-    if (!otp) {
-      return res.status(400).json({ error: 'Email verification code is required.' });
+    // OTP is required for profile signup. Checkout flow skips OTP because
+    // Cashfree payment itself verifies the user and account setup happens
+    // post-payment via the create-account endpoint.
+    const { checkout_flow } = req.body;
+    if (!checkout_flow) {
+      if (!otp) {
+        return res.status(400).json({ error: 'Email verification code is required.' });
+      }
+      const otpRow = await query(
+        `SELECT otp, expires_at, used FROM email_otps WHERE email = $1`, [norm]
+      );
+      if (!otpRow.rows.length || otpRow.rows[0].used || new Date() > new Date(otpRow.rows[0].expires_at)) {
+        return res.status(400).json({ error: 'Verification code has expired. Please request a new one.' });
+      }
+      if (otpRow.rows[0].otp !== otp.trim()) {
+        return res.status(400).json({ error: 'Incorrect verification code. Please try again.' });
+      }
+      await query(`UPDATE email_otps SET used = TRUE WHERE email = $1`, [norm]);
     }
-    const otpRow = await query(
-      `SELECT otp, expires_at, used FROM email_otps WHERE email = $1`, [norm]
-    );
-    if (!otpRow.rows.length || otpRow.rows[0].used || new Date() > new Date(otpRow.rows[0].expires_at)) {
-      return res.status(400).json({ error: 'Verification code has expired. Please request a new one.' });
-    }
-    if (otpRow.rows[0].otp !== otp.trim()) {
-      return res.status(400).json({ error: 'Incorrect verification code. Please try again.' });
-    }
-    await query(`UPDATE email_otps SET used = TRUE WHERE email = $1`, [norm]);
 
     const existing = await query('SELECT id FROM learners WHERE email = $1', [norm]);
     if (existing.rows.length) {
