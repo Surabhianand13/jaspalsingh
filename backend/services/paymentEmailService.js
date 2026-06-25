@@ -12,8 +12,10 @@ const FROM   = 'Dr. Jaspal Singh <team@jaspalsingh.in>';
 const SITE   = 'https://jaspalsingh.in';
 const ADMIN_EMAIL = 'jaspalsingh.pec@gmail.com';
 
-const TALLY_FORM_URL_DIPLOMA = process.env.TALLY_FORM_URL_DIPLOMA || 'https://tally.so/r/b5AY87';
-const TALLY_FORM_URL_DEGREE  = process.env.TALLY_FORM_URL_DEGREE  || 'https://tally.so/r/b5AD1Z';
+const TALLY_FORM_URL_DIPLOMA     = process.env.TALLY_FORM_URL_DIPLOMA     || 'https://tally.so/r/b5AY87';
+const TALLY_FORM_URL_DEGREE      = process.env.TALLY_FORM_URL_DEGREE      || 'https://tally.so/r/b5AD1Z';
+const TALLY_FORM_URL_OMR_DIPLOMA = process.env.TALLY_FORM_URL_OMR_DIPLOMA || 'https://tally.so/r/jagNz4';
+const TALLY_FORM_URL_OMR_DEGREE  = process.env.TALLY_FORM_URL_OMR_DEGREE  || 'https://tally.so/r/ZjW0P5';
 
 const WA_GROUP_DIPLOMA = 'https://chat.whatsapp.com/Iq5hz6qm9kPFdjOEESK4Ka?s=sh&p=a&ilr=4';
 const WA_GROUP_DEGREE  = 'https://chat.whatsapp.com/K0Upt2jTmdQLkaI5c0CvM0?s=sh&p=a&ilr=4';
@@ -131,7 +133,10 @@ async function sendWelcomePaymentEmail(enrollment) {
   const firstName = esc((enrollment.student_name || 'there').split(' ')[0]);
 
   const slug = enrollment.program_slug || '';
-  const tallyBase = slug.includes('degree') ? TALLY_FORM_URL_DEGREE : TALLY_FORM_URL_DIPLOMA;
+  const tallyBase = slug.includes('omr') && slug.includes('degree') ? TALLY_FORM_URL_OMR_DEGREE
+    : slug.includes('omr') && slug.includes('diploma')              ? TALLY_FORM_URL_OMR_DIPLOMA
+    : slug.includes('degree')                                        ? TALLY_FORM_URL_DEGREE
+    :                                                                  TALLY_FORM_URL_DIPLOMA;
   const formUrl = `${tallyBase}?name=${encodeURIComponent(enrollment.student_name)}&email=${encodeURIComponent(enrollment.student_email)}&phone=${encodeURIComponent(enrollment.student_phone || '')}&order=${encodeURIComponent(enrollment.order_id)}&token=${encodeURIComponent(enrollment.form_token || '')}`;
 
   const waGroup = slug.includes('degree') ? WA_GROUP_DEGREE : slug.includes('diploma') ? WA_GROUP_DIPLOMA : WA_GROUP_RPSC_AE;
