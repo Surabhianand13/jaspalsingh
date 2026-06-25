@@ -2042,9 +2042,19 @@
   /* ── ANALYTICS ── */
   function loadBizAnalytics(){
     var activeBtn = document.querySelector('.anal-period.active');
-    var days = activeBtn ? activeBtn.getAttribute('data-days') : '7';
     var body = document.getElementById('analyticsBody');
-    adminFetch('GET','/api/events/summary?days='+days).then(function(d){
+    var qs, label;
+    if (activeBtn && activeBtn.getAttribute('data-period')) {
+      var period = activeBtn.getAttribute('data-period');
+      qs    = 'period=' + period;
+      label = period.charAt(0).toUpperCase() + period.slice(1);
+    } else {
+      var days = activeBtn ? (activeBtn.getAttribute('data-days') || '7') : '7';
+      qs    = 'days=' + days;
+      label = days + 'd';
+    }
+    body.innerHTML = '<p class="admin-empty">Loading...</p>';
+    adminFetch('GET','/api/events/summary?' + qs).then(function(d){
       var f = d.funnel||{};
       var byType = {}; (d.by_type||[]).forEach(function(r){ byType[r.type]=r.count; });
       var cards =
@@ -2055,15 +2065,16 @@
         statCard('Call clicks', byType.call_click||0) +
         statCard('Enquiry clicks', byType.enquiry_click||0);
       var funnel =
-        '<h3 style="margin:24px 0 12px;font-size:16px;">Checkout Funnel ('+days+'d)</h3><div class="admin-stat-row">' +
+        '<h3 style="margin:24px 0 12px;font-size:16px;">Checkout Funnel ('+label+')</h3><div class="admin-stat-row">' +
         statCard('Program views', f.program_views||0) +
         statCard('Checkout started', f.checkout_starts||0) +
         statCard('Checkout exited', f.checkout_exits||0) +
         statCard('Payments', f.payments||0) + '</div>';
       var typeRows = (d.by_type||[]).map(function(r){ return '<tr><td>'+e(r.type)+'</td><td>'+r.count+'</td></tr>'; }).join('');
+      var emptyMsg = typeRows ? '' : '<tr><td colspan="2" style="color:#9ca3af;padding:16px;text-align:center;">No events recorded for this period</td></tr>';
       body.innerHTML = '<div class="admin-stat-row">'+cards+'</div>'+funnel +
-        '<h3 style="margin:24px 0 12px;font-size:16px;">All events ('+days+'d)</h3>' +
-        '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Event</th><th>Count</th></tr></thead><tbody>'+typeRows+'</tbody></table></div>';
+        '<h3 style="margin:24px 0 12px;font-size:16px;">All events ('+label+')</h3>' +
+        '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Event</th><th>Count</th></tr></thead><tbody>'+typeRows+emptyMsg+'</tbody></table></div>';
     }).catch(function(err){ body.innerHTML='<p class="admin-empty">'+e(err.message)+'</p>'; });
   }
 
