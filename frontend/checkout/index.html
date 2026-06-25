@@ -546,7 +546,7 @@
           document.getElementById('payBtnText').textContent = 'Creating your account...';
           const regRes  = await fetch(API + '/api/learners/register', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, email, phone, password }),
+            body: JSON.stringify({ name, email, phone, password, checkout_flow: true }),
           });
           const regData = await regRes.json();
           if (regRes.ok && regData.token) {
