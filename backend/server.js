@@ -32,14 +32,10 @@ const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
 app.use(cors({
   origin: function (origin, callback) {
-    // In production, require an explicit origin on all browser requests.
-    // No-origin requests (curl, Postman) are blocked in production to reduce
-    // the automated-attack surface. Cashfree webhooks use raw POST with no
-    // origin but are protected by HMAC signature verification independently.
-    if (!origin) {
-      if (IS_PRODUCTION) return callback(new Error('Direct API access not allowed.'));
-      return callback(null, true);
-    }
+    // Allow requests with no Origin header - these are server-to-server calls
+    // (Tally webhooks, Cashfree webhooks, etc.) which never send an Origin.
+    // Webhook endpoints have their own validation (form_token, HMAC signature).
+    if (!origin) return callback(null, true);
     if (allowedOrigins.indexOf(origin) !== -1) return callback(null, true);
     callback(new Error('Not allowed by CORS: ' + origin));
   },
