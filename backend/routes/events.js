@@ -57,38 +57,51 @@ router.post('/track', async (req, res) => {
 /* ── Admin guard ─────────────────────────────────────────── */
 const { protect } = require('../middleware/auth');
 
-/* ── GET /api/events/summary?days=30  (admin) ────────────── */
+/* ── GET /api/events/summary  (admin) ────────────────────────
+   Accepts either:
+     ?period=today|yesterday   - IST calendar day
+     ?days=N                   - rolling N-day window (default 7) */
 router.get('/summary', protect, async (req, res, next) => {
   try {
-    const days = Math.min(parseInt(req.query.days || '30', 10), 365);
+    const period = req.query.period; // 'today' | 'yesterday'
+    const days   = Math.min(parseInt(req.query.days || '7', 10), 365);
 
-    const [byType, daily, funnel, active] = await Promise.all([
-      query(
-        `SELECT type, COUNT(*)::int AS count
-         FROM events WHERE created_at > NOW() - make_interval(days => $1)
-         GROUP BY type ORDER BY count DESC`, [days]),
-      query(
-        `SELECT gs.day::date AS date, COALESCE(COUNT(e.id),0)::int AS events
-         FROM generate_series((NOW() - make_interval(days => $1))::date, NOW()::date, '1 day') gs(day)
-         LEFT JOIN events e ON e.created_at::date = gs.day::date
-         GROUP BY gs.day ORDER BY gs.day ASC`, [days - 1]),
-      query(
-        `SELECT
-           COUNT(*) FILTER (WHERE type='program_view')::int    AS program_views,
-           COUNT(*) FILTER (WHERE type='checkout_start')::int  AS checkout_starts,
-           COUNT(*) FILTER (WHERE type='checkout_exit')::int   AS checkout_exits,
-           COUNT(*) FILTER (WHERE type='payment_success')::int AS payments
-         FROM events WHERE created_at > NOW() - make_interval(days => $1)`, [days]),
-      query(
-        `SELECT COUNT(DISTINCT session_id)::int AS active_sessions
-         FROM events WHERE created_at > NOW() - INTERVAL '30 minutes'`),
+    // Build WHERE clause for IST calendar boundaries
+    let whereClause;
+    let label;
+    if (period === 'today') {
+      // From IST midnight today to now
+      whereClause = `created_at >= (CURRENT_DATE AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
+                     AND created_at < NOW()`;
+      label = 'today';
+    } else if (period === 'yesterday') {
+      // From IST midnight yesterday to IST midnight today
+      whereClause = `created_at >= ((CURRENT_DATE - INTERVAL '1 day') AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
+                     AND created_at < (CURRENT_DATE AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'`;
+      label = 'yesterday';
+    } else {
+      whereClause = `created_at > NOW() - make_interval(days => ${days})`;
+      label = `${days}d`;
+    }
+
+    const [byType, funnel, active] = await Promise.all([
+      query(`SELECT type, COUNT(*)::int AS count
+             FROM events WHERE ${whereClause}
+             GROUP BY type ORDER BY count DESC`),
+      query(`SELECT
+               COUNT(*) FILTER (WHERE type='program_view')::int    AS program_views,
+               COUNT(*) FILTER (WHERE type='checkout_start')::int  AS checkout_starts,
+               COUNT(*) FILTER (WHERE type='checkout_exit')::int   AS checkout_exits,
+               COUNT(*) FILTER (WHERE type='payment_success')::int AS payments
+             FROM events WHERE ${whereClause}`),
+      query(`SELECT COUNT(DISTINCT session_id)::int AS active_sessions
+             FROM events WHERE created_at > NOW() - INTERVAL '30 minutes'`),
     ]);
 
     res.json({
-      days,
+      period: label,
       by_type: byType.rows,
-      daily: daily.rows,
-      funnel: funnel.rows[0],
+      funnel:  funnel.rows[0],
       active_now: active.rows[0].active_sessions,
     });
   } catch (err) { next(err); }
