@@ -377,17 +377,39 @@ function toDriveDownloadUrl(url) {
 }
 
 /* Fetch URL as Buffer */
-function fetchBuffer(url) {
+function fetchBuffer(url, depth = 0) {
+  if (depth > 8) return Promise.reject(new Error('Too many redirects fetching PDF'));
   return new Promise((resolve, reject) => {
     const lib = url.startsWith('https') ? https : http;
-    lib.get(url, { headers: { 'User-Agent': 'jaspalsingh.in/1.0' } }, (res) => {
-      if (res.statusCode === 301 || res.statusCode === 302) {
-        return fetchBuffer(res.headers.location).then(resolve).catch(reject);
+    lib.get(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; jaspalsingh.in/1.0)' } }, (res) => {
+      const redirect = [301, 302, 303, 307, 308];
+      if (redirect.includes(res.statusCode) && res.headers.location) {
+        const next = res.headers.location.startsWith('http')
+          ? res.headers.location
+          : new URL(res.headers.location, url).href;
+        res.resume();
+        return fetchBuffer(next, depth + 1).then(resolve).catch(reject);
       }
       if (res.statusCode !== 200) return reject(new Error(`HTTP ${res.statusCode} fetching PDF`));
+
       const chunks = [];
       res.on('data', c => chunks.push(c));
-      res.on('end', () => resolve(Buffer.concat(chunks)));
+      res.on('end', () => {
+        const buf = Buffer.concat(chunks);
+        // Google Drive returns HTML confirmation page for large files.
+        // Extract the confirm URL and retry.
+        const isHtml = (res.headers['content-type'] || '').includes('text/html');
+        if (isHtml) {
+          const html = buf.toString('utf8');
+          const confirmMatch = html.match(/href="(\/uc\?export=download[^"]+confirm=[^"]+)"/);
+          if (confirmMatch) {
+            const confirmUrl = 'https://drive.google.com' + confirmMatch[1].replace(/&amp;/g, '&');
+            return fetchBuffer(confirmUrl, depth + 1).then(resolve).catch(reject);
+          }
+          return reject(new Error('Google Drive returned HTML - check file permissions are set to "Anyone with link"'));
+        }
+        resolve(buf);
+      });
       res.on('error', reject);
     }).on('error', reject);
   });
