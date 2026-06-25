@@ -1208,6 +1208,7 @@
   overflow: hidden;
   box-shadow: 0 2px 16px rgba(26,26,46,.06);
 }
+.ql-card { align-self: start; }
 .ql-head, .ln-head {
   display: flex; align-items: center; gap: 10px;
   font-family: var(--font-heading);
