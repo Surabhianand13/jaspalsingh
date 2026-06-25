@@ -2135,52 +2135,58 @@
 
   function bindBizSections(){
     /* OMR Papers - send test papers to enrolled learners */
-    var omrBtn = document.getElementById('btnSendOmrPapers');
-    if (omrBtn) {
-      omrBtn.addEventListener('click', function() {
-        var slug   = (document.getElementById('omrProgramSelect')   || {}).value;
-        var pdfUrl = (document.getElementById('omrPdfUrl')          || {}).value;
-        var result = document.getElementById('omrPapersResult');
-        if (!slug) { alert('Please select a program.'); return; }
-        if (!pdfUrl || !pdfUrl.startsWith('http')) { alert('Please enter a valid Google Drive URL.'); return; }
-        omrBtn.disabled = true;
-        omrBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
-        if (result) { result.style.display='none'; }
-        fetch(API + '/enrollment/admin/send-omr-papers', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
-          body: JSON.stringify({ program_slug: slug, pdf_url: pdfUrl }),
-        })
-        .then(function(r){ return r.json(); })
-        .then(function(data){
-          if (result) {
-            result.style.display = 'block';
-            if (data.error) {
-              result.style.background = '#fef2f2';
-              result.style.border = '1px solid #fca5a5';
-              result.style.color = '#991b1b';
-              result.innerHTML = '<i class="fas fa-exclamation-circle"></i> Error: ' + data.error;
-            } else {
-              result.style.background = '#f0fdf4';
-              result.style.border = '1px solid #86efac';
-              result.style.color = '#166534';
-              result.innerHTML = '<i class="fas fa-check-circle"></i> ' + (data.message || ('Sending to ' + (data.total || '?') + ' learners in background.'));
-            }
-          }
-        })
-        .catch(function(err){
-          if (result) {
-            result.style.display = 'block';
-            result.style.background = '#fef2f2';
-            result.style.border = '1px solid #fca5a5';
-            result.style.color = '#991b1b';
-            result.innerHTML = '<i class="fas fa-exclamation-circle"></i> Request failed: ' + err.message;
-          }
-        })
-        .finally(function(){
-          omrBtn.disabled = false;
-          omrBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Papers to All Enrolled Learners';
-        });
+    function sendOmrPapers(slug, testNum, qpUrl, omrUrl, btn, resultEl) {
+      if (!testNum) { alert('Please select a test number.'); return; }
+      if (!qpUrl || !qpUrl.startsWith('http')) { alert('Please enter a valid Question Paper Google Drive URL.'); return; }
+      if (!omrUrl || !omrUrl.startsWith('http')) { alert('Please enter a valid OMR Sheet Google Drive URL.'); return; }
+      if (!confirm('Send Test ' + String(testNum).padStart(2,'0') + ' papers to ALL enrolled learners for this program? This cannot be undone.')) return;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+      resultEl.style.display = 'none';
+      fetch(API + '/enrollment/admin/send-omr-papers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+        body: JSON.stringify({ program_slug: slug, test_number: testNum, question_paper_url: qpUrl, omr_sheet_url: omrUrl }),
+      })
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        resultEl.style.display = 'block';
+        if (data.error) {
+          resultEl.style.background = '#fef2f2'; resultEl.style.border = '1px solid #fca5a5'; resultEl.style.color = '#991b1b';
+          resultEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> Error: ' + data.error;
+          btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Papers';
+        } else {
+          resultEl.style.background = '#f0fdf4'; resultEl.style.border = '1px solid #86efac'; resultEl.style.color = '#166534';
+          resultEl.innerHTML = '<i class="fas fa-check-circle"></i> ' + (data.message || 'Sending in background...');
+          btn.innerHTML = '<i class="fas fa-check"></i> Sent';
+        }
+      })
+      .catch(function(){
+        resultEl.style.display = 'block';
+        resultEl.style.background = '#fef2f2'; resultEl.style.border = '1px solid #fca5a5'; resultEl.style.color = '#991b1b';
+        resultEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> Network error. Please try again.';
+        btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Papers';
+      });
+    }
+
+    var btnDegreeOmr = document.getElementById('btnSendDegreeOmr');
+    if (btnDegreeOmr) {
+      btnDegreeOmr.addEventListener('click', function() {
+        sendOmrPapers('rssb-je-omr-degree-test-series',
+          document.getElementById('omrDegreeTestNum').value,
+          document.getElementById('omrDegreeQpUrl').value,
+          document.getElementById('omrDegreeOmrUrl').value,
+          btnDegreeOmr, document.getElementById('omrDegreeResult'));
+      });
+    }
+    var btnDiplomaOmr = document.getElementById('btnSendDiplomaOmr');
+    if (btnDiplomaOmr) {
+      btnDiplomaOmr.addEventListener('click', function() {
+        sendOmrPapers('rssb-jen-omr-diploma-test-series',
+          document.getElementById('omrDiplomaTestNum').value,
+          document.getElementById('omrDiplomaQpUrl').value,
+          document.getElementById('omrDiplomaOmrUrl').value,
+          btnDiplomaOmr, document.getElementById('omrDiplomaResult'));
       });
     }
 

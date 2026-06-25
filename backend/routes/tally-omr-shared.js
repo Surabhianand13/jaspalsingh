@@ -161,56 +161,210 @@ async function processOmrSubmission(fields, type) {
 
   const isDegreeCourse = type === 'omr-degree';
   const seriesName = isDegreeCourse
-    ? 'RSSB JE 2026 - Civil Degree - OMR Based Online Test Series'
-    : 'RSSB JEN 2026-27 - Civil Diploma - OMR Based Online Test Series';
+    ? 'RSSB JE 2026 - Civil Degree (OMR Based Offline Test Series)'
+    : 'RSSB JE 2026 - Civil Diploma (OMR Based Offline Test Series)';
+
+  const degreeSchedule = [
+    ['01','5 Jul 2026','Rajasthan Geography-I + Building Technology & Construction Management'],
+    ['02','12 Jul 2026','Rajasthan History I + Fluid Mechanics'],
+    ['03','19 Jul 2026','Rajasthan Art & Culture-I + Surveying, Estimating Costing & Field Engineering'],
+    ['04','26 Jul 2026','Rajasthan Political & Administrative System-I + Irrigation & Water Resources'],
+    ['05','2 Aug 2026','Rajasthan Geography-II + Theory of Structures & Strength of Materials'],
+    ['06','9 Aug 2026','Rajasthan History II + Structural Analysis'],
+    ['07','16 Aug 2026','Rajasthan Art & Culture-II + Soil Mechanics & Foundation Engineering'],
+    ['08','23 Aug 2026','Rajasthan Political & Administrative System-II + Design of RCC & Masonry Structures'],
+    ['09','30 Aug 2026','Rajasthan GK Mixed Revision-I + Design of Steel Structures'],
+    ['10','6 Sep 2026','Rajasthan GK Mixed Revision-II + Construction Technology'],
+    ['11','13 Sep 2026','Rajasthan GK Mixed Revision-III + AutoCAD Civil Engineering Drawing'],
+    ['12','20 Sep 2026','Rajasthan GK Mixed Revision-IV + Public Health Engineering'],
+    ['13','27 Sep 2026','Rajasthan GK Mixed Revision-V + Highway & Bridges'],
+    ['14','4 Oct 2026','Full Length Test - 01'],
+    ['15','11 Oct 2026','Full Length Test - 02'],
+    ['16','18 Oct 2026','Full Length Test - 03'],
+    ['17','25 Oct 2026','Full Length Test - 04'],
+    ['18','1 Nov 2026','Full Length Test - 05'],
+    ['19','8 Nov 2026','Full Length Test - 06'],
+    ['20','15 Nov 2026','Full Length Test - 07'],
+    ['21','22 Nov 2026','Full Length Test - 08'],
+    ['22','29 Nov 2026','Full Length Test - 09'],
+    ['23','6 Dec 2026','Full Length Test - 10'],
+    ['24','13 Dec 2026','Full Length Test - 11'],
+    ['25','20 Dec 2026','Full Length Test - 12'],
+    ['26','27 Dec 2026','Full Length Test - 13'],
+    ['27','3 Jan 2027','Full Length Test - 14'],
+    ['28','10 Jan 2027','Full Length Test - 15'],
+  ];
+
+  const diplomaSchedule = [
+    ['01','5 Jul 2026','राजस्थान का भूगोल + Building Technology & Construction Management'],
+    ['02','12 Jul 2026','राजस्थान का इतिहास + Surveying, Estimating & Costing'],
+    ['03','19 Jul 2026','राजस्थान की कला एवं संस्कृति + Strength of Materials'],
+    ['04','26 Jul 2026','राजस्थान की राजनीतिक एवं प्रशासनिक व्यवस्था + Reinforced Concrete Design'],
+    ['05','2 Aug 2026','Rajasthan GK Mixed Revision-I + Irrigation & Water Resources'],
+    ['06','9 Aug 2026','Rajasthan GK Mixed Revision-II + Soil Engineering'],
+    ['07','16 Aug 2026','Rajasthan GK Mixed Revision-III + AutoCAD Civil Engineering Drawing'],
+    ['08','23 Aug 2026','Full Length Test - 01'],
+    ['09','30 Aug 2026','Full Length Test - 02'],
+    ['10','6 Sep 2026','Full Length Test - 03'],
+    ['11','13 Sep 2026','Full Length Test - 04'],
+    ['12','20 Sep 2026','Full Length Test - 05'],
+    ['13','27 Sep 2026','Full Length Test - 06'],
+    ['14','4 Oct 2026','Full Length Test - 07'],
+    ['15','11 Oct 2026','Full Length Test - 08'],
+    ['16','18 Oct 2026','Full Length Test - 09'],
+    ['17','25 Oct 2026','Full Length Test - 10'],
+    ['18','1 Nov 2026','Full Length Test - 11'],
+    ['19','8 Nov 2026','Full Length Test - 12'],
+    ['20','15 Nov 2026','Full Length Test - 13'],
+    ['21','22 Nov 2026','Full Length Test - 14'],
+    ['22','29 Nov 2026','Full Length Test - 15'],
+  ];
+
+  const schedule = isDegreeCourse ? degreeSchedule : diplomaSchedule;
+  const scheduleRows = schedule.map(([num, date, syllabus]) =>
+    `<tr style="border-bottom:1px solid #e2e8f0;">
+       <td style="padding:7px 10px;font-size:12px;font-weight:700;color:#6366F1;white-space:nowrap;">Test ${num}</td>
+       <td style="padding:7px 10px;font-size:12px;color:#475569;white-space:nowrap;">${date}</td>
+       <td style="padding:7px 10px;font-size:12px;color:#374151;">${syllabus}</td>
+     </tr>`
+  ).join('');
 
   /* Send confirmation email */
   const htmlBody = `<!DOCTYPE html>
-<html>
-<head><meta charset="UTF-8" /></head>
-<body style="font-family:Arial,sans-serif;color:#0f172a;max-width:620px;margin:0 auto;padding:20px;">
+<html lang="en">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/></head>
+<body style="margin:0;padding:0;background:#f4f5f8;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f5f8;padding:32px 16px;">
+<tr><td align="center">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;">
 
-  <div style="background:#0f172a;border-radius:12px;padding:28px 32px;margin-bottom:24px;text-align:center;">
-    <h1 style="color:#fff;margin:0;font-size:22px;">Dr. Jaspal Singh</h1>
-    <p style="color:#94a3b8;margin:6px 0 0;font-size:13px;">jaspalsingh.in</p>
-  </div>
+  <!-- Header -->
+  <tr><td style="background:#0F1117;border-radius:14px 14px 0 0;padding:24px 36px;text-align:center;">
+    <div style="font-size:22px;font-weight:800;color:#fff;">Dr. <span style="color:#C81240;">Jaspal Singh</span></div>
+    <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:4px;letter-spacing:1.5px;text-transform:uppercase;">jaspalsingh.in</div>
+  </td></tr>
 
-  <p style="font-size:16px;">Dear <strong>${name || 'Learner'}</strong>,</p>
-  <p>Your identity has been verified. You are now enrolled in the <strong>${seriesName}</strong>.</p>
+  <!-- Body -->
+  <tr><td style="background:#fff;padding:32px 36px;">
 
-  <div style="background:#f0f4ff;border:1px solid rgba(99,102,241,.25);border-radius:12px;padding:22px 26px;margin:24px 0;">
-    <h2 style="font-size:16px;margin:0 0 14px;color:#4338CA;">What happens next</h2>
-    <ol style="margin:0;padding-left:20px;font-size:14px;line-height:1.8;color:#374151;">
-      <li>On each scheduled test day, you will receive the <strong>question paper PDF via this email</strong>.</li>
-      <li>Download and attempt the paper at home. Fill the OMR sheet on paper.</li>
-      <li>Take a clear photo/scan of your completed OMR sheet and reply to the test email before <strong>end of day</strong>.</li>
-      <li>Results and rankings will be announced together with offline participants.</li>
-    </ol>
-    <p style="font-size:13px;color:#6366F1;margin:14px 0 0;font-weight:600;">
-      The first test is on 5 July 2026. Keep an eye on your inbox on each Sunday test day.
+    <!-- Enrolled badge -->
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="display:inline-block;background:#eef2ff;border:1px solid #c7d2fe;border-radius:50px;padding:8px 20px;">
+        <span style="font-size:13px;font-weight:700;color:#4338CA;">Identity Verified - You are Enrolled</span>
+      </div>
+    </div>
+
+    <h2 style="margin:0 0 6px;font-size:20px;color:#1A1A2E;font-weight:800;">Welcome, ${name || 'Learner'}!</h2>
+    <p style="margin:0 0 24px;font-size:15px;color:#6b7280;line-height:1.7;">
+      You are now enrolled in <strong style="color:#1A1A2E;">${seriesName}</strong>.
+      Your identity has been verified successfully.
     </p>
-  </div>
 
-  <div style="background:#fefce8;border:1px solid #fde68a;border-radius:10px;padding:18px 22px;margin:20px 0;">
-    <p style="font-size:14px;font-weight:700;color:#92400e;margin:0 0 8px;">Important</p>
-    <ul style="margin:0;padding-left:20px;font-size:13px;line-height:1.75;color:#78350f;">
-      <li>If you do not submit your OMR sheet by end of day on the test date, evaluation will not be done for that test.</li>
-      <li>You can still access all test PDFs even if you miss a submission.</li>
-      <li>Make sure this email address is not in your spam/junk folder so you receive test papers on time.</li>
-    </ul>
-  </div>
+    <!-- How it works -->
+    <div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:12px;padding:20px 24px;margin-bottom:24px;">
+      <div style="font-size:11px;font-weight:800;color:#4338CA;text-transform:uppercase;letter-spacing:.1em;margin-bottom:14px;">How This Works</div>
+      <table cellpadding="0" cellspacing="0">
+        <tr><td style="padding:5px 0;vertical-align:top;">
+          <span style="color:#6366F1;font-weight:800;margin-right:8px;font-size:14px;">1.</span>
+          <span style="font-size:14px;color:#374151;line-height:1.7;">On each test day morning, you will receive the <strong>Question Paper PDF</strong> and a <strong>blank OMR Sheet PDF</strong> on this email.</span>
+        </td></tr>
+        <tr><td style="padding:5px 0;vertical-align:top;">
+          <span style="color:#6366F1;font-weight:800;margin-right:8px;font-size:14px;">2.</span>
+          <span style="font-size:14px;color:#374151;line-height:1.7;">Download and print both PDFs. Attempt the test on paper.</span>
+        </td></tr>
+        <tr><td style="padding:5px 0;vertical-align:top;">
+          <span style="color:#6366F1;font-weight:800;margin-right:8px;font-size:14px;">3.</span>
+          <span style="font-size:14px;color:#374151;line-height:1.7;">Fill your answers on the printed OMR sheet using a <strong>blue or black ballpoint pen</strong>.</span>
+        </td></tr>
+        <tr><td style="padding:5px 0;vertical-align:top;">
+          <span style="color:#6366F1;font-weight:800;margin-right:8px;font-size:14px;">4.</span>
+          <span style="font-size:14px;color:#374151;line-height:1.7;"><strong>Reply to the test email</strong> with a clear photo or scan of your filled OMR sheet before <strong>10:00 PM on the same day</strong>.</span>
+        </td></tr>
+        <tr><td style="padding:5px 0;vertical-align:top;">
+          <span style="color:#6366F1;font-weight:800;margin-right:8px;font-size:14px;">5.</span>
+          <span style="font-size:14px;color:#374151;line-height:1.7;">Results and rankings are announced together with offline test participants.</span>
+        </td></tr>
+      </table>
+    </div>
 
-  <p style="font-size:14px;">For any queries, reach us on WhatsApp at +91 98291 33317.</p>
-  <p style="font-size:14px;margin-top:20px;">
-    Best wishes for your preparation!<br/>
-    <strong>Dr. Jaspal Singh</strong><br/>
-    <a href="https://jaspalsingh.in" style="color:#4338CA;">jaspalsingh.in</a>
-  </p>
+    <!-- Dos and Don'ts -->
+    <table cellpadding="0" cellspacing="0" style="width:100%;margin-bottom:24px;">
+      <tr>
+        <td style="width:50%;padding-right:8px;vertical-align:top;">
+          <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:16px 18px;">
+            <div style="font-size:11px;font-weight:800;color:#166534;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Do's</div>
+            <ul style="margin:0;padding-left:16px;font-size:13px;color:#166534;line-height:1.8;">
+              <li>Download and print both PDFs before test time</li>
+              <li>Use blue/black ballpoint pen only</li>
+              <li>Fill one bubble completely per question</li>
+              <li>Submit by replying to the test email before 10 PM</li>
+              <li>Keep your email inbox active on test days</li>
+            </ul>
+          </div>
+        </td>
+        <td style="width:50%;padding-left:8px;vertical-align:top;">
+          <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:10px;padding:16px 18px;">
+            <div style="font-size:11px;font-weight:800;color:#991b1b;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Don'ts</div>
+            <ul style="margin:0;padding-left:16px;font-size:13px;color:#991b1b;line-height:1.8;">
+              <li>Don't share the question paper or OMR with anyone</li>
+              <li>Don't submit after 10 PM - no evaluation will be done</li>
+              <li>Don't use pencil or tick marks on the OMR</li>
+              <li>Don't crop or edit the watermark on the PDF</li>
+              <li>Don't submit from a different email address</li>
+            </ul>
+          </div>
+        </td>
+      </tr>
+    </table>
 
-  <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0;" />
-  <p style="font-size:11px;color:#94a3b8;text-align:center;">
-    This is an automated confirmation email. Please do not reply to this email directly.
-  </p>
+    <!-- Test Schedule -->
+    <div style="margin-bottom:24px;">
+      <div style="font-size:11px;font-weight:800;color:#4338CA;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;">Complete Test Schedule - ${isDegreeCourse ? 'Civil Degree (28 Tests)' : 'Civil Diploma (22 Tests)'}</div>
+      <div style="overflow-x:auto;">
+        <table cellpadding="0" cellspacing="0" style="width:100%;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;border-collapse:collapse;">
+          <thead>
+            <tr style="background:#eef2ff;">
+              <th style="padding:8px 10px;font-size:11px;font-weight:800;color:#4338CA;text-align:left;white-space:nowrap;">Test</th>
+              <th style="padding:8px 10px;font-size:11px;font-weight:800;color:#4338CA;text-align:left;white-space:nowrap;">Date</th>
+              <th style="padding:8px 10px;font-size:11px;font-weight:800;color:#4338CA;text-align:left;">Syllabus</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${scheduleRows}
+          </tbody>
+        </table>
+      </div>
+      <p style="font-size:12px;color:#9ca3af;margin-top:8px;">Schedule may be revised after the official RSSB JE 2026 exam date is announced.</p>
+    </div>
+
+    <!-- Important note -->
+    <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:16px 20px;margin-bottom:24px;">
+      <div style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:6px;">Important - Please Read</div>
+      <ul style="margin:0;padding-left:18px;font-size:13px;color:#78350f;line-height:1.8;">
+        <li>Both the Question Paper and OMR Sheet are watermarked with your email and phone number. Do not share them - any leak will be traced back to you.</li>
+        <li>If you miss the 10 PM submission deadline, evaluation will not be done for that test. You can still access all test PDFs.</li>
+        <li>Mark this email (team@jaspalsingh.in) as a trusted sender so test papers never go to spam.</li>
+      </ul>
+    </div>
+
+    <p style="font-size:13px;color:#9ca3af;margin:0 0 6px;">For queries, WhatsApp us at +91 98291 33317.</p>
+    <div style="border-top:1px solid #f0f0f6;padding-top:20px;margin-top:16px;">
+      <p style="margin:0 0 4px;font-size:14px;color:#374151;font-style:italic;line-height:1.7;">
+        "See you in the classroom. Let's crack this together."
+      </p>
+      <p style="margin:0;font-size:13px;color:#C81240;font-weight:700;">- Dr. Jaspal Singh &nbsp;&middot;&nbsp; ESE AIR-04 &nbsp;&middot;&nbsp; GATE AIR-06</p>
+    </div>
+
+  </td></tr>
+
+  <!-- Footer -->
+  <tr><td style="background:#f4f5f8;border-radius:0 0 14px 14px;padding:16px 36px;text-align:center;">
+    <p style="margin:0;font-size:12px;color:#9ca3af;">Questions? WhatsApp us at +91 98291 33317 or email team@jaspalsingh.in</p>
+  </td></tr>
+
+</table>
+</td></tr>
+</table>
 </body>
 </html>`;
 

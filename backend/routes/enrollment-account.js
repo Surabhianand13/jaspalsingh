@@ -426,15 +426,14 @@ async function watermarkPdf(pdfBytes, email, phone) {
   return Buffer.from(await pdfDoc.save());
 }
 
-router.post('/admin/send-omr-papers', async (req, res) => {
+router.post('/admin/send-omr-papers', protect, async (req, res) => {
   try {
-    const { program_slug, pdf_url } = req.body;
+    const { program_slug, test_number, question_paper_url, omr_sheet_url } = req.body;
 
-    if (!program_slug || !pdf_url) {
-      return res.status(400).json({ error: 'program_slug and pdf_url are required.' });
+    if (!program_slug || !test_number || !question_paper_url || !omr_sheet_url) {
+      return res.status(400).json({ error: 'program_slug, test_number, question_paper_url and omr_sheet_url are all required.' });
     }
 
-    /* Fetch all paid enrollments for this program */
     const enrResult = await query(
       `SELECT id, student_name, student_email, student_phone
        FROM enrollments
@@ -448,43 +447,130 @@ router.post('/admin/send-omr-papers', async (req, res) => {
     }
 
     const enrollments = enrResult.rows;
-    const downloadUrl = toDriveDownloadUrl(pdf_url);
 
-    /* Download the source PDF once */
-    let sourcePdfBytes;
+    /* Download both source PDFs once */
+    let qpBytes, omrBytes;
     try {
-      sourcePdfBytes = await fetchBuffer(downloadUrl);
+      [qpBytes, omrBytes] = await Promise.all([
+        fetchBuffer(toDriveDownloadUrl(question_paper_url)),
+        fetchBuffer(toDriveDownloadUrl(omr_sheet_url)),
+      ]);
     } catch (err) {
       return res.status(502).json({ error: `Failed to download PDF: ${err.message}` });
     }
 
-    /* Respond immediately so the request does not time out */
+    const isDegreeCourse = program_slug.includes('degree');
+    const seriesLabel = isDegreeCourse
+      ? 'RSSB JE 2026 - Civil Degree (OMR)'
+      : 'RSSB JE 2026 - Civil Diploma (OMR)';
+    const testLabel = `Test ${String(test_number).padStart(2, '0')}`;
+    const subject   = `${seriesLabel} - ${testLabel} Question Paper | jaspalsingh.in`;
+
+    /* Respond immediately */
     res.json({
-      message: `Sending papers to ${enrollments.length} learners in background...`,
+      message: `Sending ${testLabel} papers to ${enrollments.length} learners in background...`,
       total: enrollments.length,
     });
 
-    /* Process each learner async in background */
     let sent = 0, failed = 0;
     for (const enr of enrollments) {
       try {
         const email = enr.student_email;
         const phone = (enr.student_phone || '').replace(/\D/g, '').slice(-10);
         const name  = enr.student_name || 'Learner';
+        const firstName = name.split(' ')[0];
 
-        const watermarked = await watermarkPdf(sourcePdfBytes, email, phone);
+        const [wmQp, wmOmr] = await Promise.all([
+          watermarkPdf(qpBytes,  email, phone),
+          watermarkPdf(omrBytes, email, phone),
+        ]);
+
+        const html = `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/></head>
+<body style="margin:0;padding:0;background:#f4f5f8;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f5f8;padding:32px 16px;">
+<tr><td align="center">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:580px;">
+  <tr><td style="background:#0F1117;border-radius:14px 14px 0 0;padding:24px 36px;text-align:center;">
+    <div style="font-size:22px;font-weight:800;color:#fff;">Dr. <span style="color:#C81240;">Jaspal Singh</span></div>
+    <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:4px;letter-spacing:1.5px;text-transform:uppercase;">jaspalsingh.in</div>
+  </td></tr>
+  <tr><td style="background:#fff;padding:32px 36px;">
+    <div style="text-align:center;margin-bottom:20px;">
+      <div style="display:inline-block;background:#eef2ff;border:1px solid #c7d2fe;border-radius:50px;padding:8px 22px;">
+        <span style="font-size:13px;font-weight:800;color:#4338CA;">${seriesLabel} - ${testLabel}</span>
+      </div>
+    </div>
+    <h2 style="margin:0 0 8px;font-size:20px;color:#1A1A2E;font-weight:800;">Your Test Paper is Here, ${firstName}!</h2>
+    <p style="margin:0 0 20px;font-size:15px;color:#6b7280;line-height:1.7;">
+      Two PDFs are attached to this email - the <strong>Question Paper</strong> and the <strong>OMR Sheet</strong>.
+      Print both, attempt the test, and submit your filled OMR before <strong>10:00 PM today</strong>.
+    </p>
+
+    <div style="background:#fef2f2;border:2px solid #fca5a5;border-radius:12px;padding:18px 22px;margin-bottom:22px;">
+      <div style="font-size:13px;font-weight:800;color:#991b1b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">
+        Submission Deadline - 10:00 PM Today
+      </div>
+      <p style="margin:0;font-size:14px;color:#7f1d1d;line-height:1.7;">
+        <strong>Reply to this email</strong> with a clear photo or scan of your completed OMR sheet before 10:00 PM.
+        Late submissions will not be evaluated. You can still access the PDFs after the deadline.
+      </p>
+    </div>
+
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:18px 22px;margin-bottom:22px;">
+      <div style="font-size:13px;font-weight:800;color:#1A1A2E;margin-bottom:12px;">Steps to Follow</div>
+      <table cellpadding="0" cellspacing="0">
+        <tr><td style="padding:4px 0;font-size:13px;color:#374151;line-height:1.7;">
+          <span style="color:#6366F1;font-weight:800;margin-right:8px;">1.</span> Download and print the Question Paper and OMR Sheet (2 attachments below).
+        </td></tr>
+        <tr><td style="padding:4px 0;font-size:13px;color:#374151;line-height:1.7;">
+          <span style="color:#6366F1;font-weight:800;margin-right:8px;">2.</span> Attempt the test on paper. Fill answers on the OMR Sheet using blue/black ballpoint pen only.
+        </td></tr>
+        <tr><td style="padding:4px 0;font-size:13px;color:#374151;line-height:1.7;">
+          <span style="color:#6366F1;font-weight:800;margin-right:8px;">3.</span> Take a clear photo/scan of your filled OMR and <strong>reply to this email</strong> before 10:00 PM.
+        </td></tr>
+        <tr><td style="padding:4px 0;font-size:13px;color:#374151;line-height:1.7;">
+          <span style="color:#6366F1;font-weight:800;margin-right:8px;">4.</span> Results and rankings will be announced with offline test participants.
+        </td></tr>
+      </table>
+    </div>
+
+    <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px 18px;margin-bottom:22px;">
+      <p style="margin:0;font-size:13px;color:#78350f;line-height:1.7;">
+        <strong>Note:</strong> Both PDFs are watermarked with your email and phone number. Do not share them - any leak will be traced back to you.
+      </p>
+    </div>
+
+    <div style="border-top:1px solid #f0f0f6;padding-top:20px;">
+      <p style="margin:0 0 4px;font-size:14px;color:#374151;font-style:italic;line-height:1.7;">
+        "Give your best. Let's crack this together."
+      </p>
+      <p style="margin:0;font-size:13px;color:#C81240;font-weight:700;">- Dr. Jaspal Singh &nbsp;&middot;&nbsp; ESE AIR-04 &nbsp;&middot;&nbsp; GATE AIR-06</p>
+    </div>
+  </td></tr>
+  <tr><td style="background:#f4f5f8;border-radius:0 0 14px 14px;padding:16px 36px;text-align:center;">
+    <p style="margin:0;font-size:12px;color:#9ca3af;">Reply to this email to submit your OMR sheet | +91 98291 33317</p>
+  </td></tr>
+</table>
+</td></tr>
+</table>
+</body></html>`;
 
         const { error } = await resendSend({
-          from:    OMR_FROM,
-          to:      email,
-          subject: `Test Paper - ${program_slug} | jaspalsingh.in`,
-          html: `<p>Dear <strong>${name}</strong>,</p>
-<p>Please find your test paper attached. Attempt it and submit your completed OMR sheet by <strong>end of day today</strong> by replying to this email.</p>
-<p>Good luck!<br/><strong>Dr. Jaspal Singh</strong></p>`,
+          from:       OMR_FROM,
+          reply_to:   'team@jaspalsingh.in',
+          to:         email,
+          subject,
+          html,
           attachments: [
             {
-              filename:    `TestPaper_${program_slug}.pdf`,
-              content:     watermarked.toString('base64'),
+              filename:    `QuestionPaper_${testLabel.replace(' ', '')}.pdf`,
+              content:     wmQp.toString('base64'),
+              contentType: 'application/pdf',
+            },
+            {
+              filename:    `OMRSheet_${testLabel.replace(' ', '')}.pdf`,
+              content:     wmOmr.toString('base64'),
               contentType: 'application/pdf',
             },
           ],
@@ -495,17 +581,15 @@ router.post('/admin/send-omr-papers', async (req, res) => {
           failed++;
         } else {
           sent++;
-          console.log(`[send-omr-papers] Sent to ${email} (${sent}/${enrollments.length})`);
+          console.log(`[send-omr-papers] ${testLabel} sent to ${email} (${sent}/${enrollments.length})`);
         }
       } catch (err) {
         failed++;
         console.error(`[send-omr-papers] Failed for enrollment ${enr.id}:`, err.message);
       }
-      /* Small delay between sends to respect rate limits */
-      await new Promise(r => setTimeout(r, 250));
+      await new Promise(r => setTimeout(r, 300));
     }
-
-    console.log(`[send-omr-papers] Done. Sent: ${sent}, Failed: ${failed}`);
+    console.log(`[send-omr-papers] ${testLabel} done. Sent: ${sent}, Failed: ${failed}`);
   } catch (err) {
     console.error('[send-omr-papers]', err);
     if (!res.headersSent) res.status(500).json({ error: 'Server error.' });
