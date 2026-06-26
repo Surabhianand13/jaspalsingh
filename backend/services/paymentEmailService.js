@@ -17,9 +17,11 @@ const TALLY_FORM_URL_DEGREE      = process.env.TALLY_FORM_URL_DEGREE      || 'ht
 const TALLY_FORM_URL_OMR_DIPLOMA = process.env.TALLY_FORM_URL_OMR_DIPLOMA || 'https://tally.so/r/jagNz4';
 const TALLY_FORM_URL_OMR_DEGREE  = process.env.TALLY_FORM_URL_OMR_DEGREE  || 'https://tally.so/r/ZjW0P5';
 
-const WA_GROUP_DIPLOMA = 'https://chat.whatsapp.com/Iq5hz6qm9kPFdjOEESK4Ka?s=sh&p=a&ilr=4';
-const WA_GROUP_DEGREE  = 'https://chat.whatsapp.com/K0Upt2jTmdQLkaI5c0CvM0?s=sh&p=a&ilr=4';
-const WA_GROUP_RPSC_AE = '';
+const WA_GROUP_DIPLOMA     = 'https://chat.whatsapp.com/Iq5hz6qm9kPFdjOEESK4Ka?s=sh&p=a&ilr=4';
+const WA_GROUP_DEGREE      = 'https://chat.whatsapp.com/K0Upt2jTmdQLkaI5c0CvM0?s=sh&p=a&ilr=4';
+const WA_GROUP_OMR_DIPLOMA = 'https://chat.whatsapp.com/GK6ASDe1SKND7WAxXOrrlp?s=sh&p=a&ilr=4';
+const WA_GROUP_OMR_DEGREE  = 'https://chat.whatsapp.com/Im6ILJK7W1D5IQsZARS3IG?s=sh&p=a&ilr=4';
+const WA_GROUP_RPSC_AE     = '';
 
 function esc(s) {
   return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -139,7 +141,11 @@ async function sendWelcomePaymentEmail(enrollment) {
     :                                                                  TALLY_FORM_URL_DIPLOMA;
   const formUrl = `${tallyBase}?name=${encodeURIComponent(enrollment.student_name)}&email=${encodeURIComponent(enrollment.student_email)}&phone=${encodeURIComponent(enrollment.student_phone || '')}&order=${encodeURIComponent(enrollment.order_id)}&token=${encodeURIComponent(enrollment.form_token || '')}`;
 
-  const waGroup = slug.includes('degree') ? WA_GROUP_DEGREE : slug.includes('diploma') ? WA_GROUP_DIPLOMA : WA_GROUP_RPSC_AE;
+  const waGroup = slug.includes('omr') && slug.includes('degree')  ? WA_GROUP_OMR_DEGREE
+    : slug.includes('omr') && slug.includes('diploma') ? WA_GROUP_OMR_DIPLOMA
+    : slug.includes('degree')                          ? WA_GROUP_DEGREE
+    : slug.includes('diploma')                         ? WA_GROUP_DIPLOMA
+    :                                                    WA_GROUP_RPSC_AE;
 
   const normPhone = (enrollment.student_phone || '').replace(/\D/g, '').slice(-10);
 
