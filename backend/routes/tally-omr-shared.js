@@ -161,8 +161,8 @@ async function processOmrSubmission(fields, type) {
 
   const isDegreeCourse = type === 'omr-degree';
   const seriesName = isDegreeCourse
-    ? 'RSSB JE 2026 - Civil Degree (OMR Based Offline Test Series)'
-    : 'RSSB JE 2026 - Civil Diploma (OMR Based Offline Test Series)';
+    ? 'RSSB JE 2026 - Civil Degree (Home-Based OMR Test Series)'
+    : 'RSSB JE 2026 - Civil Diploma (Home-Based OMR Test Series)';
 
   const degreeSchedule = [
     ['01','5 Jul 2026','Rajasthan Geography-I + Building Technology & Construction Management'],

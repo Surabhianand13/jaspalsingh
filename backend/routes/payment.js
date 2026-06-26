@@ -52,13 +52,13 @@ const PROGRAMS = {
     mrp:       8999,
   },
   'rssb-je-omr-degree-test-series': {
-    name:      'RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Degree (OMR Based Online Test Series)',
+    name:      'RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Degree (Home-Based OMR Test Series)',
     shortName: 'RSSB JE 2026 OMR Degree Test Series',
     price:     1999,
     mrp:       2999,
   },
   'rssb-jen-omr-diploma-test-series': {
-    name:      'RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Diploma (OMR Based Online Test Series)',
+    name:      'RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Diploma (Home-Based OMR Test Series)',
     shortName: 'RSSB JE 2026 OMR Diploma Test Series',
     price:     1999,
     mrp:       2999,
