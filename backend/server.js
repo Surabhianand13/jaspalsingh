@@ -390,11 +390,11 @@ async function migrate() {
     INSERT INTO programs (slug,title,category,exam,level,status,price,mrp,accent,sort_order,detail_url,is_visible)
     VALUES
       ('rssb-je-omr-degree-test-series',
-       'RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Degree (OMR Based Offline Test Series)',
+       'RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Degree (Home-Based OMR Test Series)',
        'test-series','RSSB JE 2026','Degree (Civil)','enrolling',1999,2999,'purple',6,
        '/programs/rssb-je-jaspalsirki-testseries-degree-civil-omr/',TRUE),
       ('rssb-jen-omr-diploma-test-series',
-       'RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Diploma (OMR Based Offline Test Series)',
+       'RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Diploma (Home-Based OMR Test Series)',
        'test-series','RSSB JE 2026','Diploma (Civil)','enrolling',1999,2999,'purple',7,
        '/programs/rssb-jen-2026-jaspalsirki-testseries-diploma-civil-omr/',TRUE)
     ON CONFLICT (slug) DO NOTHING
