@@ -1533,6 +1533,11 @@ a.ticker-item:hover i { color: #fff; }
   justify-content: center;
 }
 
+/* ── Hide floating WhatsApp on mobile (replaced by chat-tab bottom bar) ── */
+@media (max-width: 768px) {
+  .whatsapp-float { display: none !important; }
+}
+
 /* ── Small phones ── */
 @media (max-width: 380px) {
   .wordmark { font-size: 16px; }
