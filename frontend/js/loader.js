@@ -1,10 +1,20 @@
 (function () {
-  // Show on first visit of the session; on subsequent pages only show if load is slow (>800ms)
+  // Show on first visit of the session; for subsequent pages only show if load takes > 800ms
   var firstVisit = !sessionStorage.getItem('jsl_visited');
   sessionStorage.setItem('jsl_visited', '1');
 
   var startTime = Date.now();
-  var mounted = false;
+  var el;
+
+  function mount() {
+    document.documentElement.style.overflow = 'hidden';
+    document.body.appendChild(el);
+    setTimeout(function () {
+      el.classList.add('fade-out');
+      document.documentElement.style.overflow = '';
+      setTimeout(function () { el.remove(); }, 500);
+    }, 2400);
+  }
 
   var style = document.createElement('style');
   style.textContent = `
@@ -50,7 +60,7 @@
   `;
   document.head.appendChild(style);
 
-  var el = document.createElement('div');
+  el = document.createElement('div');
   el.id = 'js-page-loader';
   el.innerHTML = `
     <svg id="jsl-svg" width="140" height="140" viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
@@ -88,25 +98,24 @@
     </div>
   `;
 
-  function mount() {
-    if (mounted) return;
-    mounted = true;
-    document.documentElement.style.overflow = 'hidden';
-    document.body.appendChild(el);
-    setTimeout(function () {
-      el.classList.add('fade-out');
-      document.documentElement.style.overflow = '';
-      setTimeout(function () { el.remove(); }, 500);
-    }, 2400);
-  }
-
   if (firstVisit) {
-    // Always show the branded intro on the very first page of the session
+    // Always show on very first page of the session
     document.body ? mount() : document.addEventListener('DOMContentLoaded', mount);
   } else {
-    // On subsequent page navigations, only show if the page is taking noticeably long (>800ms)
+    // On subsequent pages, only show if DOMContentLoaded hasn't fired within 800ms
+    var shown = false;
+    document.addEventListener('DOMContentLoaded', function () {
+      if (!shown && Date.now() - startTime > 800) {
+        shown = true;
+        mount();
+      }
+    });
+    // If body exists and page is already taking time, show immediately
     var slowTimer = setTimeout(function () {
-      document.body ? mount() : document.addEventListener('DOMContentLoaded', mount);
+      if (!shown) {
+        shown = true;
+        document.body ? mount() : document.addEventListener('DOMContentLoaded', mount);
+      }
     }, 800);
     document.addEventListener('DOMContentLoaded', function () {
       clearTimeout(slowTimer);
