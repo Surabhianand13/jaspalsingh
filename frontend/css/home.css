@@ -1006,7 +1006,7 @@
 /* ── Progress dots - overlaid on image bottom ── */
 .carousel-dots-bar {
   position: absolute;
-  bottom: 12px;
+  bottom: 4px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
