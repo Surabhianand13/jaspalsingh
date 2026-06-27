@@ -585,13 +585,13 @@ async function processSubmission(fields, programType) {
     return;
   }
 
-  // Look up token in DB
-  const enrResult = await query(
+  // Look up token - validate it exists and is not already used
+  const lookupResult = await query(
     `SELECT id, student_email, student_phone, form_used, form_token FROM enrollments WHERE form_token = $1`,
     [token]
   );
 
-  if (!enrResult.rows.length) {
+  if (!lookupResult.rows.length) {
     console.warn('[tally-webhook] Invalid token:', token);
     await sendRejectionEmail(email,
       'The enrollment token in your submission is invalid or does not match any paid enrollment. Please use the original link sent in your enrollment email.'
@@ -599,28 +599,28 @@ async function processSubmission(fields, programType) {
     return;
   }
 
-  const enrollment = enrResult.rows[0];
-
-  if (enrollment.form_used) {
-    console.warn('[tally-webhook] Token already used, enrollment:', enrollment.id);
+  if (lookupResult.rows[0].form_used) {
+    console.warn('[tally-webhook] Token already used (pre-check), enrollment:', lookupResult.rows[0].id);
     await sendRejectionEmail(email,
       'This enrollment form has already been submitted. Each enrollment allows only one submission. If you made a mistake in your earlier submission, please contact us on WhatsApp immediately and we will assist you.'
     );
     return;
   }
 
+  const preCheck = lookupResult.rows[0];
+
   // Verify email matches payment
-  const expectedEmail = (enrollment.student_email || '').toLowerCase().trim();
+  const expectedEmail = (preCheck.student_email || '').toLowerCase().trim();
   if (normEmail !== expectedEmail) {
     console.warn('[tally-webhook] Email mismatch - submitted:', normEmail, 'expected:', expectedEmail);
     await sendRejectionEmail(email,
-      `The email address you entered (${email}) does not match the email used during payment (${enrollment.student_email}). Please re-open the form using the link in your enrollment email and enter the same email address you used at checkout.`
+      `The email address you entered (${email}) does not match the email used during payment (${preCheck.student_email}). Please re-open the form using the link in your enrollment email and enter the same email address you used at checkout.`
     );
     return;
   }
 
   // Verify phone matches payment (last 10 digits)
-  const expectedPhone = (enrollment.student_phone || '').replace(/\D/g, '').slice(-10);
+  const expectedPhone = (preCheck.student_phone || '').replace(/\D/g, '').slice(-10);
   if (normPhone && expectedPhone && normPhone !== expectedPhone) {
     console.warn('[tally-webhook] Phone mismatch - submitted:', normPhone, 'expected:', expectedPhone);
     await sendRejectionEmail(email,
@@ -629,12 +629,26 @@ async function processSubmission(fields, programType) {
     return;
   }
 
-  // All checks passed - mark token as used
-  await query(
-    `UPDATE enrollments SET form_used = TRUE, form_used_at = NOW() WHERE form_token = $1`,
+  // Atomically mark token as used - WHERE form_used = FALSE ensures only one
+  // concurrent request can win even if two webhooks arrive simultaneously.
+  const claimResult = await query(
+    `UPDATE enrollments SET form_used = TRUE, form_used_at = NOW()
+     WHERE form_token = $1 AND form_used = FALSE
+     RETURNING id`,
     [token]
   );
-  console.log('[tally-webhook] Token validated, processing enrollment:', enrollment.id);
+
+  if (!claimResult.rows.length) {
+    // Another concurrent request already claimed this token
+    console.warn('[tally-webhook] Token race - already claimed, enrollment:', preCheck.id);
+    await sendRejectionEmail(email,
+      'This enrollment form has already been submitted. Each enrollment allows only one submission. If you made a mistake in your earlier submission, please contact us on WhatsApp immediately and we will assist you.'
+    );
+    return;
+  }
+
+  const enrollment = preCheck;
+  console.log('[tally-webhook] Token claimed, processing enrollment:', enrollment.id);
 
   const centreKey  = getCentreKey(centreRaw);
   const centreInfo = CENTRES[centreKey] || { name: centreRaw || 'TBD', address: 'TBD', mapsLink: '#' };
