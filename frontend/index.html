@@ -1286,26 +1286,28 @@
   <script>
   (function() {
     var purchases = [
-      { name: "Ramesh C.",   city: "Jaipur",  course: "RSSB JE 2026 - Civil Diploma Offline",  time: "just now" },
-      { name: "Sunita B.",   city: "Bikaner", course: "RSSB JE 2026 - Civil Degree Offline",   time: "3 min ago" },
-      { name: "Mahesh G.",   city: "Kota",    course: "RSSB JE 2026 - Civil Diploma Offline",  time: "12 min ago" },
-      { name: "Kavita S.",   city: "Jaipur",  course: "RSSB JE 2026 - Civil Degree Offline",   time: "1 hour ago" },
-      { name: "Dinesh P.",   city: "Bikaner", course: "RSSB JE 2026 - Civil Diploma Offline",  time: "just now" },
-      { name: "Pooja M.",    city: "Kota",    course: "RSSB JE 2026 - Civil Degree Offline",   time: "28 min ago" },
-      { name: "Vikas J.",    city: "Jaipur",  course: "RSSB JE 2026 - Civil Diploma Offline",  time: "6 min ago" },
-      { name: "Rekha D.",    city: "Bikaner", course: "RSSB JE 2026 - Civil Degree Offline",   time: "50 min ago" },
-      { name: "Sunil K.",    city: "Kota",    course: "RSSB JE 2026 - Civil Diploma Offline",  time: "just now" },
-      { name: "Anita R.",    city: "Jaipur",  course: "RSSB JE 2026 - Civil Degree Offline",   time: "18 min ago" },
-      { name: "Bharat S.",   city: "Bikaner", course: "RSSB JE 2026 - Civil Diploma Offline",  time: "2 hours ago" },
-      { name: "Geeta V.",    city: "Kota",    course: "RSSB JE 2026 - Civil Degree Offline",   time: "9 min ago" },
-      { name: "Rajesh M.",   city: "Jaipur",  course: "RSSB JE 2026 - Civil Diploma Offline",  time: "35 min ago" },
-      { name: "Manju T.",    city: "Bikaner", course: "RSSB JE 2026 - Civil Degree Offline",   time: "just now" },
-      { name: "Prakash N.",  city: "Kota",    course: "RSSB JE 2026 - Civil Diploma Offline",  time: "1 hour ago" },
-      { name: "Seema L.",    city: "Jaipur",  course: "RSSB JE 2026 - Civil Degree Offline",   time: "4 min ago" },
-      { name: "Harish O.",   city: "Bikaner", course: "RSSB JE 2026 - Civil Diploma Offline",  time: "22 min ago" },
-      { name: "Lata G.",     city: "Kota",    course: "RSSB JE 2026 - Civil Degree Offline",   time: "just now" },
-      { name: "Mohan B.",    city: "Jaipur",  course: "RSSB JE 2026 - Civil Diploma Offline",  time: "45 min ago" },
-      { name: "Pushpa C.",   city: "Bikaner", course: "RSSB JE 2026 - Civil Degree Offline",   time: "7 min ago" },
+      /* ── Real learners (60%) ── */
+      { name: "Pooja",          city: "Bikaner", course: "RSSB JE 2026 - Civil Diploma Offline",                  time: "just now" },
+      { name: "Neeraj C.",      city: "Kota",    course: "RSSB JE 2026 - Civil Degree Offline",                   time: "4 min ago" },
+      { name: "Narendra K.",    city: "Sikar",   course: "RSSB JE 2026 - Civil Degree Offline",                   time: "11 min ago" },
+      { name: "Tanu S.",        city: "Jaipur",  course: "RSSB JE 2026 - Civil Diploma Offline",                  time: "just now" },
+      { name: "Minakshi V.",    city: "Bikaner", course: "RSSB JE 2026 - Civil Degree Offline",                   time: "22 min ago" },
+      { name: "Aman O.",        city: "Jaipur",  course: "RSSB JE 2026 - Civil Degree Offline",                   time: "38 min ago" },
+      { name: "Vishal B.",      city: "Kota",    course: "RSSB JE 2026 - Civil Degree (Home-Based OMR Test Series)", time: "just now" },
+      { name: "Mahesh K.",      city: "Jaipur",  course: "RSSB JE 2026 - Civil Diploma Offline",                  time: "2 min ago" },
+      { name: "Akshay P.",      city: "Jodhpur", course: "RSSB JE 2026 - Civil Diploma Offline",                  time: "16 min ago" },
+      { name: "Murari M.",      city: "Kota",    course: "RSSB JE 2026 - Civil Diploma Offline",                  time: "just now" },
+      { name: "Abhishek M.",    city: "Sikar",   course: "RSSB JE 2026 - Civil Diploma Offline",                  time: "44 min ago" },
+      { name: "Shriraj B.",     city: "Alwar",   course: "RSSB JE 2026 - Civil Degree Offline",                   time: "8 min ago" },
+      /* ── Generated realistic names (40%) ── */
+      { name: "Deepak S.",      city: "Ajmer",   course: "RSSB JE 2026 - Civil Degree Offline",                   time: "just now" },
+      { name: "Priya J.",       city: "Sikar",   course: "RSSB JE 2026 - Civil Diploma (Home-Based OMR Test Series)", time: "5 min ago" },
+      { name: "Lokesh K.",      city: "Jodhpur", course: "RSSB JE 2026 - Civil Degree Offline",                   time: "31 min ago" },
+      { name: "Santosh R.",     city: "Jaipur",  course: "RSSB JE 2026 - Civil Diploma Offline",                  time: "just now" },
+      { name: "Hemlata B.",     city: "Bikaner", course: "RSSB JE 2026 - Civil Degree (Home-Based OMR Test Series)", time: "19 min ago" },
+      { name: "Arjun G.",       city: "Kota",    course: "RSSB JE 2026 - Civil Diploma Offline",                  time: "7 min ago" },
+      { name: "Sonu M.",        city: "Alwar",   course: "RSSB JE 2026 - Civil Diploma (Home-Based OMR Test Series)", time: "just now" },
+      { name: "Ravi S.",        city: "Ajmer",   course: "RSSB JE 2026 - Civil Degree Offline",                   time: "53 min ago" },
     ];
     for (var i = purchases.length - 1; i > 0; i--) {
       var j = Math.floor(Math.random() * (i + 1));
@@ -1344,8 +1346,8 @@
     var style = document.createElement('style');
     style.textContent = '@keyframes ptSlideIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}@keyframes ptSlideOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(16px)}}';
     document.head.appendChild(style);
-    setTimeout(showToast, 5000);
-    setInterval(showToast, 40000);
+    setTimeout(showToast, 8000);
+    setInterval(showToast, 25000);
   })();
   </script>
 </body>
