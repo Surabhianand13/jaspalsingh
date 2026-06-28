@@ -154,7 +154,7 @@ router.post('/create-order', async (req, res) => {
 
     if (cf.status !== 200) {
       console.error('[Cashfree create-order error]', cf.status, JSON.stringify(cf.body));
-      return res.status(502).json({ error: 'Payment gateway error. Please try again.', _debug: cf.body });
+      return res.status(502).json({ error: 'Payment gateway error. Please try again.' });
     }
 
     // Store enrollment record as pending
