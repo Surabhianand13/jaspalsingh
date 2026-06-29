@@ -440,9 +440,9 @@
       document.getElementById('loadingState').style.display  = 'none';
       document.getElementById('checkoutGrid').style.display  = 'grid';
 
-      // Hide Locations row and show "From Home" for OMR programs
+      // Hide Locations row always (60+ cities - too many to show, shown on program page)
+      document.getElementById('coRowLocations').style.display = 'none';
       var isOmr = slug.indexOf('omr') !== -1;
-      document.getElementById('coRowLocations').style.display = isOmr ? 'none' : '';
       document.getElementById('coFormatVal').textContent = isOmr ? 'Home-Based OMR - From Home' : 'Offline';
 
       // ── Adapt form based on login state ─────────────────────
