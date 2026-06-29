@@ -163,7 +163,44 @@ async function sendAllPaymentEmails(enrollment, { sendInvoice = true } = {}) {
   sendAdminPaymentNotification(enrollment).catch(e => console.error('[admin notify]', e.message));
 }
 
-/* ── POST /api/payment/verify ────────────────────────────── */
+/* ── GET /api/payment/verify - used by payment-success page to check DB status ── */
+router.get('/verify', async (req, res) => {
+  try {
+    const { order_id } = req.query;
+    if (!order_id) return res.status(400).json({ error: 'order_id required.' });
+
+    const enr = await query(`SELECT * FROM enrollments WHERE order_id = $1`, [order_id]);
+    if (!enr.rows.length) return res.status(404).json({ error: 'Order not found.' });
+
+    const e = enr.rows[0];
+
+    // Self-heal: if paid but missing form_token or welcome_sent, fix now
+    if (e.status === 'paid' && (!e.form_token || !e.welcome_sent)) {
+      let target = e;
+      if (!e.form_token) {
+        const formToken = crypto.randomBytes(32).toString('hex');
+        const fixed = await query(
+          `UPDATE enrollments SET form_token = $1 WHERE order_id = $2 AND form_token IS NULL RETURNING *`,
+          [formToken, order_id]
+        );
+        if (fixed.rows.length > 0) target = fixed.rows[0];
+      }
+      sendAllPaymentEmails(target, { sendInvoice: !e.welcome_sent }).catch(() => {});
+    }
+
+    res.json({
+      paid:         e.status === 'paid',
+      order_id,
+      program_name: e.program_name || '',
+      amount:       e.amount || 0,
+    });
+  } catch (err) {
+    console.error('[verify GET]', err);
+    res.status(500).json({ error: 'Server error.' });
+  }
+});
+
+/* ── POST /api/payment/verify - called from checkout after Razorpay modal success ── */
 router.post('/verify', async (req, res) => {
   try {
     const { order_id, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;

@@ -14,15 +14,21 @@ const { query } = require('../config/db');
    so the UI can skip the password step.                          */
 router.get('/account-status', async (req, res) => {
   try {
-    const { form_token } = req.query;
-    if (!form_token) return res.status(400).json({ error: 'Setup link is invalid.' });
+    const { form_token, order_id } = req.query;
+    if (!form_token && !order_id) return res.status(400).json({ error: 'Setup link is invalid.' });
 
-    const enrR = await query(
-      `SELECT student_email, student_phone, student_name, form_used FROM enrollments WHERE form_token = $1 AND status = 'paid'`,
-      [form_token]
-    );
+    const enrR = form_token
+      ? await query(
+          `SELECT student_email, student_phone, student_name, form_used FROM enrollments WHERE form_token = $1 AND status = 'paid'`,
+          [form_token]
+        )
+      : await query(
+          `SELECT student_email, student_phone, student_name, form_used FROM enrollments WHERE order_id = $1 AND status = 'paid'`,
+          [order_id]
+        );
+
     if (!enrR.rows.length) return res.status(404).json({ error: 'Setup link is invalid or has already been used.' });
-    if (enrR.rows[0].form_used) return res.status(409).json({ error: 'This setup link has already been used.' });
+    if (enrR.rows[0].form_used && form_token) return res.status(409).json({ error: 'This setup link has already been used.' });
 
     const enr = enrR.rows[0];
     const existing = await query(
