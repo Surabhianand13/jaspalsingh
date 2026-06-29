@@ -138,8 +138,9 @@ router.post('/create-order', async (req, res) => {
     });
 
   } catch (err) {
-    console.error('[create-order]', err);
-    res.status(500).json({ error: 'Payment gateway error. Please try again.' });
+    console.error('[create-order] Razorpay error:', err?.error || err?.message || err);
+    const razorpayMsg = err?.error?.description || err?.error?.reason || err?.message || 'Unknown error';
+    res.status(500).json({ error: 'Payment gateway error. Please try again.', debug: razorpayMsg });
   }
 });
 
