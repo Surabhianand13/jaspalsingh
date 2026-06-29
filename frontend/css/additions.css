@@ -1546,3 +1546,13 @@ a.ticker-item:hover i { color: #fff; }
   .lw-h-wrap { gap: 6px; }
   .cs-title { font-size: 21px !important; }
 }
+
+/* ── 60+ Cities location pills ── */
+.loc-pill-city { display:inline-flex; align-items:center; gap:5px; border-radius:50px; padding:7px 16px; font-size:12px; font-weight:600; }
+.loc-pill-city::before { content:''; display:inline-block; width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+.loc-r { background:#fff; border:1px solid #fca5a5; color:#991b1b; }
+.loc-r::before { background:#C81240; }
+.loc-i { background:#eef2ff; border:1px solid #c7d2fe; color:#3730a3; }
+.loc-i::before { background:#6366F1; }
+.loc-g { background:#f0fdf4; border:1px solid #86efac; color:#166534; }
+.loc-g::before { background:#16a34a; }
