@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" />
-  <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f5f5f8; min-height: 100vh; }
@@ -290,7 +290,7 @@
           <div class="pay-trust">
             <i class="fas fa-shield-alt"></i> 100% Secure &nbsp;|&nbsp;
             <i class="fab fa-cc-visa"></i>&nbsp;<i class="fab fa-cc-mastercard"></i>&nbsp;UPI &nbsp;|&nbsp;
-            Powered by Cashfree
+            Powered by Razorpay
           </div>
         </form>
       </div>
@@ -573,16 +573,70 @@
         });
         const data = await res.json();
 
-        if (!res.ok || !data.payment_session_id) {
+        if (!res.ok || !data.razorpay_order_id) {
           showError(data.error || 'Payment setup failed. Please try again.');
           btn.disabled = false;
           document.getElementById('payBtnText').textContent = 'Pay ₹' + finalPrice.toLocaleString('en-IN');
           return;
         }
 
-        checkoutCompleted = true;
-        const cashfree = Cashfree({ mode: 'production' });
-        cashfree.checkout({ paymentSessionId: data.payment_session_id, redirectTarget: '_self' });
+        // Open Razorpay modal
+        var rzpOptions = {
+          key:         data.razorpay_key_id,
+          amount:      data.amount * 100,
+          currency:    'INR',
+          name:        'Dr. Jaspal Singh',
+          description: data.program_name,
+          order_id:    data.razorpay_order_id,
+          prefill: {
+            name:    name,
+            email:   email,
+            contact: phone,
+          },
+          theme: { color: '#C81240' },
+          handler: async function (response) {
+            // Payment succeeded - verify with backend
+            checkoutCompleted = true;
+            document.getElementById('payBtnText').textContent = 'Verifying payment...';
+            try {
+              const verifyRes = await fetch(API + '/api/payment/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  order_id:            data.order_id,
+                  razorpay_order_id:   response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature:  response.razorpay_signature,
+                }),
+              });
+              const verifyData = await verifyRes.json();
+              if (verifyData.paid) {
+                window.location.href = 'https://www.jaspalsingh.in/payment-success/?order_id=' + encodeURIComponent(data.order_id);
+              } else {
+                showError('Payment verification failed. Contact support if amount was deducted.');
+                btn.disabled = false;
+                document.getElementById('payBtnText').textContent = 'Pay ₹' + finalPrice.toLocaleString('en-IN');
+              }
+            } catch (e) {
+              showError('Verification error. Contact support if amount was deducted.');
+              btn.disabled = false;
+              document.getElementById('payBtnText').textContent = 'Pay ₹' + finalPrice.toLocaleString('en-IN');
+            }
+          },
+          modal: {
+            ondismiss: function () {
+              btn.disabled = false;
+              document.getElementById('payBtnText').textContent = 'Pay ₹' + finalPrice.toLocaleString('en-IN');
+            },
+          },
+        };
+        var rzp = new Razorpay(rzpOptions);
+        rzp.on('payment.failed', function (response) {
+          showError('Payment failed: ' + (response.error.description || 'Please try again.'));
+          btn.disabled = false;
+          document.getElementById('payBtnText').textContent = 'Pay ₹' + finalPrice.toLocaleString('en-IN');
+        });
+        rzp.open();
 
       } catch (err) {
         showError('Network error. Please check your connection and try again.');

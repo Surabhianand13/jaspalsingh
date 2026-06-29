@@ -1,12 +1,11 @@
 /* ============================================================
-   routes/payment.js  -  Cashfree Payment Gateway
+   routes/payment.js  -  Razorpay Payment Gateway
    Dr. Jaspal Singh Website  -  jaspalsingh.in
    ============================================================ */
 
 const express = require('express');
 const router  = express.Router();
 const { query } = require('../config/db');
-const https   = require('https');
 const crypto  = require('crypto');
 const { sendInvoiceEmail, sendWelcomePaymentEmail, sendAdminPaymentNotification } = require('../services/paymentEmailService');
 
@@ -20,7 +19,7 @@ const COUPONS = {
 function applyCoupon(coupon, originalPrice) {
   if (!coupon) return { finalPrice: originalPrice, discount: 0, label: null };
   const c = COUPONS[coupon.toUpperCase()];
-  if (!c) return null; // invalid
+  if (!c) return null;
   const discountAmt = c.discountedPrice != null
     ? originalPrice - c.discountedPrice
     : c.discount;
@@ -65,33 +64,12 @@ const PROGRAMS = {
   },
 };
 
-/* ── Cashfree API helper ─────────────────────────────────── */
-function cashfreeRequest(method, path, body = null) {
-  return new Promise((resolve, reject) => {
-    const options = {
-      hostname: 'api.cashfree.com',
-      path,
-      method,
-      headers: {
-        'x-client-id':     process.env.CASHFREE_APP_ID,
-        'x-client-secret': process.env.CASHFREE_SECRET_KEY,
-        'x-api-version':   '2023-08-01',
-        'Content-Type':    'application/json',
-      },
-    };
-    const req = https.request(options, (res) => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => {
-        try { resolve({ status: res.statusCode, body: JSON.parse(data) }); }
-        catch (e) { reject(new Error('Invalid JSON from Cashfree')); }
-      });
-    });
-    req.on('error', reject);
-    if (body) req.write(JSON.stringify(body));
-    req.end();
-  });
-}
+/* ── Razorpay instance ───────────────────────────────────── */
+const Razorpay = require('razorpay');
+const razorpay = new Razorpay({
+  key_id:     process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
 
 /* ── POST /api/payment/validate-coupon ───────────────────── */
 router.post('/validate-coupon', (req, res) => {
@@ -119,7 +97,6 @@ router.post('/create-order', async (req, res) => {
     const program = PROGRAMS[program_slug];
     if (!program) return res.status(400).json({ error: 'Invalid program.' });
 
-    // Apply coupon if provided
     let finalPrice = program.price;
     let couponApplied = null;
     if (coupon_code) {
@@ -127,37 +104,24 @@ router.post('/create-order', async (req, res) => {
       if (coup) { finalPrice = coup.finalPrice; couponApplied = coupon_code.toUpperCase(); }
     }
 
-    // Unique order ID
-    const order_id = `JSP-${program_slug.slice(0,6).toUpperCase()}-${Date.now()}`;
+    const order_id = `JSP-${program_slug.slice(0, 6).toUpperCase()}-${Date.now()}`;
 
-    // Always use www version for return URL to avoid DNS issues with root domain
-    const frontendUrl = 'https://www.jaspalsingh.in';
-
-    const payload = {
-      order_id,
-      order_amount:   finalPrice,
-      order_currency: 'INR',
-      customer_details: {
-        customer_id:    `CUST-${Date.now()}`,
-        customer_name:  name,
-        customer_email: email,
-        customer_phone: phone.replace(/\D/g, '').slice(-10),
+    // Create Razorpay order (amount in paise)
+    const rzpOrder = await razorpay.orders.create({
+      amount:   finalPrice * 100,
+      currency: 'INR',
+      receipt:  order_id,
+      notes: {
+        jsp_order_id:  order_id,
+        program_slug,
+        program_name:  program.shortName,
+        student_name:  name,
+        student_email: email,
+        student_phone: phone.replace(/\D/g, '').slice(-10),
       },
-      order_meta: {
-        return_url: `${frontendUrl}/payment-success/?order_id={order_id}`,
-        notify_url: `${process.env.BACKEND_URL || 'https://jaspalsingh.onrender.com'}/api/payment/webhook`,
-      },
-      order_note: program.shortName,
-    };
+    });
 
-    const cf = await cashfreeRequest('POST', '/pg/orders', payload);
-
-    if (cf.status !== 200) {
-      console.error('[Cashfree create-order error]', cf.status, JSON.stringify(cf.body));
-      return res.status(502).json({ error: 'Payment gateway error. Please try again.' });
-    }
-
-    // Store enrollment record as pending
+    // Store enrollment as pending
     await query(
       `INSERT INTO enrollments (order_id, program_slug, program_name, amount, student_name, student_email, student_phone, status, coupon_code)
        VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8)
@@ -167,20 +131,19 @@ router.post('/create-order', async (req, res) => {
 
     res.json({
       order_id,
-      payment_session_id: cf.body.payment_session_id,
-      program_name: program.name,
-      amount: program.price,
+      razorpay_order_id:  rzpOrder.id,
+      razorpay_key_id:    process.env.RAZORPAY_KEY_ID,
+      amount:             finalPrice,
+      program_name:       program.name,
     });
 
   } catch (err) {
     console.error('[create-order]', err);
-    res.status(500).json({ error: 'Server error. Please try again.' });
+    res.status(500).json({ error: 'Payment gateway error. Please try again.' });
   }
 });
 
-/* ── sendAllPaymentEmails ─────────────────────────────────
-   Enqueues invoice + welcome + admin emails.
-   Ordering and rate-limiting handled by resendQueue.           */
+/* ── sendAllPaymentEmails ─────────────────────────────────── */
 async function sendAllPaymentEmails(enrollment, { sendInvoice = true } = {}) {
   if (sendInvoice) {
     sendInvoiceEmail(enrollment).catch(e => console.error('[invoice email]', e.message));
@@ -200,80 +163,63 @@ async function sendAllPaymentEmails(enrollment, { sendInvoice = true } = {}) {
   sendAdminPaymentNotification(enrollment).catch(e => console.error('[admin notify]', e.message));
 }
 
-/* ── GET /api/payment/verify ─────────────────────────────── */
-router.get('/verify', async (req, res) => {
+/* ── POST /api/payment/verify ────────────────────────────── */
+router.post('/verify', async (req, res) => {
   try {
-    const { order_id } = req.query;
-    if (!order_id) return res.status(400).json({ error: 'order_id required.' });
+    const { order_id, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
 
-    // Check DB first - webhook may have already confirmed and marked paid
-    const dbCheck = await query(
-      `SELECT * FROM enrollments WHERE order_id = $1`, [order_id]
-    );
+    if (!order_id || !razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return res.status(400).json({ error: 'Missing payment verification fields.' });
+    }
+
+    // Check DB first (webhook may have already marked paid)
+    const dbCheck = await query(`SELECT * FROM enrollments WHERE order_id = $1`, [order_id]);
     if (dbCheck.rows.length && dbCheck.rows[0].status === 'paid') {
       const enr = dbCheck.rows[0];
-
-      // Self-heal: generate form_token if missing, or resend welcome if it failed previously
       if (!enr.form_token || !enr.welcome_sent) {
         let targetEnr = enr;
-
         if (!enr.form_token) {
           const formToken = crypto.randomBytes(32).toString('hex');
           const fixed = await query(
-            `UPDATE enrollments SET form_token = $1
-             WHERE order_id = $2 AND form_token IS NULL RETURNING *`,
+            `UPDATE enrollments SET form_token = $1 WHERE order_id = $2 AND form_token IS NULL RETURNING *`,
             [formToken, order_id]
           );
           if (fixed.rows.length > 0) targetEnr = fixed.rows[0];
         }
-
-        // Run async so verify response is not delayed
         sendAllPaymentEmails(targetEnr, { sendInvoice: !enr.welcome_sent }).catch(() => {});
       }
-
-      return res.json({
-        paid:         true,
-        order_id,
-        program_name: enr.program_name || '',
-        amount:       enr.amount || 0,
-      });
+      return res.json({ paid: true, order_id, program_name: enr.program_name || '', amount: enr.amount || 0 });
     }
 
-    // DB not yet updated - ask Cashfree directly
-    const cf = await cashfreeRequest('GET', `/pg/orders/${order_id}`);
+    // Verify Razorpay signature
+    const generated = crypto
+      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+      .digest('hex');
 
-    if (cf.status !== 200) {
-      return res.status(502).json({ error: 'Could not verify payment.' });
+    if (generated !== razorpay_signature) {
+      console.warn('[verify] Razorpay signature mismatch for order:', order_id);
+      return res.status(400).json({ error: 'Payment verification failed.' });
     }
 
-    const order = cf.body;
-    const paid  = order.order_status === 'PAID';
-
-    if (paid) {
-      const formToken = crypto.randomBytes(32).toString('hex');
-      const updateResult = await query(
-        `UPDATE enrollments
-         SET status = 'paid', paid_at = NOW(), cf_payment_id = $1,
-             form_token = COALESCE(form_token, $3)
-         WHERE order_id = $2 AND status != 'paid'
-         RETURNING *`,
-        [order.cf_order_id || order_id, order_id, formToken]
-      );
-
-      if (updateResult.rows.length > 0) {
-        sendAllPaymentEmails(updateResult.rows[0]).catch(() => {});
-      }
-    }
-
-    // Fetch enrollment details
-    const enr = await query(
-      `SELECT * FROM enrollments WHERE order_id = $1`,
-      [order_id]
+    // Signature valid - mark as paid
+    const formToken = crypto.randomBytes(32).toString('hex');
+    const updateResult = await query(
+      `UPDATE enrollments
+       SET status = 'paid', paid_at = NOW(), cf_payment_id = $1,
+           form_token = COALESCE(form_token, $3)
+       WHERE order_id = $2 AND status != 'paid'
+       RETURNING *`,
+      [razorpay_payment_id, order_id, formToken]
     );
 
+    if (updateResult.rows.length > 0) {
+      sendAllPaymentEmails(updateResult.rows[0]).catch(() => {});
+    }
+
+    const enr = await query(`SELECT * FROM enrollments WHERE order_id = $1`, [order_id]);
     res.json({
-      paid,
-      order_status: order.order_status,
+      paid:         true,
       order_id,
       program_name: enr.rows[0]?.program_name || '',
       amount:       enr.rows[0]?.amount || 0,
@@ -288,38 +234,49 @@ router.get('/verify', async (req, res) => {
 /* ── POST /api/payment/webhook ───────────────────────────── */
 router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   try {
-    // Verify Cashfree webhook signature
-    const ts  = req.headers['x-webhook-timestamp'];
-    const sig = req.headers['x-webhook-signature'];
-    if (!ts || !sig) {
-      console.warn('[webhook] Missing signature headers');
+    const sig  = req.headers['x-razorpay-signature'];
+    if (!sig) {
+      console.warn('[webhook] Missing Razorpay signature header');
       return res.status(401).json({ error: 'Missing signature.' });
     }
+
     const expected = crypto
-      .createHmac('sha256', process.env.CASHFREE_SECRET_KEY)
-      .update(ts + req.body.toString())
-      .digest('base64');
+      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+      .update(req.body.toString())
+      .digest('hex');
+
     if (sig !== expected) {
-      console.warn('[webhook] Signature mismatch');
+      console.warn('[webhook] Razorpay signature mismatch');
       return res.status(401).json({ error: 'Invalid signature.' });
     }
 
     const event = JSON.parse(req.body);
-    if (event?.data?.order?.order_status === 'PAID') {
-      const order_id  = event.data.order.order_id;
+
+    // Handle payment.captured (successful payment)
+    if (event.event === 'payment.captured') {
+      const payment    = event.payload.payment.entity;
+      const ourOrderId = payment.notes?.jsp_order_id;
+
+      if (!ourOrderId) {
+        console.warn('[webhook] No jsp_order_id in payment notes:', payment.id);
+        return res.json({ status: 'ok' });
+      }
+
       const formToken = crypto.randomBytes(32).toString('hex');
       const result = await query(
         `UPDATE enrollments
          SET status = 'paid', paid_at = NOW(),
+             cf_payment_id = $1,
              form_token = COALESCE(form_token, $2)
-         WHERE order_id = $1 AND status != 'paid'
+         WHERE order_id = $3 AND status != 'paid'
          RETURNING *`,
-        [order_id, formToken]
+        [payment.id, formToken, ourOrderId]
       );
       if (result.rows.length > 0) {
         sendAllPaymentEmails(result.rows[0], { sendInvoice: false }).catch(() => {});
       }
     }
+
     res.json({ status: 'ok' });
   } catch (err) {
     console.error('[webhook]', err);
