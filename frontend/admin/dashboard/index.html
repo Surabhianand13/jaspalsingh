@@ -659,12 +659,13 @@
           <h2 class="section-title">Referral Payouts</h2>
         </div>
         <p style="color:#6b6b8a;font-size:14px;margin-bottom:16px;">₹100 owed to learners whose referral code was used by a paying friend. Pay manually via UPI, then mark as paid.</p>
-        <div style="margin-bottom:12px;">
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
           <select id="referralPayoutFilter" class="admin-input" style="font-size:13px;">
             <option value="pending">Pending</option>
             <option value="paid">Paid</option>
             <option value="">All</option>
           </select>
+          <button id="btnBackfillReferralCodes" class="btn-admin-secondary btn-admin-sm" style="font-size:12px;">Generate codes for past learners</button>
         </div>
         <div id="referralPayoutsBody"><p class="admin-empty">Loading…</p></div>
       </section>
