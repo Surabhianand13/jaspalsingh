@@ -260,6 +260,8 @@ async function migrate() {
   /* ── Referral program ── */
   await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS referral_code VARCHAR(20)`);
   await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS referred_by VARCHAR(20)`);
+  await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS referral_email_sent BOOLEAN NOT NULL DEFAULT FALSE`);
+  await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS referral_email_sent_at TIMESTAMPTZ`);
   await query(`CREATE UNIQUE INDEX IF NOT EXISTS enrollments_referral_code_uidx ON enrollments (referral_code) WHERE referral_code IS NOT NULL`);
 
   await query(`

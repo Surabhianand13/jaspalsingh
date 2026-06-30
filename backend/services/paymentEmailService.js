@@ -375,4 +375,80 @@ async function sendAdminPaymentNotification(enrollment) {
   }, PRIORITY.ADMIN_NOTIFY);
 }
 
-module.exports = { sendInvoiceEmail, sendWelcomePaymentEmail, sendAdminPaymentNotification };
+/* ── 4. Referral Code Announcement (premium, manually triggered by admin) ── */
+
+async function sendReferralCodeEmail(enrollment) {
+  const firstName = esc((enrollment.student_name || 'there').split(' ')[0]);
+  const code = esc(enrollment.referral_code);
+  const checkoutUrl = `${SITE}/programs/`;
+
+  const body = `
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="display:inline-block;background:#fff4e6;border:1px solid #fed7aa;border-radius:50px;padding:8px 22px;">
+        <span style="font-size:13px;font-weight:700;color:#c2410c;">Refer & Earn</span>
+      </div>
+    </div>
+
+    <h2 style="margin:0 0 8px;font-size:23px;color:#1A1A2E;font-weight:800;text-align:center;">
+      ${firstName}, here is your personal referral code
+    </h2>
+    <p style="margin:0 0 28px;font-size:15px;color:#6b7280;line-height:1.7;text-align:center;">
+      Share it with a friend who is preparing for the same exam. They save money, you earn money - everyone wins.
+    </p>
+
+    <!-- Referral code box -->
+    <div style="background:linear-gradient(135deg,#0F1117,#1A1A2E);border-radius:14px;padding:28px 24px;text-align:center;margin-bottom:28px;">
+      <div style="font-size:11px;font-weight:800;letter-spacing:.15em;color:rgba(255,255,255,0.5);text-transform:uppercase;margin-bottom:12px;">
+        Your Referral Code
+      </div>
+      <div style="font-size:32px;font-weight:800;letter-spacing:3px;color:#fff;font-family:monospace;margin-bottom:6px;">
+        ${code}
+      </div>
+    </div>
+
+    <!-- How it works -->
+    <table cellpadding="0" cellspacing="0" style="width:100%;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:22px 24px;margin-bottom:28px;">
+      <tr><td colspan="2" style="padding-bottom:14px;">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.12em;color:#94a3b8;text-transform:uppercase;">How it works</div>
+      </td></tr>
+      <tr><td style="padding:8px 0;vertical-align:top;width:32px;">
+          <div style="width:24px;height:24px;border-radius:50%;background:#C81240;color:#fff;font-size:12px;font-weight:800;text-align:center;line-height:24px;">1</div>
+        </td>
+        <td style="padding:8px 0;font-size:14px;color:#374151;line-height:1.6;">Share your code with a friend preparing for RSSB JE / RPSC AE.</td></tr>
+      <tr><td style="padding:8px 0;vertical-align:top;">
+          <div style="width:24px;height:24px;border-radius:50%;background:#C81240;color:#fff;font-size:12px;font-weight:800;text-align:center;line-height:24px;">2</div>
+        </td>
+        <td style="padding:8px 0;font-size:14px;color:#374151;line-height:1.6;">They enter it at checkout and get <strong>Rs 100 extra off</strong> their program.</td></tr>
+      <tr><td style="padding:8px 0;vertical-align:top;">
+          <div style="width:24px;height:24px;border-radius:50%;background:#C81240;color:#fff;font-size:12px;font-weight:800;text-align:center;line-height:24px;">3</div>
+        </td>
+        <td style="padding:8px 0;font-size:14px;color:#374151;line-height:1.6;">Once their payment is confirmed, <strong>you earn Rs 100</strong> - paid directly to your UPI ID.</td></tr>
+    </table>
+
+    <div style="text-align:center;margin-bottom:28px;">
+      <a href="${checkoutUrl}" style="display:inline-block;background:#C81240;color:#fff;border-radius:10px;padding:14px 32px;font-size:15px;font-weight:700;text-decoration:none;">
+        Share Your Code Now &rarr;
+      </a>
+    </div>
+
+    <p style="font-size:13px;color:#9ca3af;margin:0 0 24px;line-height:1.7;text-align:center;">
+      You can also find this code anytime by logging in at <a href="${SITE}/profile/" style="color:#C81240;text-decoration:none;">jaspalsingh.in/profile</a>.
+    </p>
+
+    <div style="border-top:1px solid #f0f0f6;padding-top:20px;">
+      <p style="margin:0 0 4px;font-size:14px;color:#374151;font-style:italic;line-height:1.7;">
+        "Your network is your net worth. Help a friend, earn along the way."
+      </p>
+      <p style="margin:0;font-size:13px;color:#C81240;font-weight:700;">- Dr. Jaspal Singh &nbsp;&middot;&nbsp; ESE AIR-04 &nbsp;&middot;&nbsp; GATE AIR-06</p>
+    </div>
+  `;
+
+  return resendSend({
+    from:    FROM,
+    to:      enrollment.student_email,
+    subject: `${firstName}, your referral code is ready - earn Rs 100 per friend`,
+    html:    baseHtml(body),
+  }, PRIORITY.DEFAULT);
+}
+
+module.exports = { sendInvoiceEmail, sendWelcomePaymentEmail, sendAdminPaymentNotification, sendReferralCodeEmail };
