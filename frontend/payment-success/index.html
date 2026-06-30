@@ -322,8 +322,14 @@
       if (!collegeVal) { err.textContent = 'Please enter your college / university.'; err.style.display='block'; return; }
       if (!dobVal)     { err.textContent = 'Please enter your date of birth.'; err.style.display='block'; return; }
 
+      if (!successData || !successData.form_token) {
+        err.textContent = 'Setup link not ready yet. Please refresh this page and try again.';
+        err.style.display = 'block';
+        return;
+      }
+
       const payload = {
-        order_id: order_id,
+        form_token:  successData.form_token,
         target_exam: examVal,
         city:        cityVal,
         college:     collegeVal,
