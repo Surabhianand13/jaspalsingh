@@ -442,6 +442,34 @@ async function migrate() {
   console.log('✅ Migration: enrollments, leads, events, programs, banners ensured');
 }
 
+/* ── Daily referral payout digest (6 PM IST, ahead of the 10 PM payout cutoff) ── */
+let referralDigestSentDate = null;
+
+async function checkReferralDigest() {
+  try {
+    const istNow = new Date(Date.now() + 5.5 * 60 * 60 * 1000); // UTC -> IST
+    const todayIST = istNow.toISOString().slice(0, 10);
+    if (istNow.getUTCHours() !== 18 || referralDigestSentDate === todayIST) return;
+
+    const result = await query(
+      `SELECT rc.amount, rc.created_at, ref.student_name AS referrer_name, ref.student_phone AS referrer_phone, red.student_name AS referred_name
+       FROM referral_credits rc
+       JOIN enrollments ref ON ref.order_id = rc.referrer_order_id
+       JOIN enrollments red ON red.order_id = rc.referred_order_id
+       WHERE rc.status = 'pending'
+       ORDER BY rc.created_at ASC`
+    );
+    referralDigestSentDate = todayIST; // mark sent even if zero rows, so we don't re-check all day
+    if (!result.rows.length) return;
+
+    const { sendReferralPayoutDigestEmail } = require('./services/paymentEmailService');
+    await sendReferralPayoutDigestEmail(result.rows);
+    console.log(`[referral-digest] Sent digest for ${result.rows.length} pending payout(s)`);
+  } catch (err) {
+    console.error('[referral-digest] Error:', err.message);
+  }
+}
+
 migrate()
   .catch(err => console.warn('⚠️  Migration warning:', err.message))
   .finally(() => {
@@ -449,6 +477,8 @@ migrate()
       console.log(`\n✅ jaspalsingh.in API running on port ${PORT}`);
       console.log(`   Environment : ${process.env.NODE_ENV || 'development'}`);
       console.log(`   Health check: http://localhost:${PORT}/api/health\n`);
+      setInterval(checkReferralDigest, 15 * 60 * 1000); // check every 15 min, fires once at 6 PM IST
+      checkReferralDigest();
     });
   });
 

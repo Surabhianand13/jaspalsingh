@@ -476,4 +476,54 @@ async function sendReferralCodeEmail(enrollment) {
   }, PRIORITY.DEFAULT);
 }
 
-module.exports = { sendInvoiceEmail, sendWelcomePaymentEmail, sendAdminPaymentNotification, sendReferralCodeEmail };
+/* ── 5. Admin Daily Referral Payout Digest (Resend) ──────────── */
+
+async function sendReferralPayoutDigestEmail(pendingCredits) {
+  const rows = pendingCredits.map(c => `
+    <tr>
+      <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#1A1A2E;">${esc(c.referrer_name)}<br><span style="color:#64748b;font-size:12px;">${esc(c.referrer_phone)}</span></td>
+      <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#1A1A2E;">${esc(c.referred_name)}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#16a34a;font-weight:700;text-align:right;">${fmtAmount(c.amount)}</td>
+    </tr>`).join('');
+
+  const total = pendingCredits.reduce((sum, c) => sum + Number(c.amount), 0);
+
+  const body = `
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="display:inline-block;background:#fef2f2;border:1px solid #fca5a5;border-radius:50px;padding:8px 22px;">
+        <span style="font-size:13px;font-weight:700;color:#991b1b;">Action Needed by 10 PM</span>
+      </div>
+    </div>
+
+    <h2 style="margin:0 0 8px;font-size:21px;color:#1A1A2E;font-weight:800;text-align:center;">
+      ${pendingCredits.length} referral payout${pendingCredits.length === 1 ? '' : 's'} pending - ${fmtAmount(total)} total
+    </h2>
+    <p style="margin:0 0 24px;font-size:14px;color:#6b7280;line-height:1.7;text-align:center;">
+      Pay each learner via UPI, then mark them paid in the admin dashboard.
+    </p>
+
+    <table cellpadding="0" cellspacing="0" style="width:100%;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;margin-bottom:28px;">
+      <tr style="background:#f8fafc;">
+        <td style="padding:10px 12px;font-size:11px;font-weight:800;color:#94a3b8;text-transform:uppercase;">Pay To</td>
+        <td style="padding:10px 12px;font-size:11px;font-weight:800;color:#94a3b8;text-transform:uppercase;">Referred Friend</td>
+        <td style="padding:10px 12px;font-size:11px;font-weight:800;color:#94a3b8;text-transform:uppercase;text-align:right;">Amount</td>
+      </tr>
+      ${rows}
+    </table>
+
+    <div style="text-align:center;">
+      <a href="${SITE}/admin/dashboard/" style="display:inline-block;background:#C81240;color:#fff;border-radius:10px;padding:14px 32px;font-size:15px;font-weight:700;text-decoration:none;">
+        Open Referral Payouts &rarr;
+      </a>
+    </div>
+  `;
+
+  return resendSend({
+    from:    FROM,
+    to:      ADMIN_EMAIL,
+    subject: `${pendingCredits.length} referral payout${pendingCredits.length === 1 ? '' : 's'} pending - ${fmtAmount(total)} - process by 10 PM`,
+    html:    baseHtml(body),
+  }, PRIORITY.ADMIN_NOTIFY);
+}
+
+module.exports = { sendInvoiceEmail, sendWelcomePaymentEmail, sendAdminPaymentNotification, sendReferralCodeEmail, sendReferralPayoutDigestEmail };
