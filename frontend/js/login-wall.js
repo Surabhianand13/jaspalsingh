@@ -9,6 +9,7 @@
 (function() {
   var API = 'https://jaspalsingh.onrender.com';
   var INTERVAL = 30000; // 30 seconds
+  var INITIAL_DELAY = 60000; // 60 seconds - gives the verification video popup priority
 
   var path = window.location.pathname;
   var token = localStorage.getItem('jaspal_learner_token');
@@ -131,7 +132,7 @@
     overlay.addEventListener('click', function(e){ if (e.target === overlay) close(); });
   }
 
-  /* ── Repeat every 30s ────────────────────────────────────── */
+  /* ── First show after 60s (video popup has priority), then every 30s ── */
   function startWall(mode) {
     function tick() {
       setTimeout(function(){
@@ -139,7 +140,10 @@
         tick();
       }, INTERVAL);
     }
-    tick();
+    setTimeout(function(){
+      showModal(mode);
+      tick();
+    }, INITIAL_DELAY);
   }
 
   /* ── Header auth: Login/Sign Up (logged out) · avatar dropdown (logged in) ── */
