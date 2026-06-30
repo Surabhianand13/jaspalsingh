@@ -76,12 +76,36 @@ const COUPONS = {
   'FIRST':     { discountedPrice: 1,    label: 'First-time offer' },
   'JASPALSIR': { discount: 1000,        label: 'Get Rs 1,000 off' },
   'JASPAL200': { discount: 1200,        label: 'Special Rs 1,200 off' },
+  'DOST': {
+    // Partnership code: fixed final price per program, only valid on these 4.
+    // Exclusive - referral codes cannot be combined with it.
+    programPrices: {
+      'rssb-jen-diploma-test-series':     2699,
+      'rssb-jen-degree-test-series':      2899,
+      'rssb-je-omr-degree-test-series':   899,
+      'rssb-jen-omr-diploma-test-series': 899,
+    },
+    exclusive: true,
+    label: 'DOST Partner offer',
+  },
 };
 
-function applyCoupon(coupon, originalPrice) {
-  if (!coupon) return { finalPrice: originalPrice, discount: 0, label: null };
+function applyCoupon(coupon, originalPrice, programSlug) {
+  if (!coupon) return { finalPrice: originalPrice, discount: 0, label: null, exclusive: false };
   const c = COUPONS[coupon.toUpperCase()];
   if (!c) return null;
+
+  if (c.programPrices) {
+    const fixedPrice = c.programPrices[programSlug];
+    if (fixedPrice == null) return null; // not valid on this program
+    return {
+      finalPrice: fixedPrice,
+      discount:   originalPrice - fixedPrice,
+      label:      c.label,
+      exclusive:  !!c.exclusive,
+    };
+  }
+
   const discountAmt = c.discountedPrice != null
     ? originalPrice - c.discountedPrice
     : c.discount;
@@ -89,6 +113,7 @@ function applyCoupon(coupon, originalPrice) {
     finalPrice: originalPrice - discountAmt,
     discount:   discountAmt,
     label:      c.label,
+    exclusive:  !!c.exclusive,
   };
 }
 
@@ -141,10 +166,10 @@ router.post('/validate-coupon', (req, res) => {
   const program = PROGRAMS[program_slug];
   if (!program) return res.status(400).json({ error: 'Invalid program.' });
 
-  const result = applyCoupon(coupon_code, program.price);
+  const result = applyCoupon(coupon_code, program.price, program_slug);
   if (!result) return res.status(400).json({ valid: false, error: 'Invalid coupon code.' });
 
-  res.json({ valid: true, final_price: result.finalPrice, discount: result.discount, label: result.label });
+  res.json({ valid: true, final_price: result.finalPrice, discount: result.discount, label: result.label, exclusive: result.exclusive });
 });
 
 /* ── Validate a referral code against the buyer's own identity ──
@@ -195,13 +220,14 @@ router.post('/create-order', optionalLearner, async (req, res) => {
 
     let finalPrice = program.price;
     let couponApplied = null;
+    let couponExclusive = false;
     if (coupon_code) {
-      const coup = applyCoupon(coupon_code, program.price);
-      if (coup) { finalPrice = coup.finalPrice; couponApplied = coupon_code.toUpperCase(); }
+      const coup = applyCoupon(coupon_code, program.price, program_slug);
+      if (coup) { finalPrice = coup.finalPrice; couponApplied = coupon_code.toUpperCase(); couponExclusive = coup.exclusive; }
     }
 
     let referredBy = null;
-    if (referral_code) {
+    if (referral_code && !couponExclusive) {
       const lookup = await lookupReferral(referral_code, phone, email, req.learner?.id);
       if (lookup && !lookup.selfReferral) {
         finalPrice = Math.max(1, finalPrice - REFERRAL_DISCOUNT);
