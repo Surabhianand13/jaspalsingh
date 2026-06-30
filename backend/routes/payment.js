@@ -8,6 +8,58 @@ const router  = express.Router();
 const { query } = require('../config/db');
 const crypto  = require('crypto');
 const { sendInvoiceEmail, sendWelcomePaymentEmail, sendAdminPaymentNotification } = require('../services/paymentEmailService');
+const { protect } = require('../middleware/auth');
+
+const REFERRAL_DISCOUNT = 100;
+
+/* ── Generate a unique referral code for a newly-paid enrollment ── */
+async function ensureReferralCode(enrollment) {
+  if (enrollment.referral_code) return enrollment.referral_code;
+  const phoneDigits = (enrollment.student_phone || '').replace(/\D/g, '').slice(-4) || '0000';
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const suffix = crypto.randomBytes(2).toString('hex').toUpperCase();
+    const code = `REF${phoneDigits}${suffix}`;
+    try {
+      const result = await query(
+        `UPDATE enrollments SET referral_code = $1 WHERE order_id = $2 AND referral_code IS NULL RETURNING referral_code`,
+        [code, enrollment.order_id]
+      );
+      if (result.rows.length) return result.rows[0].referral_code;
+      // Already set by a concurrent request - fetch it.
+      const existing = await query(`SELECT referral_code FROM enrollments WHERE order_id = $1`, [enrollment.order_id]);
+      return existing.rows[0]?.referral_code || null;
+    } catch (err) {
+      if (err.code !== '23505') throw err; // unique violation - retry with new suffix
+    }
+  }
+  return null;
+}
+
+/* ── Record a referral credit once the referred enrollment is paid ── */
+async function recordReferralCredit(enrollment) {
+  if (!enrollment.referred_by) return;
+  try {
+    const referrer = await query(
+      `SELECT order_id FROM enrollments WHERE referral_code = $1 AND status = 'paid'`,
+      [enrollment.referred_by]
+    );
+    if (!referrer.rows.length) return;
+    await query(
+      `INSERT INTO referral_credits (referrer_order_id, referred_order_id, amount, status)
+       VALUES ($1, $2, $3, 'pending')
+       ON CONFLICT (referred_order_id) DO NOTHING`,
+      [referrer.rows[0].order_id, enrollment.order_id, REFERRAL_DISCOUNT]
+    );
+  } catch (err) {
+    console.error('[recordReferralCredit]', err.message);
+  }
+}
+
+/* ── Called whenever an enrollment transitions to 'paid' ── */
+async function onEnrollmentPaid(enrollment) {
+  await ensureReferralCode(enrollment);
+  await recordReferralCredit(enrollment);
+}
 
 /* ── Coupon catalogue ────────────────────────────────────── */
 const COUPONS = {
@@ -85,10 +137,40 @@ router.post('/validate-coupon', (req, res) => {
   res.json({ valid: true, final_price: result.finalPrice, discount: result.discount, label: result.label });
 });
 
+/* ── Validate a referral code against the buyer's own phone/email ── */
+async function lookupReferral(referral_code, buyerPhone, buyerEmail) {
+  if (!referral_code) return null;
+  const result = await query(
+    `SELECT order_id, student_phone, student_email FROM enrollments WHERE referral_code = $1 AND status = 'paid'`,
+    [referral_code.toUpperCase()]
+  );
+  if (!result.rows.length) return null;
+  const referrer = result.rows[0];
+  const samePhone = buyerPhone && referrer.student_phone && referrer.student_phone.replace(/\D/g, '').slice(-10) === buyerPhone.replace(/\D/g, '').slice(-10);
+  const sameEmail = buyerEmail && referrer.student_email && referrer.student_email.toLowerCase() === buyerEmail.toLowerCase();
+  if (samePhone || sameEmail) return { selfReferral: true };
+  return { selfReferral: false, referrer };
+}
+
+/* ── POST /api/payment/validate-referral ─────────────────── */
+router.post('/validate-referral', async (req, res) => {
+  const { referral_code, program_slug, phone, email } = req.body;
+  if (!referral_code || !program_slug) return res.status(400).json({ error: 'referral_code and program_slug required.' });
+
+  const program = PROGRAMS[program_slug];
+  if (!program) return res.status(400).json({ error: 'Invalid program.' });
+
+  const lookup = await lookupReferral(referral_code, phone || '', email || '');
+  if (!lookup) return res.status(400).json({ valid: false, error: 'Invalid referral code.' });
+  if (lookup.selfReferral) return res.status(400).json({ valid: false, error: 'You cannot use your own referral code.' });
+
+  res.json({ valid: true, discount: REFERRAL_DISCOUNT, label: `Get an extra Rs ${REFERRAL_DISCOUNT} off` });
+});
+
 /* ── POST /api/payment/create-order ─────────────────────── */
 router.post('/create-order', async (req, res) => {
   try {
-    const { program_slug, name, email, phone, coupon_code } = req.body;
+    const { program_slug, name, email, phone, coupon_code, referral_code } = req.body;
 
     if (!program_slug || !name || !email || !phone) {
       return res.status(400).json({ error: 'name, email, phone and program_slug are required.' });
@@ -102,6 +184,15 @@ router.post('/create-order', async (req, res) => {
     if (coupon_code) {
       const coup = applyCoupon(coupon_code, program.price);
       if (coup) { finalPrice = coup.finalPrice; couponApplied = coupon_code.toUpperCase(); }
+    }
+
+    let referredBy = null;
+    if (referral_code) {
+      const lookup = await lookupReferral(referral_code, phone, email);
+      if (lookup && !lookup.selfReferral) {
+        finalPrice = Math.max(1, finalPrice - REFERRAL_DISCOUNT);
+        referredBy = referral_code.toUpperCase();
+      }
     }
 
     const order_id = `JSP-${program_slug.slice(0, 6).toUpperCase()}-${Date.now()}`;
@@ -123,10 +214,10 @@ router.post('/create-order', async (req, res) => {
 
     // Store enrollment as pending
     await query(
-      `INSERT INTO enrollments (order_id, program_slug, program_name, amount, student_name, student_email, student_phone, status, coupon_code)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8)
+      `INSERT INTO enrollments (order_id, program_slug, program_name, amount, student_name, student_email, student_phone, status, coupon_code, referred_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8, $9)
        ON CONFLICT (order_id) DO NOTHING`,
-      [order_id, program_slug, program.name, finalPrice, name, email, phone, couponApplied]
+      [order_id, program_slug, program.name, finalPrice, name, email, phone, couponApplied, referredBy]
     );
 
     res.json({
@@ -189,11 +280,15 @@ router.get('/verify', async (req, res) => {
       sendAllPaymentEmails(target, { sendInvoice: !e.welcome_sent }).catch(() => {});
     }
 
+    if (e.status === 'paid') onEnrollmentPaid(e).catch(err => console.error('[onEnrollmentPaid]', err.message));
+
     res.json({
-      paid:         e.status === 'paid',
+      paid:          e.status === 'paid',
       order_id,
-      program_name: e.program_name || '',
-      amount:       e.amount || 0,
+      program_name:  e.program_name || '',
+      amount:        e.amount || 0,
+      student_name:  e.student_name || '',
+      referral_code: e.referral_code || null,
     });
   } catch (err) {
     console.error('[verify GET]', err);
@@ -226,7 +321,8 @@ router.post('/verify', async (req, res) => {
         }
         sendAllPaymentEmails(targetEnr, { sendInvoice: !enr.welcome_sent }).catch(() => {});
       }
-      return res.json({ paid: true, order_id, program_name: enr.program_name || '', amount: enr.amount || 0 });
+      onEnrollmentPaid(enr).catch(err => console.error('[onEnrollmentPaid]', err.message));
+      return res.json({ paid: true, order_id, program_name: enr.program_name || '', amount: enr.amount || 0, student_name: enr.student_name || '', referral_code: enr.referral_code || null });
     }
 
     // Verify Razorpay signature
@@ -253,14 +349,17 @@ router.post('/verify', async (req, res) => {
 
     if (updateResult.rows.length > 0) {
       sendAllPaymentEmails(updateResult.rows[0]).catch(() => {});
+      onEnrollmentPaid(updateResult.rows[0]).catch(err => console.error('[onEnrollmentPaid]', err.message));
     }
 
     const enr = await query(`SELECT * FROM enrollments WHERE order_id = $1`, [order_id]);
     res.json({
-      paid:         true,
+      paid:          true,
       order_id,
-      program_name: enr.rows[0]?.program_name || '',
-      amount:       enr.rows[0]?.amount || 0,
+      program_name:  enr.rows[0]?.program_name || '',
+      amount:        enr.rows[0]?.amount || 0,
+      student_name:  enr.rows[0]?.student_name || '',
+      referral_code: enr.rows[0]?.referral_code || null,
     });
 
   } catch (err) {
@@ -312,6 +411,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
       );
       if (result.rows.length > 0) {
         sendAllPaymentEmails(result.rows[0], { sendInvoice: false }).catch(() => {});
+        onEnrollmentPaid(result.rows[0]).catch(err => console.error('[onEnrollmentPaid]', err.message));
       }
     }
 
@@ -325,6 +425,46 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
 /* ── GET /api/payment/programs ───────────────────────────── */
 router.get('/programs', (req, res) => {
   res.json(PROGRAMS);
+});
+
+/* ── GET /api/payment/admin/referral-credits ─────────────── */
+router.get('/admin/referral-credits', protect, async (req, res) => {
+  try {
+    const { status } = req.query;
+    const where = status ? `WHERE rc.status = $1` : '';
+    const params = status ? [status] : [];
+    const result = await query(
+      `SELECT rc.id, rc.amount, rc.status, rc.created_at, rc.paid_at,
+              rc.referrer_order_id, rc.referred_order_id,
+              ref.student_name AS referrer_name, ref.student_phone AS referrer_phone, ref.student_email AS referrer_email,
+              red.student_name AS referred_name, red.program_name AS referred_program
+       FROM referral_credits rc
+       JOIN enrollments ref ON ref.order_id = rc.referrer_order_id
+       JOIN enrollments red ON red.order_id = rc.referred_order_id
+       ${where}
+       ORDER BY rc.created_at DESC`,
+      params
+    );
+    res.json({ credits: result.rows });
+  } catch (err) {
+    console.error('[admin/referral-credits]', err);
+    res.status(500).json({ error: 'Server error.' });
+  }
+});
+
+/* ── PATCH /api/payment/admin/referral-credits/:id/mark-paid ── */
+router.patch('/admin/referral-credits/:id/mark-paid', protect, async (req, res) => {
+  try {
+    const result = await query(
+      `UPDATE referral_credits SET status = 'paid', paid_at = NOW() WHERE id = $1 AND status != 'paid' RETURNING *`,
+      [req.params.id]
+    );
+    if (!result.rows.length) return res.status(404).json({ error: 'Credit not found or already paid.' });
+    res.json({ success: true, credit: result.rows[0] });
+  } catch (err) {
+    console.error('[mark-paid]', err);
+    res.status(500).json({ error: 'Server error.' });
+  }
 });
 
 module.exports = router;

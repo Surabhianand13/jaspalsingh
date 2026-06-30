@@ -274,6 +274,15 @@
           </div>
           <div class="coupon-msg" id="couponMsg"></div>
 
+          <div class="form-group" style="margin-bottom:6px;">
+            <label class="form-label" for="inp-referral">Referral Code <span style="font-weight:400;color:#9999b0;">(optional - get extra ₹100 off)</span></label>
+            <div class="coupon-row">
+              <input class="form-input" type="text" id="inp-referral" placeholder="Enter referral code" autocomplete="off" style="text-transform:uppercase;" />
+              <button type="button" class="coupon-apply-btn" id="referralApplyBtn">Apply</button>
+            </div>
+          </div>
+          <div class="coupon-msg" id="referralMsg"></div>
+
           <!-- T&C Checkbox -->
           <div class="tnc-row">
             <input type="checkbox" id="inp-tnc" required />
@@ -401,7 +410,8 @@
       }
     });
 
-    let appliedCoupon = null;
+    let appliedCoupon   = null;
+    let appliedReferral = null;
     let finalPrice    = program ? program.price : 0;
 
     // Detect login state at outer scope so submit handler can access it
@@ -519,6 +529,48 @@
       }
     });
 
+    // Referral code apply
+    document.getElementById('referralApplyBtn').addEventListener('click', async function() {
+      const code = document.getElementById('inp-referral').value.trim().toUpperCase();
+      const msg  = document.getElementById('referralMsg');
+      const phone = document.getElementById('inp-phone').value.trim();
+      const email = document.getElementById('inp-email').value.trim();
+      msg.className = 'coupon-msg';
+      msg.textContent = '';
+
+      if (!code) { msg.className = 'coupon-msg error'; msg.textContent = 'Please enter a referral code.'; return; }
+
+      this.textContent = 'Checking...';
+      this.disabled = true;
+
+      try {
+        const res  = await fetch(API + '/api/payment/validate-referral', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ referral_code: code, program_slug: slug, phone, email }),
+        });
+        const data = await res.json();
+
+        if (res.ok && data.valid) {
+          appliedReferral = code;
+          updatePriceDisplay(Math.max(1, finalPrice - data.discount));
+          msg.className   = 'coupon-msg success';
+          msg.textContent = '✓ Referral applied! Extra ₹' + data.discount + ' off - You pay ₹' + finalPrice;
+          document.getElementById('inp-referral').disabled = true;
+          this.textContent = 'Applied ✓';
+        } else {
+          msg.className   = 'coupon-msg error';
+          msg.textContent = data.error || 'Invalid referral code.';
+          this.textContent = 'Apply';
+          this.disabled = false;
+        }
+      } catch (e) {
+        msg.className = 'coupon-msg error';
+        msg.textContent = 'Could not validate referral code. Try again.';
+        this.textContent = 'Apply';
+        this.disabled = false;
+      }
+    });
+
     // Form submit
     document.getElementById('enrollForm').addEventListener('submit', async function(e) {
       e.preventDefault();
@@ -569,7 +621,7 @@
 
         const res  = await fetch(API + '/api/payment/create-order', {
           method: 'POST', headers,
-          body: JSON.stringify({ program_slug: slug, name, email, phone, coupon_code: appliedCoupon }),
+          body: JSON.stringify({ program_slug: slug, name, email, phone, coupon_code: appliedCoupon, referral_code: appliedReferral }),
         });
         const data = await res.json();
 
