@@ -505,7 +505,7 @@ router.get('/my-referral-code', protectLearner, async (req, res) => {
     let total_earned = 0, total_pending = 0;
     creditRows.rows.forEach(c => {
       if (c.status === 'paid') total_earned += c.amount;
-      else total_pending += c.amount;
+      else if (c.status === 'pending') total_pending += c.amount;
     });
 
     res.json({ referral_code: code, total_earned, total_pending });
@@ -597,6 +597,24 @@ router.patch('/admin/referral-credits/:id/mark-paid', protect, async (req, res) 
     res.json({ success: true, credit: result.rows[0] });
   } catch (err) {
     console.error('[mark-paid]', err);
+    res.status(500).json({ error: 'Server error.' });
+  }
+});
+
+/* ── PATCH /api/payment/admin/referral-credits/:id/reject ───
+   For claims that turn out to be fraudulent/invalid (e.g. fake
+   screenshot) - keeps them out of the pending queue without
+   marking them paid. ── */
+router.patch('/admin/referral-credits/:id/reject', protect, async (req, res) => {
+  try {
+    const result = await query(
+      `UPDATE referral_credits SET status = 'rejected' WHERE id = $1 AND status = 'pending' RETURNING *`,
+      [req.params.id]
+    );
+    if (!result.rows.length) return res.status(404).json({ error: 'Credit not found or not pending.' });
+    res.json({ success: true, credit: result.rows[0] });
+  } catch (err) {
+    console.error('[reject-referral-credit]', err);
     res.status(500).json({ error: 'Server error.' });
   }
 });
