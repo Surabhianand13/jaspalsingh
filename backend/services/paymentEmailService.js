@@ -16,6 +16,7 @@ const TALLY_FORM_URL_DIPLOMA     = process.env.TALLY_FORM_URL_DIPLOMA     || 'ht
 const TALLY_FORM_URL_DEGREE      = process.env.TALLY_FORM_URL_DEGREE      || 'https://tally.so/r/b5AD1Z';
 const TALLY_FORM_URL_OMR_DIPLOMA = process.env.TALLY_FORM_URL_OMR_DIPLOMA || 'https://tally.so/r/jagNz4';
 const TALLY_FORM_URL_OMR_DEGREE  = process.env.TALLY_FORM_URL_OMR_DEGREE  || 'https://tally.so/r/ZjW0P5';
+const TALLY_FORM_URL_REFERRAL    = process.env.TALLY_FORM_URL_REFERRAL    || 'https://tally.so/r/xXog2G';
 
 const WA_GROUP_DIPLOMA     = 'https://chat.whatsapp.com/Iq5hz6qm9kPFdjOEESK4Ka?s=sh&p=a&ilr=4';
 const WA_GROUP_DEGREE      = 'https://chat.whatsapp.com/K0Upt2jTmdQLkaI5c0CvM0?s=sh&p=a&ilr=4';
@@ -422,12 +423,36 @@ async function sendReferralCodeEmail(enrollment) {
       <tr><td style="padding:8px 0;vertical-align:top;">
           <div style="width:24px;height:24px;border-radius:50%;background:#C81240;color:#fff;font-size:12px;font-weight:800;text-align:center;line-height:24px;">3</div>
         </td>
-        <td style="padding:8px 0;font-size:14px;color:#374151;line-height:1.6;">Once their payment is confirmed, <strong>you earn Rs 100</strong> - paid directly to your UPI ID.</td></tr>
+        <td style="padding:8px 0;font-size:14px;color:#374151;line-height:1.6;">Once their payment is confirmed, submit your claim (see below) and <strong>you earn Rs 100</strong> - paid directly to your UPI ID.</td></tr>
     </table>
 
     <div style="text-align:center;margin-bottom:28px;">
       <a href="${checkoutUrl}" style="display:inline-block;background:#C81240;color:#fff;border-radius:10px;padding:14px 32px;font-size:15px;font-weight:700;text-decoration:none;">
         Share Your Code Now &rarr;
+      </a>
+    </div>
+
+    <!-- How to claim your Rs 100 -->
+    <div style="background:#fff8f0;border:1px solid #fed7aa;border-radius:12px;padding:20px 24px;margin-bottom:28px;">
+      <div style="font-size:13px;font-weight:800;color:#c2410c;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">
+        How to Claim Your Rs 100
+      </div>
+      <p style="margin:0 0 12px;font-size:14px;color:#374151;line-height:1.7;">
+        After your friend's payment is confirmed:
+      </p>
+      <table cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
+        <tr><td style="padding:4px 0;font-size:13px;color:#374151;vertical-align:top;">
+          <span style="color:#C81240;margin-right:8px;font-weight:700;">1.</span> Take a screenshot of your friend's payment confirmation.
+        </td></tr>
+        <tr><td style="padding:4px 0;font-size:13px;color:#374151;vertical-align:top;">
+          <span style="color:#C81240;margin-right:8px;font-weight:700;">2.</span> Fill the referral claim form with the screenshot and your UPI ID.
+        </td></tr>
+        <tr><td style="padding:4px 0;font-size:13px;color:#374151;vertical-align:top;">
+          <span style="color:#C81240;margin-right:8px;font-weight:700;">3.</span> We verify it against our records and send Rs 100 to your UPI ID - claims are processed daily by 10 PM.
+        </td></tr>
+      </table>
+      <a href="${TALLY_FORM_URL_REFERRAL}" style="display:inline-block;background:#C81240;color:#fff;border-radius:10px;padding:12px 26px;font-size:14px;font-weight:700;text-decoration:none;">
+        Submit Referral Claim &rarr;
       </a>
     </div>
 
@@ -451,4 +476,54 @@ async function sendReferralCodeEmail(enrollment) {
   }, PRIORITY.DEFAULT);
 }
 
-module.exports = { sendInvoiceEmail, sendWelcomePaymentEmail, sendAdminPaymentNotification, sendReferralCodeEmail };
+/* ── 5. Admin Daily Referral Payout Digest (Resend) ──────────── */
+
+async function sendReferralPayoutDigestEmail(pendingCredits) {
+  const rows = pendingCredits.map(c => `
+    <tr>
+      <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#1A1A2E;">${esc(c.referrer_name)}<br><span style="color:#64748b;font-size:12px;">${esc(c.referrer_phone)}</span></td>
+      <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#1A1A2E;">${esc(c.referred_name)}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#16a34a;font-weight:700;text-align:right;">${fmtAmount(c.amount)}</td>
+    </tr>`).join('');
+
+  const total = pendingCredits.reduce((sum, c) => sum + Number(c.amount), 0);
+
+  const body = `
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="display:inline-block;background:#fef2f2;border:1px solid #fca5a5;border-radius:50px;padding:8px 22px;">
+        <span style="font-size:13px;font-weight:700;color:#991b1b;">Action Needed by 10 PM</span>
+      </div>
+    </div>
+
+    <h2 style="margin:0 0 8px;font-size:21px;color:#1A1A2E;font-weight:800;text-align:center;">
+      ${pendingCredits.length} referral payout${pendingCredits.length === 1 ? '' : 's'} pending - ${fmtAmount(total)} total
+    </h2>
+    <p style="margin:0 0 24px;font-size:14px;color:#6b7280;line-height:1.7;text-align:center;">
+      Pay each learner via UPI, then mark them paid in the admin dashboard.
+    </p>
+
+    <table cellpadding="0" cellspacing="0" style="width:100%;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;margin-bottom:28px;">
+      <tr style="background:#f8fafc;">
+        <td style="padding:10px 12px;font-size:11px;font-weight:800;color:#94a3b8;text-transform:uppercase;">Pay To</td>
+        <td style="padding:10px 12px;font-size:11px;font-weight:800;color:#94a3b8;text-transform:uppercase;">Referred Friend</td>
+        <td style="padding:10px 12px;font-size:11px;font-weight:800;color:#94a3b8;text-transform:uppercase;text-align:right;">Amount</td>
+      </tr>
+      ${rows}
+    </table>
+
+    <div style="text-align:center;">
+      <a href="${SITE}/admin/dashboard/" style="display:inline-block;background:#C81240;color:#fff;border-radius:10px;padding:14px 32px;font-size:15px;font-weight:700;text-decoration:none;">
+        Open Referral Payouts &rarr;
+      </a>
+    </div>
+  `;
+
+  return resendSend({
+    from:    FROM,
+    to:      ADMIN_EMAIL,
+    subject: `${pendingCredits.length} referral payout${pendingCredits.length === 1 ? '' : 's'} pending - ${fmtAmount(total)} - process by 10 PM`,
+    html:    baseHtml(body),
+  }, PRIORITY.ADMIN_NOTIFY);
+}
+
+module.exports = { sendInvoiceEmail, sendWelcomePaymentEmail, sendAdminPaymentNotification, sendReferralCodeEmail, sendReferralPayoutDigestEmail };

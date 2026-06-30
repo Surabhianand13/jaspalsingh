@@ -2046,8 +2046,10 @@
       if (!cs.length){ body.innerHTML = '<p class="admin-empty">No referral payouts'+(status?(' ('+status+')'):'')+'.</p>'; return; }
       var rows = cs.map(function(c){
         var payAction = c.status === 'pending'
-          ? '<button class="btn btn-sm" data-ref-paid="'+c.id+'">Mark Paid</button>'
-          : '<span class="admin-badge admin-badge--blue">Paid</span>';
+          ? '<button class="btn btn-sm" data-ref-paid="'+c.id+'">Mark Paid</button> <button class="btn btn-sm btn-ghost" data-ref-reject="'+c.id+'">Reject</button>'
+          : c.status === 'paid'
+            ? '<span class="admin-badge admin-badge--blue">Paid</span>'
+            : '<span class="admin-badge admin-badge--orange">Rejected</span>';
         return '<tr><td>'+e(c.referrer_name)+'<br><span style="font-size:11px;color:#6b6b8a;">'+e(c.referrer_phone)+'</span></td>' +
           '<td>'+e(c.referred_name)+'<br><span style="font-size:11px;color:#6b6b8a;">'+e(c.referred_program)+'</span></td>' +
           '<td>'+inr(c.amount)+'</td><td>'+fmtDate(c.created_at)+'</td><td>'+payAction+'</td></tr>';
@@ -2061,6 +2063,17 @@
             showToast('Marked as paid', 'success');
             loadReferralPayouts();
           }).catch(function(err){ showToast(err.message, 'error'); btn.disabled = false; btn.textContent = 'Mark Paid'; });
+        });
+      });
+      document.querySelectorAll('[data-ref-reject]').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          if (!confirm('Reject this referral claim? This cannot be undone.')) return;
+          var id = btn.getAttribute('data-ref-reject');
+          btn.disabled = true; btn.textContent = 'Saving...';
+          adminFetch('PATCH', '/api/payment/admin/referral-credits/'+id+'/reject').then(function(){
+            showToast('Claim rejected', 'success');
+            loadReferralPayouts();
+          }).catch(function(err){ showToast(err.message, 'error'); btn.disabled = false; btn.textContent = 'Reject'; });
         });
       });
     }).catch(function(err){ body.innerHTML = '<p class="admin-empty">'+e(err.message)+'</p>'; });
