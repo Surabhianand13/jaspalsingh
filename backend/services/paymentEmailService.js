@@ -16,7 +16,7 @@ const TALLY_FORM_URL_DIPLOMA     = process.env.TALLY_FORM_URL_DIPLOMA     || 'ht
 const TALLY_FORM_URL_DEGREE      = process.env.TALLY_FORM_URL_DEGREE      || 'https://tally.so/r/b5AD1Z';
 const TALLY_FORM_URL_OMR_DIPLOMA = process.env.TALLY_FORM_URL_OMR_DIPLOMA || 'https://tally.so/r/jagNz4';
 const TALLY_FORM_URL_OMR_DEGREE  = process.env.TALLY_FORM_URL_OMR_DEGREE  || 'https://tally.so/r/ZjW0P5';
-const TALLY_FORM_URL_REFERRAL    = process.env.TALLY_FORM_URL_REFERRAL    || 'https://tally.so/r/REPLACE_WITH_REFERRAL_FORM';
+const TALLY_FORM_URL_REFERRAL    = process.env.TALLY_FORM_URL_REFERRAL    || 'https://tally.so/r/xXog2G';
 
 const WA_GROUP_DIPLOMA     = 'https://chat.whatsapp.com/Iq5hz6qm9kPFdjOEESK4Ka?s=sh&p=a&ilr=4';
 const WA_GROUP_DEGREE      = 'https://chat.whatsapp.com/K0Upt2jTmdQLkaI5c0CvM0?s=sh&p=a&ilr=4';
