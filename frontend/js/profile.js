@@ -36,6 +36,7 @@
     }
     document.getElementById('profileContent').style.display = 'block';
     loadProfile();
+    loadReferralCode();
     loadEnrolledPrograms();
     loadDownloads();
     setupPhotoUpload();
@@ -134,6 +135,40 @@
 
     }).catch(function (err) {
       showMsg('Could not load profile: ' + err.message, 'error');
+    });
+  }
+
+  /* ── Load referral code ──────────────────────────────────── */
+  function loadReferralCode() {
+    var body = document.getElementById('referralBody');
+    if (!body) return;
+    authFetch('/api/payment/my-referral-code').then(function (data) {
+      if (!data.referral_code) {
+        body.innerHTML = '<p class="profile-empty"><i class="fas fa-gift"></i> Enroll in a program to unlock your referral code.<br>' +
+          '<a href="/programs">Browse programs &rarr;</a></p>';
+        return;
+      }
+      body.innerHTML =
+        '<div style="padding:16px;border-radius:12px;background:linear-gradient(135deg,#fff4e6,#ffe8d6);border:1px dashed #C81240;text-align:center;">' +
+          '<div style="font-size:13px;color:#6b6b8a;margin-bottom:10px;">Share this code. Your friend gets &#8377;100 off, you get &#8377;100 once they enroll.</div>' +
+          '<div style="display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;">' +
+            '<span style="font-size:18px;font-weight:800;letter-spacing:1px;color:#C81240;">' + esc(data.referral_code) + '</span>' +
+            '<button type="button" id="profileCopyReferralBtn" style="background:#C81240;color:#fff;border:none;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;">Copy</button>' +
+          '</div>' +
+          '<div style="font-size:12px;color:#6b6b8a;margin-top:10px;">Earned so far: &#8377;' + Number(data.total_earned || 0).toLocaleString('en-IN') +
+            ' &middot; Pending: &#8377;' + Number(data.total_pending || 0).toLocaleString('en-IN') + '</div>' +
+        '</div>';
+      var copyBtn = document.getElementById('profileCopyReferralBtn');
+      if (copyBtn) {
+        copyBtn.addEventListener('click', function () {
+          navigator.clipboard.writeText(data.referral_code).then(function () {
+            copyBtn.textContent = 'Copied!';
+            setTimeout(function () { copyBtn.textContent = 'Copy'; }, 1500);
+          });
+        });
+      }
+    }).catch(function () {
+      body.innerHTML = '<p class="profile-empty">Could not load referral code.</p>';
     });
   }
 

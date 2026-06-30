@@ -2230,6 +2230,16 @@
     var bc=document.getElementById('bannerModalClose'); if(bc) bc.onclick=function(){document.getElementById('bannerModal').style.display='none';};
     // Status filter triggers client-side filter (no reload needed)
     var rpf=document.getElementById('referralPayoutFilter'); if(rpf) rpf.onchange=loadReferralPayouts;
+    var bbf=document.getElementById('btnBackfillReferralCodes'); if(bbf) bbf.onclick=function(){
+      bbf.disabled = true; bbf.textContent = 'Generating...';
+      adminFetch('POST', '/api/payment/admin/backfill-referral-codes').then(function(d){
+        showToast('Generated codes for '+d.assigned+' learner(s)', 'success');
+        bbf.disabled = false; bbf.textContent = 'Generate codes for past learners';
+      }).catch(function(err){
+        showToast(err.message, 'error');
+        bbf.disabled = false; bbf.textContent = 'Generate codes for past learners';
+      });
+    };
     var ef=document.getElementById('enrollFilter'); if(ef) ef.onchange=applyEnrollFilters;
     var pf=document.getElementById('enrollProgramFilter'); if(pf) pf.onchange=applyEnrollFilters;
     var df=document.getElementById('enrollDateFrom'); if(df) df.onchange=applyEnrollFilters;
