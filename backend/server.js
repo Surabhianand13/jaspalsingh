@@ -257,6 +257,25 @@ async function migrate() {
   await query(`ALTER TABLE learners ADD COLUMN IF NOT EXISTS city VARCHAR(100)`);
   await query(`ALTER TABLE learners ADD COLUMN IF NOT EXISTS photo_url VARCHAR(1000)`);
 
+  /* ── Referral program ── */
+  await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS referral_code VARCHAR(20)`);
+  await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS referred_by VARCHAR(20)`);
+  await query(`CREATE UNIQUE INDEX IF NOT EXISTS enrollments_referral_code_uidx ON enrollments (referral_code) WHERE referral_code IS NOT NULL`);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS referral_credits (
+      id                 SERIAL PRIMARY KEY,
+      referrer_order_id  VARCHAR(100) NOT NULL REFERENCES enrollments(order_id) ON DELETE CASCADE,
+      referred_order_id  VARCHAR(100) NOT NULL UNIQUE REFERENCES enrollments(order_id) ON DELETE CASCADE,
+      amount             INTEGER NOT NULL DEFAULT 100,
+      status             VARCHAR(20) NOT NULL DEFAULT 'pending',
+      created_at         TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      paid_at            TIMESTAMP WITH TIME ZONE
+    )
+  `);
+  await query(`CREATE INDEX IF NOT EXISTS idx_referral_credits_status ON referral_credits(status)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_referral_credits_referrer ON referral_credits(referrer_order_id)`);
+
   await query(`
     CREATE TABLE IF NOT EXISTS leads (
       id            SERIAL PRIMARY KEY,

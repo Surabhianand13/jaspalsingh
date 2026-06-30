@@ -194,6 +194,7 @@
     'learners':     'Learners',
     'programs':     'Programs',
     'enrollments':  'Enrollments',
+    'referralpayouts': 'Referral Payouts',
     'programleads': 'Interest / Leads',
     'banners':      'Banners & Promo Images',
     'analytics':    'Analytics'
@@ -239,6 +240,7 @@
       case 'learners':     loadLearners();     break;
       case 'programs':     loadPrograms();     break;
       case 'enrollments':  loadEnrollments();  break;
+      case 'referralpayouts': loadReferralPayouts(); break;
       case 'programleads': loadProgramLeads(); break;
       case 'banners':      loadBanners();      break;
       case 'analytics':    loadBizAnalytics(); break;
@@ -2032,6 +2034,38 @@
     }).catch(function(err){ body.innerHTML='<p class="admin-empty">'+e(err.message)+'</p>'; });
   }
 
+  /* ── REFERRAL PAYOUTS ── */
+  function loadReferralPayouts(){
+    var body = document.getElementById('referralPayoutsBody');
+    var statusSel = document.getElementById('referralPayoutFilter');
+    var status = statusSel ? statusSel.value : 'pending';
+    body.innerHTML = '<p class="admin-empty">Loading...</p>';
+    var qs = status ? ('?status=' + encodeURIComponent(status)) : '';
+    adminFetch('GET', '/api/payment/admin/referral-credits' + qs).then(function(d){
+      var cs = d.credits || [];
+      if (!cs.length){ body.innerHTML = '<p class="admin-empty">No referral payouts'+(status?(' ('+status+')'):'')+'.</p>'; return; }
+      var rows = cs.map(function(c){
+        var payAction = c.status === 'pending'
+          ? '<button class="btn btn-sm" data-ref-paid="'+c.id+'">Mark Paid</button>'
+          : '<span class="admin-badge admin-badge--blue">Paid</span>';
+        return '<tr><td>'+e(c.referrer_name)+'<br><span style="font-size:11px;color:#6b6b8a;">'+e(c.referrer_phone)+'</span></td>' +
+          '<td>'+e(c.referred_name)+'<br><span style="font-size:11px;color:#6b6b8a;">'+e(c.referred_program)+'</span></td>' +
+          '<td>'+inr(c.amount)+'</td><td>'+fmtDate(c.created_at)+'</td><td>'+payAction+'</td></tr>';
+      }).join('');
+      body.innerHTML = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Pay To (Referrer)</th><th>Referred Friend</th><th>Amount</th><th>Earned On</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+      document.querySelectorAll('[data-ref-paid]').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          var id = btn.getAttribute('data-ref-paid');
+          btn.disabled = true; btn.textContent = 'Saving...';
+          adminFetch('PATCH', '/api/payment/admin/referral-credits/'+id+'/mark-paid').then(function(){
+            showToast('Marked as paid', 'success');
+            loadReferralPayouts();
+          }).catch(function(err){ showToast(err.message, 'error'); btn.disabled = false; btn.textContent = 'Mark Paid'; });
+        });
+      });
+    }).catch(function(err){ body.innerHTML = '<p class="admin-empty">'+e(err.message)+'</p>'; });
+  }
+
   /* ── BANNERS ── */
   function loadBanners(){
     var body = document.getElementById('bannersBody');
@@ -2195,6 +2229,17 @@
     var pc=document.getElementById('programModalClose'); if(pc) pc.onclick=function(){document.getElementById('programModal').style.display='none';};
     var bc=document.getElementById('bannerModalClose'); if(bc) bc.onclick=function(){document.getElementById('bannerModal').style.display='none';};
     // Status filter triggers client-side filter (no reload needed)
+    var rpf=document.getElementById('referralPayoutFilter'); if(rpf) rpf.onchange=loadReferralPayouts;
+    var bbf=document.getElementById('btnBackfillReferralCodes'); if(bbf) bbf.onclick=function(){
+      bbf.disabled = true; bbf.textContent = 'Generating...';
+      adminFetch('POST', '/api/payment/admin/backfill-referral-codes').then(function(d){
+        showToast('Generated codes for '+d.assigned+' learner(s)', 'success');
+        bbf.disabled = false; bbf.textContent = 'Generate codes for past learners';
+      }).catch(function(err){
+        showToast(err.message, 'error');
+        bbf.disabled = false; bbf.textContent = 'Generate codes for past learners';
+      });
+    };
     var ef=document.getElementById('enrollFilter'); if(ef) ef.onchange=applyEnrollFilters;
     var pf=document.getElementById('enrollProgramFilter'); if(pf) pf.onchange=applyEnrollFilters;
     var df=document.getElementById('enrollDateFrom'); if(df) df.onchange=applyEnrollFilters;
