@@ -7,7 +7,7 @@ const express = require('express');
 const router  = express.Router();
 const { query } = require('../config/db');
 const crypto  = require('crypto');
-const { sendInvoiceEmail, sendWelcomePaymentEmail, sendAdminPaymentNotification } = require('../services/paymentEmailService');
+const { sendInvoiceEmail, sendWelcomePaymentEmail, sendAdminPaymentNotification, sendReferralCodeEmail } = require('../services/paymentEmailService');
 const { protect } = require('../middleware/auth');
 const { protectLearner, optionalLearner } = require('../middleware/learnerAuth');
 
@@ -507,6 +507,52 @@ router.get('/my-referral-code', protectLearner, async (req, res) => {
   } catch (err) {
     console.error('[my-referral-code]', err);
     res.status(500).json({ error: 'Server error.' });
+  }
+});
+
+/* ── GET /api/payment/admin/referral-codes ───────────────────
+   Lists every paid learner's referral code (deduped to their most
+   recent paid enrollment) so the admin can review before manually
+   triggering announcement emails. ── */
+router.get('/admin/referral-codes', protect, async (req, res) => {
+  try {
+    const result = await query(
+      `SELECT DISTINCT ON (COALESCE(learner_id::text, student_email))
+              order_id, student_name, student_email, student_phone,
+              program_name, referral_code, referral_email_sent, referral_email_sent_at, paid_at
+       FROM enrollments
+       WHERE status = 'paid' AND referral_code IS NOT NULL
+       ORDER BY COALESCE(learner_id::text, student_email), paid_at DESC`
+    );
+    res.json({ learners: result.rows });
+  } catch (err) {
+    console.error('[admin/referral-codes]', err);
+    res.status(500).json({ error: 'Server error.' });
+  }
+});
+
+/* ── POST /api/payment/admin/referral-codes/:order_id/send-email ── */
+router.post('/admin/referral-codes/:order_id/send-email', protect, async (req, res) => {
+  try {
+    const enr = await query(`SELECT * FROM enrollments WHERE order_id = $1 AND status = 'paid'`, [req.params.order_id]);
+    if (!enr.rows.length) return res.status(404).json({ error: 'Paid enrollment not found.' });
+
+    const enrollment = enr.rows[0];
+    if (!enrollment.referral_code) {
+      enrollment.referral_code = await ensureReferralCode(enrollment);
+    }
+    if (!enrollment.student_email) return res.status(400).json({ error: 'This learner has no email on file.' });
+
+    await sendReferralCodeEmail(enrollment);
+    await query(
+      `UPDATE enrollments SET referral_email_sent = TRUE, referral_email_sent_at = NOW() WHERE order_id = $1`,
+      [enrollment.order_id]
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[send-referral-email]', err);
+    res.status(500).json({ error: err.message || 'Server error.' });
   }
 });
 

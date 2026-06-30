@@ -240,7 +240,7 @@
       case 'learners':     loadLearners();     break;
       case 'programs':     loadPrograms();     break;
       case 'enrollments':  loadEnrollments();  break;
-      case 'referralpayouts': loadReferralPayouts(); break;
+      case 'referralpayouts': loadReferralPayouts(); loadReferralCodesAdmin(); break;
       case 'programleads': loadProgramLeads(); break;
       case 'banners':      loadBanners();      break;
       case 'analytics':    loadBizAnalytics(); break;
@@ -2066,6 +2066,41 @@
     }).catch(function(err){ body.innerHTML = '<p class="admin-empty">'+e(err.message)+'</p>'; });
   }
 
+  /* ── REFERRAL CODES (all paid learners, manual email trigger) ── */
+  function loadReferralCodesAdmin(){
+    var body = document.getElementById('referralCodesBody');
+    if (!body) return;
+    body.innerHTML = '<p class="admin-empty">Loading...</p>';
+    adminFetch('GET', '/api/payment/admin/referral-codes').then(function(d){
+      var ls = d.learners || [];
+      if (!ls.length){ body.innerHTML = '<p class="admin-empty">No paid learners with referral codes yet.</p>'; return; }
+      var rows = ls.map(function(x){
+        var sentLabel = x.referral_email_sent
+          ? '<span class="admin-badge admin-badge--blue">Sent ' + fmtDate(x.referral_email_sent_at) + '</span>'
+          : '<span class="admin-badge admin-badge--orange">Not sent</span>';
+        return '<tr><td>'+e(x.student_name)+'<br><span style="font-size:11px;color:#6b6b8a;">'+e(x.student_phone)+'</span></td>' +
+          '<td>'+e(x.student_email)+'</td>' +
+          '<td style="font-family:monospace;">'+e(x.referral_code)+'</td>' +
+          '<td>'+sentLabel+'</td>' +
+          '<td><button class="btn btn-sm" data-refcode-send="'+e(x.order_id)+'">Send Email</button></td></tr>';
+      }).join('');
+      body.innerHTML = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Learner</th><th>Email</th><th>Code</th><th>Email Status</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+      document.querySelectorAll('[data-refcode-send]').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          var orderId = btn.getAttribute('data-refcode-send');
+          btn.disabled = true; btn.textContent = 'Sending...';
+          adminFetch('POST', '/api/payment/admin/referral-codes/'+encodeURIComponent(orderId)+'/send-email').then(function(){
+            showToast('Email sent', 'success');
+            loadReferralCodesAdmin();
+          }).catch(function(err){
+            showToast(err.message, 'error');
+            btn.disabled = false; btn.textContent = 'Send Email';
+          });
+        });
+      });
+    }).catch(function(err){ body.innerHTML = '<p class="admin-empty">'+e(err.message)+'</p>'; });
+  }
+
   /* ── BANNERS ── */
   function loadBanners(){
     var body = document.getElementById('bannersBody');
@@ -2235,6 +2270,7 @@
       adminFetch('POST', '/api/payment/admin/backfill-referral-codes').then(function(d){
         showToast('Generated codes for '+d.assigned+' learner(s)', 'success');
         bbf.disabled = false; bbf.textContent = 'Generate codes for past learners';
+        loadReferralCodesAdmin();
       }).catch(function(err){
         showToast(err.message, 'error');
         bbf.disabled = false; bbf.textContent = 'Generate codes for past learners';
