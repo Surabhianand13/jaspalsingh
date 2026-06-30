@@ -515,6 +515,19 @@
           msg.textContent = '✓ Coupon applied! ' + data.label + ' - You pay ₹' + data.final_price;
           document.getElementById('inp-coupon').disabled = true;
           this.textContent = 'Applied ✓';
+
+          if (data.exclusive) {
+            appliedReferral = null;
+            const refInput = document.getElementById('inp-referral');
+            const refBtn   = document.getElementById('referralApplyBtn');
+            const refMsg   = document.getElementById('referralMsg');
+            refInput.value = '';
+            refInput.disabled = true;
+            refBtn.disabled = true;
+            refBtn.textContent = 'Apply';
+            refMsg.className = 'coupon-msg';
+            refMsg.textContent = 'Referral codes can\'t be combined with this coupon.';
+          }
         } else {
           msg.className   = 'coupon-msg error';
           msg.textContent = data.error || 'Invalid coupon code.';
