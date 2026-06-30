@@ -296,6 +296,8 @@ router.get('/verify', async (req, res) => {
 
     if (e.status === 'paid') onEnrollmentPaid(e).catch(err => console.error('[onEnrollmentPaid]', err.message));
 
+    const refreshed = await query(`SELECT form_token FROM enrollments WHERE order_id = $1`, [order_id]);
+
     res.json({
       paid:          e.status === 'paid',
       order_id,
@@ -303,6 +305,7 @@ router.get('/verify', async (req, res) => {
       amount:        e.amount || 0,
       student_name:  e.student_name || '',
       referral_code: e.referral_code || null,
+      form_token:    refreshed.rows[0]?.form_token || e.form_token || null,
     });
   } catch (err) {
     console.error('[verify GET]', err);
@@ -336,7 +339,8 @@ router.post('/verify', async (req, res) => {
         sendAllPaymentEmails(targetEnr, { sendInvoice: !enr.welcome_sent }).catch(() => {});
       }
       onEnrollmentPaid(enr).catch(err => console.error('[onEnrollmentPaid]', err.message));
-      return res.json({ paid: true, order_id, program_name: enr.program_name || '', amount: enr.amount || 0, student_name: enr.student_name || '', referral_code: enr.referral_code || null });
+      const refreshedEnr = await query(`SELECT form_token FROM enrollments WHERE order_id = $1`, [order_id]);
+      return res.json({ paid: true, order_id, program_name: enr.program_name || '', amount: enr.amount || 0, student_name: enr.student_name || '', referral_code: enr.referral_code || null, form_token: refreshedEnr.rows[0]?.form_token || enr.form_token || null });
     }
 
     // Verify Razorpay signature
@@ -374,6 +378,7 @@ router.post('/verify', async (req, res) => {
       amount:        enr.rows[0]?.amount || 0,
       student_name:  enr.rows[0]?.student_name || '',
       referral_code: enr.rows[0]?.referral_code || null,
+      form_token:    enr.rows[0]?.form_token || null,
     });
 
   } catch (err) {
