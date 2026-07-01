@@ -7,7 +7,10 @@
 
    API_BASE automatically adapts:
      • localhost → http://localhost:5000
-     • Production → same origin (Vercel proxies /api/* to Railway)
+     • Production → jaspalsingh.onrender.com (Render backend)
+
+   Frontend is served statically by Cloudflare Pages, which does not
+   proxy /api/* to the backend, so production must call Render directly.
    ============================================================ */
 
 (function (global) {
@@ -20,8 +23,7 @@
     if (host === 'localhost' || host === '127.0.0.1') {
       return 'http://localhost:5000';
     }
-    /* Production: same origin  -  Vercel rewrites /api/* to Render */
-    return '';
+    return 'https://jaspalsingh.onrender.com';
   })();
 
   /* ── Core fetch wrapper ─────────────────────────────────────── */
@@ -283,7 +285,7 @@
     var isProd = window.location.hostname !== 'localhost' &&
                  window.location.hostname !== '127.0.0.1';
     if (isProd) {
-      fetch('/api/health', { method: 'GET' }).catch(function () {});
+      fetch(API_BASE + '/api/health', { method: 'GET' }).catch(function () {});
     }
   })();
 
