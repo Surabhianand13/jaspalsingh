@@ -1022,7 +1022,7 @@
     tbody.querySelectorAll('.blog-edit-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var id   = this.getAttribute('data-id');
-        var post = blogState.items.find(function (p) { return p.id === id; });
+        var post = blogState.items.find(function (p) { return String(p.id) === id; });
         if (post) openBlogModal(post);
       });
     });
@@ -1133,7 +1133,7 @@
 
   /** Delete a blog post by ID */
   function deleteBlog(id) {
-    var post = blogState.items.find(function (p) { return p.id === id; });
+    var post = blogState.items.find(function (p) { return String(p.id) === id; });
     var name = post ? post.title : 'this post';
 
     if (!confirm('Delete "' + name + '"? This cannot be undone.')) return;
