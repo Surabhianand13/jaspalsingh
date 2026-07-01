@@ -413,63 +413,56 @@ router.post('/verify', async (req, res) => {
   }
 });
 
-/* ── POST /api/payment/webhook ───────────────────────────── */
-router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
-  try {
-    const sig  = req.headers['x-razorpay-signature'];
-    if (!sig) {
-      console.warn('[webhook] Missing Razorpay signature header');
-      return res.status(401).json({ error: 'Missing signature.' });
-    }
-
-    const expected = crypto
-      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-      .update(req.body.toString())
-      .digest('hex');
-
-    if (sig !== expected) {
-      console.warn('[webhook] Razorpay signature mismatch');
-      return res.status(401).json({ error: 'Invalid signature.' });
-    }
-
-    const event = JSON.parse(req.body);
-
-    // Handle payment.captured (successful payment)
-    if (event.event === 'payment.captured') {
-      const payment    = event.payload.payment.entity;
-      const ourOrderId = payment.notes?.jsp_order_id;
-
-      if (!ourOrderId) {
-        console.warn('[webhook] No jsp_order_id in payment notes:', payment.id);
-        return res.json({ status: 'ok' });
-      }
-
-      const formToken = crypto.randomBytes(32).toString('hex');
-      const result = await query(
-        `UPDATE enrollments
-         SET status = 'paid', paid_at = NOW(),
-             cf_payment_id = $1,
-             form_token = COALESCE(form_token, $2)
-         WHERE order_id = $3 AND status != 'paid'
-         RETURNING *`,
-        [payment.id, formToken, ourOrderId]
-      );
-      if (result.rows.length > 0) {
-        sendAllPaymentEmails(result.rows[0], { sendInvoice: false }).catch(() => {});
-        onEnrollmentPaid(result.rows[0]).catch(err => console.error('[onEnrollmentPaid]', err.message));
-      }
-    }
-
-    res.json({ status: 'ok' });
-  } catch (err) {
-    console.error('[webhook]', err);
-    res.status(500).json({ error: 'Webhook error.' });
-  }
-});
 
 /* ── GET /api/payment/programs ───────────────────────────── */
 router.get('/programs', (req, res) => {
   res.json(PROGRAMS);
+});
+
+/* ── POST /api/payment/admin/mark-paid ──────────────────────
+   Rescue endpoint for enrollments stuck at 'pending' after a
+   confirmed Razorpay capture (e.g. webhook failed to reach us).
+   Admin provides the JSP order_id and Razorpay payment_id;
+   we mark it paid and send all post-payment emails. Idempotent. ── */
+router.post('/admin/mark-paid', protect, async (req, res) => {
+  try {
+    const { order_id, razorpay_payment_id } = req.body;
+    if (!order_id || !razorpay_payment_id) {
+      return res.status(400).json({ error: 'order_id and razorpay_payment_id required.' });
+    }
+
+    const existing = await query(`SELECT * FROM enrollments WHERE order_id = $1`, [order_id]);
+    if (!existing.rows.length) return res.status(404).json({ error: 'Order not found.' });
+
+    const enr = existing.rows[0];
+    if (enr.status === 'paid') {
+      return res.json({ success: true, already_paid: true, order_id });
+    }
+
+    const formToken = crypto.randomBytes(32).toString('hex');
+    const updated = await query(
+      `UPDATE enrollments
+       SET status = 'paid', paid_at = NOW(), cf_payment_id = $1,
+           form_token = COALESCE(form_token, $2)
+       WHERE order_id = $3 AND status != 'paid'
+       RETURNING *`,
+      [razorpay_payment_id, formToken, order_id]
+    );
+
+    if (!updated.rows.length) {
+      return res.json({ success: true, already_paid: true, order_id });
+    }
+
+    const paid = updated.rows[0];
+    await sendAllPaymentEmails(paid, { sendInvoice: true });
+    await onEnrollmentPaid(paid);
+
+    console.log(`[admin/mark-paid] Manually rescued: ${order_id}`);
+    res.json({ success: true, order_id, student_name: paid.student_name, amount: paid.amount });
+  } catch (err) {
+    console.error('[admin/mark-paid]', err);
+    res.status(500).json({ error: err.message || 'Server error.' });
+  }
 });
 
 /* ── POST /api/payment/admin/backfill-referral-codes ─────────
