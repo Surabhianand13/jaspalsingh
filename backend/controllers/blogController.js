@@ -91,8 +91,8 @@ const getOne = async (req, res, next) => {
 const adminGetAll = async (req, res, next) => {
   try {
     const result = await query(
-      `SELECT id, title, slug, category, cover_image_url,
-              is_published, published_at, created_at
+      `SELECT id, title, slug, content, excerpt, category, cover_image_url,
+              pdf_url, is_published, published_at, created_at
        FROM blog_posts ORDER BY created_at DESC`
     );
     res.json({ total: result.rowCount, posts: result.rows });
