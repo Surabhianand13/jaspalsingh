@@ -75,7 +75,12 @@ async function onEnrollmentPaid(enrollment) {
 const COUPONS = {
   'FIRST':     { discountedPrice: 1,    label: 'First-time offer' },
   'JASPALSIR': { discount: 1000,        label: 'Get Rs 1,000 off' },
-  'JASPAL200': { discount: 1200,        label: 'Special Rs 1,200 off' },
+  'JASPAL200': {
+    // Already a special discount - referral codes cannot be combined with it.
+    discount:  1200,
+    exclusive: true,
+    label:     'Special Rs 1,200 off',
+  },
   'DOST': {
     // Partnership code: fixed final price per program, only valid on these 4.
     // Exclusive - referral codes cannot be combined with it.
