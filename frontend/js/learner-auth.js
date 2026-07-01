@@ -20,7 +20,7 @@
 
   var API_BASE = (function () {
     var h = window.location.hostname;
-    return (h === 'localhost' || h === '127.0.0.1') ? 'http://localhost:5000' : '';
+    return (h === 'localhost' || h === '127.0.0.1') ? 'http://localhost:5000' : 'https://jaspalsingh.onrender.com';
   })();
 
   /* ── Session helpers ────────────────────────────────────── */
