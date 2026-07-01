@@ -19,7 +19,7 @@ const http  = require('http');
 /* ── CONFIG ── change password before running ── */
 const ADMIN_EMAIL    = 'biz@solvvai.com';          // admin login email
 const ADMIN_PASSWORD = 'YOUR_PASSWORD_HERE';        // ← replace this
-const API_BASE       = 'https://jaspalsingh.in';    // production
+const API_BASE       = 'https://jaspalsingh.onrender.com';    // production API (Render backend)
 
 /* ── helpers ── */
 function req(method, path, body, token) {
