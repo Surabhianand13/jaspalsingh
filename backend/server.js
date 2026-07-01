@@ -61,6 +61,13 @@ const loginLimiter = rateLimit({
   message: { error: 'Too many login attempts. Please wait 15 minutes.' },
 });
 
+/* ── Razorpay Webhook - must be registered BEFORE express.json() ────
+   express.json() consumes the raw body, making HMAC signature
+   verification impossible. The route itself uses express.raw() to
+   capture the raw bytes Razorpay signs. ── */
+app.use('/api/payment/webhook', require('express').raw({ type: 'application/json' }),
+  require('./routes/payment-webhook'));
+
 /* ── Body Parsing ────────────────────────────────────────── */
 
 app.use(express.json({ limit: '10mb' }));
