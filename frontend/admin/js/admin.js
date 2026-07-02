@@ -194,6 +194,7 @@
     'learners':     'Learners',
     'programs':     'Programs',
     'enrollments':  'Enrollments',
+    'referralpayouts': 'Referral Payouts',
     'programleads': 'Interest / Leads',
     'banners':      'Banners & Promo Images',
     'analytics':    'Analytics'
@@ -239,6 +240,7 @@
       case 'learners':     loadLearners();     break;
       case 'programs':     loadPrograms();     break;
       case 'enrollments':  loadEnrollments();  break;
+      case 'referralpayouts': loadReferralPayouts(); loadReferralCodesAdmin(); break;
       case 'programleads': loadProgramLeads(); break;
       case 'banners':      loadBanners();      break;
       case 'analytics':    loadBizAnalytics(); break;
@@ -1020,7 +1022,7 @@
     tbody.querySelectorAll('.blog-edit-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var id   = this.getAttribute('data-id');
-        var post = blogState.items.find(function (p) { return p.id === id; });
+        var post = blogState.items.find(function (p) { return String(p.id) === id; });
         if (post) openBlogModal(post);
       });
     });
@@ -1131,7 +1133,7 @@
 
   /** Delete a blog post by ID */
   function deleteBlog(id) {
-    var post = blogState.items.find(function (p) { return p.id === id; });
+    var post = blogState.items.find(function (p) { return String(p.id) === id; });
     var name = post ? post.title : 'this post';
 
     if (!confirm('Delete "' + name + '"? This cannot be undone.')) return;
@@ -1864,13 +1866,16 @@
         var markBtn = (x.status === 'paid' && !x.form_used)
           ? '<button class="btn-admin-secondary btn-admin-sm" style="margin-top:4px;font-size:11px;color:#059669;border-color:#059669;" data-marksubmit="'+x.id+'" title="Manually mark as submitted (use when learner filled form but webhook failed)">Mark as submitted</button>'
           : '';
+        var rescueBtn = (x.status === 'pending')
+          ? '<button class="btn-admin-secondary btn-admin-sm" style="margin-top:4px;font-size:11px;color:#b45309;border-color:#b45309;" data-rescue-order="'+e(x.order_id)+'" title="Learner paid on Razorpay but enrollment is stuck pending - enter Razorpay payment ID to mark paid and send emails">Rescue - Mark Paid</button>'
+          : '';
         var admitBtn = (x.status === 'paid' && x.form_used)
           ? '<button class="btn-admin-secondary btn-admin-sm" style="margin-top:4px;font-size:11px;color:#7c3aed;border-color:#7c3aed;" data-admitcard="'+x.id+'" data-slug="'+(x.program_slug||'')+'" title="Generate and resend admit card PDF">Send Admit Card</button>'
           : '';
         return '<tr><td>'+e(x.student_name)+'<br><span style="color:#9999b0;font-size:12px;">'+e(x.student_phone)+(x.student_email?' · '+e(x.student_email):'')+'</span></td>' +
           '<td>'+e(x.program_name)+'</td><td>'+inr(x.amount)+(x.coupon_code?'<br><span style="color:#16a34a;font-size:11px;">'+e(x.coupon_code)+'</span>':'')+'</td>' +
           '<td><span class="admin-badge admin-badge--'+(x.status==='paid'?'green':'orange')+'">'+e(x.status)+'</span></td>' +
-          '<td>'+formBadge+emailBadge+reissueBtn+markBtn+admitBtn+'</td>'+
+          '<td>'+formBadge+emailBadge+reissueBtn+markBtn+admitBtn+rescueBtn+'</td>'+
           '<td>'+fmtDate(x.paid_at||x.created_at)+'</td><td style="font-size:11px;color:#9999b0;">'+e(x.order_id)+'</td></tr>';
       }).join('');
       body.innerHTML = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Student</th><th>Program</th><th>Amount</th><th>Status</th><th>Form</th><th>Date</th><th>Order</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
@@ -1902,6 +1907,25 @@
           var id   = btn.getAttribute('data-admitcard');
           var slug = btn.getAttribute('data-slug') || '';
           showAdmitCardModal(parseInt(id), slug.includes('degree'));
+        });
+      });
+      // Wire up rescue (mark-paid) buttons
+      body.querySelectorAll('[data-rescue-order]').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          var orderId = btn.getAttribute('data-rescue-order');
+          var paymentId = prompt('Enter the Razorpay Payment ID for order ' + orderId + '\n(find it in Razorpay Dashboard > Payments):');
+          if (!paymentId || !paymentId.trim()) return;
+          if (!confirm('Mark ' + orderId + ' as PAID and send welcome email to the learner?')) return;
+          btn.disabled = true; btn.textContent = 'Rescuing...';
+          adminFetch('POST', '/api/payment/admin/mark-paid', { order_id: orderId, razorpay_payment_id: paymentId.trim() })
+            .then(function(d){
+              showToast('Rescued! ' + (d.student_name || orderId) + ' marked paid and emails sent.', 'success');
+              loadEnrollments();
+            })
+            .catch(function(err){
+              showToast(err.message || 'Failed to rescue enrollment', 'error');
+              btn.disabled = false; btn.textContent = 'Rescue - Mark Paid';
+            });
         });
       });
   }
@@ -2030,6 +2054,86 @@
       }).join('');
       body.innerHTML = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Program</th><th>Source</th><th>Date</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
     }).catch(function(err){ body.innerHTML='<p class="admin-empty">'+e(err.message)+'</p>'; });
+  }
+
+  /* ── REFERRAL PAYOUTS ── */
+  function loadReferralPayouts(){
+    var body = document.getElementById('referralPayoutsBody');
+    var statusSel = document.getElementById('referralPayoutFilter');
+    var status = statusSel ? statusSel.value : 'pending';
+    body.innerHTML = '<p class="admin-empty">Loading...</p>';
+    var qs = status ? ('?status=' + encodeURIComponent(status)) : '';
+    adminFetch('GET', '/api/payment/admin/referral-credits' + qs).then(function(d){
+      var cs = d.credits || [];
+      if (!cs.length){ body.innerHTML = '<p class="admin-empty">No referral payouts'+(status?(' ('+status+')'):'')+'.</p>'; return; }
+      var rows = cs.map(function(c){
+        var payAction = c.status === 'pending'
+          ? '<button class="btn btn-sm" data-ref-paid="'+c.id+'">Mark Paid</button> <button class="btn btn-sm btn-ghost" data-ref-reject="'+c.id+'">Reject</button>'
+          : c.status === 'paid'
+            ? '<span class="admin-badge admin-badge--blue">Paid</span>'
+            : '<span class="admin-badge admin-badge--orange">Rejected</span>';
+        return '<tr><td>'+e(c.referrer_name)+'<br><span style="font-size:11px;color:#6b6b8a;">'+e(c.referrer_phone)+'</span></td>' +
+          '<td>'+e(c.referred_name)+'<br><span style="font-size:11px;color:#6b6b8a;">'+e(c.referred_program)+'</span></td>' +
+          '<td>'+inr(c.amount)+'</td><td>'+fmtDate(c.created_at)+'</td><td>'+payAction+'</td></tr>';
+      }).join('');
+      body.innerHTML = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Pay To (Referrer)</th><th>Referred Friend</th><th>Amount</th><th>Earned On</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+      document.querySelectorAll('[data-ref-paid]').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          var id = btn.getAttribute('data-ref-paid');
+          btn.disabled = true; btn.textContent = 'Saving...';
+          adminFetch('PATCH', '/api/payment/admin/referral-credits/'+id+'/mark-paid').then(function(){
+            showToast('Marked as paid', 'success');
+            loadReferralPayouts();
+          }).catch(function(err){ showToast(err.message, 'error'); btn.disabled = false; btn.textContent = 'Mark Paid'; });
+        });
+      });
+      document.querySelectorAll('[data-ref-reject]').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          if (!confirm('Reject this referral claim? This cannot be undone.')) return;
+          var id = btn.getAttribute('data-ref-reject');
+          btn.disabled = true; btn.textContent = 'Saving...';
+          adminFetch('PATCH', '/api/payment/admin/referral-credits/'+id+'/reject').then(function(){
+            showToast('Claim rejected', 'success');
+            loadReferralPayouts();
+          }).catch(function(err){ showToast(err.message, 'error'); btn.disabled = false; btn.textContent = 'Reject'; });
+        });
+      });
+    }).catch(function(err){ body.innerHTML = '<p class="admin-empty">'+e(err.message)+'</p>'; });
+  }
+
+  /* ── REFERRAL CODES (all paid learners, manual email trigger) ── */
+  function loadReferralCodesAdmin(){
+    var body = document.getElementById('referralCodesBody');
+    if (!body) return;
+    body.innerHTML = '<p class="admin-empty">Loading...</p>';
+    adminFetch('GET', '/api/payment/admin/referral-codes').then(function(d){
+      var ls = d.learners || [];
+      if (!ls.length){ body.innerHTML = '<p class="admin-empty">No paid learners with referral codes yet.</p>'; return; }
+      var rows = ls.map(function(x){
+        var sentLabel = x.referral_email_sent
+          ? '<span class="admin-badge admin-badge--blue">Sent ' + fmtDate(x.referral_email_sent_at) + '</span>'
+          : '<span class="admin-badge admin-badge--orange">Not sent</span>';
+        return '<tr><td>'+e(x.student_name)+'<br><span style="font-size:11px;color:#6b6b8a;">'+e(x.student_phone)+'</span></td>' +
+          '<td>'+e(x.student_email)+'</td>' +
+          '<td style="font-family:monospace;">'+e(x.referral_code)+'</td>' +
+          '<td>'+sentLabel+'</td>' +
+          '<td><button class="btn btn-sm" data-refcode-send="'+e(x.order_id)+'">Send Email</button></td></tr>';
+      }).join('');
+      body.innerHTML = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Learner</th><th>Email</th><th>Code</th><th>Email Status</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+      document.querySelectorAll('[data-refcode-send]').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          var orderId = btn.getAttribute('data-refcode-send');
+          btn.disabled = true; btn.textContent = 'Sending...';
+          adminFetch('POST', '/api/payment/admin/referral-codes/'+encodeURIComponent(orderId)+'/send-email').then(function(){
+            showToast('Email sent', 'success');
+            loadReferralCodesAdmin();
+          }).catch(function(err){
+            showToast(err.message, 'error');
+            btn.disabled = false; btn.textContent = 'Send Email';
+          });
+        });
+      });
+    }).catch(function(err){ body.innerHTML = '<p class="admin-empty">'+e(err.message)+'</p>'; });
   }
 
   /* ── BANNERS ── */
@@ -2195,6 +2299,18 @@
     var pc=document.getElementById('programModalClose'); if(pc) pc.onclick=function(){document.getElementById('programModal').style.display='none';};
     var bc=document.getElementById('bannerModalClose'); if(bc) bc.onclick=function(){document.getElementById('bannerModal').style.display='none';};
     // Status filter triggers client-side filter (no reload needed)
+    var rpf=document.getElementById('referralPayoutFilter'); if(rpf) rpf.onchange=loadReferralPayouts;
+    var bbf=document.getElementById('btnBackfillReferralCodes'); if(bbf) bbf.onclick=function(){
+      bbf.disabled = true; bbf.textContent = 'Generating...';
+      adminFetch('POST', '/api/payment/admin/backfill-referral-codes').then(function(d){
+        showToast('Generated codes for '+d.assigned+' learner(s)', 'success');
+        bbf.disabled = false; bbf.textContent = 'Generate codes for past learners';
+        loadReferralCodesAdmin();
+      }).catch(function(err){
+        showToast(err.message, 'error');
+        bbf.disabled = false; bbf.textContent = 'Generate codes for past learners';
+      });
+    };
     var ef=document.getElementById('enrollFilter'); if(ef) ef.onchange=applyEnrollFilters;
     var pf=document.getElementById('enrollProgramFilter'); if(pf) pf.onchange=applyEnrollFilters;
     var df=document.getElementById('enrollDateFrom'); if(df) df.onchange=applyEnrollFilters;

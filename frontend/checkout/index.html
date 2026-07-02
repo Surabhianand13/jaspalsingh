@@ -90,6 +90,7 @@
     .coupon-msg { font-size: 12px; font-weight: 600; margin-top: -10px; margin-bottom: 14px; padding: 8px 12px; border-radius: 8px; display: none; }
     .coupon-msg.success { background: rgba(22,163,74,.10); color: #15803d; display: block; }
     .coupon-msg.error   { background: rgba(200,18,64,.08);  color: #C81240;  display: block; }
+    .coupon-msg.note    { background: rgba(107,107,138,.10); color: #6b6b8a; display: block; }
 
     .pay-btn {
       width: 100%;
@@ -274,6 +275,15 @@
           </div>
           <div class="coupon-msg" id="couponMsg"></div>
 
+          <div class="form-group" style="margin-bottom:6px;">
+            <label class="form-label" for="inp-referral">Referral Code <span style="font-weight:400;color:#9999b0;">(optional - get extra ₹100 off)</span></label>
+            <div class="coupon-row">
+              <input class="form-input" type="text" id="inp-referral" placeholder="Enter referral code" autocomplete="off" style="text-transform:uppercase;" />
+              <button type="button" class="coupon-apply-btn" id="referralApplyBtn">Apply</button>
+            </div>
+          </div>
+          <div class="coupon-msg" id="referralMsg"></div>
+
           <!-- T&C Checkbox -->
           <div class="tnc-row">
             <input type="checkbox" id="inp-tnc" required />
@@ -401,7 +411,8 @@
       }
     });
 
-    let appliedCoupon = null;
+    let appliedCoupon   = null;
+    let appliedReferral = null;
     let finalPrice    = program ? program.price : 0;
 
     // Detect login state at outer scope so submit handler can access it
@@ -505,6 +516,24 @@
           msg.textContent = '✓ Coupon applied! ' + data.label + ' - You pay ₹' + data.final_price;
           document.getElementById('inp-coupon').disabled = true;
           this.textContent = 'Applied ✓';
+
+          if (data.exclusive) {
+            appliedReferral = null;
+            const refInput = document.getElementById('inp-referral');
+            const refBtn   = document.getElementById('referralApplyBtn');
+            const refMsg   = document.getElementById('referralMsg');
+            refInput.value = '';
+            refInput.placeholder = 'Not available with this coupon';
+            refInput.disabled = true;
+            refInput.style.background = '#f5f5f8';
+            refInput.style.color = '#9999b0';
+            refBtn.disabled = true;
+            refBtn.style.opacity = '0.5';
+            refBtn.style.cursor = 'not-allowed';
+            refBtn.textContent = 'Apply';
+            refMsg.className = 'coupon-msg note';
+            refMsg.textContent = 'Referral codes can\'t be combined with the ' + code + ' coupon.';
+          }
         } else {
           msg.className   = 'coupon-msg error';
           msg.textContent = data.error || 'Invalid coupon code.';
@@ -514,6 +543,48 @@
       } catch (e) {
         msg.className = 'coupon-msg error';
         msg.textContent = 'Could not validate coupon. Try again.';
+        this.textContent = 'Apply';
+        this.disabled = false;
+      }
+    });
+
+    // Referral code apply
+    document.getElementById('referralApplyBtn').addEventListener('click', async function() {
+      const code = document.getElementById('inp-referral').value.trim().toUpperCase();
+      const msg  = document.getElementById('referralMsg');
+      const phone = document.getElementById('inp-phone').value.trim();
+      const email = document.getElementById('inp-email').value.trim();
+      msg.className = 'coupon-msg';
+      msg.textContent = '';
+
+      if (!code) { msg.className = 'coupon-msg error'; msg.textContent = 'Please enter a referral code.'; return; }
+
+      this.textContent = 'Checking...';
+      this.disabled = true;
+
+      try {
+        const res  = await fetch(API + '/api/payment/validate-referral', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ referral_code: code, program_slug: slug, phone, email }),
+        });
+        const data = await res.json();
+
+        if (res.ok && data.valid) {
+          appliedReferral = code;
+          updatePriceDisplay(Math.max(1, finalPrice - data.discount));
+          msg.className   = 'coupon-msg success';
+          msg.textContent = '✓ Referral applied! Extra ₹' + data.discount + ' off - You pay ₹' + finalPrice;
+          document.getElementById('inp-referral').disabled = true;
+          this.textContent = 'Applied ✓';
+        } else {
+          msg.className   = 'coupon-msg error';
+          msg.textContent = data.error || 'Invalid referral code.';
+          this.textContent = 'Apply';
+          this.disabled = false;
+        }
+      } catch (e) {
+        msg.className = 'coupon-msg error';
+        msg.textContent = 'Could not validate referral code. Try again.';
         this.textContent = 'Apply';
         this.disabled = false;
       }
@@ -569,7 +640,7 @@
 
         const res  = await fetch(API + '/api/payment/create-order', {
           method: 'POST', headers,
-          body: JSON.stringify({ program_slug: slug, name, email, phone, coupon_code: appliedCoupon }),
+          body: JSON.stringify({ program_slug: slug, name, email, phone, coupon_code: appliedCoupon, referral_code: appliedReferral }),
         });
         const data = await res.json();
 
