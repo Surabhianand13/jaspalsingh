@@ -194,6 +194,7 @@
     'learners':     'Learners',
     'programs':     'Programs',
     'enrollments':  'Enrollments',
+    'paidlearners': 'Paid Learners',
     'referralpayouts': 'Referral Payouts',
     'programleads': 'Interest / Leads',
     'banners':      'Banners & Promo Images',
@@ -240,6 +241,7 @@
       case 'learners':     loadLearners();     break;
       case 'programs':     loadPrograms();     break;
       case 'enrollments':  loadEnrollments();  break;
+      case 'paidlearners': loadPaidLearners(); break;
       case 'referralpayouts': loadReferralPayouts(); loadReferralCodesAdmin(); break;
       case 'programleads': loadProgramLeads(); break;
       case 'banners':      loadBanners();      break;
@@ -383,6 +385,7 @@
       var totalRevenue = 0;
       var todayRevenue = 0;
       enrollments.forEach(function (en) {
+        if (en.refund_status === 'initiated') return; // excluded from revenue - refund flagged
         var amt = parseInt(en.amount) || 0;
         totalRevenue += amt;
         if (en.paid_at && en.paid_at.slice(0, 10) === todayStr) {
@@ -1730,6 +1733,7 @@
     bindTestimonialsSection();
     bindMessagesSection();
     bindLearnersSection();
+    bindPaidLearnersSection();
 
     /* ── Show initial section ──────────────────── */
     showSection('dashboard');
@@ -1873,7 +1877,7 @@
           ? '<button class="btn-admin-secondary btn-admin-sm" style="margin-top:4px;font-size:11px;color:#7c3aed;border-color:#7c3aed;" data-admitcard="'+x.id+'" data-slug="'+(x.program_slug||'')+'" title="Generate and resend admit card PDF">Send Admit Card</button>'
           : '';
         return '<tr><td>'+e(x.student_name)+'<br><span style="color:#9999b0;font-size:12px;">'+e(x.student_phone)+(x.student_email?' · '+e(x.student_email):'')+'</span></td>' +
-          '<td>'+e(x.program_name)+'</td><td>'+inr(x.amount)+(x.coupon_code?'<br><span style="color:#16a34a;font-size:11px;">'+e(x.coupon_code)+'</span>':'')+'</td>' +
+          '<td>'+e(x.program_label||x.program_name)+'</td><td>'+inr(x.amount)+(x.coupon_code?'<br><span style="color:#16a34a;font-size:11px;">'+e(x.coupon_code)+'</span>':'')+'</td>' +
           '<td><span class="admin-badge admin-badge--'+(x.status==='paid'?'green':'orange')+'">'+e(x.status)+'</span></td>' +
           '<td>'+formBadge+emailBadge+reissueBtn+markBtn+admitBtn+rescueBtn+'</td>'+
           '<td>'+fmtDate(x.paid_at||x.created_at)+'</td><td style="font-size:11px;color:#9999b0;">'+e(x.order_id)+'</td></tr>';
@@ -1940,7 +1944,8 @@
     adminFetch('GET', '/api/enrollment/admin/all' + (qs.length ? ('?' + qs.join('&')) : '')).then(function(d){
       var s = d.summary||{};
       document.getElementById('enrollSummary').innerHTML =
-        statCard('Revenue', inr(s.revenue)) + statCard('Paid', s.paid_count||0) + statCard('Pending', s.pending_count||0);
+        statCard('Revenue', inr(s.revenue)) + statCard('Paid', s.paid_count||0) + statCard('Pending', s.pending_count||0) +
+        (s.refunded_count ? statCard('Refunded', s.refunded_count) : '');
 
       allEnrollments = d.enrollments || [];
 
@@ -1954,7 +1959,7 @@
           if (x.program_slug && !seen[x.program_slug]) {
             seen[x.program_slug] = true;
             // Shorten label: use slug-based short name
-            var label = x.program_name || x.program_slug;
+            var label = x.program_label || x.program_name || x.program_slug;
             if (label.length > 40) label = label.slice(0, 40) + '...';
             opts += '<option value="'+e(x.program_slug)+'"'+(currentProg===x.program_slug?' selected':'')+'>'+e(label)+'</option>';
           }
@@ -1964,6 +1969,210 @@
 
       applyEnrollFilters();
     }).catch(function(err){ body.innerHTML='<p class="admin-empty">'+e(err.message)+'</p>'; });
+  }
+
+  /* ── PAID LEARNERS ── */
+  var allPaidLearners = []; // cached for CSV export
+
+  function bigStatCard(icon, color, bg, label, value) {
+    return '<div class="stat-card" style="--stat-color:'+color+';--stat-bg:'+bg+';">' +
+      '<div class="stat-card-icon"><i class="fas '+icon+'"></i></div>' +
+      '<div class="stat-card-label">'+e(label)+'</div>' +
+      '<div class="stat-card-value">'+value+'</div>' +
+      '</div>';
+  }
+
+  function loadPaidLearners() {
+    var tabBtn = document.querySelector('#paidLearnerProgramTabs .filter-tab.active');
+    var program = tabBtn ? tabBtn.getAttribute('data-program') : '';
+    var searchEl = $('paidLearnerSearch');
+    var search = searchEl ? searchEl.value.trim() : '';
+    var body = $('paidLearnersBody');
+    var qs = [];
+    if (program) qs.push('program=' + encodeURIComponent(program));
+    if (search)  qs.push('search=' + encodeURIComponent(search));
+    body.innerHTML = '<p class="admin-empty">Loading...</p>';
+
+    adminFetch('GET', '/api/enrollment/admin/paid-learners' + (qs.length ? ('?' + qs.join('&')) : '')).then(function (d) {
+      allPaidLearners = d.learners || [];
+      var s = d.summary || {};
+      var byProgram = d.byProgram || [];
+
+      var statsHtml =
+        bigStatCard('fa-user-graduate', '#7c3aed', 'rgba(124,58,237,0.1)', 'Total Paid Learners', s.total_paid || 0) +
+        bigStatCard('fa-indian-rupee-sign', '#16a34a', 'rgba(22,163,74,0.1)', 'Net Revenue (Rs)', inrIndian(s.net_revenue || 0)) +
+        bigStatCard('fa-rotate-left', '#dc2626', 'rgba(220,38,38,0.1)', 'Refunds Initiated', s.refunded_count || 0);
+      byProgram.forEach(function (p) {
+        statsHtml += bigStatCard('fa-layer-group', '#0891b2', 'rgba(8,145,178,0.1)', p.program_label, p.count);
+      });
+      $('paidLearnersStats').innerHTML = statsHtml;
+
+      if (!allPaidLearners.length) {
+        body.innerHTML = '<p class="admin-empty">No paid learners match the selected filters.</p>';
+        return;
+      }
+      renderPaidLearnerRows(allPaidLearners, body);
+    }).catch(function (err) { body.innerHTML = '<p class="admin-empty">' + e(err.message) + '</p>'; });
+  }
+
+  function renderPaidLearnerRows(rows, body) {
+    var html = rows.map(function (x) {
+      var refunded = x.refund_status === 'initiated';
+      var refundBadge = refunded
+        ? '<span class="admin-badge admin-badge--red" title="'+e(x.refund_reason||'')+'">Refund Initiated</span>'
+        : '<span class="admin-badge admin-badge--grey">-</span>';
+      var refundAction = refunded
+        ? '<button class="btn-admin-secondary btn-admin-sm" style="font-size:11px;" data-clearrefund="'+e(x.order_id)+'" data-name="'+e(x.student_name)+'">Clear Refund</button>'
+        : '<button class="btn-admin-secondary btn-admin-sm" style="font-size:11px;color:#b91c1c;border-color:#b91c1c;" data-refund="'+e(x.order_id)+'" data-name="'+e(x.student_name)+'" data-amount="'+(x.amount||0)+'">Mark Refund</button>';
+
+      return '<tr>' +
+        '<td>'+e(x.student_name)+'<br><span style="color:#9999b0;font-size:12px;">'+e(x.student_phone)+(x.student_email?' · '+e(x.student_email):'')+'</span></td>' +
+        '<td>'+e(x.program_label||x.program_name)+'</td>' +
+        '<td>'+inr(x.amount)+'</td>' +
+        '<td>'+(x.referred_by?e(x.referred_by):'<span style="color:#c7c7d6;">-</span>')+'</td>' +
+        '<td>'+(x.coupon_code?e(x.coupon_code):'<span style="color:#c7c7d6;">-</span>')+'</td>' +
+        '<td style="font-size:11px;color:#9999b0;">'+e(x.order_id)+(x.cf_payment_id?'<br>'+e(x.cf_payment_id):'')+'</td>' +
+        '<td>'+fmtDate(x.paid_at)+'</td>' +
+        '<td>'+refundBadge+'</td>' +
+        '<td>'+refundAction+'</td>' +
+        '</tr>';
+    }).join('');
+
+    body.innerHTML = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr>' +
+      '<th>Learner</th><th>Program</th><th>Amount</th><th>Referral Code</th><th>Coupon</th><th>Order / Payment ID</th><th>Purchase Date</th><th>Refund</th><th>Action</th>' +
+      '</tr></thead><tbody>'+html+'</tbody></table></div>';
+
+    body.querySelectorAll('[data-refund]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        showRefundModal(btn.getAttribute('data-refund'), btn.getAttribute('data-name'), btn.getAttribute('data-amount'));
+      });
+    });
+    body.querySelectorAll('[data-clearrefund]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var orderId = btn.getAttribute('data-clearrefund');
+        var name = btn.getAttribute('data-name');
+        if (!confirm('Clear the refund flag for ' + name + '? Their purchase amount will count toward sales again.')) return;
+        btn.disabled = true; btn.textContent = 'Clearing...';
+        adminFetch('POST', '/api/enrollment/admin/' + encodeURIComponent(orderId) + '/refund', { action: 'clear' })
+          .then(function (d) { showToast(d.message || 'Refund flag cleared', 'success'); loadPaidLearners(); })
+          .catch(function (err) { showToast(err.message || 'Failed', 'error'); btn.disabled = false; btn.textContent = 'Clear Refund'; });
+      });
+    });
+  }
+
+  /** Mark-refund modal - internal tracking flag only, does not call Razorpay or move money */
+  function showRefundModal(orderId, studentName, amount) {
+    var existing = document.getElementById('refundModal');
+    if (existing) existing.remove();
+
+    var modal = document.createElement('div');
+    modal.id = 'refundModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+    modal.innerHTML =
+      '<div style="background:#fff;border-radius:14px;padding:28px 32px;max-width:440px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">' +
+          '<h3 style="margin:0;font-size:17px;color:#1A1A2E;">Mark Refund - '+e(studentName)+'</h3>' +
+          '<button id="refundModalClose" style="border:none;background:none;font-size:22px;cursor:pointer;color:#9ca3af;">&times;</button>' +
+        '</div>' +
+        '<p style="font-size:13px;color:#6b7280;margin:0 0 20px;">This only records the refund internally and removes the amount from sales totals. It does <strong>not</strong> move any money - process the actual refund via Razorpay or bank transfer separately.</p>' +
+        '<div style="display:flex;flex-direction:column;gap:12px;">' +
+          '<div><label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Reason *</label>' +
+            '<textarea id="rf_reason" rows="3" placeholder="e.g. Learner requested cancellation within refund window" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;resize:vertical;"></textarea></div>' +
+          '<div><label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Refund Amount (Rs)</label>' +
+            '<input id="rf_amount" type="number" min="0" value="'+e(amount)+'" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;"/></div>' +
+        '</div>' +
+        '<div style="display:flex;gap:10px;margin-top:24px;">' +
+          '<button id="refundModalSubmit" style="flex:1;background:#dc2626;color:#fff;border:none;border-radius:9px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;">Mark Refund Initiated</button>' +
+          '<button id="refundModalCancel" style="background:#f1f5f9;color:#374151;border:none;border-radius:9px;padding:12px 18px;font-size:14px;font-weight:600;cursor:pointer;">Cancel</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(modal);
+
+    document.getElementById('refundModalClose').onclick  = function () { modal.remove(); };
+    document.getElementById('refundModalCancel').onclick = function () { modal.remove(); };
+    modal.addEventListener('click', function (ev) { if (ev.target === modal) modal.remove(); });
+
+    document.getElementById('refundModalSubmit').addEventListener('click', function () {
+      var reason = document.getElementById('rf_reason').value.trim();
+      var amt = document.getElementById('rf_amount').value;
+      if (!reason) { showToast('A reason is required', 'error'); return; }
+
+      var submitBtn = document.getElementById('refundModalSubmit');
+      submitBtn.disabled = true; submitBtn.textContent = 'Saving...';
+
+      adminFetch('POST', '/api/enrollment/admin/' + encodeURIComponent(orderId) + '/refund', { action: 'initiate', reason: reason, amount: amt })
+        .then(function (d) {
+          modal.remove();
+          showToast(d.message || 'Refund marked as initiated', 'success');
+          loadPaidLearners();
+        })
+        .catch(function (err) {
+          showToast(err.message || 'Failed to mark refund', 'error');
+          submitBtn.disabled = false; submitBtn.textContent = 'Mark Refund Initiated';
+        });
+    });
+  }
+
+  /** Export paid learners as CSV, built client-side from the last loaded page. */
+  function exportPaidLearnersCSV() {
+    if (!allPaidLearners.length) { showToast('No paid learner data to export.', 'error'); return; }
+
+    var headers = ['Name', 'Email', 'Phone', 'Program', 'Amount', 'Purchase Date', 'Referral Code', 'Coupon Code', 'Order ID', 'Payment ID', 'Refund Status'];
+    var rows = allPaidLearners.map(function (x) {
+      return [
+        csvEscape(x.student_name || ''),
+        csvEscape(x.student_email || ''),
+        csvEscape(x.student_phone || ''),
+        csvEscape(x.program_label || x.program_name || ''),
+        x.amount || 0,
+        csvEscape(fmtDate(x.paid_at)),
+        csvEscape(x.referred_by || ''),
+        csvEscape(x.coupon_code || ''),
+        csvEscape(x.order_id || ''),
+        csvEscape(x.cf_payment_id || ''),
+        csvEscape(x.refund_status === 'initiated' ? 'Refund Initiated' : 'None')
+      ].join(',');
+    });
+
+    var csv = [headers.join(',')].concat(rows).join('\r\n');
+    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    a.href = url;
+    a.download = 'paid_learners_' + new Date().toISOString().slice(0, 10) + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showToast('CSV exported (' + allPaidLearners.length + ' learners).', 'success');
+  }
+
+  /** Bind Paid Learners section controls */
+  function bindPaidLearnersSection() {
+    var refreshBtn = $('btnRefreshPaidLearners');
+    if (refreshBtn) refreshBtn.addEventListener('click', loadPaidLearners);
+
+    var exportBtn = $('btnExportPaidLearnersCSV');
+    if (exportBtn) exportBtn.addEventListener('click', exportPaidLearnersCSV);
+
+    var searchEl = $('paidLearnerSearch');
+    if (searchEl) {
+      var searchTimer;
+      searchEl.addEventListener('input', function () {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(loadPaidLearners, 350);
+      });
+    }
+
+    var tabs = document.querySelectorAll('#paidLearnerProgramTabs .filter-tab');
+    tabs.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        tabs.forEach(function (b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        loadPaidLearners();
+      });
+    });
   }
 
   /* ── Admit Card modal ── */
