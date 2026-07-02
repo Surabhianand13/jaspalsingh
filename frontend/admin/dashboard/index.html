@@ -78,6 +78,11 @@
           Enrollments
         </button>
 
+        <button class="admin-nav-link" data-section="paidlearners">
+          <i class="fas fa-user-graduate" aria-hidden="true"></i>
+          Paid Learners
+        </button>
+
         <button class="admin-nav-link" data-section="referralpayouts">
           <i class="fas fa-share-nodes" aria-hidden="true"></i>
           Referral Payouts
@@ -642,6 +647,41 @@
         </div>
         <div id="enrollSummary" class="admin-stat-row"></div>
         <div id="enrollmentsBody"><p class="admin-empty">Loading…</p></div>
+      </section>
+
+      <!-- ══════════════════════════════
+           SECTION: PAID LEARNERS
+           ══════════════════════════════ -->
+      <section class="admin-section" id="section-paidlearners" aria-label="Paid Learners">
+        <div class="section-header">
+          <h2 class="section-title">Paid Learners</h2>
+          <div class="section-actions">
+            <div class="admin-search-wrap">
+              <i class="fas fa-search" aria-hidden="true"></i>
+              <input type="search" class="admin-search-input" id="paidLearnerSearch" placeholder="Search name, email, mobile…" />
+            </div>
+            <button class="btn-admin-secondary btn-admin-sm" id="btnExportPaidLearnersCSV" type="button">
+              <i class="fas fa-download"></i> Export CSV
+            </button>
+            <button class="btn-admin-secondary btn-admin-sm" id="btnRefreshPaidLearners" type="button">Refresh</button>
+          </div>
+        </div>
+
+        <p style="color:#6b6b8a;font-size:14px;margin-bottom:16px;">Every learner who has successfully paid, across all 4 active programs. Always synced live from enrollments - no separate copy.</p>
+
+        <!-- Stat cards -->
+        <div class="stats-grid" id="paidLearnersStats"></div>
+
+        <div class="filter-tabs" id="paidLearnerProgramTabs" style="margin-bottom:16px;">
+          <button class="filter-tab active" data-program="">All Programs</button>
+          <button class="filter-tab" data-program="rssb-jen-degree-test-series">Offline Degree</button>
+          <button class="filter-tab" data-program="rssb-jen-diploma-test-series">Offline Diploma</button>
+          <button class="filter-tab" data-program="rssb-je-omr-degree-test-series">OMR Degree</button>
+          <button class="filter-tab" data-program="rssb-jen-omr-diploma-test-series">OMR Diploma</button>
+          <button class="filter-tab" data-program="rpsc-ae-interview">RPSC Interview</button>
+        </div>
+
+        <div id="paidLearnersBody"><p class="admin-empty">Loading…</p></div>
       </section>
 
       <!-- ── INTEREST / LEADS ── -->
