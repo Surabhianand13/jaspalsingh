@@ -9,6 +9,21 @@ const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
 const { query } = require('../config/db');
 
+/* ── Program slug → clean display label (admin UI only) ──
+   The stored program_name text is identical for Offline Degree and
+   Offline Diploma orders (only price differs), so the admin panel
+   can't tell them apart. This maps by slug instead. */
+const PROGRAM_LABELS = {
+  'rssb-jen-diploma-test-series':      'Offline Diploma',
+  'rssb-jen-degree-test-series':       'Offline Degree',
+  'rssb-je-omr-degree-test-series':    'OMR Degree',
+  'rssb-jen-omr-diploma-test-series':  'OMR Diploma',
+  'rpsc-ae-interview':                 'RPSC AE Interview Guidance',
+};
+function programLabel(slug, fallbackName) {
+  return PROGRAM_LABELS[slug] || fallbackName || slug || 'Unknown Program';
+}
+
 /* ── GET /api/enrollment/account-status ─────────────────────
    Tells the success page whether the buyer already has an account,
    so the UI can skip the password step.                          */
@@ -214,15 +229,104 @@ router.get('/admin/all', protect, async (req, res, next) => {
     const rows = await query(
       `SELECT id, order_id, program_slug, program_name, amount, student_name,
               student_email, student_phone, status, coupon_code, paid_at, created_at,
-              form_token IS NOT NULL AS has_form_token, form_used, form_used_at, welcome_sent
+              form_token IS NOT NULL AS has_form_token, form_used, form_used_at, welcome_sent,
+              refund_status, refund_reason, refund_amount, refund_initiated_at, refunded_by
        FROM enrollments ${where} ORDER BY created_at DESC ${limitClause}`, params);
+    rows.rows.forEach(r => { r.program_label = programLabel(r.program_slug, r.program_name); });
     const summary = await query(
       `SELECT
          COUNT(*) FILTER (WHERE status='paid')::int    AS paid_count,
          COUNT(*) FILTER (WHERE status='pending')::int AS pending_count,
-         COALESCE(SUM(amount) FILTER (WHERE status='paid'),0)::int AS revenue
+         COALESCE(SUM(amount) FILTER (WHERE status='paid' AND refund_status != 'initiated'),0)::int AS revenue,
+         COUNT(*) FILTER (WHERE status='paid' AND refund_status='initiated')::int AS refunded_count,
+         COALESCE(SUM(refund_amount) FILTER (WHERE refund_status='initiated'),0)::int AS refunded_amount
        FROM enrollments`);
     res.json({ enrollments: rows.rows, total: rows.rowCount, summary: summary.rows[0] });
+  } catch (err) { next(err); }
+});
+
+/* ── ADMIN: paid learners across all programs ────────────────
+   Dedicated view of successful purchases only - name, contact,
+   program, purchase date, referral/coupon usage, refund status.
+   Always a live query against enrollments (no separate table). */
+router.get('/admin/paid-learners', protect, async (req, res, next) => {
+  try {
+    const { program, search } = req.query;
+    const params = [];
+    const conditions = [`status = 'paid'`];
+    if (program) { params.push(program); conditions.push(`program_slug = $${params.length}`); }
+    if (search) {
+      params.push(`%${search}%`);
+      conditions.push(`(student_name ILIKE $${params.length} OR student_email ILIKE $${params.length} OR student_phone ILIKE $${params.length})`);
+    }
+    const where = 'WHERE ' + conditions.join(' AND ');
+
+    const rows = await query(
+      `SELECT id, order_id, program_slug, program_name, amount, student_name, student_email,
+              student_phone, coupon_code, referred_by, cf_payment_id, paid_at,
+              refund_status, refund_reason, refund_amount, refund_initiated_at, refunded_by
+       FROM enrollments ${where} ORDER BY paid_at DESC`, params);
+    rows.rows.forEach(r => { r.program_label = programLabel(r.program_slug, r.program_name); });
+
+    const overall = await query(
+      `SELECT
+         COUNT(*)::int AS total_paid,
+         COALESCE(SUM(amount) FILTER (WHERE refund_status != 'initiated'),0)::int AS net_revenue,
+         COUNT(*) FILTER (WHERE refund_status = 'initiated')::int AS refunded_count
+       FROM enrollments WHERE status = 'paid'`);
+
+    const byProgramRes = await query(
+      `SELECT program_slug, COUNT(*)::int AS count
+       FROM enrollments WHERE status = 'paid' GROUP BY program_slug ORDER BY count DESC`);
+    const byProgram = byProgramRes.rows.map(r => ({
+      program_slug: r.program_slug,
+      program_label: programLabel(r.program_slug, null),
+      count: r.count,
+    }));
+
+    res.json({
+      learners: rows.rows,
+      total: rows.rowCount,
+      summary: overall.rows[0],
+      byProgram,
+    });
+  } catch (err) { next(err); }
+});
+
+/* ── POST /api/enrollment/admin/:orderId/refund ──────────────
+   Marks (or clears) an internal refund flag on a paid enrollment.
+   Does NOT call Razorpay or move any money - the admin processes
+   the actual refund separately; this only affects reporting/sales. */
+router.post('/admin/:orderId/refund', protect, async (req, res, next) => {
+  try {
+    const { orderId } = req.params;
+    const { action, reason, amount } = req.body;
+
+    if (action === 'clear') {
+      const r = await query(
+        `UPDATE enrollments SET refund_status='none', refund_reason=NULL, refund_amount=NULL,
+                refund_initiated_at=NULL, refunded_by=NULL
+         WHERE order_id=$1 AND status='paid' RETURNING id, student_name`,
+        [orderId]);
+      if (!r.rows.length) return res.status(404).json({ error: 'Paid enrollment not found.' });
+      return res.json({ message: `Refund flag cleared for ${r.rows[0].student_name}.` });
+    }
+
+    if (!reason || !reason.trim()) return res.status(400).json({ error: 'Refund reason is required.' });
+
+    const enr = await query(`SELECT amount FROM enrollments WHERE order_id=$1 AND status='paid'`, [orderId]);
+    if (!enr.rows.length) return res.status(404).json({ error: 'Paid enrollment not found.' });
+
+    const refundAmt = (amount !== undefined && amount !== null && amount !== '') ? parseInt(amount, 10) : enr.rows[0].amount;
+    if (isNaN(refundAmt) || refundAmt < 0) return res.status(400).json({ error: 'Invalid refund amount.' });
+
+    const r = await query(
+      `UPDATE enrollments SET refund_status='initiated', refund_reason=$1, refund_amount=$2,
+              refund_initiated_at=NOW(), refunded_by=$3
+       WHERE order_id=$4 AND status='paid' RETURNING id, student_name`,
+      [reason.trim(), refundAmt, req.admin.email, orderId]);
+
+    res.json({ message: `Refund marked as initiated for ${r.rows[0].student_name}. No money was moved automatically - process the actual refund via Razorpay/bank separately.` });
   } catch (err) { next(err); }
 });
 

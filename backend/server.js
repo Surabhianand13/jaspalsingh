@@ -271,6 +271,13 @@ async function migrate() {
   await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS referral_email_sent_at TIMESTAMPTZ`);
   await query(`CREATE UNIQUE INDEX IF NOT EXISTS enrollments_referral_code_uidx ON enrollments (referral_code) WHERE referral_code IS NOT NULL`);
 
+  /* ── Refund tracking (internal flag only - does not call any payment gateway) ── */
+  await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS refund_status VARCHAR(20) NOT NULL DEFAULT 'none'`);
+  await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS refund_reason TEXT`);
+  await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS refund_amount INTEGER`);
+  await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS refund_initiated_at TIMESTAMPTZ`);
+  await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS refunded_by VARCHAR(255)`);
+
   await query(`
     CREATE TABLE IF NOT EXISTS referral_credits (
       id                 SERIAL PRIMARY KEY,
