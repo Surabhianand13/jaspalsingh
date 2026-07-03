@@ -197,6 +197,24 @@ const PROGRAMS = {
     price:     1999,
     mrp:       2999,
   },
+  'ese-2027-prelims-jaspalsirki-testseries-paper1': {
+    name:      'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 1 (GS & Engineering Aptitude)',
+    shortName: 'ESE 2027 Prelims Paper 1',
+    price:     2999,
+    mrp:       4999,
+  },
+  'ese-2027-prelims-jaspalsirki-testseries-paper2-civil': {
+    name:      'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 2 (Civil)',
+    shortName: 'ESE 2027 Prelims Paper 2 (Civil)',
+    price:     2999,
+    mrp:       4999,
+  },
+  'ese-2027-prelims-jaspalsirki-testseries-combined': {
+    name:      'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 1 + 2 (GS, Eng. Aptitude & Civil)',
+    shortName: 'ESE 2027 Prelims Paper 1+2',
+    price:     4499,
+    mrp:       9999,
+  },
 };
 
 /* ── Razorpay instance ───────────────────────────────────── */
