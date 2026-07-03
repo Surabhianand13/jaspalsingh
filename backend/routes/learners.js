@@ -11,8 +11,9 @@
      GET  /api/learners/downloads
 
    ADMIN PROTECTED:
-     GET  /api/learners/stats
-     GET  /api/learners
+     GET   /api/learners/stats
+     GET   /api/learners
+     PATCH /api/learners/:id/email
    ============================================================ */
 
 const express = require('express');
@@ -53,7 +54,8 @@ router.put('/me',        protectLearner, ctrl.updateMe);
 router.get('/downloads', protectLearner, ctrl.getMyDownloads);
 
 /* Admin protected */
-router.get('/stats',     protect, ctrl.adminStats);
-router.get('/',          protect, ctrl.adminGetAll);
+router.get('/stats',        protect, ctrl.adminStats);
+router.get('/',             protect, ctrl.adminGetAll);
+router.patch('/:id/email',  protect, ctrl.adminUpdateEmail);
 
 module.exports = router;

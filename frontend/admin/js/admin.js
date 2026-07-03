@@ -1549,13 +1549,13 @@
     var tbody = $('learnersTableBody');
     if (!tbody) return;
 
-    tbody.innerHTML = '<tr><td colspan="7"><div class="admin-table-empty"><i class="fas fa-spinner fa-spin"></i><p>Loading…</p></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8"><div class="admin-table-empty"><i class="fas fa-spinner fa-spin"></i><p>Loading…</p></div></td></tr>';
 
     adminFetch('GET', '/api/learners').then(function (data) {
       learnersState.items = Array.isArray(data) ? data : (data.learners || data.data || []);
       applyLearnerPeriodFilter();
     }).catch(function (err) {
-      tbody.innerHTML = '<tr><td colspan="7"><div class="admin-table-empty"><i class="fas fa-triangle-exclamation"></i><p>' + escapeHtml(err.message) + '</p></div></td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8"><div class="admin-table-empty"><i class="fas fa-triangle-exclamation"></i><p>' + escapeHtml(err.message) + '</p></div></td></tr>';
     });
   }
 
@@ -1565,7 +1565,7 @@
     if (!tbody) return;
 
     if (!items || items.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7"><div class="admin-table-empty"><i class="fas fa-users"></i><p>No learners found.</p></div></td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8"><div class="admin-table-empty"><i class="fas fa-users"></i><p>No learners found.</p></div></td></tr>';
       return;
     }
 
@@ -1593,6 +1593,7 @@
           '<td><span class="text-sm">' + escapeHtml(l.target_exam || l.exam_target || l.exam || '-') + '</span></td>' +
           '<td><span class="text-sm text-muted">' + fmtDate(l.created_at || l.createdAt) + '</span></td>' +
           '<td>' + (isActive ? '<span class="badge badge-visible">Active</span>' : '<span class="badge badge-hidden">Inactive</span>') + '</td>' +
+          '<td><button type="button" class="btn-admin-secondary btn-edit-learner-email" data-learner-id="' + l.id + '" data-learner-email="' + escapeHtml(l.email || '') + '" data-learner-name="' + escapeHtml(l.name || l.full_name || '') + '" style="padding:4px 10px;font-size:12px;"><i class="fas fa-pen"></i> Edit Email</button></td>' +
         '</tr>'
       );
     }).join('');
@@ -1707,6 +1708,44 @@
     if (searchEl) {
       searchEl.addEventListener('input', function () {
         applyLearnerPeriodFilter();
+      });
+    }
+
+    /* Edit-email button (event delegation - table body re-renders on filter) */
+    var tbody = $('learnersTableBody');
+    if (tbody) {
+      tbody.addEventListener('click', function (e) {
+        var btn = e.target.closest('.btn-edit-learner-email');
+        if (!btn) return;
+        $('editEmailLearnerId').value = btn.getAttribute('data-learner-id');
+        $('editEmailLearnerName').textContent = btn.getAttribute('data-learner-name') || '-';
+        $('editEmailCurrent').textContent = btn.getAttribute('data-learner-email') || '-';
+        $('editEmailNew').value = '';
+        $('editEmailMsg').textContent = '';
+        openModal('editEmailModal');
+      });
+    }
+
+    var saveEmailBtn = $('btnSaveLearnerEmail');
+    if (saveEmailBtn) {
+      saveEmailBtn.addEventListener('click', function () {
+        var id       = $('editEmailLearnerId').value;
+        var newEmail = $('editEmailNew').value.trim();
+        var msgEl    = $('editEmailMsg');
+        msgEl.textContent = '';
+        msgEl.style.color = '#dc2626';
+        if (!newEmail) { msgEl.textContent = 'Please enter a new email address.'; return; }
+
+        saveEmailBtn.disabled = true;
+        adminFetch('PATCH', '/api/learners/' + id + '/email', { email: newEmail }).then(function () {
+          closeModal('editEmailModal');
+          showToast('Email updated.', 'success');
+          loadLearners();
+        }).catch(function (err) {
+          msgEl.textContent = err.message;
+        }).finally(function () {
+          saveEmailBtn.disabled = false;
+        });
       });
     }
   }

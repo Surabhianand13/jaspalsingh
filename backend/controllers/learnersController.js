@@ -298,6 +298,37 @@ const adminGetAll = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+/* ── PATCH /api/learners/:id/email  -  ADMIN ─────────────────────
+   Corrects a learner's login email (e.g. typo at signup). Also
+   updates enrollments.student_email so past paid records stay
+   consistent, since that column is a separate copy, not FK-synced. ── */
+const adminUpdateEmail = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { email } = req.body;
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailRe.test(email)) {
+      return res.status(400).json({ error: 'Please provide a valid email address.' });
+    }
+    const norm = email.toLowerCase().trim();
+
+    const existing = await query('SELECT id FROM learners WHERE email = $1 AND id != $2', [norm, id]);
+    if (existing.rows.length) {
+      return res.status(409).json({ error: 'Another account already uses this email address.' });
+    }
+
+    const result = await query(
+      `UPDATE learners SET email = $1 WHERE id = $2 RETURNING id, name, email`,
+      [norm, id]
+    );
+    if (!result.rows.length) return res.status(404).json({ error: 'Learner not found.' });
+
+    await query(`UPDATE enrollments SET student_email = $1 WHERE learner_id = $2`, [norm, id]);
+
+    res.json({ message: 'Email updated.', learner: result.rows[0] });
+  } catch (err) { next(err); }
+};
+
 /* ── GET /api/learners/stats  -  ADMIN ───────────────────────── */
 const adminStats = async (req, res, next) => {
   try {
@@ -394,4 +425,4 @@ const resetPassword = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { sendOtp, register, login, getMe, updateMe, getMyDownloads, adminGetAll, adminStats, forgotPassword, resetPassword };
+module.exports = { sendOtp, register, login, getMe, updateMe, getMyDownloads, adminGetAll, adminUpdateEmail, adminStats, forgotPassword, resetPassword };
