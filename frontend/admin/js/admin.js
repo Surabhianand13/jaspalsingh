@@ -1909,17 +1909,14 @@
         var markBtn = (x.status === 'paid' && !x.form_used)
           ? '<button class="btn-admin-secondary btn-admin-sm" style="margin-top:4px;font-size:11px;color:#059669;border-color:#059669;" data-marksubmit="'+x.id+'" title="Manually mark as submitted (use when learner filled form but webhook failed)">Mark as submitted</button>'
           : '';
-        var rescueBtn = (x.status === 'pending')
-          ? '<button class="btn-admin-secondary btn-admin-sm" style="margin-top:4px;font-size:11px;color:#b45309;border-color:#b45309;" data-rescue-order="'+e(x.order_id)+'" title="Learner paid on Razorpay but enrollment is stuck pending - enter Razorpay payment ID to mark paid and send emails">Rescue - Mark Paid</button>'
-          : '';
         var admitBtn = (x.status === 'paid' && x.form_used)
           ? '<button class="btn-admin-secondary btn-admin-sm" style="margin-top:4px;font-size:11px;color:#7c3aed;border-color:#7c3aed;" data-admitcard="'+x.id+'" data-slug="'+(x.program_slug||'')+'" title="Generate and resend admit card PDF">Send Admit Card</button>'
           : '';
         return '<tr><td>'+e(x.student_name)+'<br><span style="color:#9999b0;font-size:12px;">'+e(x.student_phone)+(x.student_email?' · '+e(x.student_email):'')+
           ' <a href="#" data-edit-enroll-email="'+x.id+'" data-current-email="'+e(x.student_email||'')+'" style="color:#4f46e5;">edit</a></span></td>' +
           '<td>'+e(x.program_label||x.program_name)+'</td><td>'+inr(x.amount)+(x.coupon_code?'<br><span style="color:#16a34a;font-size:11px;">'+e(x.coupon_code)+'</span>':'')+'</td>' +
-          '<td><span class="admin-badge admin-badge--'+(x.status==='paid'?'green':'orange')+'">'+e(x.status)+'</span></td>' +
-          '<td>'+formBadge+emailBadge+reissueBtn+markBtn+admitBtn+rescueBtn+'</td>'+
+          '<td><span class="admin-badge admin-badge--'+(x.status==='paid'?'green':x.status==='pending'?'orange':'grey')+'">'+e(x.status)+'</span></td>' +
+          '<td>'+formBadge+emailBadge+reissueBtn+markBtn+admitBtn+'</td>'+
           '<td>'+fmtDate(x.paid_at||x.created_at)+'</td><td style="font-size:11px;color:#9999b0;">'+e(x.order_id)+'</td></tr>';
       }).join('');
       body.innerHTML = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Student</th><th>Program</th><th>Amount</th><th>Status</th><th>Form</th><th>Date</th><th>Order</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
@@ -1966,25 +1963,6 @@
           var id   = btn.getAttribute('data-admitcard');
           var slug = btn.getAttribute('data-slug') || '';
           showAdmitCardModal(parseInt(id), slug.includes('degree'));
-        });
-      });
-      // Wire up rescue (mark-paid) buttons
-      body.querySelectorAll('[data-rescue-order]').forEach(function(btn){
-        btn.addEventListener('click', function(){
-          var orderId = btn.getAttribute('data-rescue-order');
-          var paymentId = prompt('Enter the Razorpay Payment ID for order ' + orderId + '\n(find it in Razorpay Dashboard > Payments):');
-          if (!paymentId || !paymentId.trim()) return;
-          if (!confirm('Mark ' + orderId + ' as PAID and send welcome email to the learner?')) return;
-          btn.disabled = true; btn.textContent = 'Rescuing...';
-          adminFetch('POST', '/api/payment/admin/mark-paid', { order_id: orderId, razorpay_payment_id: paymentId.trim() })
-            .then(function(d){
-              showToast('Rescued! ' + (d.student_name || orderId) + ' marked paid and emails sent.', 'success');
-              loadEnrollments();
-            })
-            .catch(function(err){
-              showToast(err.message || 'Failed to rescue enrollment', 'error');
-              btn.disabled = false; btn.textContent = 'Rescue - Mark Paid';
-            });
         });
       });
   }
