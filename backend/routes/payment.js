@@ -127,6 +127,12 @@ const COUPONS = {
     singleUse:  true,
     label:      'Special offer - Rs 2,000',
   },
+  'DIP2499X9F3': {
+    programPrices: { 'rssb-jen-diploma-test-series': 2499 },
+    exclusive:  true,
+    singleUse:  true,
+    label:      'Special offer - Rs 2,499',
+  },
 };
 
 /* ── Has a single-use coupon already been redeemed on a paid order? ── */
