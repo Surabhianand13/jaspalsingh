@@ -65,10 +65,29 @@ async function recordReferralCredit(enrollment) {
   }
 }
 
+/* ── When a learner retries checkout, each attempt creates a new order_id
+   row. Once one of those attempts is paid, the earlier attempt(s) are left
+   stuck at 'pending' forever - showing up twice in the admin enrollments
+   list and getting sales calls for a lead that already converted. Close
+   those out here so only the live (paid) row remains callable. ── */
+async function cancelDuplicatePendingEnrollments(enrollment) {
+  try {
+    await query(
+      `UPDATE enrollments
+       SET status = 'cancelled'
+       WHERE student_phone = $1 AND program_slug = $2 AND order_id != $3 AND status = 'pending'`,
+      [enrollment.student_phone, enrollment.program_slug, enrollment.order_id]
+    );
+  } catch (err) {
+    console.error('[cancelDuplicatePendingEnrollments]', err.message);
+  }
+}
+
 /* ── Called whenever an enrollment transitions to 'paid' ── */
 async function onEnrollmentPaid(enrollment) {
   await ensureReferralCode(enrollment);
   await recordReferralCredit(enrollment);
+  await cancelDuplicatePendingEnrollments(enrollment);
 }
 
 /* ── Coupon catalogue ────────────────────────────────────── */
@@ -455,52 +474,6 @@ router.post('/verify', async (req, res) => {
 /* ── GET /api/payment/programs ───────────────────────────── */
 router.get('/programs', (req, res) => {
   res.json(PROGRAMS);
-});
-
-/* ── POST /api/payment/admin/mark-paid ──────────────────────
-   Rescue endpoint for enrollments stuck at 'pending' after a
-   confirmed Razorpay capture (e.g. webhook failed to reach us).
-   Admin provides the JSP order_id and Razorpay payment_id;
-   we mark it paid and send all post-payment emails. Idempotent. ── */
-router.post('/admin/mark-paid', protect, async (req, res) => {
-  try {
-    const { order_id, razorpay_payment_id } = req.body;
-    if (!order_id || !razorpay_payment_id) {
-      return res.status(400).json({ error: 'order_id and razorpay_payment_id required.' });
-    }
-
-    const existing = await query(`SELECT * FROM enrollments WHERE order_id = $1`, [order_id]);
-    if (!existing.rows.length) return res.status(404).json({ error: 'Order not found.' });
-
-    const enr = existing.rows[0];
-    if (enr.status === 'paid') {
-      return res.json({ success: true, already_paid: true, order_id });
-    }
-
-    const formToken = crypto.randomBytes(32).toString('hex');
-    const updated = await query(
-      `UPDATE enrollments
-       SET status = 'paid', paid_at = NOW(), cf_payment_id = $1,
-           form_token = COALESCE(form_token, $2)
-       WHERE order_id = $3 AND status != 'paid'
-       RETURNING *`,
-      [razorpay_payment_id, formToken, order_id]
-    );
-
-    if (!updated.rows.length) {
-      return res.json({ success: true, already_paid: true, order_id });
-    }
-
-    const paid = updated.rows[0];
-    await sendAllPaymentEmails(paid, { sendInvoice: true });
-    await onEnrollmentPaid(paid);
-
-    console.log(`[admin/mark-paid] Manually rescued: ${order_id}`);
-    res.json({ success: true, order_id, student_name: paid.student_name, amount: paid.amount });
-  } catch (err) {
-    console.error('[admin/mark-paid]', err);
-    res.status(500).json({ error: err.message || 'Server error.' });
-  }
 });
 
 /* ── POST /api/payment/admin/backfill-referral-codes ─────────
