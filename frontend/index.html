@@ -1576,6 +1576,17 @@
       { name: "Arjun G.",       city: "Kota",    course: "RSSB JE 2026 - Civil Diploma Offline",                  time: "7 min ago" },
       { name: "Sonu M.",        city: "Alwar",   course: "RSSB JE 2026 - Civil Diploma (Home-Based OMR Test Series)", time: "just now" },
       { name: "Ravi S.",        city: "Ajmer",   course: "RSSB JE 2026 - Civil Degree Offline",                   time: "53 min ago" },
+      /* ── ESE 2027 Prelims (dummy - no real enrollments yet) ── */
+      { name: "Ritika S.",      city: "Jaipur",    state: "Rajasthan",      course: "ESE 2027 Prelims - Paper 1 (GS & Engineering Aptitude)", time: "just now" },
+      { name: "Karan V.",       city: "Delhi",     state: null,             course: "ESE 2027 Prelims - Paper 2 (Civil)",                    time: "3 min ago" },
+      { name: "Ankit T.",       city: "Bhopal",    state: "Madhya Pradesh", course: "ESE 2027 Prelims - Paper 1 + 2 (Civil)",                time: "9 min ago" },
+      { name: "Divya R.",       city: "Hyderabad", state: "Telangana",      course: "ESE 2027 Prelims - Paper 2 (Civil)",                    time: "just now" },
+      { name: "Suresh N.",      city: "Jaipur",    state: "Rajasthan",      course: "ESE 2027 Prelims - Paper 1 + 2 (Civil)",                time: "17 min ago" },
+      { name: "Meena K.",       city: "Delhi",     state: null,             course: "ESE 2027 Prelims - Paper 1 (GS & Engineering Aptitude)", time: "6 min ago" },
+      { name: "Rahul D.",       city: "Bhopal",    state: "Madhya Pradesh", course: "ESE 2027 Prelims - Paper 1 (GS & Engineering Aptitude)", time: "just now" },
+      { name: "Swati P.",       city: "Hyderabad", state: "Telangana",      course: "ESE 2027 Prelims - Paper 1 + 2 (Civil)",                time: "24 min ago" },
+      { name: "Vikram J.",      city: "Jaipur",    state: "Rajasthan",      course: "ESE 2027 Prelims - Paper 2 (Civil)",                    time: "2 min ago" },
+      { name: "Neha B.",        city: "Delhi",     state: null,             course: "ESE 2027 Prelims - Paper 1 + 2 (Civil)",                time: "just now" },
     ];
     for (var i = purchases.length - 1; i > 0; i--) {
       var j = Math.floor(Math.random() * (i + 1));
@@ -1598,7 +1609,7 @@
       av.style.background = s.bg;
       av.style.color = s.color;
       document.getElementById('pt-name').textContent = p.name;
-      document.getElementById('pt-location').textContent = p.city + ', Rajasthan';
+      document.getElementById('pt-location').textContent = p.state === undefined ? (p.city + ', Rajasthan') : (p.state ? (p.city + ', ' + p.state) : p.city);
       document.getElementById('pt-course').textContent = p.course;
       document.getElementById('pt-time').textContent = p.time;
       toast.style.display = 'block';
