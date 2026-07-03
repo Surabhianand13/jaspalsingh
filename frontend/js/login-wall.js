@@ -15,6 +15,15 @@
   var token = localStorage.getItem('jaspal_learner_token');
   var wallActive = false;
 
+  /* ── RSSB JE 2026 Free Test campaign window (IST) ──
+     Live 11:59 PM 3 Jul 2026 through 11:59 PM 4 Jul 2026.
+     Swaps the regular login/enrol nudge for a free-test registration
+     popup during this window only - reverts automatically after. ── */
+  var FREE_TEST_START = new Date('2026-07-03T23:59:00+05:30');
+  var FREE_TEST_END   = new Date('2026-07-04T23:59:00+05:30');
+  var FREE_TEST_LINK  = 'https://tally.so/r/2E5jkA';
+  var freeTestActive  = (new Date() >= FREE_TEST_START && new Date() <= FREE_TEST_END);
+
   /* ── Header auth UI (Login button / avatar) - runs on EVERY page ── */
   injectHeaderStyles();
   renderHeaderAuth();
@@ -23,10 +32,13 @@
   var noWallPaths = ['/checkout', '/payment-success', '/admin', '/profile', '/reset-password'];
   if (noWallPaths.some(function(p){ return path.startsWith(p); })) return;
 
-  /* Decide whether to run, and in which mode */
+  /* Decide whether to run, and in which mode.
+     During the campaign, only the FIRST popup shown is the free-test
+     promo - every popup after that (still every 30s) is the normal
+     wall, same as outside the campaign window. */
   if (!token) {
-    // Anonymous visitor -> account-creation wall
-    startWall('anon');
+    // Anonymous visitor -> free-test promo once during campaign, else account-creation wall
+    startWall(freeTestActive ? 'freetest' : 'anon', 'anon');
   } else {
     // Logged in -> only nag if they have NO paid enrolment
     fetch(API + '/api/enrollment/my-enrollments', {
@@ -35,7 +47,7 @@
     .then(function(r){ return r.json(); })
     .then(function(data){
       var hasPaid = data && data.enrollments && data.enrollments.length > 0;
-      if (!hasPaid && path.indexOf('/profile') !== 0) startWall('free');
+      if (!hasPaid && path.indexOf('/profile') !== 0) startWall(freeTestActive ? 'freetest' : 'free', 'free');
     })
     .catch(function(){ /* on error, do not nag */ });
   }
@@ -56,6 +68,10 @@
         font-size:18px; color:#9999b0; width:32px; height:32px; border-radius:50%;
         display:flex; align-items:center; justify-content:center; transition:background .15s; }
       .lw-close:hover { background:#f5f5f8; }
+      .lw-badge { display:inline-flex; align-items:center; gap:6px; font-family:'Plus Jakarta Sans',sans-serif;
+        font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.8px; color:#C81240;
+        background:rgba(200,18,64,.08); border:1px solid rgba(200,18,64,.2); border-radius:20px;
+        padding:5px 14px; margin-bottom:14px; }
       .lw-avatar { width:64px; height:64px; border-radius:50%; object-fit:cover; margin:0 auto 16px;
         border:3px solid #fff; box-shadow:0 4px 16px rgba(0,0,0,.12); display:block; }
       .lw-title { font-family:'Plus Jakarta Sans',sans-serif; font-size:20px; font-weight:800; color:#1A1A2E; margin-bottom:8px; }
@@ -79,6 +95,21 @@
 
   /* ── Modal content per mode ──────────────────────────────── */
   function modalHtml(mode) {
+    if (mode === 'freetest') {
+      return ''
+        + '<button class="lw-close" id="lwClose" aria-label="Close"><i class="fas fa-times"></i></button>'
+        + '<div class="lw-badge">Limited Time - Ends Tonight</div>'
+        + '<img src="/assets/images/jaspal-hero.png" alt="Dr. Jaspal Singh" class="lw-avatar" />'
+        + '<div class="lw-title">RSSB JE 2026 - Free Test</div>'
+        + '<p class="lw-sub">Book your free spot and get real exam-like test experience, conducted by Dr. Jaspal Singh.</p>'
+        + '<div class="lw-benefits">'
+        +   '<div class="lw-benefit"><i class="fas fa-tag"></i> 100% Free - No Cost to Attend</div>'
+        +   '<div class="lw-benefit"><i class="fas fa-clipboard-check"></i> Real Exam-Like Test Environment</div>'
+        +   '<div class="lw-benefit"><i class="fas fa-chart-line"></i> Know Your Rank Before the Actual Exam</div>'
+        + '</div>'
+        + '<a href="' + FREE_TEST_LINK + '" target="_blank" rel="noopener" class="lw-btn-primary"><i class="fas fa-clipboard-list"></i> Book My Free Spot</a>'
+        + '<div><span class="lw-skip" id="lwSkip">Maybe later &rarr;</span></div>';
+    }
     if (mode === 'free') {
       return ''
         + '<button class="lw-close" id="lwClose" aria-label="Close"><i class="fas fa-times"></i></button>'
@@ -133,15 +164,15 @@
   }
 
   /* ── First show after 60s (video popup has priority), then every 30s ── */
-  function startWall(mode) {
+  function startWall(firstMode, recurringMode) {
     function tick() {
       setTimeout(function(){
-        showModal(mode);
+        showModal(recurringMode);
         tick();
       }, INTERVAL);
     }
     setTimeout(function(){
-      showModal(mode);
+      showModal(firstMode);
       tick();
     }, INITIAL_DELAY);
   }
