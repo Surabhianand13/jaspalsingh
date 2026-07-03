@@ -181,6 +181,9 @@
   letter-spacing: 1.3px;
   color: var(--magenta);
   margin-bottom: 6px;
+  display: block;
+  min-height: 34px;
+  line-height: 1.4;
 }
 
 .op-title {
