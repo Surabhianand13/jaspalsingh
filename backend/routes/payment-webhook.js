@@ -57,9 +57,23 @@ async function recordReferralCredit(enrollment) {
   }
 }
 
+async function cancelDuplicatePendingEnrollments(enrollment) {
+  try {
+    await query(
+      `UPDATE enrollments
+       SET status = 'cancelled'
+       WHERE student_phone = $1 AND program_slug = $2 AND order_id != $3 AND status = 'pending'`,
+      [enrollment.student_phone, enrollment.program_slug, enrollment.order_id]
+    );
+  } catch (err) {
+    console.error('[cancelDuplicatePendingEnrollments]', err.message);
+  }
+}
+
 async function onEnrollmentPaid(enrollment) {
   await ensureReferralCode(enrollment);
   await recordReferralCredit(enrollment);
+  await cancelDuplicatePendingEnrollments(enrollment);
 }
 
 async function sendAllPaymentEmails(enrollment, { sendInvoice = true } = {}) {

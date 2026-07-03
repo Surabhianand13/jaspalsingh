@@ -278,6 +278,23 @@ async function migrate() {
   await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS refund_initiated_at TIMESTAMPTZ`);
   await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS refunded_by VARCHAR(255)`);
 
+  /* ── One-time cleanup: close out stale 'pending' rows left behind by
+     retried checkouts where a sibling order for the same learner+program
+     already succeeded. These were showing up as duplicate leads in the
+     admin enrollments list and getting sales calls after the sale closed. ── */
+  await query(`
+    UPDATE enrollments p
+    SET status = 'cancelled'
+    WHERE p.status = 'pending'
+      AND EXISTS (
+        SELECT 1 FROM enrollments paid
+        WHERE paid.student_phone = p.student_phone
+          AND paid.program_slug = p.program_slug
+          AND paid.status = 'paid'
+          AND paid.order_id != p.order_id
+      )
+  `);
+
   await query(`
     CREATE TABLE IF NOT EXISTS referral_credits (
       id                 SERIAL PRIMARY KEY,
