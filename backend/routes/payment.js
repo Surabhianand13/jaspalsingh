@@ -93,7 +93,31 @@ const COUPONS = {
     exclusive: true,
     label: 'DOST Partner offer',
   },
+  // One-time-use codes: diploma offline test series for Rs 2,000 flat.
+  // Exclusive - referral codes cannot be combined with them.
+  // singleUse enforced via isSingleUseCouponUsed() against paid enrollments.
+  'DIP2000E0B4': {
+    programPrices: { 'rssb-jen-diploma-test-series': 2000 },
+    exclusive:  true,
+    singleUse:  true,
+    label:      'Special offer - Rs 2,000',
+  },
+  'DIP20001506': {
+    programPrices: { 'rssb-jen-diploma-test-series': 2000 },
+    exclusive:  true,
+    singleUse:  true,
+    label:      'Special offer - Rs 2,000',
+  },
 };
+
+/* ── Has a single-use coupon already been redeemed on a paid order? ── */
+async function isSingleUseCouponUsed(code) {
+  const result = await query(
+    `SELECT 1 FROM enrollments WHERE coupon_code = $1 AND status = 'paid' LIMIT 1`,
+    [code.toUpperCase()]
+  );
+  return result.rows.length > 0;
+}
 
 function applyCoupon(coupon, originalPrice, programSlug) {
   if (!coupon) return { finalPrice: originalPrice, discount: 0, label: null, exclusive: false };
@@ -164,7 +188,7 @@ const razorpay = new Razorpay({
 });
 
 /* ── POST /api/payment/validate-coupon ───────────────────── */
-router.post('/validate-coupon', (req, res) => {
+router.post('/validate-coupon', async (req, res) => {
   const { coupon_code, program_slug } = req.body;
   if (!coupon_code || !program_slug) return res.status(400).json({ error: 'coupon_code and program_slug required.' });
 
@@ -173,6 +197,11 @@ router.post('/validate-coupon', (req, res) => {
 
   const result = applyCoupon(coupon_code, program.price, program_slug);
   if (!result) return res.status(400).json({ valid: false, error: 'Invalid coupon code.' });
+
+  const c = COUPONS[coupon_code.toUpperCase()];
+  if (c.singleUse && await isSingleUseCouponUsed(coupon_code)) {
+    return res.status(400).json({ valid: false, error: 'This coupon has already been used.' });
+  }
 
   res.json({ valid: true, final_price: result.finalPrice, discount: result.discount, label: result.label, exclusive: result.exclusive });
 });
@@ -228,6 +257,10 @@ router.post('/create-order', optionalLearner, async (req, res) => {
     let couponExclusive = false;
     if (coupon_code) {
       const coup = applyCoupon(coupon_code, program.price, program_slug);
+      const couponDef = COUPONS[coupon_code.toUpperCase()];
+      if (coup && couponDef?.singleUse && await isSingleUseCouponUsed(coupon_code)) {
+        return res.status(400).json({ error: 'This coupon has already been used.' });
+      }
       if (coup) { finalPrice = coup.finalPrice; couponApplied = coupon_code.toUpperCase(); couponExclusive = coup.exclusive; }
     }
 
