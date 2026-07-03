@@ -128,7 +128,10 @@ const COUPONS = {
     label:      'Special offer - Rs 2,000',
   },
   'DIP2499X9F3': {
-    programPrices: { 'rssb-jen-diploma-test-series': 2499 },
+    programPrices: {
+      'rssb-jen-diploma-test-series': 2499,
+      'rssb-jen-degree-test-series':  2499,
+    },
     exclusive:  true,
     singleUse:  true,
     label:      'Special offer - Rs 2,499',
