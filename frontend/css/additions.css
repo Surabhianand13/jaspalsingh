@@ -359,6 +359,12 @@
   z-index: 1;
 }
 
+/* When a real image has loaded, hide the placeholder icon/label */
+.op-thumb.has-img .op-thumb-icon,
+.op-thumb.has-img .op-thumb-label {
+  display: none;
+}
+
 /* Overlay — always on top of image */
 .op-thumb-overlay {
   position: absolute;
