@@ -1915,7 +1915,8 @@
         var admitBtn = (x.status === 'paid' && x.form_used)
           ? '<button class="btn-admin-secondary btn-admin-sm" style="margin-top:4px;font-size:11px;color:#7c3aed;border-color:#7c3aed;" data-admitcard="'+x.id+'" data-slug="'+(x.program_slug||'')+'" title="Generate and resend admit card PDF">Send Admit Card</button>'
           : '';
-        return '<tr><td>'+e(x.student_name)+'<br><span style="color:#9999b0;font-size:12px;">'+e(x.student_phone)+(x.student_email?' · '+e(x.student_email):'')+'</span></td>' +
+        return '<tr><td>'+e(x.student_name)+'<br><span style="color:#9999b0;font-size:12px;">'+e(x.student_phone)+(x.student_email?' · '+e(x.student_email):'')+
+          ' <a href="#" data-edit-enroll-email="'+x.id+'" data-current-email="'+e(x.student_email||'')+'" style="color:#4f46e5;">edit</a></span></td>' +
           '<td>'+e(x.program_label||x.program_name)+'</td><td>'+inr(x.amount)+(x.coupon_code?'<br><span style="color:#16a34a;font-size:11px;">'+e(x.coupon_code)+'</span>':'')+'</td>' +
           '<td><span class="admin-badge admin-badge--'+(x.status==='paid'?'green':'orange')+'">'+e(x.status)+'</span></td>' +
           '<td>'+formBadge+emailBadge+reissueBtn+markBtn+admitBtn+rescueBtn+'</td>'+
@@ -1942,6 +1943,21 @@
           adminFetch('POST', '/api/enrollment/admin/mark-submitted', { enrollment_id: parseInt(id) })
             .then(function(d){ showToast(d.message || 'Marked as submitted', 'success'); loadEnrollments(); })
             .catch(function(err){ showToast(err.message || 'Failed', 'error'); btn.disabled = false; btn.textContent = 'Mark as submitted'; });
+        });
+      });
+      // Wire up per-enrollment email edit links
+      body.querySelectorAll('[data-edit-enroll-email]').forEach(function(link){
+        link.addEventListener('click', function(evt){
+          evt.preventDefault();
+          var id = link.getAttribute('data-edit-enroll-email');
+          var current = link.getAttribute('data-current-email') || '';
+          var next = prompt('Corrected email for this enrollment:', current);
+          if (next === null) return;
+          next = next.trim();
+          if (!next || next === current) return;
+          adminFetch('PATCH', '/api/enrollment/admin/' + id + '/email', { email: next })
+            .then(function(d){ showToast(d.message || 'Email updated', 'success'); loadEnrollments(); })
+            .catch(function(err){ showToast(err.message || 'Failed', 'error'); });
         });
       });
       // Wire up send-admit-card buttons

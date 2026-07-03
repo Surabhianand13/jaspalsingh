@@ -387,6 +387,30 @@ router.post('/admin/mark-submitted', protect, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/* ── PATCH /api/enrollment/admin/:id/email ───────────────────
+   Admin only - corrects the email stored directly on an enrollment
+   row (e.g. typo at checkout). This is the address "Re-issue form
+   link" and invoice/admit-card emails actually send to - it is a
+   separate copy from learners.email, not joined or auto-synced. */
+router.patch('/admin/:id/email', protect, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { email } = req.body;
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailRe.test(email)) {
+      return res.status(400).json({ error: 'Please provide a valid email address.' });
+    }
+
+    const result = await query(
+      `UPDATE enrollments SET student_email = $1 WHERE id = $2 RETURNING id, student_name, student_email`,
+      [email.toLowerCase().trim(), id]
+    );
+    if (!result.rows.length) return res.status(404).json({ error: 'Enrollment not found.' });
+
+    res.json({ message: `Email updated for ${result.rows[0].student_name}.`, enrollment: result.rows[0] });
+  } catch (err) { next(err); }
+});
+
 /* ── POST /api/enrollment/admin/resend-admit-card ─────────────
    Admin only - generate and resend admit card for a specific enrollment.
    Used when the admit card email failed (e.g. Resend rate limit).
