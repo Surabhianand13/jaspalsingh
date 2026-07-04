@@ -1,16 +1,17 @@
 /* ============================================================
    routes/tally-omr-shared.js
    Shared logic for OMR Online Test Series Tally webhooks.
-   Validates form token, marks used, sends confirmation email.
-   Does NOT generate an admit card PDF.
+   Validates form token, marks used, sends confirmation email
+   with a Home-Based Admit Card PDF attached.
    ============================================================ */
 
 const { query }  = require('../config/db');
 const { send: resendSend, PRIORITY } = require('../services/resendQueue');
+const { generateAdmitCard, fetchImageBuffer } = require('./tally-webhook');
 
 const FROM   = 'Dr. Jaspal Singh <team@jaspalsingh.in>';
 
-/* ── Parse Tally fields (simplified - only name, email, phone, token) ── */
+/* ── Parse Tally fields (name, email, phone, token, govt ID, photo) ── */
 
 function resolveValue(field) {
   const raw = field.value;
@@ -42,11 +43,28 @@ function parseTallyFields(fields) {
     if (label.includes('phone') || label.includes('mobile') || label.includes('whatsapp') || label.includes('number')) {
       if (!result.phone) result.phone = value;
     }
+    if (label.includes('govt') || label.includes('id proof') || label.includes('aadhar') || label.includes('voter')) {
+      result.govtId = value;
+    }
+    if (label.includes('photo') || label.includes('photograph') || label.includes('picture') || label.includes('image')) {
+      const raw = field.value;
+      if (Array.isArray(raw) && raw.length && raw[0].url) result.photoUrl = raw[0].url;
+      else if (typeof raw === 'object' && raw && raw.url) result.photoUrl = raw.url;
+      else if (typeof raw === 'string' && raw.startsWith('http')) result.photoUrl = raw;
+    }
     if (label === 'token' || label.includes('form token') || label.includes('enrollment token')) {
       result.token = value;
     }
   }
   return result;
+}
+
+/* ── Roll number generator (no physical centre for home-based OMR) ── */
+
+function generateOmrRollNumber(isDegreeCourse) {
+  const examCode = isDegreeCourse ? 'DEG' : 'DIP';
+  const num = Math.floor(10000 + Math.random() * 90000);
+  return `OMR-${examCode}-${num}`;
 }
 
 /* ── Send rejection email ── */
@@ -88,7 +106,7 @@ async function sendRejectionEmail(toEmail, reason) {
 /* ── Main handler: validate token and send confirmation ── */
 
 async function processOmrSubmission(fields, type) {
-  const { name, email, phone, token } = parseTallyFields(fields);
+  const { name, email, phone, token, govtId, photoUrl } = parseTallyFields(fields);
 
   if (!email) {
     console.warn('[tally-omr] No email found in fields');
@@ -160,6 +178,8 @@ async function processOmrSubmission(fields, type) {
   console.log('[tally-omr] Token validated, enrollment:', enrollment.id, 'type:', type);
 
   const isDegreeCourse = type === 'omr-degree';
+  const rollNumber  = generateOmrRollNumber(isDegreeCourse);
+  const photoBuffer = photoUrl ? await fetchImageBuffer(photoUrl) : null;
   const seriesName = isDegreeCourse
     ? 'RSSB JE 2026 - Civil Degree (Home-Based OMR Test Series)'
     : 'RSSB JE 2026 - Civil Diploma (Home-Based OMR Test Series)';
@@ -221,6 +241,23 @@ async function processOmrSubmission(fields, type) {
   ];
 
   const schedule = isDegreeCourse ? degreeSchedule : diplomaSchedule;
+  const lastRow      = schedule[schedule.length - 1];
+  const lastTestDate = `${lastRow[1]} (Test-${lastRow[0]})`;
+
+  const pdfBuffer = await generateAdmitCard({
+    name:       name || 'Student',
+    govtId:     govtId || 'N/A',
+    rollNumber,
+    centre:     'Online (Home Based)',
+    targetExam: seriesName,
+    phone:      phone || 'N/A',
+    email:      email || 'N/A',
+    photoBuffer,
+    seriesName,
+    lastTestDate,
+    mode: 'home',
+  });
+
   const scheduleRows = schedule.map(([num, date, syllabus]) =>
     `<tr style="border-bottom:1px solid #e2e8f0;">
        <td style="padding:7px 10px;font-size:12px;font-weight:700;color:#6366F1;white-space:nowrap;">Test ${num}</td>
@@ -373,12 +410,19 @@ async function processOmrSubmission(fields, type) {
     to:      email,
     subject: `Identity Verified - You're enrolled in ${seriesName}`,
     html:    htmlBody,
+    attachments: [
+      {
+        filename:    `AdmitCard_${rollNumber}.pdf`,
+        content:     pdfBuffer.toString('base64'),
+        contentType: 'application/pdf',
+      },
+    ],
   }, PRIORITY.ACTION_REQUIRED);
 
   if (error) {
     console.error('[tally-omr] Resend error:', error);
   } else {
-    console.log(`[tally-omr] Confirmation email sent to ${email} | type: ${type}`);
+    console.log(`[tally-omr] Confirmation email + Admit Card sent to ${email} | type: ${type} | Roll: ${rollNumber}`);
   }
 }
 

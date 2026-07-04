@@ -25,3 +25,6 @@ build/
 
 # Claude Code worktrees (local only, never commit)
 .claude/worktrees/
+
+# Backfill script output logs (contain learner PII, never commit)
+backend/scripts/output/
