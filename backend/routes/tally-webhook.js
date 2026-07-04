@@ -197,7 +197,7 @@ function parseTallyFields(fields) {
     if (label === 'token' || label.includes('form token') || label.includes('enrollment token')) {
       result.token = value;
     }
-    if (label === 'order' || label === 'order_id' || label.includes('order id')) {
+    if (label === 'order' || label === 'order_id' || label.includes('order id') || label.includes('order_id') || (label.includes('order') && !label.includes('centre') && !label.includes('center'))) {
       result.orderId = value;
     }
   }
