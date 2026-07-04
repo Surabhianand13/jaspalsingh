@@ -8,6 +8,7 @@ const router        = express.Router();
 const PDFDocument   = require('pdfkit');
 const https         = require('https');
 const http          = require('http');
+const sharp         = require('sharp');
 const { send: resendSend, PRIORITY } = require('../services/resendQueue');
 
 const FROM   = 'Dr. Jaspal Singh <team@jaspalsingh.in>';
@@ -218,9 +219,8 @@ function getCentreKey(centreValue) {
 
 /* ── Fetch remote image as buffer ────────────────────────── */
 
-function fetchImageBuffer(url) {
+function downloadRaw(url) {
   return new Promise((resolve) => {
-    if (!url) return resolve(null);
     const lib = url.startsWith('https') ? https : http;
     lib.get(url, (res) => {
       if (res.statusCode !== 200) return resolve(null);
@@ -232,9 +232,28 @@ function fetchImageBuffer(url) {
   });
 }
 
+/* Downscales/recompresses the candidate photo before it gets embedded in the
+   PDF - source uploads can be multi-MB camera photos, which would otherwise
+   bloat the email attachment and occasionally fail to embed cleanly. */
+async function fetchImageBuffer(url) {
+  if (!url) return null;
+  const raw = await downloadRaw(url);
+  if (!raw) return null;
+  try {
+    return await sharp(raw)
+      .rotate() // respect EXIF orientation before resizing
+      .resize({ width: 400, height: 500, fit: 'cover' })
+      .jpeg({ quality: 82 })
+      .toBuffer();
+  } catch (e) {
+    console.warn('[fetchImageBuffer] resize failed, using original:', e.message);
+    return raw;
+  }
+}
+
 /* ── Generate admit card PDF buffer ─────────────────────── */
 
-function generateAdmitCard({ name, govtId, rollNumber, centre, targetExam, phone, email, photoBuffer, seriesName, lastTestDate }) {
+function generateAdmitCard({ name, govtId, rollNumber, centre, targetExam, phone, email, photoBuffer, seriesName, lastTestDate, mode = 'offline' }) {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: 'A4', margin: 0, autoFirstPage: true });
     const chunks = [];
@@ -305,7 +324,7 @@ function generateAdmitCard({ name, govtId, rollNumber, centre, targetExam, phone
        .text(rollNumber, M + 12, y + 14, { lineBreak: false });
     // Series on right
     doc.fillColor(MID).font('Helvetica').fontSize(7.5)
-       .text('EXAM CENTRE', M + 200, y + 5, { lineBreak: false });
+       .text(mode === 'home' ? 'MODE' : 'EXAM CENTRE', M + 200, y + 5, { lineBreak: false });
     doc.fillColor(DARK).font('Helvetica-Bold').fontSize(11)
        .text(centre || 'TBD', M + 200, y + 16, { lineBreak: false });
 
@@ -373,7 +392,14 @@ function generateAdmitCard({ name, govtId, rollNumber, centre, targetExam, phone
        .text('IMPORTANT INSTRUCTIONS', M, y, { lineBreak: false });
     y += 13;
 
-    const instructions = [
+    const instructions = mode === 'home' ? [
+      'Question Paper & OMR Sheet PDFs emailed on each test morning.',
+      'Print both PDFs and attempt the test on paper at home.',
+      'Fill your answers using a blue or black ballpoint pen only.',
+      'Reply to the test email with a clear photo of your filled OMR sheet.',
+      'Submit before 10:00 PM on the same day - no evaluation after that.',
+      'Negative Marking: 0.33 marks deducted per wrong answer.',
+    ] : [
       'Carry this Admit Card (printed or on phone) to every test.',
       'Reach centre at least 15 minutes before test start time.',
       'Bring a valid Govt Photo ID (Aadhar / Voter ID / Passport).',
