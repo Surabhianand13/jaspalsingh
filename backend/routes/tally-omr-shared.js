@@ -178,11 +178,19 @@ async function processOmrSubmission(fields, type) {
   console.log('[tally-omr] Token validated, enrollment:', enrollment.id, 'type:', type);
 
   const isDegreeCourse = type === 'omr-degree';
-  const rollNumber  = generateOmrRollNumber(isDegreeCourse);
-  const photoBuffer = photoUrl ? await fetchImageBuffer(photoUrl) : null;
   const seriesName = isDegreeCourse
     ? 'RSSB JE 2026 - Civil Degree (Home-Based OMR Test Series)'
     : 'RSSB JE 2026 - Civil Diploma (Home-Based OMR Test Series)';
+
+  /* Everything below (photo fetch, PDF generation, email send) is wrapped
+     so that any unexpected failure still results in the learner getting a
+     confirmation email (without the PDF) instead of silence - the token is
+     already marked used above, so this is the only remaining chance to
+     reach them without asking them to resubmit the form. */
+  try {
+
+  const rollNumber  = generateOmrRollNumber(isDegreeCourse);
+  const photoBuffer = photoUrl ? await fetchImageBuffer(photoUrl) : null;
 
   const degreeSchedule = [
     ['01','5 Jul 2026','Rajasthan Geography-I + Building Technology & Construction Management'],
@@ -423,6 +431,38 @@ async function processOmrSubmission(fields, type) {
     console.error('[tally-omr] Resend error:', error);
   } else {
     console.log(`[tally-omr] Confirmation email + Admit Card sent to ${email} | type: ${type} | Roll: ${rollNumber}`);
+  }
+
+  } catch (err) {
+    console.error('[tally-omr] Failed to generate/send Admit Card - sending fallback confirmation without PDF. Enrollment:', enrollment.id, err);
+    await resendSend({
+      from: FROM,
+      to: email,
+      subject: `Identity Verified - You're enrolled in ${seriesName}`,
+      html: `<!DOCTYPE html><html><head><meta charset="UTF-8"/></head>
+<body style="margin:0;padding:0;background:#f4f5f8;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f5f8;padding:32px 16px;">
+<tr><td align="center"><table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;">
+  <tr><td style="background:#0F1117;border-radius:14px 14px 0 0;padding:24px 36px;text-align:center;">
+    <div style="font-size:22px;font-weight:800;color:#fff;">Dr. <span style="color:#C81240;">Jaspal Singh</span></div>
+    <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:4px;letter-spacing:1.5px;text-transform:uppercase;">jaspalsingh.in</div>
+  </td></tr>
+  <tr><td style="background:#fff;padding:32px 36px;">
+    <h2 style="margin:0 0 6px;font-size:20px;color:#1A1A2E;font-weight:800;">Welcome, ${name || 'Learner'}!</h2>
+    <p style="margin:0 0 16px;font-size:15px;color:#6b7280;line-height:1.7;">
+      You are now enrolled in <strong style="color:#1A1A2E;">${seriesName}</strong>. Your identity has been verified successfully.
+    </p>
+    <p style="margin:0 0 16px;font-size:14px;color:#374151;line-height:1.7;">
+      Your Admit Card is being generated and will be emailed to you separately shortly. On each test day morning, you will receive the Question Paper and OMR Sheet PDFs on this email - fill them and reply with a photo before 10:00 PM the same day.
+    </p>
+    <p style="font-size:13px;color:#9ca3af;margin:16px 0 0;">For queries, WhatsApp us at +91 98291 33317.</p>
+  </td></tr>
+  <tr><td style="background:#f4f5f8;border-radius:0 0 14px 14px;padding:16px 36px;text-align:center;">
+    <p style="margin:0;font-size:12px;color:#9ca3af;">jaspalsingh.in | +91 98291 33317</p>
+  </td></tr>
+</table></td></tr></table>
+</body></html>`,
+    }, PRIORITY.ACTION_REQUIRED).catch(e => console.error('[tally-omr] Fallback email also failed:', e.message));
   }
 }
 
