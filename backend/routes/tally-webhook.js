@@ -197,6 +197,9 @@ function parseTallyFields(fields) {
     if (label === 'token' || label.includes('form token') || label.includes('enrollment token')) {
       result.token = value;
     }
+    if (label === 'order' || label === 'order_id' || label.includes('order id')) {
+      result.orderId = value;
+    }
   }
 
   console.log('[tally-webhook] Parsed:', result);
@@ -592,7 +595,7 @@ const { query } = require('../config/db');
 
 /* programType: 'degree' | 'diploma' | null (auto-detect from field) */
 async function processSubmission(fields, programType) {
-  const { name, govtId, centre: centreRaw, targetExam, phone, email, photoUrl, token } = parseTallyFields(fields);
+  const { name, govtId, centre: centreRaw, targetExam, phone, email, photoUrl, token, orderId } = parseTallyFields(fields);
 
   if (!email) {
     console.warn('[tally-webhook] No email found in fields');
@@ -603,22 +606,28 @@ async function processSubmission(fields, programType) {
   const normEmail = email.toLowerCase().trim();
   const normPhone = (phone || '').replace(/\D/g, '').slice(-10);
 
-  if (!token) {
-    console.warn('[tally-webhook] No token in submission - rejecting');
+  if (!token && !orderId) {
+    console.warn('[tally-webhook] No token or order in submission - rejecting');
     await sendRejectionEmail(email,
       'Your submission did not include a valid enrollment token. This form must be opened using the personal link sent to you in your enrollment email. Please check your email for the "Fill Details Form" button and use that link.'
     );
     return;
   }
 
-  // Look up token - validate it exists and is not already used
-  const lookupResult = await query(
-    `SELECT id, student_email, student_phone, form_used, form_token FROM enrollments WHERE form_token = $1`,
-    [token]
-  );
+  // Look up by token first, fall back to order_id for older offline forms that
+  // don't have the hidden token field configured in Tally.
+  const lookupResult = token
+    ? await query(
+        `SELECT id, student_email, student_phone, form_used, form_token FROM enrollments WHERE form_token = $1`,
+        [token]
+      )
+    : await query(
+        `SELECT id, student_email, student_phone, form_used, form_token FROM enrollments WHERE order_id = $1 AND status = 'paid'`,
+        [orderId]
+      );
 
   if (!lookupResult.rows.length) {
-    console.warn('[tally-webhook] Invalid token:', token);
+    console.warn('[tally-webhook] Invalid token/order - token:', token, 'orderId:', orderId);
     await sendRejectionEmail(email,
       'The enrollment token in your submission is invalid or does not match any paid enrollment. Please use the original link sent in your enrollment email.'
     );
@@ -655,18 +664,19 @@ async function processSubmission(fields, programType) {
     return;
   }
 
-  // Atomically mark token as used - WHERE form_used = FALSE ensures only one
+  // Atomically mark form as used - WHERE form_used = FALSE ensures only one
   // concurrent request can win even if two webhooks arrive simultaneously.
+  // Use id (PK) as the key so this works whether lookup was by token or order_id.
   const claimResult = await query(
     `UPDATE enrollments SET form_used = TRUE, form_used_at = NOW()
-     WHERE form_token = $1 AND form_used = FALSE
+     WHERE id = $1 AND form_used = FALSE
      RETURNING id`,
-    [token]
+    [preCheck.id]
   );
 
   if (!claimResult.rows.length) {
-    // Another concurrent request already claimed this token
-    console.warn('[tally-webhook] Token race - already claimed, enrollment:', preCheck.id);
+    // Another concurrent request already claimed this slot
+    console.warn('[tally-webhook] Race - already claimed, enrollment:', preCheck.id);
     await sendRejectionEmail(email,
       'This enrollment form has already been submitted. Each enrollment allows only one submission. If you made a mistake in your earlier submission, please contact us on WhatsApp immediately and we will assist you.'
     );

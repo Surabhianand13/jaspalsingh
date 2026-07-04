@@ -81,9 +81,16 @@ async function sendAllPaymentEmails(enrollment, { sendInvoice = true } = {}) {
     sendInvoiceEmail(enrollment).catch(e => console.error('[invoice email]', e.message));
   }
   try {
-    await sendWelcomePaymentEmail(enrollment);
-    await query(`UPDATE enrollments SET welcome_sent = TRUE WHERE order_id = $1`, [enrollment.order_id]);
-    console.log(`[welcome email] sent OK for ${enrollment.order_id}`);
+    const claimed = await query(
+      `UPDATE enrollments SET welcome_sent = TRUE WHERE order_id = $1 AND (welcome_sent IS NULL OR welcome_sent = FALSE) RETURNING order_id`,
+      [enrollment.order_id]
+    );
+    if (!claimed.rows.length) {
+      console.log(`[welcome email] already claimed for ${enrollment.order_id}, skipping`);
+    } else {
+      await sendWelcomePaymentEmail(enrollment);
+      console.log(`[welcome email] sent OK for ${enrollment.order_id}`);
+    }
   } catch (e) {
     console.error(`[welcome email] FAILED for ${enrollment.order_id}:`, e.message);
   }
