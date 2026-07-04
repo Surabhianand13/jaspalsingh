@@ -1962,7 +1962,7 @@
         btn.addEventListener('click', function(){
           var id   = btn.getAttribute('data-admitcard');
           var slug = btn.getAttribute('data-slug') || '';
-          showAdmitCardModal(parseInt(id), slug.includes('degree'));
+          showAdmitCardModal(parseInt(id), slug.includes('degree'), slug.includes('omr'));
         });
       });
   }
@@ -2209,13 +2209,23 @@
   }
 
   /* ── Admit Card modal ── */
-  function showAdmitCardModal(enrollmentId, isDegree) {
+  function showAdmitCardModal(enrollmentId, isDegree, isOmr) {
     var existing = document.getElementById('admitCardModal');
     if (existing) existing.remove();
 
     var modal = document.createElement('div');
     modal.id = 'admitCardModal';
     modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+    var centreFieldHtml = isOmr
+      ? '<div><label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Mode</label>' +
+          '<input type="text" value="Online (Home Based)" disabled style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;background:#f9fafb;color:#6b7280;"/></div>'
+      : '<div><label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Test Centre *</label>' +
+          '<select id="ac_centre" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;">' +
+            '<option value="">Select centre...</option>' +
+            '<option value="jaipur">Jaipur</option><option value="kota">Kota</option>' +
+            '<option value="bikaner">Bikaner</option><option value="sikar">Sikar</option>' +
+            '<option value="jodhpur">Jodhpur</option><option value="alwar">Alwar</option><option value="ajmer">Ajmer</option>' +
+          '</select></div>';
     modal.innerHTML =
       '<div style="background:#fff;border-radius:14px;padding:28px 32px;max-width:480px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">' +
@@ -2228,13 +2238,7 @@
             '<input id="ac_name" type="text" placeholder="e.g. Tanu Sharma" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;"/></div>' +
           '<div><label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Govt ID number (optional)</label>' +
             '<input id="ac_govtid" type="text" placeholder="Aadhaar / Voter ID number" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;"/></div>' +
-          '<div><label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Test Centre *</label>' +
-            '<select id="ac_centre" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;">' +
-              '<option value="">Select centre...</option>' +
-              '<option value="jaipur">Jaipur</option><option value="kota">Kota</option>' +
-              '<option value="bikaner">Bikaner</option><option value="sikar">Sikar</option>' +
-              '<option value="jodhpur">Jodhpur</option><option value="alwar">Alwar</option><option value="ajmer">Ajmer</option>' +
-            '</select></div>' +
+          centreFieldHtml +
           '<div><label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Program Type *</label>' +
             '<select id="ac_type" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;">' +
               '<option value="' + (isDegree ? 'degree' : 'diploma') + '">' + (isDegree ? 'Degree' : 'Diploma') + '</option>' +
@@ -2255,18 +2259,20 @@
     modal.addEventListener('click', function(ev){ if (ev.target === modal) modal.remove(); });
 
     document.getElementById('admitCardSend').addEventListener('click', function(){
-      var name   = document.getElementById('ac_name').value.trim();
-      var govtId = document.getElementById('ac_govtid').value.trim();
-      var centre = document.getElementById('ac_centre').value;
-      var type   = document.getElementById('ac_type').value;
-      var photo  = document.getElementById('ac_photo').value.trim();
+      var name    = document.getElementById('ac_name').value.trim();
+      var govtId  = document.getElementById('ac_govtid').value.trim();
+      var centreEl = document.getElementById('ac_centre');
+      var centre  = centreEl ? centreEl.value : '';
+      var type    = document.getElementById('ac_type').value;
+      var photo   = document.getElementById('ac_photo').value.trim();
 
-      if (!name || !centre) { showToast('Name and centre are required', 'error'); return; }
+      if (!name || (!isOmr && !centre)) { showToast(isOmr ? 'Name is required' : 'Name and centre are required', 'error'); return; }
 
       var sendBtn = document.getElementById('admitCardSend');
       sendBtn.disabled = true; sendBtn.textContent = 'Generating...';
 
-      var payload = { enrollment_id: enrollmentId, name: name, centre: centre, program_type: type };
+      var payload = { enrollment_id: enrollmentId, name: name, program_type: type };
+      if (centre) payload.centre = centre;
       if (govtId) payload.govt_id  = govtId;
       if (photo)  payload.photo_url = photo;
 

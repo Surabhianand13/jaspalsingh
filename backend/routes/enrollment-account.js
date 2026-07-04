@@ -413,13 +413,15 @@ router.patch('/admin/:id/email', protect, async (req, res, next) => {
 
 /* ── POST /api/enrollment/admin/resend-admit-card ─────────────
    Admin only - generate and resend admit card for a specific enrollment.
-   Used when the admit card email failed (e.g. Resend rate limit).
-   Body: { enrollment_id, name, govt_id, centre, program_type, photo_url } */
+   Used when the admit card email failed (e.g. Resend rate limit, or the
+   silent-failure bug fixed for OMR learners on 2026-07-04).
+   Body: { enrollment_id, name, govt_id, centre, program_type, photo_url }
+   `centre` is required for offline enrollments only - OMR enrollments are
+   always "Online (Home Based)" and ignore whatever centre is passed in. */
 router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
   try {
     const { enrollment_id, name, govt_id, centre, program_type, photo_url } = req.body;
     if (!enrollment_id) return res.status(400).json({ error: 'enrollment_id required.' });
-    if (!name || !centre)  return res.status(400).json({ error: 'name and centre are required.' });
 
     const enrResult = await query(
       `SELECT id, student_name, student_email, student_phone, program_slug
@@ -429,41 +431,64 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
     if (!enrResult.rows.length) return res.status(404).json({ error: 'Paid enrollment not found.' });
     const enr = enrResult.rows[0];
 
-    const {
-      generateAdmitCard, buildAdmitCardHtml, fetchImageBuffer,
-      getCentreKey, CENTRES, SCHEDULE_DEGREE, SCHEDULE_DIPLOMA,
-    } = require('./tally-webhook');
+    const slug  = enr.program_slug || '';
+    const isOmr = slug.toLowerCase().includes('omr');
 
-    const slug = enr.program_slug || '';
+    if (!name)                return res.status(400).json({ error: 'name is required.' });
+    if (!isOmr && !centre)    return res.status(400).json({ error: 'centre is required for offline enrollments.' });
+
+    const { generateAdmitCard, fetchImageBuffer } = require('./tally-webhook');
+
     const isDegreeCourse = program_type === 'degree' ? true
       : program_type === 'diploma' ? false
       : slug.includes('degree');
 
-    const centreKey  = getCentreKey(centre);
-    const centreInfo = CENTRES[centreKey] || { name: centre, address: 'TBD', mapsLink: '#' };
-    const schedule   = isDegreeCourse ? SCHEDULE_DEGREE : SCHEDULE_DIPLOMA;
-    const seriesName = isDegreeCourse
-      ? 'RSSB JE 2026 - Degree (Civil) - Offline Test Series'
-      : 'RSSB JE 2026 - Diploma (Civil) - Offline Test Series';
-    const lastTestDate = isDegreeCourse ? '10 January 2027 (Test-28)' : '29 November 2026 (Test-22)';
-
-    const prefix     = (centreKey || centre || 'JSP').slice(0, 3).toUpperCase();
-    const examCode   = isDegreeCourse ? 'DEG' : 'DIP';
-    const rollNumber = `${prefix}-${examCode}-${Math.floor(10000 + Math.random() * 90000)}`;
-
     const photoBuffer = photo_url ? await fetchImageBuffer(photo_url) : null;
+
+    let centreForCard, seriesName, schedule, lastTestDate, rollNumber, mode, htmlBody;
+
+    if (isOmr) {
+      const {
+        generateOmrRollNumber, getOmrSeriesName, getOmrLastTestDate, buildOmrConfirmationHtml,
+      } = require('./tally-omr-shared');
+
+      mode         = 'home';
+      centreForCard = 'Online (Home Based)';
+      seriesName   = getOmrSeriesName(isDegreeCourse);
+      lastTestDate = getOmrLastTestDate(isDegreeCourse);
+      rollNumber   = generateOmrRollNumber(isDegreeCourse);
+      htmlBody     = buildOmrConfirmationHtml({ name: name || enr.student_name, isDegreeCourse });
+    } else {
+      const { buildAdmitCardHtml, getCentreKey, CENTRES, SCHEDULE_DEGREE, SCHEDULE_DIPLOMA } = require('./tally-webhook');
+
+      const centreKey  = getCentreKey(centre);
+      const centreInfo = CENTRES[centreKey] || { name: centre, address: 'TBD', mapsLink: '#' };
+      schedule         = isDegreeCourse ? SCHEDULE_DEGREE : SCHEDULE_DIPLOMA;
+
+      mode         = 'offline';
+      centreForCard = centreInfo.name;
+      seriesName   = isDegreeCourse
+        ? 'RSSB JE 2026 - Degree (Civil) - Offline Test Series'
+        : 'RSSB JE 2026 - Diploma (Civil) - Offline Test Series';
+      lastTestDate = isDegreeCourse ? '10 January 2027 (Test-28)' : '29 November 2026 (Test-22)';
+      const prefix = (centreKey || centre || 'JSP').slice(0, 3).toUpperCase();
+      const examCode = isDegreeCourse ? 'DEG' : 'DIP';
+      rollNumber   = `${prefix}-${examCode}-${Math.floor(10000 + Math.random() * 90000)}`;
+      htmlBody     = buildAdmitCardHtml({ name: name || enr.student_name, seriesName, centreInfo, schedule, isDegreeCourse });
+    }
 
     const pdfBuffer = await generateAdmitCard({
       name:         name || enr.student_name,
       govtId:       govt_id || 'N/A',
       rollNumber,
-      centre:       centreInfo.name,
+      centre:       centreForCard,
       targetExam:   seriesName,
       phone:        enr.student_phone || 'N/A',
       email:        enr.student_email,
       photoBuffer,
       seriesName,
       lastTestDate,
+      mode,
     });
 
     const { send: resendSend, PRIORITY } = require('../services/resendQueue');
@@ -471,8 +496,8 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
     const result = await resendSend({
       from:        'Dr. Jaspal Singh <team@jaspalsingh.in>',
       to:          enr.student_email,
-      subject:     `Confirmed! Your Admit Card for ${seriesName}`,
-      html:        buildAdmitCardHtml({ name: name || enr.student_name, seriesName, centreInfo, schedule, isDegreeCourse }),
+      subject:     isOmr ? `Identity Verified - You're enrolled in ${seriesName}` : `Confirmed! Your Admit Card for ${seriesName}`,
+      html:        htmlBody,
       attachments: [{ filename: `AdmitCard_${rollNumber}.pdf`, content: pdfBuffer.toString('base64'), contentType: 'application/pdf' }],
     }, PRIORITY.ADMIT_CARD);
 
