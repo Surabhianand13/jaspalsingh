@@ -777,4 +777,169 @@ router.post('/admin/send-omr-papers', protect, async (req, res) => {
   }
 });
 
+/* ── POST /api/enrollment/admin/send-omr-analysis ────────────
+   Admin endpoint to send the Detailed Analysis & Solutions and
+   Analysis Workbook PDFs (from Google Drive) to all paid
+   enrollments for a given OMR program slug.
+   Watermarks each PDF with the learner's email and phone.
+   Body: { program_slug, test_number, analysis_url, workbook_url }
+   Returns: { sent: N, failed: M }
+   ─────────────────────────────────────────────────────────── */
+router.post('/admin/send-omr-analysis', protect, async (req, res) => {
+  try {
+    const { program_slug, test_number, analysis_url, workbook_url } = req.body;
+
+    if (!program_slug || !test_number || !analysis_url || !workbook_url) {
+      return res.status(400).json({ error: 'program_slug, test_number, analysis_url and workbook_url are all required.' });
+    }
+
+    const enrResult = await query(
+      `SELECT id, student_name, student_email, student_phone
+       FROM enrollments
+       WHERE program_slug = $1 AND status = 'paid'
+       ORDER BY id ASC`,
+      [program_slug]
+    );
+
+    if (!enrResult.rows.length) {
+      return res.json({ sent: 0, failed: 0, message: 'No paid enrollments found for this program.' });
+    }
+
+    const enrollments = enrResult.rows;
+
+    /* Download both source PDFs once */
+    let analysisBytes, workbookBytes;
+    try {
+      [analysisBytes, workbookBytes] = await Promise.all([
+        fetchBuffer(toDriveDownloadUrl(analysis_url)),
+        fetchBuffer(toDriveDownloadUrl(workbook_url)),
+      ]);
+    } catch (err) {
+      return res.status(502).json({ error: `Failed to download PDF: ${err.message}` });
+    }
+
+    const isDegreeCourse = program_slug.includes('degree');
+    const seriesLabel = isDegreeCourse
+      ? 'RSSB JE 2026 - Civil Degree (OMR)'
+      : 'RSSB JE 2026 - Civil Diploma (OMR)';
+    const testLabel = `Test ${String(test_number).padStart(2, '0')}`;
+    const subject   = `${seriesLabel} - ${testLabel} Analysis & Solutions | jaspalsingh.in`;
+
+    /* Respond immediately */
+    res.json({
+      message: `Sending ${testLabel} analysis to ${enrollments.length} learners in background...`,
+      total: enrollments.length,
+    });
+
+    let sent = 0, failed = 0;
+    for (const enr of enrollments) {
+      try {
+        const email = enr.student_email;
+        const phone = (enr.student_phone || '').replace(/\D/g, '').slice(-10);
+        const name  = enr.student_name || 'Learner';
+        const firstName = name.split(' ')[0];
+
+        const [wmAnalysis, wmWorkbook] = await Promise.all([
+          watermarkPdf(analysisBytes, email, phone),
+          watermarkPdf(workbookBytes, email, phone),
+        ]);
+
+        const html = `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/></head>
+<body style="margin:0;padding:0;background:#f4f5f8;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f5f8;padding:32px 16px;">
+<tr><td align="center">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:580px;">
+  <tr><td style="background:#0F1117;border-radius:14px 14px 0 0;padding:24px 36px;text-align:center;">
+    <div style="font-size:22px;font-weight:800;color:#fff;">Dr. <span style="color:#C81240;">Jaspal Singh</span></div>
+    <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:4px;letter-spacing:1.5px;text-transform:uppercase;">jaspalsingh.in</div>
+  </td></tr>
+  <tr><td style="background:#fff;padding:32px 36px;">
+    <div style="text-align:center;margin-bottom:20px;">
+      <div style="display:inline-block;background:#eef2ff;border:1px solid #c7d2fe;border-radius:50px;padding:8px 22px;">
+        <span style="font-size:13px;font-weight:800;color:#4338CA;">${seriesLabel} - ${testLabel}</span>
+      </div>
+    </div>
+    <h2 style="margin:0 0 8px;font-size:20px;color:#1A1A2E;font-weight:800;">Your Analysis & Solutions are Here, ${firstName}!</h2>
+    <p style="margin:0 0 20px;font-size:15px;color:#6b7280;line-height:1.7;">
+      Two PDFs are attached to this email - the <strong>Detailed Analysis & Solutions</strong> and the <strong>Analysis Workbook</strong>.
+      Go through both carefully to understand your mistakes and strengthen weak areas before the next test.
+    </p>
+
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:18px 22px;margin-bottom:22px;">
+      <div style="font-size:13px;font-weight:800;color:#1A1A2E;margin-bottom:12px;">What's Inside</div>
+      <table cellpadding="0" cellspacing="0">
+        <tr><td style="padding:4px 0;font-size:13px;color:#374151;line-height:1.7;">
+          <span style="color:#6366F1;font-weight:800;margin-right:8px;">1.</span> <strong>Detailed Analysis & Solutions</strong> - question-wise solutions with concepts explained.
+        </td></tr>
+        <tr><td style="padding:4px 0;font-size:13px;color:#374151;line-height:1.7;">
+          <span style="color:#6366F1;font-weight:800;margin-right:8px;">2.</span> <strong>Analysis Workbook</strong> - practice workbook to reinforce the topics covered.
+        </td></tr>
+        <tr><td style="padding:4px 0;font-size:13px;color:#374151;line-height:1.7;">
+          <span style="color:#6366F1;font-weight:800;margin-right:8px;">3.</span> Review your mistakes and revise the concepts before the next test.
+        </td></tr>
+      </table>
+    </div>
+
+    <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px 18px;margin-bottom:22px;">
+      <p style="margin:0;font-size:13px;color:#78350f;line-height:1.7;">
+        <strong>Note:</strong> Both PDFs are watermarked with your email and phone number. Do not share them - any leak will be traced back to you.
+      </p>
+    </div>
+
+    <div style="border-top:1px solid #f0f0f6;padding-top:20px;">
+      <p style="margin:0 0 4px;font-size:14px;color:#374151;font-style:italic;line-height:1.7;">
+        "Give your best. Let's crack this together."
+      </p>
+      <p style="margin:0;font-size:13px;color:#C81240;font-weight:700;">- Dr. Jaspal Singh &nbsp;&middot;&nbsp; ESE AIR-04 &nbsp;&middot;&nbsp; GATE AIR-06</p>
+    </div>
+  </td></tr>
+  <tr><td style="background:#f4f5f8;border-radius:0 0 14px 14px;padding:16px 36px;text-align:center;">
+    <p style="margin:0;font-size:12px;color:#9ca3af;">Reply to this email for any queries | +91 98291 33317</p>
+  </td></tr>
+</table>
+</td></tr>
+</table>
+</body></html>`;
+
+        const { error } = await resendSend({
+          from:       OMR_FROM,
+          reply_to:   'team@jaspalsingh.in',
+          to:         email,
+          subject,
+          html,
+          attachments: [
+            {
+              filename:    `DetailedAnalysisAndSolutions_${testLabel.replace(' ', '')}.pdf`,
+              content:     wmAnalysis.toString('base64'),
+              contentType: 'application/pdf',
+            },
+            {
+              filename:    `AnalysisWorkbook_${testLabel.replace(' ', '')}.pdf`,
+              content:     wmWorkbook.toString('base64'),
+              contentType: 'application/pdf',
+            },
+          ],
+        });
+
+        if (error) {
+          console.error(`[send-omr-analysis] Resend error for ${email}:`, error);
+          failed++;
+        } else {
+          sent++;
+          console.log(`[send-omr-analysis] ${testLabel} sent to ${email} (${sent}/${enrollments.length})`);
+        }
+      } catch (err) {
+        failed++;
+        console.error(`[send-omr-analysis] Failed for enrollment ${enr.id}:`, err.message);
+      }
+      await new Promise(r => setTimeout(r, 300));
+    }
+    console.log(`[send-omr-analysis] ${testLabel} done. Sent: ${sent}, Failed: ${failed}`);
+  } catch (err) {
+    console.error('[send-omr-analysis]', err);
+    if (!res.headersSent) res.status(500).json({ error: 'Server error.' });
+  }
+});
+
 module.exports = router;
