@@ -225,13 +225,20 @@ function getCentreKey(centreValue) {
 function downloadRaw(url) {
   return new Promise((resolve) => {
     const lib = url.startsWith('https') ? https : http;
-    lib.get(url, (res) => {
-      if (res.statusCode !== 200) return resolve(null);
+    const req = lib.get(url, (res) => {
+      if (res.statusCode !== 200) { res.resume(); return resolve(null); }
       const chunks = [];
       res.on('data', c => chunks.push(c));
       res.on('end', () => resolve(Buffer.concat(chunks)));
       res.on('error', () => resolve(null));
-    }).on('error', () => resolve(null));
+    });
+    req.on('error', () => resolve(null));
+    // Without a timeout, a stalled upstream response hangs this request
+    // forever - the whole admit card email would silently never send.
+    req.setTimeout(10000, () => {
+      req.destroy();
+      resolve(null);
+    });
   });
 }
 
