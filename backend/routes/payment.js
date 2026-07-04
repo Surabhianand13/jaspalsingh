@@ -224,6 +224,24 @@ const PROGRAMS = {
     price:     4499,
     mrp:       9999,
   },
+  'ese-2027-prelims-jaspalsirki-testseries-paper1-omr': {
+    name:      'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 1 (Home-Based OMR Test Series)',
+    shortName: 'ESE 2027 Prelims Paper 1 OMR',
+    price:     2499,
+    mrp:       3999,
+  },
+  'ese-2027-prelims-jaspalsirki-testseries-paper2-civil-omr': {
+    name:      'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 2 Civil (Home-Based OMR Test Series)',
+    shortName: 'ESE 2027 Prelims Paper 2 OMR',
+    price:     2499,
+    mrp:       3999,
+  },
+  'ese-2027-prelims-jaspalsirki-testseries-combined-omr': {
+    name:      'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 1 + 2 Civil (Home-Based OMR Test Series)',
+    shortName: 'ESE 2027 Prelims Paper 1+2 OMR',
+    price:     2999,
+    mrp:       7999,
+  },
 };
 
 /* ── Razorpay instance ───────────────────────────────────── */
