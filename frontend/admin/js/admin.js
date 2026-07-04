@@ -2542,6 +2542,62 @@
       });
     }
 
+    /* OMR Analysis - send Detailed Analysis & Solutions + Workbook to enrolled learners */
+    function sendOmrAnalysis(slug, testNum, analysisUrl, workbookUrl, btn, resultEl) {
+      if (!testNum) { alert('Please select a test number.'); return; }
+      if (!analysisUrl || !analysisUrl.startsWith('http')) { alert('Please enter a valid Detailed Analysis & Solutions Google Drive URL.'); return; }
+      if (!workbookUrl || !workbookUrl.startsWith('http')) { alert('Please enter a valid Analysis Workbook Google Drive URL.'); return; }
+      if (!confirm('Send Test ' + String(testNum).padStart(2,'0') + ' analysis & workbook to ALL enrolled learners for this program? This cannot be undone.')) return;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+      resultEl.style.display = 'none';
+      fetch(API_BASE + '/api/enrollment/admin/send-omr-analysis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+        body: JSON.stringify({ program_slug: slug, test_number: testNum, analysis_url: analysisUrl, workbook_url: workbookUrl }),
+      })
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        resultEl.style.display = 'block';
+        if (data.error) {
+          resultEl.style.background = '#fef2f2'; resultEl.style.border = '1px solid #fca5a5'; resultEl.style.color = '#991b1b';
+          resultEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> Error: ' + data.error;
+          btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Analysis';
+        } else {
+          resultEl.style.background = '#f0fdf4'; resultEl.style.border = '1px solid #86efac'; resultEl.style.color = '#166534';
+          resultEl.innerHTML = '<i class="fas fa-check-circle"></i> ' + (data.message || 'Sending in background...');
+          btn.innerHTML = '<i class="fas fa-check"></i> Sent';
+        }
+      })
+      .catch(function(){
+        resultEl.style.display = 'block';
+        resultEl.style.background = '#fef2f2'; resultEl.style.border = '1px solid #fca5a5'; resultEl.style.color = '#991b1b';
+        resultEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> Network error. Please try again.';
+        btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Analysis';
+      });
+    }
+
+    var btnDegreeAnalysis = document.getElementById('btnSendDegreeAnalysis');
+    if (btnDegreeAnalysis) {
+      btnDegreeAnalysis.addEventListener('click', function() {
+        sendOmrAnalysis('rssb-je-omr-degree-test-series',
+          document.getElementById('analysisDegreeTestNum').value,
+          document.getElementById('analysisDegreeAnalysisUrl').value,
+          document.getElementById('analysisDegreeWorkbookUrl').value,
+          btnDegreeAnalysis, document.getElementById('analysisDegreeResult'));
+      });
+    }
+    var btnDiplomaAnalysis = document.getElementById('btnSendDiplomaAnalysis');
+    if (btnDiplomaAnalysis) {
+      btnDiplomaAnalysis.addEventListener('click', function() {
+        sendOmrAnalysis('rssb-jen-omr-diploma-test-series',
+          document.getElementById('analysisDiplomaTestNum').value,
+          document.getElementById('analysisDiplomaAnalysisUrl').value,
+          document.getElementById('analysisDiplomaWorkbookUrl').value,
+          btnDiplomaAnalysis, document.getElementById('analysisDiplomaResult'));
+      });
+    }
+
     var np=document.getElementById('btnNewProgram'); if(np) np.onclick=function(){openProgramModal(null);};
     var nb=document.getElementById('btnNewBanner'); if(nb) nb.onclick=function(){openBannerModal(null);};
     var pc=document.getElementById('programModalClose'); if(pc) pc.onclick=function(){document.getElementById('programModal').style.display='none';};
