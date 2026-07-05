@@ -136,6 +136,14 @@ const COUPONS = {
     singleUse:  true,
     label:      'Special offer - Rs 2,499',
   },
+  // One-time-use code: diploma offline test series for Rs 1,000 flat.
+  // Exclusive - referral codes cannot be combined with it.
+  'DIP1000E62A': {
+    programPrices: { 'rssb-jen-diploma-test-series': 1000 },
+    exclusive:  true,
+    singleUse:  true,
+    label:      'Special offer - Rs 1,000',
+  },
 };
 
 /* ── Has a single-use coupon already been redeemed on a paid order? ── */
