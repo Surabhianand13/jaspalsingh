@@ -107,6 +107,11 @@
           <i class="fas fa-chart-line" aria-hidden="true"></i>
           OMR Analysis
         </button>
+
+        <button class="admin-nav-link" data-section="omr-checker">
+          <i class="fas fa-check-double" aria-hidden="true"></i>
+          OMR Test Checker
+        </button>
       </div>
     </nav>
 
@@ -768,6 +773,22 @@
 
         <p style="font-size:12px;color:var(--body-color);margin-top:16px;">Make sure both Google Drive files are set to "Anyone with link can view" before sending.</p>
       </section><!-- /#section-omr-analysis -->
+
+      <!-- ── OMR TEST CHECKER (admin-only bubble-sheet grading tool) ── -->
+      <section class="admin-section" id="section-omr-checker" aria-label="OMR test checker">
+        <div class="section-header">
+          <h2 class="section-title">OMR Test Checker</h2>
+        </div>
+        <p style="font-size:14px;color:var(--body-color);line-height:1.7;margin-bottom:20px;max-width:680px;">
+          Calibrate a bubble-sheet template once, define an answer key + marking scheme per test, upload photographed OMR sheets, review the auto-detected answers, and push final scores to Google Sheets.
+        </p>
+        <div style="display:flex;gap:8px;margin-bottom:20px;">
+          <button class="btn-admin-secondary btn-admin-sm omr-check-tab active" data-omr-tab="templates">Templates</button>
+          <button class="btn-admin-secondary btn-admin-sm omr-check-tab" data-omr-tab="tests">Tests</button>
+          <button class="btn-admin-secondary btn-admin-sm omr-check-tab" data-omr-tab="submissions">Submissions</button>
+        </div>
+        <div id="omrCheckerBody"><p class="admin-empty">Loading…</p></div>
+      </section>
 
       <!-- ── PROGRAMS ── -->
       <section class="admin-section" id="section-programs" aria-label="Programs management">

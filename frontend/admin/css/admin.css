@@ -1587,3 +1587,82 @@ ul, ol { list-style: none; }
    .admin-modal-overlay / .admin-modal / .admin-modal-body / -close). */
 .admin-modal-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 22px; border-bottom: 1px solid rgba(26,26,46,.08); }
 .admin-modal-head h3 { margin: 0; font-size: 17px; font-weight: 800; color: #1A1A2E; }
+
+/* ── OMR Test Checker: calibration canvas + review screen overlay ── */
+
+.omr-check-tab { opacity: .65; }
+.omr-check-tab.active { opacity: 1; background: var(--admin-accent) !important; color: #fff !important; border-color: var(--admin-accent) !important; }
+
+.omr-cal-canvas-wrap,
+.omr-review-image-wrap {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  border: 1px solid rgba(26,26,46,.12);
+  border-radius: var(--admin-radius-sm);
+  overflow: hidden;
+  line-height: 0;
+}
+.omr-cal-canvas-wrap img,
+.omr-review-image-wrap img { display: block; max-width: 100%; height: auto; }
+
+.omr-cal-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  cursor: crosshair;
+}
+
+.omr-bubble-marker {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  margin-left: -10px;
+  margin-top: -10px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.92);
+  border: 2.5px solid #9ca3af;
+  font-size: 9px;
+  font-weight: 800;
+  color: #1A1A2E;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,.25);
+}
+.omr-bubble-marker:hover { transform: scale(1.15); }
+
+.omr-legend-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+.omr-review-picker {
+  position: absolute;
+  display: flex;
+  gap: 4px;
+  background: #1A1A2E;
+  border-radius: var(--admin-radius-sm);
+  padding: 6px;
+  transform: translate(-50%, -120%);
+  z-index: 20;
+  box-shadow: var(--admin-shadow-md);
+}
+.omr-review-picker button {
+  border: none;
+  background: rgba(255,255,255,.12);
+  color: #fff;
+  font-weight: 700;
+  font-size: 12px;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.omr-review-picker button:hover { background: var(--admin-accent); }
+.omr-review-picker-blank { width: auto !important; padding: 0 8px; }
