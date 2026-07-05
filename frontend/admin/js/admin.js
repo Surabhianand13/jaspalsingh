@@ -3362,7 +3362,7 @@
     var warningBanner = '';
     if (sub.status === 'failed') {
       warningBanner = '<div style="background:#fef2f2;border:1px solid #fca5a5;color:#991b1b;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:13px;">' +
-        'Detection failed: '+e(sub.detector_error||'unknown error')+'. Showing the original photo - mark answers manually below, or delete and re-upload a clearer photo.</div>';
+        'Detection failed: '+e(sub.detector_error||'unknown error')+'. Showing the original photo - mark answers manually below, or use Re-run Detection below once the issue is fixed (e.g. the OMR service was just deployed/configured), or delete and re-upload a clearer photo.</div>';
     }
 
     wrap.innerHTML =
@@ -3384,6 +3384,7 @@
             '<span style="color:#4338CA;">Click any marker to change the answer.</span>' +
           '</div>' +
           '<div style="display:flex;gap:8px;flex-direction:column;">' +
+            (sub.status === 'failed' ? '<button class="btn btn-ghost btn-sm" id="omrReviewRerun">Re-run Detection</button>' : '') +
             '<button class="btn btn-sm" id="omrReviewSaveDraft">Save Draft</button>' +
             '<button class="btn" id="omrReviewFinalize">Finalize &amp; Push to Sheet</button>' +
           '</div>' +
@@ -3398,6 +3399,22 @@
 
     document.getElementById('omrReviewSaveDraft').addEventListener('click', function(){ omrReviewSave(false); });
     document.getElementById('omrReviewFinalize').addEventListener('click', function(){ omrReviewSave(true); });
+    var rerunBtn = document.getElementById('omrReviewRerun');
+    if (rerunBtn) rerunBtn.addEventListener('click', function(){ omrReviewRerunDetection(sub.id); });
+  }
+
+  function omrReviewRerunDetection(submissionId){
+    var btn = document.getElementById('omrReviewRerun');
+    btn.disabled = true; btn.textContent = 'Re-running...';
+    adminFetch('POST','/api/omr-check/submissions/'+submissionId+'/rerun-detection').then(function(d){
+      showToast(d.submission.status === 'failed' ? 'Still failed - see the error above' : 'Detection re-run - answers updated','success');
+      /* rerun-detection returns only the raw submission row - re-fetch the full
+         joined detail (template/test fields) the review screen needs to render. */
+      omrOpenReviewScreen(submissionId);
+    }).catch(function(err){
+      showToast(err.message,'error');
+      btn.disabled = false; btn.textContent = 'Re-run Detection';
+    });
   }
 
   function omrReviewDrawMarkers(){
