@@ -10,6 +10,7 @@ const cors       = require('cors');
 const helmet     = require('helmet');
 const rateLimit  = require('express-rate-limit');
 const path       = require('path');
+const { protect } = require('./middleware/auth');
 
 const app = express();
 
@@ -68,6 +69,19 @@ const loginLimiter = rateLimit({
 app.use('/api/payment/webhook', require('express').raw({ type: 'application/json' }),
   require('./routes/payment-webhook'));
 
+/* ── Tally Webhooks - must also be registered BEFORE express.json() ──
+   Same reasoning as Razorpay above: verifyTallySignature needs the raw
+   bytes to compute the HMAC, then re-parses req.body as JSON itself. ── */
+const { verifyTallySignature } = require('./middleware/tallyAuth');
+const tallyRaw = require('express').raw({ type: 'application/json', limit: '10mb' });
+// These routes sit before apiLimiter is app.use()'d on '/api' below, so
+// apply it explicitly here to keep the same protection they had before.
+app.use('/api/tally-webhook',      apiLimiter, tallyRaw, verifyTallySignature, require('./routes/tally-webhook'));
+app.use('/api/tally-diploma',      apiLimiter, tallyRaw, verifyTallySignature, require('./routes/tally-diploma'));
+app.use('/api/tally-degree',       apiLimiter, tallyRaw, verifyTallySignature, require('./routes/tally-degree'));
+app.use('/api/tally-omr-degree',   apiLimiter, tallyRaw, verifyTallySignature, require('./routes/tally-omr-degree'));
+app.use('/api/tally-omr-diploma',  apiLimiter, tallyRaw, verifyTallySignature, require('./routes/tally-omr-diploma'));
+
 /* ── Body Parsing ────────────────────────────────────────── */
 
 app.use(express.json({ limit: '10mb' }));
@@ -97,11 +111,8 @@ app.use('/api/enrollment',   require('./routes/enrollment-account'));
 app.use('/api/events',       require('./routes/events'));
 app.use('/api/programs',      require('./routes/programs'));
 app.use('/api/banners',       require('./routes/banners'));
-app.use('/api/tally-webhook',   require('./routes/tally-webhook'));
-app.use('/api/tally-diploma',  require('./routes/tally-diploma'));
-app.use('/api/tally-degree',   require('./routes/tally-degree'));
-app.use('/api/tally-omr-degree',  require('./routes/tally-omr-degree'));
-app.use('/api/tally-omr-diploma', require('./routes/tally-omr-diploma'));
+/* Tally webhook routes are registered above (before express.json()) so
+   verifyTallySignature can see the raw body - do not re-register here. */
 
 /* ── Health Check ────────────────────────────────────────── */
 
@@ -113,13 +124,11 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-/* ── Gmail test endpoint ─────────────────────────────────────
-   GET /api/test-gmail?secret=<BACKFILL_SECRET>
+/* ── Gmail test endpoint (admin only) ────────────────────────
+   GET /api/test-gmail  -  Authorization: Bearer <admin JWT>
    Sends one test email and returns success or exact error.     */
-app.get('/api/test-gmail', async (req, res) => {
+app.get('/api/test-gmail', protect, async (req, res) => {
   const { transporter, isConfigured } = require('./config/mailer');
-  const secret = process.env.BACKFILL_SECRET;
-  if (!secret || req.query.secret !== secret) return res.status(403).json({ error: 'Forbidden' });
   if (!isConfigured) return res.json({ configured: false, GMAIL_USER: !!process.env.GMAIL_USER, GMAIL_APP_PASSWORD: !!process.env.GMAIL_APP_PASSWORD });
   try {
     await transporter.verify();
@@ -135,15 +144,11 @@ app.get('/api/test-gmail', async (req, res) => {
   }
 });
 
-/* ── One-time backfill: admin payment notifications ──────────
-   Hit GET /api/backfill-notifications?secret=<BACKFILL_SECRET>
-   Remove this route after running once.                        */
-app.get('/api/backfill-notifications', async (req, res) => {
+/* ── One-time backfill: admin payment notifications (admin only) ──
+   GET /api/backfill-notifications  -  Authorization: Bearer <admin JWT>
+   Remove this route once no longer needed.                        */
+app.get('/api/backfill-notifications', protect, async (req, res) => {
   const { transporter, isConfigured } = require('./config/mailer');
-  const secret = process.env.BACKFILL_SECRET;
-  if (!secret || req.query.secret !== secret) {
-    return res.status(403).json({ error: 'Forbidden' });
-  }
   if (!isConfigured) {
     return res.status(500).json({ error: 'Gmail not configured - set GMAIL_USER and GMAIL_APP_PASSWORD in Render env vars' });
   }

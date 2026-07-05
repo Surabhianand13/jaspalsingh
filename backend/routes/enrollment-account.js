@@ -8,6 +8,7 @@ const router   = express.Router();
 const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
 const { query } = require('../config/db');
+const { protectLearner } = require('../middleware/learnerAuth');
 
 /* ── Program slug → clean display label (admin UI only) ──
    The stored program_name text is identical for Offline Degree and
@@ -26,24 +27,22 @@ function programLabel(slug, fallbackName) {
 
 /* ── GET /api/enrollment/account-status ─────────────────────
    Tells the success page whether the buyer already has an account,
-   so the UI can skip the password step.                          */
+   so the UI can skip the password step.
+   Requires form_token (private, unguessable 64-char hex) rather than
+   order_id - order_id is predictable (JSP-<slug>-<timestamp>) and
+   would let account existence + buyer name be enumerated. ── */
 router.get('/account-status', async (req, res) => {
   try {
-    const { form_token, order_id } = req.query;
-    if (!form_token && !order_id) return res.status(400).json({ error: 'Setup link is invalid.' });
+    const { form_token } = req.query;
+    if (!form_token) return res.status(400).json({ error: 'Setup link is invalid.' });
 
-    const enrR = form_token
-      ? await query(
-          `SELECT student_email, student_phone, student_name, form_used FROM enrollments WHERE form_token = $1 AND status = 'paid'`,
-          [form_token]
-        )
-      : await query(
-          `SELECT student_email, student_phone, student_name, form_used FROM enrollments WHERE order_id = $1 AND status = 'paid'`,
-          [order_id]
-        );
+    const enrR = await query(
+      `SELECT student_email, student_phone, student_name, form_used FROM enrollments WHERE form_token = $1 AND status = 'paid'`,
+      [form_token]
+    );
 
     if (!enrR.rows.length) return res.status(404).json({ error: 'Setup link is invalid or has already been used.' });
-    if (enrR.rows[0].form_used && form_token) return res.status(409).json({ error: 'This setup link has already been used.' });
+    if (enrR.rows[0].form_used) return res.status(409).json({ error: 'This setup link has already been used.' });
 
     const enr = enrR.rows[0];
     const existing = await query(
@@ -166,15 +165,9 @@ router.post('/create-account', async (req, res) => {
 });
 
 /* ── GET /api/enrollment/my-enrollments ──────────────────── */
-router.get('/my-enrollments', async (req, res) => {
+router.get('/my-enrollments', protectLearner, async (req, res) => {
   try {
-    const token = (req.headers.authorization || '').replace('Bearer ', '');
-    if (!token) return res.status(401).json({ error: 'Unauthorised.' });
-
-    const jwt = require('jsonwebtoken');
-    let decoded;
-    try { decoded = jwt.verify(token, process.env.JWT_SECRET); }
-    catch(e) { return res.status(401).json({ error: 'Invalid token.' }); }
+    const decoded = req.learner;
 
     // Get the learner's email + phone so we can match purchases that
     // may not yet be linked via learner_id (repeat purchases, etc.)
@@ -406,7 +399,7 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
     const enr = enrResult.rows[0];
 
     const {
-      generateAdmitCard, buildAdmitCardHtml, fetchImageBuffer,
+      generateAdmitCard, buildAdmitCardHtml, fetchImageBufferTrusted,
       getCentreKey, CENTRES, SCHEDULE_DEGREE, SCHEDULE_DIPLOMA,
     } = require('./tally-webhook');
 
@@ -427,7 +420,7 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
     const examCode   = isDegreeCourse ? 'DEG' : 'DIP';
     const rollNumber = `${prefix}-${examCode}-${Math.floor(10000 + Math.random() * 90000)}`;
 
-    const photoBuffer = photo_url ? await fetchImageBuffer(photo_url) : null;
+    const photoBuffer = photo_url ? await fetchImageBufferTrusted(photo_url) : null;
 
     const pdfBuffer = await generateAdmitCard({
       name:         name || enr.student_name,

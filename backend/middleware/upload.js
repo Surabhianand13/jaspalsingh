@@ -12,14 +12,14 @@
      router.post('/api/blog',      uploadImage.single('cover_image'), ctrl.create);
    ============================================================ */
 
-const multer              = require('multer');
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const cloudinary          = require('../config/cloudinary');
+const multer            = require('multer');
+const cloudinaryStorage = require('./cloudinaryStorage');
+const cloudinary        = require('../config/cloudinary');
 
 /* ── Cloudinary storage targets ─────────────────────────────── */
 
 /* PDFs → raw resource type, stored in jaspalsingh/resources/ */
-const pdfStorage = new CloudinaryStorage({
+const pdfStorage = cloudinaryStorage({
   cloudinary,
   params: async (req, file) => ({
     folder:        'jaspalsingh/resources',
@@ -31,7 +31,7 @@ const pdfStorage = new CloudinaryStorage({
 });
 
 /* Images for blog covers / testimonial photos */
-const imageStorage = new CloudinaryStorage({
+const imageStorage = cloudinaryStorage({
   cloudinary,
   params: async (req, file) => ({
     folder:        'jaspalsingh/images',
@@ -45,7 +45,7 @@ const imageStorage = new CloudinaryStorage({
 });
 
 /* Profile / hero photo */
-const profileStorage = new CloudinaryStorage({
+const profileStorage = cloudinaryStorage({
   cloudinary,
   params: async (req, file) => ({
     folder:        'jaspalsingh/profile',

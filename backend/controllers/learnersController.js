@@ -20,6 +20,7 @@ const bcrypt  = require('bcryptjs');
 const jwt     = require('jsonwebtoken');
 const { query } = require('../config/db');
 const { sendWelcomeEmail, sendNewLearnerAlert, sendOtpEmail } = require('../services/emailService');
+const { isObviousTestSubmission } = require('../utils/spamFilter');
 
 const SALT_ROUNDS = 12;
 const TOKEN_TTL   = '30d'; // Learners stay logged in for 30 days
@@ -83,8 +84,13 @@ const register = async (req, res, next) => {
 
     // OTP is required for profile signup. Checkout flow skips OTP because
     // Cashfree payment itself verifies the user and account setup happens
-    // post-payment via the create-account endpoint.
+    // post-payment via the create-account endpoint. Since that path has no
+    // OTP gate, screen out obvious test/bot data here instead.
     const { checkout_flow } = req.body;
+    if (checkout_flow && isObviousTestSubmission({ name, email, phone })) {
+      console.warn(`[register] Blocked obvious test submission: ${name} / ${email} / ${phone}`);
+      return res.status(400).json({ error: 'Please enter your real name, email and mobile number.' });
+    }
     if (!checkout_flow) {
       if (!otp) {
         return res.status(400).json({ error: 'Email verification code is required.' });

@@ -11,6 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" />
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f5f5f8; min-height: 100vh; }
@@ -266,6 +267,9 @@
             <input class="form-input" type="password" id="inp-password" name="password" placeholder="Min 6 characters" autocomplete="new-password" />
           </div>
 
+          <!-- Honeypot - hidden from real users, bots that fill every field trip it -->
+          <input type="text" id="inp-company" name="company" value="" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;" aria-hidden="true" />
+
           <div class="form-group" style="margin-bottom:6px;">
             <label class="form-label" for="inp-coupon">Coupon Code <span style="font-weight:400;color:#9999b0;">(optional)</span></label>
             <div class="coupon-row">
@@ -289,6 +293,8 @@
             <input type="checkbox" id="inp-tnc" required />
             <label for="inp-tnc">I have read and agree to the <a href="/terms/" target="_blank" class="tnc-link">Terms &amp; Conditions</a>, including the media consent, identity verification requirements, and access revocation policy. <span style="color:#C81240;">*</span></label>
           </div>
+
+          <div class="cf-turnstile" data-sitekey="0x4AAAAAADwBsHyyE7gWH-Oj" data-theme="light" style="margin-bottom:14px;"></div>
 
           <div id="formError" class="co-error"></div>
 
@@ -600,13 +606,18 @@
       const email    = document.getElementById('inp-email').value.trim();
       const password = document.getElementById('inp-password').value;
       const tnc      = document.getElementById('inp-tnc').checked;
+      const company  = document.getElementById('inp-company').value;
+
+      const turnstileToken = (typeof turnstile !== 'undefined') ? turnstile.getResponse() : '';
 
       errEl.style.display = 'none';
+      if (company) return; // honeypot tripped - silently drop, no visible error
       if (!name)               { showError('Please enter your name as per Aadhaar.'); return; }
       if (phone.length !== 10) { showError('Please enter a valid 10-digit mobile number.'); return; }
       if (!email)              { showError('Please enter your email ID.'); return; }
       if (!_loggedIn && password.length < 6) { showError('Please set a password (min 6 characters) to create your account.'); return; }
       if (!tnc)                { showError('Please read and accept the Terms & Conditions to proceed.'); return; }
+      if (!turnstileToken)     { showError('Please complete the verification check above.'); return; }
 
       btn.disabled = true;
       document.getElementById('payBtnText').textContent = 'Please wait...';
@@ -628,6 +639,7 @@
             showError(regData.error || 'Account creation failed. Please try again.');
             btn.disabled = false;
             document.getElementById('payBtnText').textContent = 'Pay ₹' + finalPrice.toLocaleString('en-IN');
+            resetTurnstile();
             return;
           }
         }
@@ -640,7 +652,7 @@
 
         const res  = await fetch(API + '/api/payment/create-order', {
           method: 'POST', headers,
-          body: JSON.stringify({ program_slug: slug, name, email, phone, coupon_code: appliedCoupon, referral_code: appliedReferral }),
+          body: JSON.stringify({ program_slug: slug, name, email, phone, coupon_code: appliedCoupon, referral_code: appliedReferral, turnstile_token: turnstileToken }),
         });
         const data = await res.json();
 
@@ -648,6 +660,7 @@
           showError(data.error || 'Payment setup failed. Please try again.');
           btn.disabled = false;
           document.getElementById('payBtnText').textContent = 'Pay ₹' + finalPrice.toLocaleString('en-IN');
+          resetTurnstile();
           return;
         }
 
@@ -698,6 +711,7 @@
             ondismiss: function () {
               btn.disabled = false;
               document.getElementById('payBtnText').textContent = 'Pay ₹' + finalPrice.toLocaleString('en-IN');
+              resetTurnstile();
             },
           },
         };
@@ -706,12 +720,14 @@
           showError('Payment failed: ' + (response.error.description || 'Please try again.'));
           btn.disabled = false;
           document.getElementById('payBtnText').textContent = 'Pay ₹' + finalPrice.toLocaleString('en-IN');
+          resetTurnstile();
         });
         rzp.open();
 
       } catch (err) {
         showError('Network error. Please check your connection and try again.');
         btn.disabled = false;
+        resetTurnstile();
         document.getElementById('payBtnText').textContent = 'Pay ₹' + finalPrice.toLocaleString('en-IN');
       }
     });
@@ -720,6 +736,11 @@
       const el = document.getElementById('formError');
       el.textContent = msg;
       el.style.display = 'block';
+    }
+
+    // Turnstile tokens are single-use - reset the widget so a retry gets a fresh one.
+    function resetTurnstile() {
+      if (typeof turnstile !== 'undefined') turnstile.reset();
     }
   </script>
 </body>

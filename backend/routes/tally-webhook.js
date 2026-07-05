@@ -216,11 +216,55 @@ function getCentreKey(centreValue) {
   return null;
 }
 
-/* ── Fetch remote image as buffer ────────────────────────── */
+/* ── SSRF guards ──────────────────────────────────────────
+   photoUrl in the webhook payload is attacker-reachable (anyone who
+   knows a valid unused form_token can POST it directly, bypassing
+   Tally) - restrict that path to Tally's own asset host.
+   The admin "resend admit card" flow supplies photo_url manually from
+   the admin panel; it's behind the admin JWT, so we only block the
+   obvious SSRF targets (localhost / private ranges / cloud metadata)
+   rather than restricting it to a single host. ── */
+
+function isAllowedTallyAssetUrl(url) {
+  try {
+    const u = new URL(url);
+    if (u.protocol !== 'https:') return false;
+    return u.hostname === 'tally.so' || u.hostname.endsWith('.tally.so');
+  } catch (e) {
+    return false;
+  }
+}
+
+function isSafeExternalUrl(url) {
+  try {
+    const u = new URL(url);
+    if (u.protocol !== 'https:' && u.protocol !== 'http:') return false;
+    const host = u.hostname.toLowerCase();
+    if (host === 'localhost' || host === '169.254.169.254') return false;
+    if (/^(127\.|10\.|192\.168\.|0\.0\.0\.0)/.test(host)) return false;
+    if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(host)) return false;
+    if (host === '::1' || host.startsWith('fc') || host.startsWith('fd') || host.startsWith('fe80')) return false;
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+/* ── Fetch remote image as buffer (strict allowlist - webhook path) ── */
 
 function fetchImageBuffer(url) {
+  return fetchImageBufferChecked(url, isAllowedTallyAssetUrl);
+}
+
+/* ── Fetch remote image as buffer (basic SSRF guard - admin path) ── */
+
+function fetchImageBufferTrusted(url) {
+  return fetchImageBufferChecked(url, isSafeExternalUrl);
+}
+
+function fetchImageBufferChecked(url, isAllowed) {
   return new Promise((resolve) => {
-    if (!url) return resolve(null);
+    if (!url || !isAllowed(url)) return resolve(null);
     const lib = url.startsWith('https') ? https : http;
     lib.get(url, (res) => {
       if (res.statusCode !== 200) return resolve(null);
@@ -721,6 +765,7 @@ module.exports.processSubmission   = processSubmission;
 module.exports.generateAdmitCard   = generateAdmitCard;
 module.exports.buildAdmitCardHtml  = buildAdmitCardHtml;
 module.exports.fetchImageBuffer    = fetchImageBuffer;
+module.exports.fetchImageBufferTrusted = fetchImageBufferTrusted;
 module.exports.getCentreKey        = getCentreKey;
 module.exports.CENTRES             = CENTRES;
 module.exports.SCHEDULE_DEGREE     = SCHEDULE_DEGREE;
