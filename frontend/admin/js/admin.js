@@ -198,7 +198,8 @@
     'referralpayouts': 'Referral Payouts',
     'programleads': 'Interest / Leads',
     'banners':      'Banners & Promo Images',
-    'analytics':    'Analytics'
+    'analytics':    'Analytics',
+    'omr-checker':  'OMR Test Checker'
   };
 
   /**
@@ -246,6 +247,7 @@
       case 'programleads': loadProgramLeads(); break;
       case 'banners':      loadBanners();      break;
       case 'analytics':    loadBizAnalytics(); break;
+      case 'omr-checker':  loadOmrChecker();   break;
     }
   }
 
@@ -1549,13 +1551,13 @@
     var tbody = $('learnersTableBody');
     if (!tbody) return;
 
-    tbody.innerHTML = '<tr><td colspan="7"><div class="admin-table-empty"><i class="fas fa-spinner fa-spin"></i><p>Loading…</p></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8"><div class="admin-table-empty"><i class="fas fa-spinner fa-spin"></i><p>Loading…</p></div></td></tr>';
 
     adminFetch('GET', '/api/learners').then(function (data) {
       learnersState.items = Array.isArray(data) ? data : (data.learners || data.data || []);
       applyLearnerPeriodFilter();
     }).catch(function (err) {
-      tbody.innerHTML = '<tr><td colspan="7"><div class="admin-table-empty"><i class="fas fa-triangle-exclamation"></i><p>' + escapeHtml(err.message) + '</p></div></td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8"><div class="admin-table-empty"><i class="fas fa-triangle-exclamation"></i><p>' + escapeHtml(err.message) + '</p></div></td></tr>';
     });
   }
 
@@ -1565,7 +1567,7 @@
     if (!tbody) return;
 
     if (!items || items.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7"><div class="admin-table-empty"><i class="fas fa-users"></i><p>No learners found.</p></div></td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8"><div class="admin-table-empty"><i class="fas fa-users"></i><p>No learners found.</p></div></td></tr>';
       return;
     }
 
@@ -1593,6 +1595,7 @@
           '<td><span class="text-sm">' + escapeHtml(l.target_exam || l.exam_target || l.exam || '-') + '</span></td>' +
           '<td><span class="text-sm text-muted">' + fmtDate(l.created_at || l.createdAt) + '</span></td>' +
           '<td>' + (isActive ? '<span class="badge badge-visible">Active</span>' : '<span class="badge badge-hidden">Inactive</span>') + '</td>' +
+          '<td><button type="button" class="btn-admin-secondary btn-edit-learner-email" data-learner-id="' + l.id + '" data-learner-email="' + escapeHtml(l.email || '') + '" data-learner-name="' + escapeHtml(l.name || l.full_name || '') + '" style="padding:4px 10px;font-size:12px;"><i class="fas fa-pen"></i> Edit Email</button></td>' +
         '</tr>'
       );
     }).join('');
@@ -1707,6 +1710,44 @@
     if (searchEl) {
       searchEl.addEventListener('input', function () {
         applyLearnerPeriodFilter();
+      });
+    }
+
+    /* Edit-email button (event delegation - table body re-renders on filter) */
+    var tbody = $('learnersTableBody');
+    if (tbody) {
+      tbody.addEventListener('click', function (e) {
+        var btn = e.target.closest('.btn-edit-learner-email');
+        if (!btn) return;
+        $('editEmailLearnerId').value = btn.getAttribute('data-learner-id');
+        $('editEmailLearnerName').textContent = btn.getAttribute('data-learner-name') || '-';
+        $('editEmailCurrent').textContent = btn.getAttribute('data-learner-email') || '-';
+        $('editEmailNew').value = '';
+        $('editEmailMsg').textContent = '';
+        openModal('editEmailModal');
+      });
+    }
+
+    var saveEmailBtn = $('btnSaveLearnerEmail');
+    if (saveEmailBtn) {
+      saveEmailBtn.addEventListener('click', function () {
+        var id       = $('editEmailLearnerId').value;
+        var newEmail = $('editEmailNew').value.trim();
+        var msgEl    = $('editEmailMsg');
+        msgEl.textContent = '';
+        msgEl.style.color = '#dc2626';
+        if (!newEmail) { msgEl.textContent = 'Please enter a new email address.'; return; }
+
+        saveEmailBtn.disabled = true;
+        adminFetch('PATCH', '/api/learners/' + id + '/email', { email: newEmail }).then(function () {
+          closeModal('editEmailModal');
+          showToast('Email updated.', 'success');
+          loadLearners();
+        }).catch(function (err) {
+          msgEl.textContent = err.message;
+        }).finally(function () {
+          saveEmailBtn.disabled = false;
+        });
       });
     }
   }
@@ -1870,16 +1911,14 @@
         var markBtn = (x.status === 'paid' && !x.form_used)
           ? '<button class="btn-admin-secondary btn-admin-sm" style="margin-top:4px;font-size:11px;color:#059669;border-color:#059669;" data-marksubmit="'+x.id+'" title="Manually mark as submitted (use when learner filled form but webhook failed)">Mark as submitted</button>'
           : '';
-        var rescueBtn = (x.status === 'pending')
-          ? '<button class="btn-admin-secondary btn-admin-sm" style="margin-top:4px;font-size:11px;color:#b45309;border-color:#b45309;" data-rescue-order="'+e(x.order_id)+'" title="Learner paid on Razorpay but enrollment is stuck pending - enter Razorpay payment ID to mark paid and send emails">Rescue - Mark Paid</button>'
-          : '';
         var admitBtn = (x.status === 'paid' && x.form_used)
           ? '<button class="btn-admin-secondary btn-admin-sm" style="margin-top:4px;font-size:11px;color:#7c3aed;border-color:#7c3aed;" data-admitcard="'+x.id+'" data-slug="'+(x.program_slug||'')+'" title="Generate and resend admit card PDF">Send Admit Card</button>'
           : '';
-        return '<tr><td>'+e(x.student_name)+'<br><span style="color:#9999b0;font-size:12px;">'+e(x.student_phone)+(x.student_email?' · '+e(x.student_email):'')+'</span></td>' +
+        return '<tr><td>'+e(x.student_name)+'<br><span style="color:#9999b0;font-size:12px;">'+e(x.student_phone)+(x.student_email?' · '+e(x.student_email):'')+
+          ' <a href="#" data-edit-enroll-email="'+x.id+'" data-current-email="'+e(x.student_email||'')+'" style="color:#4f46e5;">edit</a></span></td>' +
           '<td>'+e(x.program_label||x.program_name)+'</td><td>'+inr(x.amount)+(x.coupon_code?'<br><span style="color:#16a34a;font-size:11px;">'+e(x.coupon_code)+'</span>':'')+'</td>' +
-          '<td><span class="admin-badge admin-badge--'+(x.status==='paid'?'green':'orange')+'">'+e(x.status)+'</span></td>' +
-          '<td>'+formBadge+emailBadge+reissueBtn+markBtn+admitBtn+rescueBtn+'</td>'+
+          '<td><span class="admin-badge admin-badge--'+(x.status==='paid'?'green':x.status==='pending'?'orange':'grey')+'">'+e(x.status)+'</span></td>' +
+          '<td>'+formBadge+emailBadge+reissueBtn+markBtn+admitBtn+'</td>'+
           '<td>'+fmtDate(x.paid_at||x.created_at)+'</td><td style="font-size:11px;color:#9999b0;">'+e(x.order_id)+'</td></tr>';
       }).join('');
       body.innerHTML = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Student</th><th>Program</th><th>Amount</th><th>Status</th><th>Form</th><th>Date</th><th>Order</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
@@ -1905,31 +1944,27 @@
             .catch(function(err){ showToast(err.message || 'Failed', 'error'); btn.disabled = false; btn.textContent = 'Mark as submitted'; });
         });
       });
+      // Wire up per-enrollment email edit links
+      body.querySelectorAll('[data-edit-enroll-email]').forEach(function(link){
+        link.addEventListener('click', function(evt){
+          evt.preventDefault();
+          var id = link.getAttribute('data-edit-enroll-email');
+          var current = link.getAttribute('data-current-email') || '';
+          var next = prompt('Corrected email for this enrollment:', current);
+          if (next === null) return;
+          next = next.trim();
+          if (!next || next === current) return;
+          adminFetch('PATCH', '/api/enrollment/admin/' + id + '/email', { email: next })
+            .then(function(d){ showToast(d.message || 'Email updated', 'success'); loadEnrollments(); })
+            .catch(function(err){ showToast(err.message || 'Failed', 'error'); });
+        });
+      });
       // Wire up send-admit-card buttons
       body.querySelectorAll('[data-admitcard]').forEach(function(btn){
         btn.addEventListener('click', function(){
           var id   = btn.getAttribute('data-admitcard');
           var slug = btn.getAttribute('data-slug') || '';
-          showAdmitCardModal(parseInt(id), slug.includes('degree'));
-        });
-      });
-      // Wire up rescue (mark-paid) buttons
-      body.querySelectorAll('[data-rescue-order]').forEach(function(btn){
-        btn.addEventListener('click', function(){
-          var orderId = btn.getAttribute('data-rescue-order');
-          var paymentId = prompt('Enter the Razorpay Payment ID for order ' + orderId + '\n(find it in Razorpay Dashboard > Payments):');
-          if (!paymentId || !paymentId.trim()) return;
-          if (!confirm('Mark ' + orderId + ' as PAID and send welcome email to the learner?')) return;
-          btn.disabled = true; btn.textContent = 'Rescuing...';
-          adminFetch('POST', '/api/payment/admin/mark-paid', { order_id: orderId, razorpay_payment_id: paymentId.trim() })
-            .then(function(d){
-              showToast('Rescued! ' + (d.student_name || orderId) + ' marked paid and emails sent.', 'success');
-              loadEnrollments();
-            })
-            .catch(function(err){
-              showToast(err.message || 'Failed to rescue enrollment', 'error');
-              btn.disabled = false; btn.textContent = 'Rescue - Mark Paid';
-            });
+          showAdmitCardModal(parseInt(id), slug.includes('degree'), slug.includes('omr'));
         });
       });
   }
@@ -2176,13 +2211,23 @@
   }
 
   /* ── Admit Card modal ── */
-  function showAdmitCardModal(enrollmentId, isDegree) {
+  function showAdmitCardModal(enrollmentId, isDegree, isOmr) {
     var existing = document.getElementById('admitCardModal');
     if (existing) existing.remove();
 
     var modal = document.createElement('div');
     modal.id = 'admitCardModal';
     modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+    var centreFieldHtml = isOmr
+      ? '<div><label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Mode</label>' +
+          '<input type="text" value="Online (Home Based)" disabled style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;background:#f9fafb;color:#6b7280;"/></div>'
+      : '<div><label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Test Centre *</label>' +
+          '<select id="ac_centre" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;">' +
+            '<option value="">Select centre...</option>' +
+            '<option value="jaipur">Jaipur</option><option value="kota">Kota</option>' +
+            '<option value="bikaner">Bikaner</option><option value="sikar">Sikar</option>' +
+            '<option value="jodhpur">Jodhpur</option><option value="alwar">Alwar</option><option value="ajmer">Ajmer</option>' +
+          '</select></div>';
     modal.innerHTML =
       '<div style="background:#fff;border-radius:14px;padding:28px 32px;max-width:480px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">' +
@@ -2195,13 +2240,7 @@
             '<input id="ac_name" type="text" placeholder="e.g. Tanu Sharma" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;"/></div>' +
           '<div><label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Govt ID number (optional)</label>' +
             '<input id="ac_govtid" type="text" placeholder="Aadhaar / Voter ID number" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;"/></div>' +
-          '<div><label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Test Centre *</label>' +
-            '<select id="ac_centre" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;">' +
-              '<option value="">Select centre...</option>' +
-              '<option value="jaipur">Jaipur</option><option value="kota">Kota</option>' +
-              '<option value="bikaner">Bikaner</option><option value="sikar">Sikar</option>' +
-              '<option value="jodhpur">Jodhpur</option><option value="alwar">Alwar</option><option value="ajmer">Ajmer</option>' +
-            '</select></div>' +
+          centreFieldHtml +
           '<div><label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Program Type *</label>' +
             '<select id="ac_type" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;">' +
               '<option value="' + (isDegree ? 'degree' : 'diploma') + '">' + (isDegree ? 'Degree' : 'Diploma') + '</option>' +
@@ -2222,18 +2261,20 @@
     modal.addEventListener('click', function(ev){ if (ev.target === modal) modal.remove(); });
 
     document.getElementById('admitCardSend').addEventListener('click', function(){
-      var name   = document.getElementById('ac_name').value.trim();
-      var govtId = document.getElementById('ac_govtid').value.trim();
-      var centre = document.getElementById('ac_centre').value;
-      var type   = document.getElementById('ac_type').value;
-      var photo  = document.getElementById('ac_photo').value.trim();
+      var name    = document.getElementById('ac_name').value.trim();
+      var govtId  = document.getElementById('ac_govtid').value.trim();
+      var centreEl = document.getElementById('ac_centre');
+      var centre  = centreEl ? centreEl.value : '';
+      var type    = document.getElementById('ac_type').value;
+      var photo   = document.getElementById('ac_photo').value.trim();
 
-      if (!name || !centre) { showToast('Name and centre are required', 'error'); return; }
+      if (!name || (!isOmr && !centre)) { showToast(isOmr ? 'Name is required' : 'Name and centre are required', 'error'); return; }
 
       var sendBtn = document.getElementById('admitCardSend');
       sendBtn.disabled = true; sendBtn.textContent = 'Generating...';
 
-      var payload = { enrollment_id: enrollmentId, name: name, centre: centre, program_type: type };
+      var payload = { enrollment_id: enrollmentId, name: name, program_type: type };
+      if (centre) payload.centre = centre;
       if (govtId) payload.govt_id  = govtId;
       if (photo)  payload.photo_url = photo;
 
@@ -2447,19 +2488,26 @@
   function statCard(label,v){ return '<div class="admin-stat-card"><div class="admin-stat-val">'+e(v)+'</div><div class="admin-stat-lbl">'+e(label)+'</div></div>'; }
 
   function bindBizSections(){
-    /* OMR Papers - send test papers to enrolled learners */
-    function sendOmrPapers(slug, testNum, qpUrl, omrUrl, btn, resultEl) {
+    /* OMR Papers - send test papers to enrolled learners (or a single test address when `sample` is set) */
+    function sendOmrPapers(slug, testNum, qpUrl, omrUrl, btn, resultEl, sample) {
       if (!testNum) { alert('Please select a test number.'); return; }
       if (!qpUrl || !qpUrl.startsWith('http')) { alert('Please enter a valid Question Paper Google Drive URL.'); return; }
       if (!omrUrl || !omrUrl.startsWith('http')) { alert('Please enter a valid OMR Sheet Google Drive URL.'); return; }
-      if (!confirm('Send Test ' + String(testNum).padStart(2,'0') + ' papers to ALL enrolled learners for this program? This cannot be undone.')) return;
+      var idleLabel = sample ? '<i class="fas fa-vial"></i> Send Sample' : '<i class="fas fa-paper-plane"></i> Send Papers';
+      if (sample) {
+        if (!sample.email) { alert('Please enter a test email to send a sample.'); return; }
+      } else if (!confirm('Send Test ' + String(testNum).padStart(2,'0') + ' papers to ALL enrolled learners for this program? This cannot be undone.')) {
+        return;
+      }
       btn.disabled = true;
       btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
       resultEl.style.display = 'none';
+      var body = { program_slug: slug, test_number: testNum, question_paper_url: qpUrl, omr_sheet_url: omrUrl };
+      if (sample) { body.sample_email = sample.email; if (sample.phone) body.sample_phone = sample.phone; }
       fetch(API_BASE + '/api/enrollment/admin/send-omr-papers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
-        body: JSON.stringify({ program_slug: slug, test_number: testNum, question_paper_url: qpUrl, omr_sheet_url: omrUrl }),
+        body: JSON.stringify(body),
       })
       .then(function(r){ return r.json(); })
       .then(function(data){
@@ -2467,18 +2515,19 @@
         if (data.error) {
           resultEl.style.background = '#fef2f2'; resultEl.style.border = '1px solid #fca5a5'; resultEl.style.color = '#991b1b';
           resultEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> Error: ' + data.error;
-          btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Papers';
+          btn.disabled = false; btn.innerHTML = idleLabel;
         } else {
           resultEl.style.background = '#f0fdf4'; resultEl.style.border = '1px solid #86efac'; resultEl.style.color = '#166534';
           resultEl.innerHTML = '<i class="fas fa-check-circle"></i> ' + (data.message || 'Sending in background...');
-          btn.innerHTML = '<i class="fas fa-check"></i> Sent';
+          if (sample) { btn.disabled = false; btn.innerHTML = idleLabel; }
+          else        { btn.innerHTML = '<i class="fas fa-check"></i> Sent'; }
         }
       })
       .catch(function(){
         resultEl.style.display = 'block';
         resultEl.style.background = '#fef2f2'; resultEl.style.border = '1px solid #fca5a5'; resultEl.style.color = '#991b1b';
         resultEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> Network error. Please try again.';
-        btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Papers';
+        btn.disabled = false; btn.innerHTML = idleLabel;
       });
     }
 
@@ -2492,6 +2541,17 @@
           btnDegreeOmr, document.getElementById('omrDegreeResult'));
       });
     }
+    var btnDegreeOmrSample = document.getElementById('btnSendDegreeOmrSample');
+    if (btnDegreeOmrSample) {
+      btnDegreeOmrSample.addEventListener('click', function() {
+        sendOmrPapers('rssb-je-omr-degree-test-series',
+          document.getElementById('omrDegreeTestNum').value,
+          document.getElementById('omrDegreeQpUrl').value,
+          document.getElementById('omrDegreeOmrUrl').value,
+          btnDegreeOmrSample, document.getElementById('omrDegreeResult'),
+          { email: document.getElementById('omrDegreeTestEmail').value.trim(), phone: document.getElementById('omrDegreeTestPhone').value.trim() });
+      });
+    }
     var btnDiplomaOmr = document.getElementById('btnSendDiplomaOmr');
     if (btnDiplomaOmr) {
       btnDiplomaOmr.addEventListener('click', function() {
@@ -2500,6 +2560,140 @@
           document.getElementById('omrDiplomaQpUrl').value,
           document.getElementById('omrDiplomaOmrUrl').value,
           btnDiplomaOmr, document.getElementById('omrDiplomaResult'));
+      });
+    }
+    var btnDiplomaOmrSample = document.getElementById('btnSendDiplomaOmrSample');
+    if (btnDiplomaOmrSample) {
+      btnDiplomaOmrSample.addEventListener('click', function() {
+        sendOmrPapers('rssb-jen-omr-diploma-test-series',
+          document.getElementById('omrDiplomaTestNum').value,
+          document.getElementById('omrDiplomaQpUrl').value,
+          document.getElementById('omrDiplomaOmrUrl').value,
+          btnDiplomaOmrSample, document.getElementById('omrDiplomaResult'),
+          { email: document.getElementById('omrDiplomaTestEmail').value.trim(), phone: document.getElementById('omrDiplomaTestPhone').value.trim() });
+      });
+    }
+
+    /* Multi-link Drive URL groups (Detailed Analysis & Solutions / Analysis Workbook can each be more than one file) */
+    function addOmrUrlRow(containerId, inputClass) {
+      var container = document.getElementById(containerId);
+      if (!container) return;
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;gap:6px;align-items:center;';
+      var input = document.createElement('input');
+      input.type = 'url';
+      input.className = inputClass;
+      input.placeholder = 'https://drive.google.com/file/d/...';
+      input.style.cssText = 'flex:1;min-width:0;padding:9px 12px;border:1.5px solid rgba(26,26,46,.12);border-radius:8px;font-size:13px;box-sizing:border-box;';
+      row.appendChild(input);
+      var removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+      removeBtn.title = 'Remove this link';
+      removeBtn.style.cssText = 'background:none;border:none;color:#9ca3af;cursor:pointer;font-size:14px;padding:4px 8px;';
+      removeBtn.addEventListener('click', function(){ row.remove(); });
+      row.appendChild(removeBtn);
+      container.appendChild(row);
+      input.focus();
+    }
+    function collectOmrUrls(inputClass) {
+      return Array.prototype.slice.call(document.getElementsByClassName(inputClass))
+        .map(function(el){ return el.value.trim(); })
+        .filter(function(v){ return v && v.startsWith('http'); });
+    }
+    [
+      ['btnAddAnalysisDegreeAnalysisUrl',  'analysisDegreeAnalysisUrls',   'analysisDegreeAnalysisUrlInput'],
+      ['btnAddAnalysisDegreeWorkbookUrl',  'analysisDegreeWorkbookUrls',   'analysisDegreeWorkbookUrlInput'],
+      ['btnAddAnalysisDiplomaAnalysisUrl', 'analysisDiplomaAnalysisUrls',  'analysisDiplomaAnalysisUrlInput'],
+      ['btnAddAnalysisDiplomaWorkbookUrl', 'analysisDiplomaWorkbookUrls',  'analysisDiplomaWorkbookUrlInput'],
+    ].forEach(function(cfg) {
+      var btn = document.getElementById(cfg[0]);
+      if (btn) btn.addEventListener('click', function(){ addOmrUrlRow(cfg[1], cfg[2]); });
+    });
+
+    /* OMR Analysis - send Detailed Analysis & Solutions + Workbook (each may be multiple files) to enrolled learners (or a single test address when `sample` is set) */
+    function sendOmrAnalysis(slug, testNum, analysisUrls, workbookUrls, btn, resultEl, sample) {
+      if (!testNum) { alert('Please select a test number.'); return; }
+      if (!analysisUrls.length) { alert('Please enter at least one valid Detailed Analysis & Solutions Google Drive URL.'); return; }
+      if (!workbookUrls.length)  { alert('Please enter at least one valid Analysis Workbook Google Drive URL.'); return; }
+      var idleLabel = sample ? '<i class="fas fa-vial"></i> Send Sample' : '<i class="fas fa-paper-plane"></i> Send Analysis';
+      if (sample) {
+        if (!sample.email) { alert('Please enter a test email to send a sample.'); return; }
+      } else if (!confirm('Send Test ' + String(testNum).padStart(2,'0') + ' analysis & workbook to ALL enrolled learners for this program? This cannot be undone.')) {
+        return;
+      }
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+      resultEl.style.display = 'none';
+      var body = { program_slug: slug, test_number: testNum, analysis_urls: analysisUrls, workbook_urls: workbookUrls };
+      if (sample) { body.sample_email = sample.email; if (sample.phone) body.sample_phone = sample.phone; }
+      fetch(API_BASE + '/api/enrollment/admin/send-omr-analysis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+        body: JSON.stringify(body),
+      })
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        resultEl.style.display = 'block';
+        if (data.error) {
+          resultEl.style.background = '#fef2f2'; resultEl.style.border = '1px solid #fca5a5'; resultEl.style.color = '#991b1b';
+          resultEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> Error: ' + data.error;
+          btn.disabled = false; btn.innerHTML = idleLabel;
+        } else {
+          resultEl.style.background = '#f0fdf4'; resultEl.style.border = '1px solid #86efac'; resultEl.style.color = '#166534';
+          resultEl.innerHTML = '<i class="fas fa-check-circle"></i> ' + (data.message || 'Sending in background...');
+          if (sample) { btn.disabled = false; btn.innerHTML = idleLabel; }
+          else        { btn.innerHTML = '<i class="fas fa-check"></i> Sent'; }
+        }
+      })
+      .catch(function(){
+        resultEl.style.display = 'block';
+        resultEl.style.background = '#fef2f2'; resultEl.style.border = '1px solid #fca5a5'; resultEl.style.color = '#991b1b';
+        resultEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> Network error. Please try again.';
+        btn.disabled = false; btn.innerHTML = idleLabel;
+      });
+    }
+
+    var btnDegreeAnalysis = document.getElementById('btnSendDegreeAnalysis');
+    if (btnDegreeAnalysis) {
+      btnDegreeAnalysis.addEventListener('click', function() {
+        sendOmrAnalysis('rssb-je-omr-degree-test-series',
+          document.getElementById('analysisDegreeTestNum').value,
+          collectOmrUrls('analysisDegreeAnalysisUrlInput'),
+          collectOmrUrls('analysisDegreeWorkbookUrlInput'),
+          btnDegreeAnalysis, document.getElementById('analysisDegreeResult'));
+      });
+    }
+    var btnDegreeAnalysisSample = document.getElementById('btnSendDegreeAnalysisSample');
+    if (btnDegreeAnalysisSample) {
+      btnDegreeAnalysisSample.addEventListener('click', function() {
+        sendOmrAnalysis('rssb-je-omr-degree-test-series',
+          document.getElementById('analysisDegreeTestNum').value,
+          collectOmrUrls('analysisDegreeAnalysisUrlInput'),
+          collectOmrUrls('analysisDegreeWorkbookUrlInput'),
+          btnDegreeAnalysisSample, document.getElementById('analysisDegreeResult'),
+          { email: document.getElementById('analysisDegreeTestEmail').value.trim(), phone: document.getElementById('analysisDegreeTestPhone').value.trim() });
+      });
+    }
+    var btnDiplomaAnalysis = document.getElementById('btnSendDiplomaAnalysis');
+    if (btnDiplomaAnalysis) {
+      btnDiplomaAnalysis.addEventListener('click', function() {
+        sendOmrAnalysis('rssb-jen-omr-diploma-test-series',
+          document.getElementById('analysisDiplomaTestNum').value,
+          collectOmrUrls('analysisDiplomaAnalysisUrlInput'),
+          collectOmrUrls('analysisDiplomaWorkbookUrlInput'),
+          btnDiplomaAnalysis, document.getElementById('analysisDiplomaResult'));
+      });
+    }
+    var btnDiplomaAnalysisSample = document.getElementById('btnSendDiplomaAnalysisSample');
+    if (btnDiplomaAnalysisSample) {
+      btnDiplomaAnalysisSample.addEventListener('click', function() {
+        sendOmrAnalysis('rssb-jen-omr-diploma-test-series',
+          document.getElementById('analysisDiplomaTestNum').value,
+          collectOmrUrls('analysisDiplomaAnalysisUrlInput'),
+          collectOmrUrls('analysisDiplomaWorkbookUrlInput'),
+          btnDiplomaAnalysisSample, document.getElementById('analysisDiplomaResult'),
+          { email: document.getElementById('analysisDiplomaTestEmail').value.trim(), phone: document.getElementById('analysisDiplomaTestPhone').value.trim() });
       });
     }
 
@@ -2552,6 +2746,778 @@
         btn.classList.add('active');
         loadBizAnalytics();
       });
+    });
+  }
+
+  /* ══════════════════════════════════════════════
+     OMR TEST CHECKER (admin-only bubble-sheet grading)
+     Distinct from the "OMR Papers"/"OMR Analysis" sections above, which
+     only email question-paper PDFs and have nothing to do with grading.
+     ══════════════════════════════════════════════ */
+
+  var omrCheckerTab = 'templates';
+  var omrCheckerData = { templates: [], tests: [], currentTemplate: null, currentTestId: null };
+  var omrCal = null; // active calibration-canvas wizard state
+
+  function loadOmrChecker(){
+    document.querySelectorAll('.omr-check-tab').forEach(function(btn){
+      btn.onclick = function(){
+        document.querySelectorAll('.omr-check-tab').forEach(function(b){ b.classList.remove('active'); });
+        btn.classList.add('active');
+        omrCheckerTab = btn.getAttribute('data-omr-tab');
+        omrRenderCheckerTab();
+      };
+    });
+    omrRenderCheckerTab();
+  }
+
+  function omrRenderCheckerTab(){
+    if (omrCheckerTab === 'templates') omrLoadTemplates();
+    else if (omrCheckerTab === 'tests') omrLoadTests();
+    else omrLoadSubmissionsTab();
+  }
+
+  /* ── Templates ── */
+
+  function omrLoadTemplates(){
+    var body = document.getElementById('omrCheckerBody');
+    body.innerHTML = '<p class="admin-empty">Loading…</p>';
+    adminFetch('GET','/api/omr-check/templates').then(function(d){
+      omrCheckerData.templates = d.templates || [];
+      omrRenderTemplatesList();
+    }).catch(function(err){ body.innerHTML = '<p class="admin-empty">'+e(err.message)+'</p>'; });
+  }
+
+  function omrRenderTemplatesList(){
+    var body = document.getElementById('omrCheckerBody');
+    var rows = omrCheckerData.templates.map(function(t){
+      var calibrated = (t.question_blocks && t.question_blocks.length)
+        ? '<span class="badge badge-visible">Calibrated</span>'
+        : '<span class="badge badge-hidden">Not calibrated</span>';
+      var thumb = t.reference_image_url
+        ? '<img src="'+e(t.reference_image_url)+'" style="width:50px;height:70px;object-fit:cover;border-radius:6px;">'
+        : '-';
+      return '<tr><td>'+e(t.name)+'</td><td>'+thumb+'</td><td>'+calibrated+'</td><td>'+(t.test_count||0)+'</td>' +
+        '<td><button class="btn btn-sm" data-tpl-cal="'+t.id+'">Calibrate</button> ' +
+        '<button class="btn btn-sm btn-ghost" data-tpl-del="'+t.id+'">Delete</button></td></tr>';
+    }).join('');
+
+    body.innerHTML =
+      '<div style="margin-bottom:14px;"><button class="btn" id="btnNewOmrTemplate"><i class="fas fa-plus"></i> New Template</button></div>' +
+      (omrCheckerData.templates.length
+        ? '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Name</th><th>Reference</th><th>Status</th><th>Tests</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'
+        : '<p class="admin-empty">No templates yet. Create one to calibrate a physical OMR sheet design - it can be reused across many tests.</p>');
+
+    document.getElementById('btnNewOmrTemplate').addEventListener('click', omrOpenNewTemplateForm);
+    document.querySelectorAll('[data-tpl-cal]').forEach(function(b){
+      b.addEventListener('click', function(){
+        var t = omrCheckerData.templates.filter(function(x){ return x.id == b.getAttribute('data-tpl-cal'); })[0];
+        omrOpenCalibration(t);
+      });
+    });
+    document.querySelectorAll('[data-tpl-del]').forEach(function(b){
+      b.addEventListener('click', function(){
+        if (!confirm('Delete this template? Tests using it must be removed first.')) return;
+        adminFetch('DELETE','/api/omr-check/templates/'+b.getAttribute('data-tpl-del'))
+          .then(function(){ showToast('Deleted','success'); omrLoadTemplates(); })
+          .catch(function(err){ showToast(err.message,'error'); });
+      });
+    });
+  }
+
+  function omrOpenNewTemplateForm(){
+    var body = document.getElementById('omrCheckerBody');
+    body.innerHTML =
+      '<div class="admin-card" style="max-width:480px;">' +
+        '<h3 style="margin-top:0;">New OMR Template</h3>' +
+        '<label class="admin-field"><span>Template Name</span><input class="admin-input" id="tplName" placeholder="e.g. RSSB JE - Candidate Copy (bubble roll no.)"></label>' +
+        '<label class="admin-field"><span>Reference Sheet Image (blank or filled sample)</span><input type="file" id="tplRefImage" accept="image/*"></label>' +
+        '<div style="display:flex;gap:8px;margin-top:14px;">' +
+          '<button class="btn" id="tplSaveBtn">Create &amp; Continue to Calibration</button>' +
+          '<button class="btn btn-ghost" id="tplCancelBtn">Cancel</button>' +
+        '</div>' +
+      '</div>';
+
+    document.getElementById('tplCancelBtn').addEventListener('click', omrLoadTemplates);
+    document.getElementById('tplSaveBtn').addEventListener('click', function(){
+      var name = document.getElementById('tplName').value.trim();
+      var file = document.getElementById('tplRefImage').files[0];
+      if (!name) { showToast('Name is required','error'); return; }
+      if (!file) { showToast('Reference image is required','error'); return; }
+
+      var btn = this;
+      btn.disabled = true; btn.textContent = 'Creating...';
+      adminFetch('POST','/api/omr-check/templates', { name: name }).then(function(d){
+        var fd = new FormData();
+        fd.append('image', file);
+        return adminFetch('POST','/api/omr-check/templates/'+d.template.id+'/reference-image', fd);
+      }).then(function(d2){
+        showToast('Template created - now calibrate it','success');
+        omrOpenCalibration(d2.template);
+      }).catch(function(err){
+        showToast(err.message,'error');
+        btn.disabled = false; btn.textContent = 'Create & Continue to Calibration';
+      });
+    });
+  }
+
+  function omrCalOptionLetters(n){ return ['A','B','C','D','E'].slice(0, n); }
+
+  function omrOpenCalibration(template){
+    omrCheckerData.currentTemplate = template;
+    omrCal = null;
+    var body = document.getElementById('omrCheckerBody');
+    body.innerHTML =
+      '<div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;">' +
+        '<button class="btn btn-ghost btn-sm" id="omrCalBack">&larr; Back to Templates</button>' +
+        '<h3 style="margin:0;">Calibrate: '+e(template.name)+'</h3>' +
+      '</div>' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px;">' +
+        '<label class="admin-field" style="width:130px;"><span>Blocks (columns)</span><input class="admin-input" id="omrCalBlocks" type="number" value="4" min="1"></label>' +
+        '<label class="admin-field" style="width:160px;"><span>Questions per block</span><input class="admin-input" id="omrCalPerBlock" type="number" value="30" min="1"></label>' +
+        '<label class="admin-field" style="width:120px;"><span>Options (A-?)</span><input class="admin-input" id="omrCalOptions" type="number" value="5" min="2" max="5"></label>' +
+        '<label class="admin-field" style="flex-direction:row;align-items:center;gap:8px;width:auto;display:flex;"><input type="checkbox" id="omrCalHasRoll" style="width:auto;"> <span>Bubble-grid roll number</span></label>' +
+        '<label class="admin-field" style="width:120px;"><span>Roll no. digits</span><input class="admin-input" id="omrCalRollDigits" type="number" value="5" min="1"></label>' +
+        '<button class="btn btn-sm" id="omrCalStartBtn">Start Calibration</button>' +
+      '</div>' +
+      '<div id="omrCalInstruction" style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;padding:10px 14px;font-size:13px;color:#4338CA;font-weight:700;margin-bottom:10px;display:none;"></div>' +
+      '<div class="omr-cal-canvas-wrap">' +
+        '<img id="omrCalImage" src="'+e(template.reference_image_url)+'">' +
+        '<canvas id="omrCalCanvas" class="omr-cal-canvas"></canvas>' +
+      '</div>' +
+      '<div style="margin-top:14px;display:flex;gap:8px;">' +
+        '<button class="btn btn-ghost btn-sm" id="omrCalUndoBtn" disabled>Undo Last Click</button>' +
+        '<button class="btn btn-sm" id="omrCalPreviewBtn" disabled>Preview</button>' +
+        '<button class="btn" id="omrCalSaveBtn" disabled>Save Calibration</button>' +
+      '</div>';
+
+    document.getElementById('omrCalBack').addEventListener('click', omrLoadTemplates);
+
+    var img = document.getElementById('omrCalImage');
+    var canvas = document.getElementById('omrCalCanvas');
+    function sizeCanvas(){
+      canvas.width  = img.naturalWidth  || img.width;
+      canvas.height = img.naturalHeight || img.height;
+      canvas.style.width  = img.clientWidth  + 'px';
+      canvas.style.height = img.clientHeight + 'px';
+      if (omrCal) omrCalRedraw();
+    }
+    if (img.complete && img.naturalWidth) sizeCanvas(); else img.addEventListener('load', sizeCanvas);
+    window.addEventListener('resize', sizeCanvas);
+
+    document.getElementById('omrCalStartBtn').addEventListener('click', function(){
+      var numBlocks  = parseInt(document.getElementById('omrCalBlocks').value, 10) || 4;
+      var perBlock   = parseInt(document.getElementById('omrCalPerBlock').value, 10) || 30;
+      var optCount   = parseInt(document.getElementById('omrCalOptions').value, 10) || 5;
+      var hasRoll    = document.getElementById('omrCalHasRoll').checked;
+      var rollDigits = parseInt(document.getElementById('omrCalRollDigits').value, 10) || 5;
+      omrCalStart(numBlocks, perBlock, optCount, hasRoll, rollDigits, canvas);
+      this.disabled = true;
+    });
+  }
+
+  function omrCalStart(numBlocks, perBlock, optCount, hasRoll, rollDigits, canvas){
+    var optionLetters = omrCalOptionLetters(optCount);
+    var steps = [];
+    for (var b = 0; b < numBlocks; b++){
+      var startQ = b*perBlock + 1, endQ = (b+1)*perBlock;
+      steps.push({ kind:'question_anchor', block:b, question:startQ, option:optionLetters[0],
+        label:'Click Q'+startQ+' option '+optionLetters[0]+' (block '+(b+1)+' of '+numBlocks+')' });
+      steps.push({ kind:'question_anchor', block:b, question:endQ, option:optionLetters[optionLetters.length-1],
+        label:'Click Q'+endQ+' option '+optionLetters[optionLetters.length-1]+' (block '+(b+1)+' of '+numBlocks+')' });
+    }
+    ['Top-left','Top-right','Bottom-right','Bottom-left'].forEach(function(corner){
+      steps.push({ kind:'corner', label:'Click the sheet’s '+corner+' outer (paper) corner' });
+    });
+    if (hasRoll){
+      steps.push({ kind:'roll_anchor', which:'start', label:'Click Roll Number digit 1, value 0' });
+      steps.push({ kind:'roll_anchor', which:'end', label:'Click Roll Number last digit ('+rollDigits+'), value 9' });
+    }
+
+    omrCal = {
+      numBlocks:numBlocks, perBlock:perBlock, optCount:optCount, optionLetters:optionLetters,
+      hasRoll:hasRoll, rollDigits:rollDigits, steps:steps, stepIndex:0, clicks:[], canvas:canvas,
+    };
+
+    document.getElementById('omrCalInstruction').style.display = 'block';
+    omrCalShowInstruction();
+
+    canvas.onclick = function(ev){
+      if (!omrCal || omrCal.stepIndex >= omrCal.steps.length) return;
+      var rect = canvas.getBoundingClientRect();
+      var scaleX = canvas.width / rect.width;
+      var scaleY = canvas.height / rect.height;
+      var x = (ev.clientX - rect.left) * scaleX;
+      var y = (ev.clientY - rect.top) * scaleY;
+      omrCal.clicks.push({ step: omrCal.steps[omrCal.stepIndex], x:x, y:y });
+      omrCal.stepIndex++;
+      omrCalRedraw();
+      omrCalShowInstruction();
+      document.getElementById('omrCalUndoBtn').disabled = omrCal.clicks.length === 0;
+      var done = omrCal.stepIndex >= omrCal.steps.length;
+      document.getElementById('omrCalPreviewBtn').disabled = !done;
+      document.getElementById('omrCalSaveBtn').disabled = !done;
+    };
+
+    document.getElementById('omrCalUndoBtn').addEventListener('click', function(){
+      if (!omrCal.clicks.length) return;
+      omrCal.clicks.pop();
+      omrCal.stepIndex = Math.max(0, omrCal.stepIndex - 1);
+      omrCalRedraw();
+      omrCalShowInstruction();
+      this.disabled = omrCal.clicks.length === 0;
+      document.getElementById('omrCalPreviewBtn').disabled = true;
+      document.getElementById('omrCalSaveBtn').disabled = true;
+    });
+
+    document.getElementById('omrCalPreviewBtn').addEventListener('click', omrCalPreview);
+    document.getElementById('omrCalSaveBtn').addEventListener('click', omrCalSave);
+  }
+
+  function omrCalShowInstruction(){
+    var el = document.getElementById('omrCalInstruction');
+    if (omrCal.stepIndex >= omrCal.steps.length){
+      el.textContent = 'All anchors captured. Click Preview to double-check alignment, then Save Calibration.';
+    } else {
+      el.textContent = 'Step '+(omrCal.stepIndex+1)+' of '+omrCal.steps.length+': '+omrCal.steps[omrCal.stepIndex].label;
+    }
+  }
+
+  function omrCalRedraw(){
+    var canvas = omrCal.canvas;
+    var ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    omrCal.clicks.forEach(function(c){
+      ctx.beginPath();
+      ctx.arc(c.x, c.y, 8, 0, Math.PI*2);
+      ctx.fillStyle = c.step.kind === 'corner' ? 'rgba(59,130,246,0.85)'
+        : (c.step.kind === 'roll_anchor' ? 'rgba(234,179,8,0.9)' : 'rgba(220,38,38,0.85)');
+      ctx.fill();
+    });
+  }
+
+  function omrCalBuildPayload(){
+    var blocks = [];
+    for (var b = 0; b < omrCal.numBlocks; b++){
+      var startQ = b*omrCal.perBlock + 1, endQ = (b+1)*omrCal.perBlock;
+      var startClick = omrCal.clicks.filter(function(c){ return c.step.kind==='question_anchor' && c.step.block===b && c.step.question===startQ; })[0];
+      var endClick   = omrCal.clicks.filter(function(c){ return c.step.kind==='question_anchor' && c.step.block===b && c.step.question===endQ; })[0];
+      blocks.push({
+        start_question: startQ, end_question: endQ,
+        top_left_anchor:     { question: startQ, option: startClick.step.option, x: startClick.x, y: startClick.y },
+        bottom_right_anchor: { question: endQ,   option: endClick.step.option,   x: endClick.x,   y: endClick.y },
+        option_order: omrCal.optionLetters,
+      });
+    }
+
+    var cornerClicks = omrCal.clicks.filter(function(c){ return c.step.kind === 'corner'; });
+    var corner_points = cornerClicks.map(function(c){ return { x:c.x, y:c.y }; });
+
+    var roll_number_grid = null;
+    if (omrCal.hasRoll){
+      var rollStart = omrCal.clicks.filter(function(c){ return c.step.kind==='roll_anchor' && c.step.which==='start'; })[0];
+      var rollEnd   = omrCal.clicks.filter(function(c){ return c.step.kind==='roll_anchor' && c.step.which==='end'; })[0];
+      roll_number_grid = {
+        digit_count: omrCal.rollDigits,
+        top_left_anchor:     { digit:1, value:0, x: rollStart.x, y: rollStart.y },
+        bottom_right_anchor: { digit: omrCal.rollDigits, value:9, x: rollEnd.x, y: rollEnd.y },
+      };
+    }
+
+    return { corner_points:corner_points, question_blocks:blocks, roll_number_grid:roll_number_grid, option_count:omrCal.optCount };
+  }
+
+  function omrCalPreview(){
+    var payload = omrCalBuildPayload();
+    var btn = document.getElementById('omrCalPreviewBtn');
+    btn.disabled = true; btn.textContent = 'Loading...';
+    adminFetch('POST','/api/omr-check/templates/'+omrCheckerData.currentTemplate.id+'/calibration-preview', {
+      corner_points: payload.corner_points, question_blocks: payload.question_blocks,
+    }).then(function(d){
+      document.getElementById('omrCalImage').src = 'data:image/jpeg;base64,'+d.preview_image_base64;
+      btn.disabled = false; btn.textContent = 'Preview';
+    }).catch(function(err){
+      showToast(err.message,'error');
+      btn.disabled = false; btn.textContent = 'Preview';
+    });
+  }
+
+  function omrCalSave(){
+    var payload = omrCalBuildPayload();
+    var btn = document.getElementById('omrCalSaveBtn');
+    btn.disabled = true; btn.textContent = 'Saving...';
+    adminFetch('PUT','/api/omr-check/templates/'+omrCheckerData.currentTemplate.id+'/calibration', payload).then(function(){
+      showToast('Calibration saved','success');
+      omrLoadTemplates();
+    }).catch(function(err){
+      showToast(err.message,'error');
+      btn.disabled = false; btn.textContent = 'Save Calibration';
+    });
+  }
+
+  /* ── Tests (answer key + marking scheme) ── */
+
+  function omrParseAnswerKey(text, totalQuestions){
+    var letters = text.indexOf(',') !== -1
+      ? text.split(',').map(function(s){ return s.trim().toUpperCase(); })
+      : text.replace(/\s+/g,'').toUpperCase().split('');
+    var key = {};
+    for (var i = 0; i < totalQuestions; i++){ key[String(i+1)] = letters[i] || null; }
+    return key;
+  }
+
+  function omrFormatAnswerKey(key, totalQuestions){
+    var out = [];
+    for (var i = 1; i <= totalQuestions; i++){ out.push(key[String(i)] || ''); }
+    return out.join(',');
+  }
+
+  function omrLoadTests(){
+    var body = document.getElementById('omrCheckerBody');
+    body.innerHTML = '<p class="admin-empty">Loading…</p>';
+    Promise.all([
+      adminFetch('GET','/api/omr-check/tests'),
+      adminFetch('GET','/api/omr-check/templates'),
+    ]).then(function(results){
+      omrCheckerData.tests = results[0].tests || [];
+      omrCheckerData.templates = results[1].templates || [];
+      omrRenderTestsList();
+    }).catch(function(err){ body.innerHTML = '<p class="admin-empty">'+e(err.message)+'</p>'; });
+  }
+
+  function omrRenderTestsList(){
+    var body = document.getElementById('omrCheckerBody');
+    var rows = omrCheckerData.tests.map(function(t){
+      return '<tr><td>'+e(t.name)+'</td><td>'+e(t.template_name)+'</td><td>'+t.total_questions+'</td>' +
+        '<td>+'+t.marks_per_correct+' / -'+t.negative_marking+'</td>' +
+        '<td>'+(t.submission_count||0)+' ('+(t.finalized_count||0)+' finalized)</td>' +
+        '<td><span class="badge '+(t.status==='active'?'badge-visible':'badge-hidden')+'">'+e(t.status)+'</span></td>' +
+        '<td><button class="btn btn-sm" data-test-edit="'+t.id+'">Edit</button> ' +
+        '<button class="btn btn-sm" data-test-subs="'+t.id+'">Submissions</button></td></tr>';
+    }).join('');
+
+    body.innerHTML =
+      '<div style="margin-bottom:14px;"><button class="btn" id="btnNewOmrTest"'+(omrCheckerData.templates.length?'':' disabled title="Create a calibrated template first"')+'><i class="fas fa-plus"></i> New Test</button></div>' +
+      (omrCheckerData.tests.length
+        ? '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Name</th><th>Template</th><th>Questions</th><th>Marking</th><th>Submissions</th><th>Status</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'
+        : '<p class="admin-empty">No tests yet.'+(omrCheckerData.templates.length?'':' Create a calibrated template first.')+'</p>');
+
+    document.getElementById('btnNewOmrTest').addEventListener('click', function(){ omrOpenTestForm(null); });
+    document.querySelectorAll('[data-test-edit]').forEach(function(b){
+      b.addEventListener('click', function(){
+        var t = omrCheckerData.tests.filter(function(x){ return x.id == b.getAttribute('data-test-edit'); })[0];
+        omrOpenTestForm(t);
+      });
+    });
+    document.querySelectorAll('[data-test-subs]').forEach(function(b){
+      b.addEventListener('click', function(){
+        omrCheckerData.currentTestId = parseInt(b.getAttribute('data-test-subs'), 10);
+        omrCheckerTab = 'submissions';
+        document.querySelectorAll('.omr-check-tab').forEach(function(x){ x.classList.toggle('active', x.getAttribute('data-omr-tab')==='submissions'); });
+        omrLoadSubmissionsTab();
+      });
+    });
+  }
+
+  function omrOpenTestForm(test){
+    var isEdit = !!test;
+    var body = document.getElementById('omrCheckerBody');
+    var templateOptions = omrCheckerData.templates.map(function(t){
+      return '<option value="'+t.id+'"'+(test && test.template_id==t.id?' selected':'')+'>'+e(t.name)+'</option>';
+    }).join('');
+    var answerKeyText = (test && test.answer_key) ? omrFormatAnswerKey(test.answer_key, test.total_questions) : '';
+    var savedSheetId = (test && test.google_sheet_id) || localStorage.getItem('omr_shared_sheet_id') || '';
+
+    body.innerHTML =
+      '<div class="admin-card" style="max-width:640px;">' +
+        '<h3 style="margin-top:0;">'+(isEdit?'Edit Test':'New Test')+'</h3>' +
+        '<label class="admin-field"><span>Test Name</span><input class="admin-input" id="testName" value="'+e(test?test.name:'')+'" placeholder="e.g. RSSB JE Degree Mock Test 12"></label>' +
+        '<label class="admin-field"><span>Template</span><select class="admin-input" id="testTemplate">'+templateOptions+'</select></label>' +
+        '<div style="display:flex;gap:10px;">' +
+          '<label class="admin-field" style="flex:1;"><span>Total Questions</span><input class="admin-input" id="testTotalQ" type="number" value="'+(test?test.total_questions:120)+'"></label>' +
+          '<label class="admin-field" style="flex:1;"><span>Marks per Correct</span><input class="admin-input" id="testMarksCorrect" type="number" step="0.01" value="'+(test?test.marks_per_correct:1)+'"></label>' +
+          '<label class="admin-field" style="flex:1;"><span>Negative Marking</span><input class="admin-input" id="testNegMark" type="number" step="0.01" value="'+(test?test.negative_marking:0)+'"></label>' +
+        '</div>' +
+        '<label class="admin-field"><span>Google Sheet ID (same shared spreadsheet for every test - paste once)</span><input class="admin-input" id="testSheetId" value="'+e(savedSheetId)+'" placeholder="the long ID in the sheet\'s URL"></label>' +
+        '<label class="admin-field"><span>Google Sheet Tab Name (unique per test)</span><input class="admin-input" id="testSheetTab" value="'+e(test?test.google_sheet_tab:'')+'" placeholder="e.g. Mock Test 12"></label>' +
+        '<label class="admin-field"><span>Answer Key (one letter per question, comma-separated or plain string, in order 1..N)</span>' +
+          '<textarea class="admin-input" id="testAnswerKey" rows="4" placeholder="A,C,B,E,D,...">'+e(answerKeyText)+'</textarea>' +
+        '</label>' +
+        '<div style="display:flex;gap:8px;margin-top:14px;">' +
+          '<button class="btn" id="testSaveBtn">'+(isEdit?'Save Changes':'Create Test')+'</button>' +
+          '<button class="btn btn-ghost" id="testCancelBtn">Cancel</button>' +
+        '</div>' +
+      '</div>';
+
+    document.getElementById('testCancelBtn').addEventListener('click', omrLoadTests);
+    document.getElementById('testSaveBtn').addEventListener('click', function(){
+      var totalQ = parseInt(document.getElementById('testTotalQ').value, 10);
+      var name = document.getElementById('testName').value.trim();
+      var templateId = document.getElementById('testTemplate').value;
+      var keyText = document.getElementById('testAnswerKey').value;
+      if (!name){ showToast('Name is required','error'); return; }
+      if (!templateId){ showToast('Please select a template','error'); return; }
+      if (!keyText.trim()){ showToast('Answer key is required','error'); return; }
+
+      var answerKey = omrParseAnswerKey(keyText, totalQ);
+      var missing = Object.keys(answerKey).filter(function(k){ return !answerKey[k]; }).length;
+      if (missing && !confirm(missing+' question(s) have no answer letter set - continue anyway?')) return;
+
+      var sheetId = document.getElementById('testSheetId').value.trim();
+      if (sheetId) localStorage.setItem('omr_shared_sheet_id', sheetId);
+
+      var payload = {
+        name: name, template_id: templateId, total_questions: totalQ,
+        marks_per_correct: parseFloat(document.getElementById('testMarksCorrect').value) || 1,
+        negative_marking: parseFloat(document.getElementById('testNegMark').value) || 0,
+        google_sheet_id: sheetId || null,
+        google_sheet_tab: document.getElementById('testSheetTab').value.trim() || name,
+        answer_key: answerKey,
+      };
+
+      var btn = this;
+      btn.disabled = true; btn.textContent = 'Saving...';
+      var req = isEdit ? adminFetch('PUT','/api/omr-check/tests/'+test.id, payload) : adminFetch('POST','/api/omr-check/tests', payload);
+      req.then(function(){
+        showToast(isEdit?'Saved':'Test created','success');
+        omrLoadTests();
+      }).catch(function(err){
+        showToast(err.message,'error');
+        btn.disabled = false; btn.textContent = isEdit?'Save Changes':'Create Test';
+      });
+    });
+  }
+
+  /* ── Submissions + Review ── */
+
+  var OMR_STATUS_LABELS = {
+    uploaded:'Uploaded', processing:'Processing', needs_review:'Needs Review',
+    reviewed:'Reviewed', finalized:'Finalized', failed:'Detection Failed',
+  };
+  var OMR_STATUS_BADGE = {
+    finalized:'badge-visible', reviewed:'badge-visible', failed:'badge-hidden', needs_review:'badge-hidden', uploaded:'badge-hidden', processing:'badge-hidden',
+  };
+
+  function omrLoadSubmissionsTab(){
+    var body = document.getElementById('omrCheckerBody');
+    body.innerHTML = '<p class="admin-empty">Loading…</p>';
+    adminFetch('GET','/api/omr-check/tests').then(function(d){
+      omrCheckerData.tests = d.tests || [];
+      omrRenderSubmissionsTestSelector();
+    }).catch(function(err){ body.innerHTML = '<p class="admin-empty">'+e(err.message)+'</p>'; });
+  }
+
+  function omrRenderSubmissionsTestSelector(){
+    var body = document.getElementById('omrCheckerBody');
+    if (!omrCheckerData.tests.length){
+      body.innerHTML = '<p class="admin-empty">No tests yet. Create one in the Tests tab first.</p>';
+      return;
+    }
+    if (!omrCheckerData.currentTestId || !omrCheckerData.tests.some(function(t){ return t.id === omrCheckerData.currentTestId; })){
+      omrCheckerData.currentTestId = omrCheckerData.tests[0].id;
+    }
+    var options = omrCheckerData.tests.map(function(t){
+      return '<option value="'+t.id+'"'+(t.id===omrCheckerData.currentTestId?' selected':'')+'>'+e(t.name)+'</option>';
+    }).join('');
+
+    body.innerHTML =
+      '<div style="display:flex;gap:10px;align-items:flex-end;margin-bottom:16px;">' +
+        '<label class="admin-field" style="width:320px;margin-bottom:0;"><span>Test</span><select class="admin-input" id="omrSubsTestSelect">'+options+'</select></label>' +
+        '<button class="btn btn-sm" id="btnNewOmrSubmission"><i class="fas fa-upload"></i> Upload Photo</button>' +
+      '</div>' +
+      '<div id="omrSubsListWrap"><p class="admin-empty">Loading…</p></div>';
+
+    document.getElementById('omrSubsTestSelect').addEventListener('change', function(){
+      omrCheckerData.currentTestId = parseInt(this.value, 10);
+      omrLoadSubmissionsList();
+    });
+    document.getElementById('btnNewOmrSubmission').addEventListener('click', omrOpenUploadSubmissionForm);
+    omrLoadSubmissionsList();
+  }
+
+  function omrLoadSubmissionsList(){
+    var wrap = document.getElementById('omrSubsListWrap');
+    wrap.innerHTML = '<p class="admin-empty">Loading…</p>';
+    adminFetch('GET','/api/omr-check/tests/'+omrCheckerData.currentTestId+'/submissions').then(function(d){
+      omrRenderSubmissionsList(d.submissions || []);
+    }).catch(function(err){ wrap.innerHTML = '<p class="admin-empty">'+e(err.message)+'</p>'; });
+  }
+
+  function omrRenderSubmissionsList(subs){
+    var wrap = document.getElementById('omrSubsListWrap');
+    if (!subs.length){ wrap.innerHTML = '<p class="admin-empty">No submissions yet for this test.</p>'; return; }
+    var rows = subs.map(function(s){
+      var badgeClass = OMR_STATUS_BADGE[s.status] || 'badge-hidden';
+      return '<tr><td>'+e(s.student_name)+'</td><td>'+e(s.roll_number||'-')+'</td>' +
+        '<td><span class="badge '+badgeClass+'">'+(OMR_STATUS_LABELS[s.status]||s.status)+'</span></td>' +
+        '<td>'+(s.score!=null?s.score:'-')+'</td>' +
+        '<td><button class="btn btn-sm" data-sub-review="'+s.id+'">Review</button> ' +
+        (s.status!=='finalized' ? '<button class="btn btn-sm btn-ghost" data-sub-del="'+s.id+'">Delete</button>' : '') +
+        '</td></tr>';
+    }).join('');
+    wrap.innerHTML = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Student</th><th>Roll No.</th><th>Status</th><th>Score</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+
+    document.querySelectorAll('[data-sub-review]').forEach(function(b){
+      b.addEventListener('click', function(){ omrOpenReviewScreen(b.getAttribute('data-sub-review')); });
+    });
+    document.querySelectorAll('[data-sub-del]').forEach(function(b){
+      b.addEventListener('click', function(){
+        if (!confirm('Delete this submission?')) return;
+        adminFetch('DELETE','/api/omr-check/submissions/'+b.getAttribute('data-sub-del'))
+          .then(function(){ showToast('Deleted','success'); omrLoadSubmissionsList(); })
+          .catch(function(err){ showToast(err.message,'error'); });
+      });
+    });
+  }
+
+  function omrOpenUploadSubmissionForm(){
+    var wrap = document.getElementById('omrSubsListWrap');
+    wrap.innerHTML =
+      '<div class="admin-card" style="max-width:480px;">' +
+        '<h3 style="margin-top:0;">Upload OMR Photo</h3>' +
+        '<label class="admin-field"><span>Student Name</span><input class="admin-input" id="subStudentName"></label>' +
+        '<label class="admin-field"><span>Email (optional)</span><input class="admin-input" id="subStudentEmail"></label>' +
+        '<label class="admin-field"><span>Phone (optional)</span><input class="admin-input" id="subStudentPhone"></label>' +
+        '<label class="admin-field"><span>Roll Number (optional - auto-detected if the template has a bubble grid)</span><input class="admin-input" id="subRollNumber"></label>' +
+        '<label class="admin-field"><span>Photo</span><input type="file" id="subPhoto" accept="image/*"></label>' +
+        '<div style="display:flex;gap:8px;margin-top:14px;">' +
+          '<button class="btn" id="subUploadBtn">Upload &amp; Detect</button>' +
+          '<button class="btn btn-ghost" id="subCancelBtn">Cancel</button>' +
+        '</div>' +
+      '</div>';
+
+    document.getElementById('subCancelBtn').addEventListener('click', omrLoadSubmissionsList);
+    document.getElementById('subUploadBtn').addEventListener('click', function(){
+      var name = document.getElementById('subStudentName').value.trim();
+      var file = document.getElementById('subPhoto').files[0];
+      if (!name){ showToast('Student name is required','error'); return; }
+      if (!file){ showToast('Photo is required','error'); return; }
+
+      var fd = new FormData();
+      fd.append('student_name', name);
+      fd.append('student_email', document.getElementById('subStudentEmail').value.trim());
+      fd.append('student_phone', document.getElementById('subStudentPhone').value.trim());
+      fd.append('roll_number', document.getElementById('subRollNumber').value.trim());
+      fd.append('photo', file);
+
+      var btn = this;
+      btn.disabled = true; btn.textContent = 'Uploading & detecting (may take a moment)...';
+      adminFetch('POST','/api/omr-check/tests/'+omrCheckerData.currentTestId+'/submissions', fd).then(function(d){
+        showToast('Uploaded - opening review','success');
+        omrOpenReviewScreen(d.submission.id);
+      }).catch(function(err){
+        showToast(err.message,'error');
+        btn.disabled = false; btn.textContent = 'Upload & Detect';
+      });
+    });
+  }
+
+  /* Mirrors detector/geometry.py::build_question_positions purely for rendering
+     marker overlays client-side - no image processing happens in the browser. */
+  function omrBuildQuestionPositions(questionBlocks, optionCount){
+    var positions = {};
+    (questionBlocks || []).forEach(function(block){
+      var startQ = block.start_question, endQ = block.end_question;
+      var tl = block.top_left_anchor, br = block.bottom_right_anchor;
+      var optionOrder = block.option_order || ['A','B','C','D','E'].slice(0, optionCount);
+      var nRows = endQ - startQ;
+      var nCols = optionOrder.length - 1;
+      var rowPitch = nRows ? (br.y - tl.y) / nRows : 0;
+      var colPitch = nCols ? (br.x - tl.x) / nCols : 0;
+      for (var q = startQ; q <= endQ; q++){
+        var baseY = tl.y + rowPitch * (q - startQ);
+        var opts = {};
+        optionOrder.forEach(function(opt, colIndex){ opts[opt] = { x: tl.x + colPitch*colIndex, y: baseY }; });
+        positions[String(q)] = opts;
+      }
+    });
+    return positions;
+  }
+
+  var omrReview = null;
+
+  function omrOpenReviewScreen(submissionId){
+    var wrap = document.getElementById('omrSubsListWrap');
+    wrap.innerHTML = '<p class="admin-empty">Loading…</p>';
+    adminFetch('GET','/api/omr-check/submissions/'+submissionId).then(function(d){
+      omrRenderReviewScreen(d.submission);
+    }).catch(function(err){ wrap.innerHTML = '<p class="admin-empty">'+e(err.message)+'</p>'; });
+  }
+
+  function omrReviewMarkerColor(status){
+    if (status === 'confident') return '#16a34a';
+    if (status === 'ambiguous' || status === 'out_of_bounds') return '#eab308';
+    return '#9ca3af';
+  }
+
+  function omrRenderReviewScreen(sub){
+    omrReview = {
+      submission: sub,
+      answers: JSON.parse(JSON.stringify(sub.corrected_answers || sub.detected_answers || {})),
+      positions: omrBuildQuestionPositions(sub.question_blocks, sub.option_count),
+    };
+
+    var wrap = document.getElementById('omrSubsListWrap');
+    var imageUrl = sub.rectified_image_url || sub.photo_url;
+    var warningBanner = '';
+    if (sub.status === 'failed') {
+      warningBanner = '<div style="background:#fef2f2;border:1px solid #fca5a5;color:#991b1b;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:13px;">' +
+        'Detection failed: '+e(sub.detector_error||'unknown error')+'. Showing the original photo - mark answers manually below, or use Re-run Detection below once the issue is fixed (e.g. the OMR service was just deployed/configured), or delete and re-upload a clearer photo.</div>';
+    }
+
+    wrap.innerHTML =
+      '<div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;">' +
+        '<button class="btn btn-ghost btn-sm" id="omrReviewBack">&larr; Back to List</button>' +
+        '<h3 style="margin:0;">Review: '+e(sub.student_name)+' - '+e(sub.test_name)+'</h3>' +
+      '</div>' +
+      warningBanner +
+      '<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;">' +
+        '<div class="omr-review-image-wrap" id="omrReviewImageWrap">' +
+          '<img id="omrReviewImage" src="'+e(imageUrl)+'">' +
+        '</div>' +
+        '<div style="min-width:220px;">' +
+          '<label class="admin-field"><span>Roll Number</span><input class="admin-input" id="omrReviewRoll" value="'+e(sub.roll_number||'')+'"></label>' +
+          '<div style="font-size:12px;color:var(--body-color);line-height:1.9;margin-bottom:14px;">' +
+            '<span class="omr-legend-dot" style="background:#16a34a;"></span> Confident<br>' +
+            '<span class="omr-legend-dot" style="background:#eab308;"></span> Ambiguous / multi-mark<br>' +
+            '<span class="omr-legend-dot" style="background:#9ca3af;"></span> Blank<br>' +
+            '<span style="color:#4338CA;">Click any marker to change the answer.</span>' +
+          '</div>' +
+          '<div style="display:flex;gap:8px;flex-direction:column;">' +
+            (sub.status === 'failed' ? '<button class="btn btn-ghost btn-sm" id="omrReviewRerun">Re-run Detection</button>' : '') +
+            '<button class="btn btn-sm" id="omrReviewSaveDraft">Save Draft</button>' +
+            '<button class="btn" id="omrReviewFinalize">Finalize &amp; Push to Sheet</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+
+    document.getElementById('omrReviewBack').addEventListener('click', omrLoadSubmissionsList);
+
+    var img = document.getElementById('omrReviewImage');
+    if (img.complete && img.naturalWidth) omrReviewDrawMarkers(); else img.addEventListener('load', omrReviewDrawMarkers);
+    window.addEventListener('resize', omrReviewDrawMarkers);
+
+    document.getElementById('omrReviewSaveDraft').addEventListener('click', function(){ omrReviewSave(false); });
+    document.getElementById('omrReviewFinalize').addEventListener('click', function(){ omrReviewSave(true); });
+    var rerunBtn = document.getElementById('omrReviewRerun');
+    if (rerunBtn) rerunBtn.addEventListener('click', function(){ omrReviewRerunDetection(sub.id); });
+  }
+
+  function omrReviewRerunDetection(submissionId){
+    var btn = document.getElementById('omrReviewRerun');
+    btn.disabled = true; btn.textContent = 'Re-running...';
+    adminFetch('POST','/api/omr-check/submissions/'+submissionId+'/rerun-detection').then(function(d){
+      showToast(d.submission.status === 'failed' ? 'Still failed - see the error above' : 'Detection re-run - answers updated','success');
+      /* rerun-detection returns only the raw submission row - re-fetch the full
+         joined detail (template/test fields) the review screen needs to render. */
+      omrOpenReviewScreen(submissionId);
+    }).catch(function(err){
+      showToast(err.message,'error');
+      btn.disabled = false; btn.textContent = 'Re-run Detection';
+    });
+  }
+
+  function omrReviewDrawMarkers(){
+    if (!omrReview) return;
+    var img = document.getElementById('omrReviewImage');
+    var wrap = document.getElementById('omrReviewImageWrap');
+    if (!img || !wrap) return;
+    wrap.querySelectorAll('.omr-bubble-marker').forEach(function(m){ m.remove(); });
+
+    var sub = omrReview.submission;
+    var scaleX = img.clientWidth  / (sub.canonical_width  || img.naturalWidth  || 1);
+    var scaleY = img.clientHeight / (sub.canonical_height || img.naturalHeight || 1);
+
+    Object.keys(omrReview.positions).forEach(function(qStr){
+      if (parseInt(qStr, 10) > sub.total_questions) return;
+      var opts = omrReview.positions[qStr];
+      var current = omrReview.answers[qStr];
+      var currentLetter = current && typeof current === 'object' ? current.answer : current;
+      var status = current && typeof current === 'object' ? current.status : (currentLetter ? 'confident' : 'blank');
+      var pos = (currentLetter && opts[currentLetter]) ? opts[currentLetter] : opts[Object.keys(opts)[0]];
+
+      var marker = document.createElement('div');
+      marker.className = 'omr-bubble-marker';
+      marker.style.left = (pos.x * scaleX) + 'px';
+      marker.style.top  = (pos.y * scaleY) + 'px';
+      marker.style.borderColor = omrReviewMarkerColor(status);
+      marker.title = 'Q'+qStr+': '+(currentLetter || 'blank');
+      marker.textContent = qStr;
+      marker.addEventListener('click', function(ev){
+        ev.stopPropagation();
+        omrReviewOpenPicker(qStr, opts, marker, scaleX, scaleY);
+      });
+      wrap.appendChild(marker);
+    });
+  }
+
+  function omrReviewOpenPicker(qStr, opts, markerEl, scaleX, scaleY){
+    var existing = document.getElementById('omrReviewPicker');
+    if (existing) existing.remove();
+
+    var picker = document.createElement('div');
+    picker.id = 'omrReviewPicker';
+    picker.className = 'omr-review-picker';
+    picker.style.left = markerEl.style.left;
+    picker.style.top  = markerEl.style.top;
+
+    Object.keys(opts).forEach(function(opt){
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = opt;
+      btn.addEventListener('click', function(ev){
+        ev.stopPropagation();
+        var prevRatios = (omrReview.answers[qStr] && omrReview.answers[qStr].fill_ratios) || {};
+        omrReview.answers[qStr] = { answer: opt, status: 'confident', fill_ratios: prevRatios };
+        picker.remove();
+        omrReviewDrawMarkers();
+      });
+      picker.appendChild(btn);
+    });
+
+    var blankBtn = document.createElement('button');
+    blankBtn.type = 'button';
+    blankBtn.textContent = 'Blank';
+    blankBtn.className = 'omr-review-picker-blank';
+    blankBtn.addEventListener('click', function(ev){
+      ev.stopPropagation();
+      omrReview.answers[qStr] = { answer: null, status: 'blank', fill_ratios: {} };
+      picker.remove();
+      omrReviewDrawMarkers();
+    });
+    picker.appendChild(blankBtn);
+
+    document.getElementById('omrReviewImageWrap').appendChild(picker);
+    setTimeout(function(){
+      document.addEventListener('click', function closePicker(){
+        if (picker.parentNode) picker.remove();
+        document.removeEventListener('click', closePicker);
+      });
+    }, 0);
+  }
+
+  function omrReviewSave(thenFinalize){
+    var roll = document.getElementById('omrReviewRoll').value.trim();
+    var btn = thenFinalize ? document.getElementById('omrReviewFinalize') : document.getElementById('omrReviewSaveDraft');
+    var origText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = thenFinalize ? 'Finalizing...' : 'Saving...';
+
+    adminFetch('PUT','/api/omr-check/submissions/'+omrReview.submission.id+'/review', {
+      corrected_answers: omrReview.answers, roll_number: roll || null,
+    }).then(function(){
+      if (!thenFinalize) {
+        showToast('Draft saved','success');
+        btn.disabled = false; btn.textContent = origText;
+        return null;
+      }
+      return adminFetch('POST','/api/omr-check/submissions/'+omrReview.submission.id+'/finalize').then(function(d){
+        showToast(d.warning || 'Finalized and pushed to Google Sheet','success');
+        omrLoadSubmissionsList();
+      });
+    }).catch(function(err){
+      showToast(err.message,'error');
+      btn.disabled = false; btn.textContent = origText;
     });
   }
 

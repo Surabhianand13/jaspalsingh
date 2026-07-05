@@ -78,10 +78,29 @@ async function recordReferralCredit(enrollment) {
   }
 }
 
+/* ── When a learner retries checkout, each attempt creates a new order_id
+   row. Once one of those attempts is paid, the earlier attempt(s) are left
+   stuck at 'pending' forever - showing up twice in the admin enrollments
+   list and getting sales calls for a lead that already converted. Close
+   those out here so only the live (paid) row remains callable. ── */
+async function cancelDuplicatePendingEnrollments(enrollment) {
+  try {
+    await query(
+      `UPDATE enrollments
+       SET status = 'cancelled'
+       WHERE student_phone = $1 AND program_slug = $2 AND order_id != $3 AND status = 'pending'`,
+      [enrollment.student_phone, enrollment.program_slug, enrollment.order_id]
+    );
+  } catch (err) {
+    console.error('[cancelDuplicatePendingEnrollments]', err.message);
+  }
+}
+
 /* ── Called whenever an enrollment transitions to 'paid' ── */
 async function onEnrollmentPaid(enrollment) {
   await ensureReferralCode(enrollment);
   await recordReferralCredit(enrollment);
+  await cancelDuplicatePendingEnrollments(enrollment);
 }
 
 /* ── Coupon catalogue ────────────────────────────────────── */
@@ -120,6 +139,23 @@ const COUPONS = {
     exclusive:  true,
     singleUse:  true,
     label:      'Special offer - Rs 2,000',
+  },
+  'DIP2499X9F3': {
+    programPrices: {
+      'rssb-jen-diploma-test-series': 2499,
+      'rssb-jen-degree-test-series':  2499,
+    },
+    exclusive:  true,
+    singleUse:  true,
+    label:      'Special offer - Rs 2,499',
+  },
+  // One-time-use code: diploma offline test series for Rs 1,000 flat.
+  // Exclusive - referral codes cannot be combined with it.
+  'DIP1000E62A': {
+    programPrices: { 'rssb-jen-diploma-test-series': 1000 },
+    exclusive:  true,
+    singleUse:  true,
+    label:      'Special offer - Rs 1,000',
   },
 };
 
@@ -190,6 +226,54 @@ const PROGRAMS = {
     shortName: 'RSSB JE 2026 OMR Diploma Test Series',
     price:     1999,
     mrp:       2999,
+  },
+  'ese-2027-prelims-jaspalsirki-testseries-paper1': {
+    name:      'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 1 (GS & Engineering Aptitude)',
+    shortName: 'ESE 2027 Prelims Paper 1',
+    price:     2999,
+    mrp:       4999,
+  },
+  'ese-2027-prelims-jaspalsirki-testseries-paper2-civil': {
+    name:      'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 2 (Civil)',
+    shortName: 'ESE 2027 Prelims Paper 2 (Civil)',
+    price:     2999,
+    mrp:       4999,
+  },
+  'ese-2027-prelims-jaspalsirki-testseries-combined': {
+    name:      'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 1 + 2 (GS, Eng. Aptitude & Civil)',
+    shortName: 'ESE 2027 Prelims Paper 1+2',
+    price:     4499,
+    mrp:       9999,
+  },
+  'ese-2027-prelims-jaspalsirki-testseries-paper1-omr': {
+    name:      'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 1 (Home-Based OMR Test Series)',
+    shortName: 'ESE 2027 Prelims Paper 1 OMR',
+    price:     2499,
+    mrp:       3999,
+  },
+  'ese-2027-prelims-jaspalsirki-testseries-paper2-civil-omr': {
+    name:      'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 2 Civil (Home-Based OMR Test Series)',
+    shortName: 'ESE 2027 Prelims Paper 2 OMR',
+    price:     2499,
+    mrp:       3999,
+  },
+  'ese-2027-prelims-jaspalsirki-testseries-combined-omr': {
+    name:      'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 1 + 2 Civil (Home-Based OMR Test Series)',
+    shortName: 'ESE 2027 Prelims Paper 1+2 OMR',
+    price:     2999,
+    mrp:       7999,
+  },
+  'rssb-je-jaspalsirki-testseries-degree-diploma-combo-omr': {
+    name:      'RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Degree + Diploma Combo (Home-Based OMR Test Series)',
+    shortName: 'RSSB JE Degree + Diploma Combo OMR',
+    price:     2499,
+    mrp:       4999,
+  },
+  'rssb-je-jaspalsirki-testseries-degree-diploma-combo': {
+    name:      'RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Degree + Diploma Combo Offline',
+    shortName: 'RSSB JE Degree + Diploma Combo',
+    price:     5499,
+    mrp:       9999,
   },
 };
 
@@ -343,12 +427,18 @@ async function sendAllPaymentEmails(enrollment, { sendInvoice = true } = {}) {
   }
 
   try {
-    await sendWelcomePaymentEmail(enrollment);
-    await query(
-      `UPDATE enrollments SET welcome_sent = TRUE WHERE order_id = $1`,
+    // Atomically claim the welcome send slot - prevents duplicate emails when
+    // webhook and GET /verify both fire within milliseconds of each other.
+    const claimed = await query(
+      `UPDATE enrollments SET welcome_sent = TRUE WHERE order_id = $1 AND (welcome_sent IS NULL OR welcome_sent = FALSE) RETURNING order_id`,
       [enrollment.order_id]
     );
-    console.log(`[welcome email] sent OK for ${enrollment.order_id}`);
+    if (!claimed.rows.length) {
+      console.log(`[welcome email] already claimed for ${enrollment.order_id}, skipping`);
+    } else {
+      await sendWelcomePaymentEmail(enrollment);
+      console.log(`[welcome email] sent OK for ${enrollment.order_id}`);
+    }
   } catch (e) {
     console.error(`[welcome email] FAILED for ${enrollment.order_id}:`, e.message);
   }
@@ -478,52 +568,6 @@ router.post('/verify', async (req, res) => {
 /* ── GET /api/payment/programs ───────────────────────────── */
 router.get('/programs', (req, res) => {
   res.json(PROGRAMS);
-});
-
-/* ── POST /api/payment/admin/mark-paid ──────────────────────
-   Rescue endpoint for enrollments stuck at 'pending' after a
-   confirmed Razorpay capture (e.g. webhook failed to reach us).
-   Admin provides the JSP order_id and Razorpay payment_id;
-   we mark it paid and send all post-payment emails. Idempotent. ── */
-router.post('/admin/mark-paid', protect, async (req, res) => {
-  try {
-    const { order_id, razorpay_payment_id } = req.body;
-    if (!order_id || !razorpay_payment_id) {
-      return res.status(400).json({ error: 'order_id and razorpay_payment_id required.' });
-    }
-
-    const existing = await query(`SELECT * FROM enrollments WHERE order_id = $1`, [order_id]);
-    if (!existing.rows.length) return res.status(404).json({ error: 'Order not found.' });
-
-    const enr = existing.rows[0];
-    if (enr.status === 'paid') {
-      return res.json({ success: true, already_paid: true, order_id });
-    }
-
-    const formToken = crypto.randomBytes(32).toString('hex');
-    const updated = await query(
-      `UPDATE enrollments
-       SET status = 'paid', paid_at = NOW(), cf_payment_id = $1,
-           form_token = COALESCE(form_token, $2)
-       WHERE order_id = $3 AND status != 'paid'
-       RETURNING *`,
-      [razorpay_payment_id, formToken, order_id]
-    );
-
-    if (!updated.rows.length) {
-      return res.json({ success: true, already_paid: true, order_id });
-    }
-
-    const paid = updated.rows[0];
-    await sendAllPaymentEmails(paid, { sendInvoice: true });
-    await onEnrollmentPaid(paid);
-
-    console.log(`[admin/mark-paid] Manually rescued: ${order_id}`);
-    res.json({ success: true, order_id, student_name: paid.student_name, amount: paid.amount });
-  } catch (err) {
-    console.error('[admin/mark-paid]', err);
-    res.status(500).json({ error: err.message || 'Server error.' });
-  }
 });
 
 /* ── POST /api/payment/admin/backfill-referral-codes ─────────

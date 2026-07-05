@@ -8,6 +8,7 @@ const router        = express.Router();
 const PDFDocument   = require('pdfkit');
 const https         = require('https');
 const http          = require('http');
+const sharp         = require('sharp');
 const { send: resendSend, PRIORITY } = require('../services/resendQueue');
 
 const FROM   = 'Dr. Jaspal Singh <team@jaspalsingh.in>';
@@ -196,6 +197,9 @@ function parseTallyFields(fields) {
     if (label === 'token' || label.includes('form token') || label.includes('enrollment token')) {
       result.token = value;
     }
+    if (label === 'order' || label === 'order_id' || label.includes('order id') || label.includes('order_id') || (label.includes('order') && !label.includes('centre') && !label.includes('center'))) {
+      result.orderId = value;
+    }
   }
 
   console.log('[tally-webhook] Parsed:', result);
@@ -250,35 +254,59 @@ function isSafeExternalUrl(url) {
   }
 }
 
-/* ── Fetch remote image as buffer (strict allowlist - webhook path) ── */
-
-function fetchImageBuffer(url) {
-  return fetchImageBufferChecked(url, isAllowedTallyAssetUrl);
-}
-
-/* ── Fetch remote image as buffer (basic SSRF guard - admin path) ── */
-
-function fetchImageBufferTrusted(url) {
-  return fetchImageBufferChecked(url, isSafeExternalUrl);
-}
-
-function fetchImageBufferChecked(url, isAllowed) {
+/* Raw fetch with a timeout - without it, a stalled upstream response hangs
+   this request forever and the whole admit card email silently never sends. */
+function downloadRaw(url) {
   return new Promise((resolve) => {
-    if (!url || !isAllowed(url)) return resolve(null);
     const lib = url.startsWith('https') ? https : http;
-    lib.get(url, (res) => {
-      if (res.statusCode !== 200) return resolve(null);
+    const req = lib.get(url, (res) => {
+      if (res.statusCode !== 200) { res.resume(); return resolve(null); }
       const chunks = [];
       res.on('data', c => chunks.push(c));
       res.on('end', () => resolve(Buffer.concat(chunks)));
       res.on('error', () => resolve(null));
-    }).on('error', () => resolve(null));
+    });
+    req.on('error', () => resolve(null));
+    req.setTimeout(10000, () => {
+      req.destroy();
+      resolve(null);
+    });
   });
+}
+
+/* Downscales/recompresses the candidate photo before it gets embedded in the
+   PDF - source uploads can be multi-MB camera photos, which would otherwise
+   bloat the email attachment and occasionally fail to embed cleanly. */
+async function resizeForCard(raw) {
+  try {
+    return await sharp(raw)
+      .rotate() // respect EXIF orientation before resizing
+      .resize({ width: 400, height: 500, fit: 'cover' })
+      .jpeg({ quality: 82 })
+      .toBuffer();
+  } catch (e) {
+    console.warn('[resizeForCard] resize failed, using original:', e.message);
+    return raw;
+  }
+}
+
+/* ── Fetch remote image as buffer (strict allowlist - webhook path) ── */
+async function fetchImageBuffer(url) {
+  if (!url || !isAllowedTallyAssetUrl(url)) return null;
+  const raw = await downloadRaw(url);
+  return raw ? resizeForCard(raw) : null;
+}
+
+/* ── Fetch remote image as buffer (basic SSRF guard - admin path) ── */
+async function fetchImageBufferTrusted(url) {
+  if (!url || !isSafeExternalUrl(url)) return null;
+  const raw = await downloadRaw(url);
+  return raw ? resizeForCard(raw) : null;
 }
 
 /* ── Generate admit card PDF buffer ─────────────────────── */
 
-function generateAdmitCard({ name, govtId, rollNumber, centre, targetExam, phone, email, photoBuffer, seriesName, lastTestDate }) {
+function generateAdmitCard({ name, govtId, rollNumber, centre, targetExam, phone, email, photoBuffer, seriesName, lastTestDate, mode = 'offline' }) {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: 'A4', margin: 0, autoFirstPage: true });
     const chunks = [];
@@ -349,7 +377,7 @@ function generateAdmitCard({ name, govtId, rollNumber, centre, targetExam, phone
        .text(rollNumber, M + 12, y + 14, { lineBreak: false });
     // Series on right
     doc.fillColor(MID).font('Helvetica').fontSize(7.5)
-       .text('EXAM CENTRE', M + 200, y + 5, { lineBreak: false });
+       .text(mode === 'home' ? 'MODE' : 'EXAM CENTRE', M + 200, y + 5, { lineBreak: false });
     doc.fillColor(DARK).font('Helvetica-Bold').fontSize(11)
        .text(centre || 'TBD', M + 200, y + 16, { lineBreak: false });
 
@@ -417,7 +445,14 @@ function generateAdmitCard({ name, govtId, rollNumber, centre, targetExam, phone
        .text('IMPORTANT INSTRUCTIONS', M, y, { lineBreak: false });
     y += 13;
 
-    const instructions = [
+    const instructions = mode === 'home' ? [
+      'Question Paper & OMR Sheet PDFs emailed on each test morning.',
+      'Print both PDFs and attempt the test on paper at home.',
+      'Fill your answers using a blue or black ballpoint pen only.',
+      'Reply to the test email with a clear photo of your filled OMR sheet.',
+      'Submit before 10:00 PM on the same day - no evaluation after that.',
+      'Negative Marking: 0.33 marks deducted per wrong answer.',
+    ] : [
       'Carry this Admit Card (printed or on phone) to every test.',
       'Reach centre at least 15 minutes before test start time.',
       'Bring a valid Govt Photo ID (Aadhar / Voter ID / Passport).',
@@ -610,7 +645,7 @@ const { query } = require('../config/db');
 
 /* programType: 'degree' | 'diploma' | null (auto-detect from field) */
 async function processSubmission(fields, programType) {
-  const { name, govtId, centre: centreRaw, targetExam, phone, email, photoUrl, token } = parseTallyFields(fields);
+  const { name, govtId, centre: centreRaw, targetExam, phone, email, photoUrl, token, orderId } = parseTallyFields(fields);
 
   if (!email) {
     console.warn('[tally-webhook] No email found in fields');
@@ -621,22 +656,28 @@ async function processSubmission(fields, programType) {
   const normEmail = email.toLowerCase().trim();
   const normPhone = (phone || '').replace(/\D/g, '').slice(-10);
 
-  if (!token) {
-    console.warn('[tally-webhook] No token in submission - rejecting');
+  if (!token && !orderId) {
+    console.warn('[tally-webhook] No token or order in submission - rejecting');
     await sendRejectionEmail(email,
       'Your submission did not include a valid enrollment token. This form must be opened using the personal link sent to you in your enrollment email. Please check your email for the "Fill Details Form" button and use that link.'
     );
     return;
   }
 
-  // Look up token - validate it exists and is not already used
-  const lookupResult = await query(
-    `SELECT id, student_email, student_phone, form_used, form_token FROM enrollments WHERE form_token = $1`,
-    [token]
-  );
+  // Look up by token first, fall back to order_id for older offline forms that
+  // don't have the hidden token field configured in Tally.
+  const lookupResult = token
+    ? await query(
+        `SELECT id, student_email, student_phone, form_used, form_token FROM enrollments WHERE form_token = $1`,
+        [token]
+      )
+    : await query(
+        `SELECT id, student_email, student_phone, form_used, form_token FROM enrollments WHERE order_id = $1 AND status = 'paid'`,
+        [orderId]
+      );
 
   if (!lookupResult.rows.length) {
-    console.warn('[tally-webhook] Invalid token:', token);
+    console.warn('[tally-webhook] Invalid token/order - token:', token, 'orderId:', orderId);
     await sendRejectionEmail(email,
       'The enrollment token in your submission is invalid or does not match any paid enrollment. Please use the original link sent in your enrollment email.'
     );
@@ -673,18 +714,19 @@ async function processSubmission(fields, programType) {
     return;
   }
 
-  // Atomically mark token as used - WHERE form_used = FALSE ensures only one
+  // Atomically mark form as used - WHERE form_used = FALSE ensures only one
   // concurrent request can win even if two webhooks arrive simultaneously.
+  // Use id (PK) as the key so this works whether lookup was by token or order_id.
   const claimResult = await query(
     `UPDATE enrollments SET form_used = TRUE, form_used_at = NOW()
-     WHERE form_token = $1 AND form_used = FALSE
+     WHERE id = $1 AND form_used = FALSE
      RETURNING id`,
-    [token]
+    [preCheck.id]
   );
 
   if (!claimResult.rows.length) {
-    // Another concurrent request already claimed this token
-    console.warn('[tally-webhook] Token race - already claimed, enrollment:', preCheck.id);
+    // Another concurrent request already claimed this slot
+    console.warn('[tally-webhook] Race - already claimed, enrollment:', preCheck.id);
     await sendRejectionEmail(email,
       'This enrollment form has already been submitted. Each enrollment allows only one submission. If you made a mistake in your earlier submission, please contact us on WhatsApp immediately and we will assist you.'
     );

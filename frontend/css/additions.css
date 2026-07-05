@@ -181,6 +181,9 @@
   letter-spacing: 1.3px;
   color: var(--magenta);
   margin-bottom: 6px;
+  display: block;
+  min-height: 34px;
+  line-height: 1.4;
 }
 
 .op-title {
@@ -354,6 +357,12 @@
   height: 100%;
   object-fit: cover;
   z-index: 1;
+}
+
+/* When a real image has loaded, hide the placeholder icon/label */
+.op-thumb.has-img .op-thumb-icon,
+.op-thumb.has-img .op-thumb-label {
+  display: none;
 }
 
 /* Overlay — always on top of image */

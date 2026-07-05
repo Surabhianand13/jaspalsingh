@@ -57,9 +57,23 @@ async function recordReferralCredit(enrollment) {
   }
 }
 
+async function cancelDuplicatePendingEnrollments(enrollment) {
+  try {
+    await query(
+      `UPDATE enrollments
+       SET status = 'cancelled'
+       WHERE student_phone = $1 AND program_slug = $2 AND order_id != $3 AND status = 'pending'`,
+      [enrollment.student_phone, enrollment.program_slug, enrollment.order_id]
+    );
+  } catch (err) {
+    console.error('[cancelDuplicatePendingEnrollments]', err.message);
+  }
+}
+
 async function onEnrollmentPaid(enrollment) {
   await ensureReferralCode(enrollment);
   await recordReferralCredit(enrollment);
+  await cancelDuplicatePendingEnrollments(enrollment);
 }
 
 async function sendAllPaymentEmails(enrollment, { sendInvoice = true } = {}) {
@@ -67,9 +81,16 @@ async function sendAllPaymentEmails(enrollment, { sendInvoice = true } = {}) {
     sendInvoiceEmail(enrollment).catch(e => console.error('[invoice email]', e.message));
   }
   try {
-    await sendWelcomePaymentEmail(enrollment);
-    await query(`UPDATE enrollments SET welcome_sent = TRUE WHERE order_id = $1`, [enrollment.order_id]);
-    console.log(`[welcome email] sent OK for ${enrollment.order_id}`);
+    const claimed = await query(
+      `UPDATE enrollments SET welcome_sent = TRUE WHERE order_id = $1 AND (welcome_sent IS NULL OR welcome_sent = FALSE) RETURNING order_id`,
+      [enrollment.order_id]
+    );
+    if (!claimed.rows.length) {
+      console.log(`[welcome email] already claimed for ${enrollment.order_id}, skipping`);
+    } else {
+      await sendWelcomePaymentEmail(enrollment);
+      console.log(`[welcome email] sent OK for ${enrollment.order_id}`);
+    }
   } catch (e) {
     console.error(`[welcome email] FAILED for ${enrollment.order_id}:`, e.message);
   }

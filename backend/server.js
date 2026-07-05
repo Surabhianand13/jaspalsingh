@@ -113,6 +113,7 @@ app.use('/api/programs',      require('./routes/programs'));
 app.use('/api/banners',       require('./routes/banners'));
 /* Tally webhook routes are registered above (before express.json()) so
    verifyTallySignature can see the raw body - do not re-register here. */
+app.use('/api/omr-check',      require('./routes/omr-check'));
 
 /* ── Health Check ────────────────────────────────────────── */
 
@@ -283,6 +284,23 @@ async function migrate() {
   await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS refund_initiated_at TIMESTAMPTZ`);
   await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS refunded_by VARCHAR(255)`);
 
+  /* ── One-time cleanup: close out stale 'pending' rows left behind by
+     retried checkouts where a sibling order for the same learner+program
+     already succeeded. These were showing up as duplicate leads in the
+     admin enrollments list and getting sales calls after the sale closed. ── */
+  await query(`
+    UPDATE enrollments p
+    SET status = 'cancelled'
+    WHERE p.status = 'pending'
+      AND EXISTS (
+        SELECT 1 FROM enrollments paid
+        WHERE paid.student_phone = p.student_phone
+          AND paid.program_slug = p.program_slug
+          AND paid.status = 'paid'
+          AND paid.order_id != p.order_id
+      )
+  `);
+
   await query(`
     CREATE TABLE IF NOT EXISTS referral_credits (
       id                 SERIAL PRIMARY KEY,
@@ -439,6 +457,73 @@ async function migrate() {
        '/programs/rssb-jen-2026-jaspalsirki-testseries-diploma-civil-omr/',TRUE)
     ON CONFLICT (slug) DO NOTHING
   `);
+
+  /* ── OMR Test Checker (admin-only bubble-sheet grading tool) ── */
+  await query(`
+    CREATE TABLE IF NOT EXISTS omr_templates (
+      id                  SERIAL PRIMARY KEY,
+      name                VARCHAR(200) NOT NULL,
+      reference_image_url VARCHAR(1000) NOT NULL,
+      canonical_width     INTEGER NOT NULL,
+      canonical_height    INTEGER NOT NULL,
+      corner_points       JSONB NOT NULL,
+      question_blocks     JSONB NOT NULL,
+      roll_number_grid    JSONB,
+      option_count        SMALLINT NOT NULL DEFAULT 5,
+      is_active           BOOLEAN NOT NULL DEFAULT TRUE,
+      created_by          VARCHAR(255),
+      created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS omr_tests (
+      id                 SERIAL PRIMARY KEY,
+      template_id        INTEGER NOT NULL REFERENCES omr_templates(id) ON DELETE RESTRICT,
+      name               VARCHAR(200) NOT NULL,
+      program_slug       VARCHAR(120),
+      total_questions    SMALLINT NOT NULL,
+      marks_per_correct  NUMERIC(5,2) NOT NULL DEFAULT 1,
+      negative_marking   NUMERIC(5,2) NOT NULL DEFAULT 0,
+      answer_key         JSONB NOT NULL,
+      google_sheet_id    VARCHAR(200),
+      google_sheet_tab   VARCHAR(200),
+      status             VARCHAR(20) NOT NULL DEFAULT 'active',
+      created_by         VARCHAR(255),
+      created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+  await query(`CREATE INDEX IF NOT EXISTS idx_omr_tests_template ON omr_tests(template_id)`);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS omr_submissions (
+      id                   SERIAL PRIMARY KEY,
+      test_id              INTEGER NOT NULL REFERENCES omr_tests(id) ON DELETE CASCADE,
+      student_name         VARCHAR(255) NOT NULL,
+      student_email        VARCHAR(255),
+      student_phone        VARCHAR(20),
+      roll_number          VARCHAR(50),
+      photo_url            VARCHAR(1000) NOT NULL,
+      rectified_image_url  VARCHAR(1000),
+      detected_answers     JSONB,
+      corrected_answers    JSONB,
+      status               VARCHAR(20) NOT NULL DEFAULT 'uploaded',
+      detector_error       TEXT,
+      score                NUMERIC(7,2),
+      correct_count        SMALLINT,
+      wrong_count          SMALLINT,
+      blank_count          SMALLINT,
+      sheet_row_number     INTEGER,
+      finalized_at         TIMESTAMPTZ,
+      finalized_by         VARCHAR(255),
+      created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+  await query(`CREATE INDEX IF NOT EXISTS idx_omr_submissions_test ON omr_submissions(test_id)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_omr_submissions_status ON omr_submissions(status)`);
 
   /* ── Seed second admin user from env var (never hardcode passwords) ── */
   {
