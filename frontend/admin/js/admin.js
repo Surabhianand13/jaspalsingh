@@ -2572,11 +2572,48 @@
       });
     }
 
-    /* OMR Analysis - send Detailed Analysis & Solutions + Workbook to enrolled learners (or a single test address when `sample` is set) */
-    function sendOmrAnalysis(slug, testNum, analysisUrl, workbookUrl, btn, resultEl, sample) {
+    /* Multi-link Drive URL groups (Detailed Analysis & Solutions / Analysis Workbook can each be more than one file) */
+    function addOmrUrlRow(containerId, inputClass) {
+      var container = document.getElementById(containerId);
+      if (!container) return;
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;gap:6px;align-items:center;';
+      var input = document.createElement('input');
+      input.type = 'url';
+      input.className = inputClass;
+      input.placeholder = 'https://drive.google.com/file/d/...';
+      input.style.cssText = 'flex:1;min-width:0;padding:9px 12px;border:1.5px solid rgba(26,26,46,.12);border-radius:8px;font-size:13px;box-sizing:border-box;';
+      row.appendChild(input);
+      var removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+      removeBtn.title = 'Remove this link';
+      removeBtn.style.cssText = 'background:none;border:none;color:#9ca3af;cursor:pointer;font-size:14px;padding:4px 8px;';
+      removeBtn.addEventListener('click', function(){ row.remove(); });
+      row.appendChild(removeBtn);
+      container.appendChild(row);
+      input.focus();
+    }
+    function collectOmrUrls(inputClass) {
+      return Array.prototype.slice.call(document.getElementsByClassName(inputClass))
+        .map(function(el){ return el.value.trim(); })
+        .filter(function(v){ return v && v.startsWith('http'); });
+    }
+    [
+      ['btnAddAnalysisDegreeAnalysisUrl',  'analysisDegreeAnalysisUrls',   'analysisDegreeAnalysisUrlInput'],
+      ['btnAddAnalysisDegreeWorkbookUrl',  'analysisDegreeWorkbookUrls',   'analysisDegreeWorkbookUrlInput'],
+      ['btnAddAnalysisDiplomaAnalysisUrl', 'analysisDiplomaAnalysisUrls',  'analysisDiplomaAnalysisUrlInput'],
+      ['btnAddAnalysisDiplomaWorkbookUrl', 'analysisDiplomaWorkbookUrls',  'analysisDiplomaWorkbookUrlInput'],
+    ].forEach(function(cfg) {
+      var btn = document.getElementById(cfg[0]);
+      if (btn) btn.addEventListener('click', function(){ addOmrUrlRow(cfg[1], cfg[2]); });
+    });
+
+    /* OMR Analysis - send Detailed Analysis & Solutions + Workbook (each may be multiple files) to enrolled learners (or a single test address when `sample` is set) */
+    function sendOmrAnalysis(slug, testNum, analysisUrls, workbookUrls, btn, resultEl, sample) {
       if (!testNum) { alert('Please select a test number.'); return; }
-      if (!analysisUrl || !analysisUrl.startsWith('http')) { alert('Please enter a valid Detailed Analysis & Solutions Google Drive URL.'); return; }
-      if (!workbookUrl || !workbookUrl.startsWith('http')) { alert('Please enter a valid Analysis Workbook Google Drive URL.'); return; }
+      if (!analysisUrls.length) { alert('Please enter at least one valid Detailed Analysis & Solutions Google Drive URL.'); return; }
+      if (!workbookUrls.length)  { alert('Please enter at least one valid Analysis Workbook Google Drive URL.'); return; }
       var idleLabel = sample ? '<i class="fas fa-vial"></i> Send Sample' : '<i class="fas fa-paper-plane"></i> Send Analysis';
       if (sample) {
         if (!sample.email) { alert('Please enter a test email to send a sample.'); return; }
@@ -2586,7 +2623,7 @@
       btn.disabled = true;
       btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
       resultEl.style.display = 'none';
-      var body = { program_slug: slug, test_number: testNum, analysis_url: analysisUrl, workbook_url: workbookUrl };
+      var body = { program_slug: slug, test_number: testNum, analysis_urls: analysisUrls, workbook_urls: workbookUrls };
       if (sample) { body.sample_email = sample.email; if (sample.phone) body.sample_phone = sample.phone; }
       fetch(API_BASE + '/api/enrollment/admin/send-omr-analysis', {
         method: 'POST',
@@ -2620,8 +2657,8 @@
       btnDegreeAnalysis.addEventListener('click', function() {
         sendOmrAnalysis('rssb-je-omr-degree-test-series',
           document.getElementById('analysisDegreeTestNum').value,
-          document.getElementById('analysisDegreeAnalysisUrl').value,
-          document.getElementById('analysisDegreeWorkbookUrl').value,
+          collectOmrUrls('analysisDegreeAnalysisUrlInput'),
+          collectOmrUrls('analysisDegreeWorkbookUrlInput'),
           btnDegreeAnalysis, document.getElementById('analysisDegreeResult'));
       });
     }
@@ -2630,8 +2667,8 @@
       btnDegreeAnalysisSample.addEventListener('click', function() {
         sendOmrAnalysis('rssb-je-omr-degree-test-series',
           document.getElementById('analysisDegreeTestNum').value,
-          document.getElementById('analysisDegreeAnalysisUrl').value,
-          document.getElementById('analysisDegreeWorkbookUrl').value,
+          collectOmrUrls('analysisDegreeAnalysisUrlInput'),
+          collectOmrUrls('analysisDegreeWorkbookUrlInput'),
           btnDegreeAnalysisSample, document.getElementById('analysisDegreeResult'),
           { email: document.getElementById('analysisDegreeTestEmail').value.trim(), phone: document.getElementById('analysisDegreeTestPhone').value.trim() });
       });
@@ -2641,8 +2678,8 @@
       btnDiplomaAnalysis.addEventListener('click', function() {
         sendOmrAnalysis('rssb-jen-omr-diploma-test-series',
           document.getElementById('analysisDiplomaTestNum').value,
-          document.getElementById('analysisDiplomaAnalysisUrl').value,
-          document.getElementById('analysisDiplomaWorkbookUrl').value,
+          collectOmrUrls('analysisDiplomaAnalysisUrlInput'),
+          collectOmrUrls('analysisDiplomaWorkbookUrlInput'),
           btnDiplomaAnalysis, document.getElementById('analysisDiplomaResult'));
       });
     }
@@ -2651,8 +2688,8 @@
       btnDiplomaAnalysisSample.addEventListener('click', function() {
         sendOmrAnalysis('rssb-jen-omr-diploma-test-series',
           document.getElementById('analysisDiplomaTestNum').value,
-          document.getElementById('analysisDiplomaAnalysisUrl').value,
-          document.getElementById('analysisDiplomaWorkbookUrl').value,
+          collectOmrUrls('analysisDiplomaAnalysisUrlInput'),
+          collectOmrUrls('analysisDiplomaWorkbookUrlInput'),
           btnDiplomaAnalysisSample, document.getElementById('analysisDiplomaResult'),
           { email: document.getElementById('analysisDiplomaTestEmail').value.trim(), phone: document.getElementById('analysisDiplomaTestPhone').value.trim() });
       });

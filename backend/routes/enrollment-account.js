@@ -803,10 +803,14 @@ router.post('/admin/send-omr-papers', protect, async (req, res) => {
    ─────────────────────────────────────────────────────────── */
 router.post('/admin/send-omr-analysis', protect, async (req, res) => {
   try {
-    const { program_slug, test_number, analysis_url, workbook_url, sample_email, sample_phone, sample_name } = req.body;
+    const { program_slug, test_number, analysis_urls, workbook_urls, sample_email, sample_phone, sample_name } = req.body;
 
-    if (!program_slug || !test_number || !analysis_url || !workbook_url) {
-      return res.status(400).json({ error: 'program_slug, test_number, analysis_url and workbook_url are all required.' });
+    /* Each of these can be one or more Drive links (e.g. a multi-part analysis PDF) */
+    const analysisUrls = (Array.isArray(analysis_urls) ? analysis_urls : [analysis_urls]).filter(Boolean);
+    const workbookUrls = (Array.isArray(workbook_urls) ? workbook_urls : [workbook_urls]).filter(Boolean);
+
+    if (!program_slug || !test_number || !analysisUrls.length || !workbookUrls.length) {
+      return res.status(400).json({ error: 'program_slug, test_number, and at least one analysis_urls and workbook_urls link are all required.' });
     }
 
     /* Sample mode: send to a single test address only, skip the enrollments table entirely */
@@ -830,12 +834,12 @@ router.post('/admin/send-omr-analysis', protect, async (req, res) => {
       enrollments = enrResult.rows;
     }
 
-    /* Download both source PDFs once */
-    let analysisBytes, workbookBytes;
+    /* Download every source PDF once (each list may hold multiple files) */
+    let analysisBytesList, workbookBytesList;
     try {
-      [analysisBytes, workbookBytes] = await Promise.all([
-        fetchBuffer(toDriveDownloadUrl(analysis_url)),
-        fetchBuffer(toDriveDownloadUrl(workbook_url)),
+      [analysisBytesList, workbookBytesList] = await Promise.all([
+        Promise.all(analysisUrls.map(u => fetchBuffer(toDriveDownloadUrl(u)))),
+        Promise.all(workbookUrls.map(u => fetchBuffer(toDriveDownloadUrl(u)))),
       ]);
     } catch (err) {
       return res.status(502).json({ error: `Failed to download PDF: ${err.message}` });
@@ -864,9 +868,9 @@ router.post('/admin/send-omr-analysis', protect, async (req, res) => {
         const name  = enr.student_name || 'Learner';
         const firstName = name.split(' ')[0];
 
-        const [wmAnalysis, wmWorkbook] = await Promise.all([
-          watermarkPdf(analysisBytes, email, phone),
-          watermarkPdf(workbookBytes, email, phone),
+        const [wmAnalysisList, wmWorkbookList] = await Promise.all([
+          Promise.all(analysisBytesList.map(bytes => watermarkPdf(bytes, email, phone))),
+          Promise.all(workbookBytesList.map(bytes => watermarkPdf(bytes, email, phone))),
         ]);
 
         const html = `<!DOCTYPE html>
@@ -887,8 +891,8 @@ router.post('/admin/send-omr-analysis', protect, async (req, res) => {
     </div>
     <h2 style="margin:0 0 8px;font-size:20px;color:#1A1A2E;font-weight:800;">Your Analysis & Solutions are Here, ${firstName}!</h2>
     <p style="margin:0 0 20px;font-size:15px;color:#6b7280;line-height:1.7;">
-      Two PDFs are attached to this email - the <strong>Detailed Analysis & Solutions</strong> and the <strong>Analysis Workbook</strong>.
-      Go through both carefully to understand your mistakes and strengthen weak areas before the next test.
+      The <strong>Detailed Analysis & Solutions</strong> and <strong>Analysis Workbook</strong> are attached to this email.
+      Go through them carefully to understand your mistakes and strengthen weak areas before the next test.
     </p>
 
     <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:18px 22px;margin-bottom:22px;">
@@ -908,7 +912,7 @@ router.post('/admin/send-omr-analysis', protect, async (req, res) => {
 
     <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px 18px;margin-bottom:22px;">
       <p style="margin:0;font-size:13px;color:#78350f;line-height:1.7;">
-        <strong>Note:</strong> Both PDFs are watermarked with your email and phone number. Do not share them - any leak will be traced back to you.
+        <strong>Note:</strong> Every attached PDF is watermarked with your email and phone number. Do not share them - any leak will be traced back to you.
       </p>
     </div>
 
@@ -927,24 +931,26 @@ router.post('/admin/send-omr-analysis', protect, async (req, res) => {
 </table>
 </body></html>`;
 
+        const attachments = [
+          ...wmAnalysisList.map((buf, i) => ({
+            filename:    `DetailedAnalysisAndSolutions_${testLabel.replace(' ', '')}${wmAnalysisList.length > 1 ? `_Part${i + 1}` : ''}.pdf`,
+            content:     buf.toString('base64'),
+            contentType: 'application/pdf',
+          })),
+          ...wmWorkbookList.map((buf, i) => ({
+            filename:    `AnalysisWorkbook_${testLabel.replace(' ', '')}${wmWorkbookList.length > 1 ? `_Part${i + 1}` : ''}.pdf`,
+            content:     buf.toString('base64'),
+            contentType: 'application/pdf',
+          })),
+        ];
+
         const { error } = await resendSend({
           from:       OMR_FROM,
           reply_to:   'team@jaspalsingh.in',
           to:         email,
           subject,
           html,
-          attachments: [
-            {
-              filename:    `DetailedAnalysisAndSolutions_${testLabel.replace(' ', '')}.pdf`,
-              content:     wmAnalysis.toString('base64'),
-              contentType: 'application/pdf',
-            },
-            {
-              filename:    `AnalysisWorkbook_${testLabel.replace(' ', '')}.pdf`,
-              content:     wmWorkbook.toString('base64'),
-              contentType: 'application/pdf',
-            },
-          ],
+          attachments,
         });
 
         if (error) {
