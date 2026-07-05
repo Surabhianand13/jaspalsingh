@@ -250,6 +250,18 @@ const PROGRAMS = {
     price:     2999,
     mrp:       7999,
   },
+  'rssb-je-jaspalsirki-testseries-degree-diploma-combo-omr': {
+    name:      'RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Degree + Diploma Combo (Home-Based OMR Test Series)',
+    shortName: 'RSSB JE Degree + Diploma Combo OMR',
+    price:     2499,
+    mrp:       4999,
+  },
+  'rssb-je-jaspalsirki-testseries-degree-diploma-combo': {
+    name:      'RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Degree + Diploma Combo Offline',
+    shortName: 'RSSB JE Degree + Diploma Combo',
+    price:     5499,
+    mrp:       9999,
+  },
 };
 
 /* ── Razorpay instance ───────────────────────────────────── */
