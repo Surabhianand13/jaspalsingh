@@ -316,6 +316,7 @@
                 <input class="lead-input" type="text" name="name" placeholder="Your full name *" required />
                 <input class="lead-input" type="tel" name="phone" placeholder="WhatsApp number *" required maxlength="10" />
                 <input class="lead-input" type="email" name="email" placeholder="Email (optional)" />
+                <input class="lead-input" type="text" name="company" value="" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;" aria-hidden="true" />
                 <button type="submit" class="enroll-btn" style="border:none;cursor:pointer;width:100%;"><i class="fas fa-bell"></i> Notify Me When Batch Opens</button>
                 <div class="lead-msg" style="display:none;"></div>
               </form>
@@ -479,6 +480,7 @@
                   <input class="lead-input" type="text" name="name" placeholder="Your full name *" required />
                   <input class="lead-input" type="tel" name="phone" placeholder="WhatsApp number *" required maxlength="10" />
                   <input class="lead-input" type="email" name="email" placeholder="Email (optional)" />
+                <input class="lead-input" type="text" name="company" value="" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;" aria-hidden="true" />
                   <button type="submit" class="enroll-btn" style="border:none;cursor:pointer;width:100%;"><i class="fas fa-bell"></i> Notify Me</button>
                   <div class="lead-msg" style="display:none;"></div>
                 </form>
@@ -594,11 +596,13 @@
       var name  = form.querySelector("[name=name]").value.trim();
       var phone = form.querySelector("[name=phone]").value.trim().replace(/\D/g,"");
       var email = form.querySelector("[name=email]") ? form.querySelector("[name=email]").value.trim() : "";
+      var company = form.querySelector("[name=company]") ? form.querySelector("[name=company]").value : "";
+      if (company) { form.innerHTML = "<p class=\"lead-msg success\" style=\"display:block;\">&#10003; You are on the list! We will reach out on WhatsApp when the batch opens.</p>"; return; }
       if (!name) { showMsg(msg,"error","Please enter your name."); return; }
       if (phone.length !== 10) { showMsg(msg,"error","Please enter a valid 10-digit WhatsApp number."); return; }
       btn.disabled = true; btn.textContent = "Submitting...";
       try {
-        var res  = await fetch(API + "/api/leads/capture", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({program_slug:slug,name:name,phone:phone,email:email})});
+        var res  = await fetch(API + "/api/leads/capture", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({program_slug:slug,name:name,phone:phone,email:email,company:company})});
         var data = await res.json();
         if (res.ok) { form.innerHTML = "<p class=\"lead-msg success\" style=\"display:block;\">&#10003; You are on the list! We will reach out on WhatsApp when the batch opens.</p>"; }
         else { showMsg(msg,"error",data.error||"Something went wrong."); btn.disabled=false; btn.textContent="Notify Me"; }

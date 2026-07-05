@@ -3,8 +3,9 @@
    Dr. Jaspal Singh Website  -  jaspalsingh.in
    ============================================================ */
 
-const express = require('express');
-const router  = express.Router();
+const express   = require('express');
+const router    = express.Router();
+const rateLimit = require('express-rate-limit');
 const { query } = require('../config/db');
 
 const COMING_SOON_PROGRAMS = {
@@ -18,10 +19,29 @@ const LIVE_PROGRAMS = {
   'rpsc-ae-interview':            'RPSC AE 2024 - Interview Guidance Programme',
 };
 
+/* Dedicated limiters - tighter than the blanket 500/15min apiLimiter,
+   since these are public forms bots can hit directly without a UI. */
+const captureLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: 'Too many submissions. Please try again later.' },
+});
+const abandonLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: { error: 'Too many requests.' },
+});
+
 /* ── POST /api/leads/capture ─────────────────────────────── */
-router.post('/capture', async (req, res) => {
+router.post('/capture', captureLimiter, async (req, res) => {
   try {
-    const { program_slug, name, email, phone } = req.body;
+    const { program_slug, name, email, phone, company } = req.body;
+
+    // Honeypot: a hidden field real users never fill. Bots that blindly
+    // populate every input trip it - pretend success, do nothing.
+    if (company) {
+      return res.json({ success: true, message: "You're on the list! We'll contact you on WhatsApp when the batch opens." });
+    }
 
     if (!program_slug || !name || !phone) {
       return res.status(400).json({ error: 'name, phone and program_slug are required.' });
@@ -48,7 +68,7 @@ router.post('/capture', async (req, res) => {
 /* ── POST /api/leads/checkout-abandon ───────────────────────
    Fires via sendBeacon when a user fills the checkout form
    but leaves without clicking Pay. Deduped by phone+program. */
-router.post('/checkout-abandon', async (req, res) => {
+router.post('/checkout-abandon', abandonLimiter, async (req, res) => {
   try {
     const { program_slug, name, phone, email } = req.body;
 

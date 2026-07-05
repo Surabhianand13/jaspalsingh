@@ -220,8 +220,42 @@ function getCentreKey(centreValue) {
   return null;
 }
 
-/* ── Fetch remote image as buffer ────────────────────────── */
+/* ── SSRF guards ──────────────────────────────────────────
+   photoUrl in the webhook payload is attacker-reachable (anyone who
+   knows a valid unused form_token can POST it directly, bypassing
+   Tally) - restrict that path to Tally's own asset host.
+   The admin "resend admit card" flow supplies photo_url manually from
+   the admin panel; it's behind the admin JWT, so we only block the
+   obvious SSRF targets (localhost / private ranges / cloud metadata)
+   rather than restricting it to a single host. ── */
 
+function isAllowedTallyAssetUrl(url) {
+  try {
+    const u = new URL(url);
+    if (u.protocol !== 'https:') return false;
+    return u.hostname === 'tally.so' || u.hostname.endsWith('.tally.so');
+  } catch (e) {
+    return false;
+  }
+}
+
+function isSafeExternalUrl(url) {
+  try {
+    const u = new URL(url);
+    if (u.protocol !== 'https:' && u.protocol !== 'http:') return false;
+    const host = u.hostname.toLowerCase();
+    if (host === 'localhost' || host === '169.254.169.254') return false;
+    if (/^(127\.|10\.|192\.168\.|0\.0\.0\.0)/.test(host)) return false;
+    if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(host)) return false;
+    if (host === '::1' || host.startsWith('fc') || host.startsWith('fd') || host.startsWith('fe80')) return false;
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+/* Raw fetch with a timeout - without it, a stalled upstream response hangs
+   this request forever and the whole admit card email silently never sends. */
 function downloadRaw(url) {
   return new Promise((resolve) => {
     const lib = url.startsWith('https') ? https : http;
@@ -233,8 +267,6 @@ function downloadRaw(url) {
       res.on('error', () => resolve(null));
     });
     req.on('error', () => resolve(null));
-    // Without a timeout, a stalled upstream response hangs this request
-    // forever - the whole admit card email would silently never send.
     req.setTimeout(10000, () => {
       req.destroy();
       resolve(null);
@@ -245,10 +277,7 @@ function downloadRaw(url) {
 /* Downscales/recompresses the candidate photo before it gets embedded in the
    PDF - source uploads can be multi-MB camera photos, which would otherwise
    bloat the email attachment and occasionally fail to embed cleanly. */
-async function fetchImageBuffer(url) {
-  if (!url) return null;
-  const raw = await downloadRaw(url);
-  if (!raw) return null;
+async function resizeForCard(raw) {
   try {
     return await sharp(raw)
       .rotate() // respect EXIF orientation before resizing
@@ -256,9 +285,23 @@ async function fetchImageBuffer(url) {
       .jpeg({ quality: 82 })
       .toBuffer();
   } catch (e) {
-    console.warn('[fetchImageBuffer] resize failed, using original:', e.message);
+    console.warn('[resizeForCard] resize failed, using original:', e.message);
     return raw;
   }
+}
+
+/* ── Fetch remote image as buffer (strict allowlist - webhook path) ── */
+async function fetchImageBuffer(url) {
+  if (!url || !isAllowedTallyAssetUrl(url)) return null;
+  const raw = await downloadRaw(url);
+  return raw ? resizeForCard(raw) : null;
+}
+
+/* ── Fetch remote image as buffer (basic SSRF guard - admin path) ── */
+async function fetchImageBufferTrusted(url) {
+  if (!url || !isSafeExternalUrl(url)) return null;
+  const raw = await downloadRaw(url);
+  return raw ? resizeForCard(raw) : null;
 }
 
 /* ── Generate admit card PDF buffer ─────────────────────── */
@@ -764,6 +807,7 @@ module.exports.processSubmission   = processSubmission;
 module.exports.generateAdmitCard   = generateAdmitCard;
 module.exports.buildAdmitCardHtml  = buildAdmitCardHtml;
 module.exports.fetchImageBuffer    = fetchImageBuffer;
+module.exports.fetchImageBufferTrusted = fetchImageBufferTrusted;
 module.exports.getCentreKey        = getCentreKey;
 module.exports.CENTRES             = CENTRES;
 module.exports.SCHEDULE_DEGREE     = SCHEDULE_DEGREE;
