@@ -292,8 +292,11 @@
       }
 
       // Does this buyer already have an account? -> skip password fields only
+      // Uses form_token (private, unguessable) rather than order_id, which is
+      // predictable and would let account existence be enumerated.
       try {
-        const r = await fetch(`${API}/api/enrollment/account-status?order_id=${encodeURIComponent(order_id)}`);
+        if (!data.form_token) throw new Error('no form_token yet');
+        const r = await fetch(`${API}/api/enrollment/account-status?form_token=${encodeURIComponent(data.form_token)}`);
         const s = await r.json();
         accountExists = !!s.exists;
       } catch (e) { accountExists = false; }

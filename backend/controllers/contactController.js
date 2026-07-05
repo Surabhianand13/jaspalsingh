@@ -8,7 +8,13 @@ const { sendContactNotification, sendContactAutoReply } = require('../services/e
 /* POST /api/contact  -  submit a contact message (public) */
 const submit = async (req, res, next) => {
   try {
-    const { name, email, phone, message, subject } = req.body;
+    const { name, email, phone, message, subject, company } = req.body;
+
+    // Honeypot: a hidden field real users never fill. Bots that blindly
+    // populate every input trip it - pretend success, do nothing.
+    if (company) {
+      return res.status(201).json({ message: 'Message received. Dr. Jaspal Singh will read it personally.', id: null });
+    }
 
     // Validate
     if (!name || !email || !phone || !message) {
