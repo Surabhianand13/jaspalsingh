@@ -574,33 +574,44 @@ function fetchBuffer(url, depth = 0) {
   });
 }
 
-/* Watermark every page of a PDF with "email | phone" diagonal text */
-async function watermarkPdf(pdfBytes, email, phone) {
+/* Watermark every page of a PDF with "email | phone" diagonal text.
+   `opts.cross` renders it steeper and darker, tilted the opposite way
+   (crosses instead of running parallel under a pre-existing diagonal brand
+   watermark, e.g. the "Jaspal Sir ki Test Series" stamp already baked into
+   some Analysis/Workbook source PDFs - running parallel at the same angle
+   made ours unreadable wherever the two overlapped). Question Paper / OMR
+   Sheet sources have no such pre-existing watermark, so they keep the
+   original subtler style by default. */
+async function watermarkPdf(pdfBytes, email, phone, opts = {}) {
   const pdfDoc  = await PDFDocument.load(pdfBytes);
   const pages   = pdfDoc.getPages();
   const watermarkText = `${email} | ${phone}`;
+
+  const style = opts.cross
+    ? { rotateDeg: -25, color: rgb(0.25, 0.25, 0.25), x: 0.08, opacity: 0.4, size: 16 }
+    : { rotateDeg: 35,  color: rgb(0.6, 0.6, 0.6),    x: 0.10, opacity: 0.18, size: 18 };
 
   for (const page of pages) {
     const { width, height } = page.getSize();
     /* Draw diagonal watermark text across the page center */
     page.drawText(watermarkText, {
-      x:        width  * 0.10,
-      y:        height * 0.45,
-      size:     18,
-      color:    rgb(0.6, 0.6, 0.6),
-      opacity:  0.18,
-      rotate:   degrees(35),
+      x:        width  * style.x,
+      y:        height * (opts.cross ? 0.78 : 0.45),
+      size:     style.size,
+      color:    style.color,
+      opacity:  style.opacity,
+      rotate:   degrees(style.rotateDeg),
       maxWidth: width * 0.85,
     });
     /* Second instance slightly offset for coverage */
     page.drawText(watermarkText, {
-      x:        width  * 0.15,
-      y:        height * 0.20,
-      size:     14,
-      color:    rgb(0.6, 0.6, 0.6),
-      opacity:  0.13,
-      rotate:   degrees(35),
-      maxWidth: width * 0.75,
+      x:        width  * (opts.cross ? style.x : 0.15),
+      y:        height * (opts.cross ? 0.42 : 0.20),
+      size:     opts.cross ? style.size : 14,
+      color:    style.color,
+      opacity:  opts.cross ? style.opacity : 0.13,
+      rotate:   degrees(style.rotateDeg),
+      maxWidth: opts.cross ? width * 0.85 : width * 0.75,
     });
   }
 
@@ -609,25 +620,32 @@ async function watermarkPdf(pdfBytes, email, phone) {
 
 router.post('/admin/send-omr-papers', protect, async (req, res) => {
   try {
-    const { program_slug, test_number, question_paper_url, omr_sheet_url } = req.body;
+    const { program_slug, test_number, question_paper_url, omr_sheet_url, sample_email, sample_phone, sample_name } = req.body;
 
     if (!program_slug || !test_number || !question_paper_url || !omr_sheet_url) {
       return res.status(400).json({ error: 'program_slug, test_number, question_paper_url and omr_sheet_url are all required.' });
     }
 
-    const enrResult = await query(
-      `SELECT id, student_name, student_email, student_phone
-       FROM enrollments
-       WHERE program_slug = $1 AND status = 'paid'
-       ORDER BY id ASC`,
-      [program_slug]
-    );
+    /* Sample mode: send to a single test address only, skip the enrollments table entirely */
+    const isSample = !!sample_email;
+    let enrollments;
+    if (isSample) {
+      enrollments = [{ id: 'sample', student_name: sample_name || 'Test User', student_email: sample_email, student_phone: sample_phone || '' }];
+    } else {
+      const enrResult = await query(
+        `SELECT id, student_name, student_email, student_phone
+         FROM enrollments
+         WHERE program_slug = $1 AND status = 'paid'
+         ORDER BY id ASC`,
+        [program_slug]
+      );
 
-    if (!enrResult.rows.length) {
-      return res.json({ sent: 0, failed: 0, message: 'No paid enrollments found for this program.' });
+      if (!enrResult.rows.length) {
+        return res.json({ sent: 0, failed: 0, message: 'No paid enrollments found for this program.' });
+      }
+
+      enrollments = enrResult.rows;
     }
-
-    const enrollments = enrResult.rows;
 
     /* Download both source PDFs once */
     let qpBytes, omrBytes;
@@ -647,11 +665,13 @@ router.post('/admin/send-omr-papers', protect, async (req, res) => {
     const testLabel = `Test ${String(test_number).padStart(2, '0')}`;
     const subject   = `${seriesLabel} - ${testLabel} Question Paper | jaspalsingh.in`;
 
-    /* Respond immediately */
-    res.json({
-      message: `Sending ${testLabel} papers to ${enrollments.length} learners in background...`,
-      total: enrollments.length,
-    });
+    /* Respond immediately for real batch sends; sample sends wait for the result */
+    if (!isSample) {
+      res.json({
+        message: `Sending ${testLabel} papers to ${enrollments.length} learners in background...`,
+        total: enrollments.length,
+      });
+    }
 
     let sent = 0, failed = 0;
     for (const enr of enrollments) {
@@ -771,6 +791,13 @@ router.post('/admin/send-omr-papers', protect, async (req, res) => {
       await new Promise(r => setTimeout(r, 300));
     }
     console.log(`[send-omr-papers] ${testLabel} done. Sent: ${sent}, Failed: ${failed}`);
+
+    if (isSample) {
+      res.json({
+        sent, failed,
+        message: sent ? `Sample email sent to ${sample_email}.` : `Sample email failed to send to ${sample_email}.`,
+      });
+    }
   } catch (err) {
     console.error('[send-omr-papers]', err);
     if (!res.headersSent) res.status(500).json({ error: 'Server error.' });
@@ -787,32 +814,43 @@ router.post('/admin/send-omr-papers', protect, async (req, res) => {
    ─────────────────────────────────────────────────────────── */
 router.post('/admin/send-omr-analysis', protect, async (req, res) => {
   try {
-    const { program_slug, test_number, analysis_url, workbook_url } = req.body;
+    const { program_slug, test_number, analysis_urls, workbook_urls, sample_email, sample_phone, sample_name } = req.body;
 
-    if (!program_slug || !test_number || !analysis_url || !workbook_url) {
-      return res.status(400).json({ error: 'program_slug, test_number, analysis_url and workbook_url are all required.' });
+    /* Each of these can be one or more Drive links (e.g. a multi-part analysis PDF) */
+    const analysisUrls = (Array.isArray(analysis_urls) ? analysis_urls : [analysis_urls]).filter(Boolean);
+    const workbookUrls = (Array.isArray(workbook_urls) ? workbook_urls : [workbook_urls]).filter(Boolean);
+
+    if (!program_slug || !test_number || !analysisUrls.length || !workbookUrls.length) {
+      return res.status(400).json({ error: 'program_slug, test_number, and at least one analysis_urls and workbook_urls link are all required.' });
     }
 
-    const enrResult = await query(
-      `SELECT id, student_name, student_email, student_phone
-       FROM enrollments
-       WHERE program_slug = $1 AND status = 'paid'
-       ORDER BY id ASC`,
-      [program_slug]
-    );
+    /* Sample mode: send to a single test address only, skip the enrollments table entirely */
+    const isSample = !!sample_email;
+    let enrollments;
+    if (isSample) {
+      enrollments = [{ id: 'sample', student_name: sample_name || 'Test User', student_email: sample_email, student_phone: sample_phone || '' }];
+    } else {
+      const enrResult = await query(
+        `SELECT id, student_name, student_email, student_phone
+         FROM enrollments
+         WHERE program_slug = $1 AND status = 'paid'
+         ORDER BY id ASC`,
+        [program_slug]
+      );
 
-    if (!enrResult.rows.length) {
-      return res.json({ sent: 0, failed: 0, message: 'No paid enrollments found for this program.' });
+      if (!enrResult.rows.length) {
+        return res.json({ sent: 0, failed: 0, message: 'No paid enrollments found for this program.' });
+      }
+
+      enrollments = enrResult.rows;
     }
 
-    const enrollments = enrResult.rows;
-
-    /* Download both source PDFs once */
-    let analysisBytes, workbookBytes;
+    /* Download every source PDF once (each list may hold multiple files) */
+    let analysisBytesList, workbookBytesList;
     try {
-      [analysisBytes, workbookBytes] = await Promise.all([
-        fetchBuffer(toDriveDownloadUrl(analysis_url)),
-        fetchBuffer(toDriveDownloadUrl(workbook_url)),
+      [analysisBytesList, workbookBytesList] = await Promise.all([
+        Promise.all(analysisUrls.map(u => fetchBuffer(toDriveDownloadUrl(u)))),
+        Promise.all(workbookUrls.map(u => fetchBuffer(toDriveDownloadUrl(u)))),
       ]);
     } catch (err) {
       return res.status(502).json({ error: `Failed to download PDF: ${err.message}` });
@@ -825,11 +863,13 @@ router.post('/admin/send-omr-analysis', protect, async (req, res) => {
     const testLabel = `Test ${String(test_number).padStart(2, '0')}`;
     const subject   = `${seriesLabel} - ${testLabel} Analysis & Solutions | jaspalsingh.in`;
 
-    /* Respond immediately */
-    res.json({
-      message: `Sending ${testLabel} analysis to ${enrollments.length} learners in background...`,
-      total: enrollments.length,
-    });
+    /* Respond immediately for real batch sends; sample sends wait for the result */
+    if (!isSample) {
+      res.json({
+        message: `Sending ${testLabel} analysis to ${enrollments.length} learners in background...`,
+        total: enrollments.length,
+      });
+    }
 
     let sent = 0, failed = 0;
     for (const enr of enrollments) {
@@ -839,9 +879,9 @@ router.post('/admin/send-omr-analysis', protect, async (req, res) => {
         const name  = enr.student_name || 'Learner';
         const firstName = name.split(' ')[0];
 
-        const [wmAnalysis, wmWorkbook] = await Promise.all([
-          watermarkPdf(analysisBytes, email, phone),
-          watermarkPdf(workbookBytes, email, phone),
+        const [wmAnalysisList, wmWorkbookList] = await Promise.all([
+          Promise.all(analysisBytesList.map(bytes => watermarkPdf(bytes, email, phone, { cross: true }))),
+          Promise.all(workbookBytesList.map(bytes => watermarkPdf(bytes, email, phone, { cross: true }))),
         ]);
 
         const html = `<!DOCTYPE html>
@@ -862,8 +902,8 @@ router.post('/admin/send-omr-analysis', protect, async (req, res) => {
     </div>
     <h2 style="margin:0 0 8px;font-size:20px;color:#1A1A2E;font-weight:800;">Your Analysis & Solutions are Here, ${firstName}!</h2>
     <p style="margin:0 0 20px;font-size:15px;color:#6b7280;line-height:1.7;">
-      Two PDFs are attached to this email - the <strong>Detailed Analysis & Solutions</strong> and the <strong>Analysis Workbook</strong>.
-      Go through both carefully to understand your mistakes and strengthen weak areas before the next test.
+      The <strong>Detailed Analysis & Solutions</strong> and <strong>Analysis Workbook</strong> are attached to this email.
+      Go through them carefully to understand your mistakes and strengthen weak areas before the next test.
     </p>
 
     <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:18px 22px;margin-bottom:22px;">
@@ -883,7 +923,7 @@ router.post('/admin/send-omr-analysis', protect, async (req, res) => {
 
     <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px 18px;margin-bottom:22px;">
       <p style="margin:0;font-size:13px;color:#78350f;line-height:1.7;">
-        <strong>Note:</strong> Both PDFs are watermarked with your email and phone number. Do not share them - any leak will be traced back to you.
+        <strong>Note:</strong> Every attached PDF is watermarked with your email and phone number. Do not share them - any leak will be traced back to you.
       </p>
     </div>
 
@@ -902,24 +942,26 @@ router.post('/admin/send-omr-analysis', protect, async (req, res) => {
 </table>
 </body></html>`;
 
+        const attachments = [
+          ...wmAnalysisList.map((buf, i) => ({
+            filename:    `DetailedAnalysisAndSolutions_${testLabel.replace(' ', '')}${wmAnalysisList.length > 1 ? `_Part${i + 1}` : ''}.pdf`,
+            content:     buf.toString('base64'),
+            contentType: 'application/pdf',
+          })),
+          ...wmWorkbookList.map((buf, i) => ({
+            filename:    `AnalysisWorkbook_${testLabel.replace(' ', '')}${wmWorkbookList.length > 1 ? `_Part${i + 1}` : ''}.pdf`,
+            content:     buf.toString('base64'),
+            contentType: 'application/pdf',
+          })),
+        ];
+
         const { error } = await resendSend({
           from:       OMR_FROM,
           reply_to:   'team@jaspalsingh.in',
           to:         email,
           subject,
           html,
-          attachments: [
-            {
-              filename:    `DetailedAnalysisAndSolutions_${testLabel.replace(' ', '')}.pdf`,
-              content:     wmAnalysis.toString('base64'),
-              contentType: 'application/pdf',
-            },
-            {
-              filename:    `AnalysisWorkbook_${testLabel.replace(' ', '')}.pdf`,
-              content:     wmWorkbook.toString('base64'),
-              contentType: 'application/pdf',
-            },
-          ],
+          attachments,
         });
 
         if (error) {
@@ -936,6 +978,13 @@ router.post('/admin/send-omr-analysis', protect, async (req, res) => {
       await new Promise(r => setTimeout(r, 300));
     }
     console.log(`[send-omr-analysis] ${testLabel} done. Sent: ${sent}, Failed: ${failed}`);
+
+    if (isSample) {
+      res.json({
+        sent, failed,
+        message: sent ? `Sample email sent to ${sample_email}.` : `Sample email failed to send to ${sample_email}.`,
+      });
+    }
   } catch (err) {
     console.error('[send-omr-analysis]', err);
     if (!res.headersSent) res.status(500).json({ error: 'Server error.' });
