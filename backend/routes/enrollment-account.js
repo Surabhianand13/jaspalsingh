@@ -609,25 +609,32 @@ async function watermarkPdf(pdfBytes, email, phone) {
 
 router.post('/admin/send-omr-papers', protect, async (req, res) => {
   try {
-    const { program_slug, test_number, question_paper_url, omr_sheet_url } = req.body;
+    const { program_slug, test_number, question_paper_url, omr_sheet_url, sample_email, sample_phone, sample_name } = req.body;
 
     if (!program_slug || !test_number || !question_paper_url || !omr_sheet_url) {
       return res.status(400).json({ error: 'program_slug, test_number, question_paper_url and omr_sheet_url are all required.' });
     }
 
-    const enrResult = await query(
-      `SELECT id, student_name, student_email, student_phone
-       FROM enrollments
-       WHERE program_slug = $1 AND status = 'paid'
-       ORDER BY id ASC`,
-      [program_slug]
-    );
+    /* Sample mode: send to a single test address only, skip the enrollments table entirely */
+    const isSample = !!sample_email;
+    let enrollments;
+    if (isSample) {
+      enrollments = [{ id: 'sample', student_name: sample_name || 'Test User', student_email: sample_email, student_phone: sample_phone || '' }];
+    } else {
+      const enrResult = await query(
+        `SELECT id, student_name, student_email, student_phone
+         FROM enrollments
+         WHERE program_slug = $1 AND status = 'paid'
+         ORDER BY id ASC`,
+        [program_slug]
+      );
 
-    if (!enrResult.rows.length) {
-      return res.json({ sent: 0, failed: 0, message: 'No paid enrollments found for this program.' });
+      if (!enrResult.rows.length) {
+        return res.json({ sent: 0, failed: 0, message: 'No paid enrollments found for this program.' });
+      }
+
+      enrollments = enrResult.rows;
     }
-
-    const enrollments = enrResult.rows;
 
     /* Download both source PDFs once */
     let qpBytes, omrBytes;
@@ -647,11 +654,13 @@ router.post('/admin/send-omr-papers', protect, async (req, res) => {
     const testLabel = `Test ${String(test_number).padStart(2, '0')}`;
     const subject   = `${seriesLabel} - ${testLabel} Question Paper | jaspalsingh.in`;
 
-    /* Respond immediately */
-    res.json({
-      message: `Sending ${testLabel} papers to ${enrollments.length} learners in background...`,
-      total: enrollments.length,
-    });
+    /* Respond immediately for real batch sends; sample sends wait for the result */
+    if (!isSample) {
+      res.json({
+        message: `Sending ${testLabel} papers to ${enrollments.length} learners in background...`,
+        total: enrollments.length,
+      });
+    }
 
     let sent = 0, failed = 0;
     for (const enr of enrollments) {
@@ -771,6 +780,13 @@ router.post('/admin/send-omr-papers', protect, async (req, res) => {
       await new Promise(r => setTimeout(r, 300));
     }
     console.log(`[send-omr-papers] ${testLabel} done. Sent: ${sent}, Failed: ${failed}`);
+
+    if (isSample) {
+      res.json({
+        sent, failed,
+        message: sent ? `Sample email sent to ${sample_email}.` : `Sample email failed to send to ${sample_email}.`,
+      });
+    }
   } catch (err) {
     console.error('[send-omr-papers]', err);
     if (!res.headersSent) res.status(500).json({ error: 'Server error.' });
@@ -787,25 +803,32 @@ router.post('/admin/send-omr-papers', protect, async (req, res) => {
    ─────────────────────────────────────────────────────────── */
 router.post('/admin/send-omr-analysis', protect, async (req, res) => {
   try {
-    const { program_slug, test_number, analysis_url, workbook_url } = req.body;
+    const { program_slug, test_number, analysis_url, workbook_url, sample_email, sample_phone, sample_name } = req.body;
 
     if (!program_slug || !test_number || !analysis_url || !workbook_url) {
       return res.status(400).json({ error: 'program_slug, test_number, analysis_url and workbook_url are all required.' });
     }
 
-    const enrResult = await query(
-      `SELECT id, student_name, student_email, student_phone
-       FROM enrollments
-       WHERE program_slug = $1 AND status = 'paid'
-       ORDER BY id ASC`,
-      [program_slug]
-    );
+    /* Sample mode: send to a single test address only, skip the enrollments table entirely */
+    const isSample = !!sample_email;
+    let enrollments;
+    if (isSample) {
+      enrollments = [{ id: 'sample', student_name: sample_name || 'Test User', student_email: sample_email, student_phone: sample_phone || '' }];
+    } else {
+      const enrResult = await query(
+        `SELECT id, student_name, student_email, student_phone
+         FROM enrollments
+         WHERE program_slug = $1 AND status = 'paid'
+         ORDER BY id ASC`,
+        [program_slug]
+      );
 
-    if (!enrResult.rows.length) {
-      return res.json({ sent: 0, failed: 0, message: 'No paid enrollments found for this program.' });
+      if (!enrResult.rows.length) {
+        return res.json({ sent: 0, failed: 0, message: 'No paid enrollments found for this program.' });
+      }
+
+      enrollments = enrResult.rows;
     }
-
-    const enrollments = enrResult.rows;
 
     /* Download both source PDFs once */
     let analysisBytes, workbookBytes;
@@ -825,11 +848,13 @@ router.post('/admin/send-omr-analysis', protect, async (req, res) => {
     const testLabel = `Test ${String(test_number).padStart(2, '0')}`;
     const subject   = `${seriesLabel} - ${testLabel} Analysis & Solutions | jaspalsingh.in`;
 
-    /* Respond immediately */
-    res.json({
-      message: `Sending ${testLabel} analysis to ${enrollments.length} learners in background...`,
-      total: enrollments.length,
-    });
+    /* Respond immediately for real batch sends; sample sends wait for the result */
+    if (!isSample) {
+      res.json({
+        message: `Sending ${testLabel} analysis to ${enrollments.length} learners in background...`,
+        total: enrollments.length,
+      });
+    }
 
     let sent = 0, failed = 0;
     for (const enr of enrollments) {
@@ -936,6 +961,13 @@ router.post('/admin/send-omr-analysis', protect, async (req, res) => {
       await new Promise(r => setTimeout(r, 300));
     }
     console.log(`[send-omr-analysis] ${testLabel} done. Sent: ${sent}, Failed: ${failed}`);
+
+    if (isSample) {
+      res.json({
+        sent, failed,
+        message: sent ? `Sample email sent to ${sample_email}.` : `Sample email failed to send to ${sample_email}.`,
+      });
+    }
   } catch (err) {
     console.error('[send-omr-analysis]', err);
     if (!res.headersSent) res.status(500).json({ error: 'Server error.' });
