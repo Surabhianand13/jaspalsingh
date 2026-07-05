@@ -635,7 +635,7 @@ router.post('/admin/send-omr-papers', protect, async (req, res) => {
       const enrResult = await query(
         `SELECT id, student_name, student_email, student_phone
          FROM enrollments
-         WHERE program_slug = $1 AND status = 'paid'
+         WHERE program_slug = $1 AND status = 'paid' AND refund_status != 'initiated'
          ORDER BY id ASC`,
         [program_slug]
       );
@@ -833,7 +833,7 @@ router.post('/admin/send-omr-analysis', protect, async (req, res) => {
       const enrResult = await query(
         `SELECT id, student_name, student_email, student_phone
          FROM enrollments
-         WHERE program_slug = $1 AND status = 'paid'
+         WHERE program_slug = $1 AND status = 'paid' AND refund_status != 'initiated'
          ORDER BY id ASC`,
         [program_slug]
       );
