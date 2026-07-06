@@ -36,10 +36,10 @@
         '<div class="vv-title">A Message From Dr. Jaspal Singh</div>' +
         '<p class="vv-sub">Please watch this short video before browsing further.</p>' +
         '<div class="vv-video-wrap">' +
-          '<iframe src="https://www.youtube.com/embed/' + VIDEO_ID + '?rel=0" ' +
+          '<iframe src="https://www.youtube-nocookie.com/embed/' + VIDEO_ID + '?rel=0&origin=https://jaspalsingh.in" ' +
             'title="Verification message from Dr. Jaspal Singh" frameborder="0" ' +
-            'allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" ' +
-            'allowfullscreen></iframe>' +
+            'allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" ' +
+            'allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>' +
         '</div>' +
         '<button class="vv-btn-primary" id="vvContinue">Continue to Website</button>' +
       '</div>';
