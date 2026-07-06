@@ -14,3 +14,4 @@
 # the API-driven detail template. Existing static dirs take precedence;
 # this only fires for slugs created in the admin dashboard.
 /programs/* /programs/view/index.html 200
+/resource /resource/index.html 200
