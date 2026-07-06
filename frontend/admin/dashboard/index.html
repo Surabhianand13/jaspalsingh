@@ -1520,7 +1520,7 @@ async function uploadFreeResource() {
   try {
     const r = await fetch(`${FR_API}/api/free-resources`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` },
+      headers: { Authorization: `Bearer ${localStorage.getItem('jaspal_admin_token')}` },
       body: formData,
     });
     const d = await r.json();
@@ -1547,7 +1547,7 @@ async function loadFreeResources() {
   if (!el) return;
   try {
     const r = await fetch(`${FR_API}/api/free-resources/admin`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` },
+      headers: { Authorization: `Bearer ${localStorage.getItem('jaspal_admin_token')}` },
     });
     const rows = await r.json();
     if (!rows.length) { el.innerHTML = '<p class="admin-empty">No resources uploaded yet.</p>'; return; }
@@ -1594,7 +1594,7 @@ async function loadFreeResources() {
 async function toggleResource(id, visible) {
   await fetch(`${FR_API}/api/free-resources/${id}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('adminToken')}` },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('jaspal_admin_token')}` },
     body: JSON.stringify({ visible }),
   });
 }
@@ -1603,7 +1603,7 @@ async function deleteFreeResource(id) {
   if (!confirm('Delete this resource? This cannot be undone.')) return;
   await fetch(`${FR_API}/api/free-resources/${id}`, {
     method: 'DELETE',
-    headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` },
+    headers: { Authorization: `Bearer ${localStorage.getItem('jaspal_admin_token')}` },
   });
   loadFreeResources();
 }
