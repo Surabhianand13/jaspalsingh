@@ -1,84 +1,17 @@
 /* ============================================================
    routes/tally-omr-shared.js
    Shared logic for OMR Online Test Series Tally webhooks.
-   Validates form token, marks used, sends confirmation email.
-   Does NOT generate an admit card PDF.
+   Validates form token, marks used, sends confirmation email
+   with a Home-Based Admit Card PDF attached.
    ============================================================ */
 
 const { query }  = require('../config/db');
 const { send: resendSend, PRIORITY } = require('../services/resendQueue');
+const { generateAdmitCard, generateComboAdmitCard, fetchImageBuffer } = require('./tally-webhook');
 
 const FROM   = 'Dr. Jaspal Singh <team@jaspalsingh.in>';
 
-/* ── Shared schedules (module scope so combo can reuse both) ── */
-
-const OMR_DEGREE_SCHEDULE = [
-  ['01','5 Jul 2026','Rajasthan Geography-I + Building Technology & Construction Management'],
-  ['02','12 Jul 2026','Rajasthan History I + Fluid Mechanics'],
-  ['03','19 Jul 2026','Rajasthan Art & Culture-I + Surveying, Estimating Costing & Field Engineering'],
-  ['04','26 Jul 2026','Rajasthan Political & Administrative System-I + Irrigation & Water Resources'],
-  ['05','2 Aug 2026','Rajasthan Geography-II + Theory of Structures & Strength of Materials'],
-  ['06','9 Aug 2026','Rajasthan History II + Structural Analysis'],
-  ['07','16 Aug 2026','Rajasthan Art & Culture-II + Soil Mechanics & Foundation Engineering'],
-  ['08','23 Aug 2026','Rajasthan Political & Administrative System-II + Design of RCC & Masonry Structures'],
-  ['09','30 Aug 2026','Rajasthan GK Mixed Revision-I + Design of Steel Structures'],
-  ['10','6 Sep 2026','Rajasthan GK Mixed Revision-II + Construction Technology'],
-  ['11','13 Sep 2026','Rajasthan GK Mixed Revision-III + AutoCAD Civil Engineering Drawing'],
-  ['12','20 Sep 2026','Rajasthan GK Mixed Revision-IV + Public Health Engineering'],
-  ['13','27 Sep 2026','Rajasthan GK Mixed Revision-V + Highway & Bridges'],
-  ['14','4 Oct 2026','Full Length Test - 01'],
-  ['15','11 Oct 2026','Full Length Test - 02'],
-  ['16','18 Oct 2026','Full Length Test - 03'],
-  ['17','25 Oct 2026','Full Length Test - 04'],
-  ['18','1 Nov 2026','Full Length Test - 05'],
-  ['19','8 Nov 2026','Full Length Test - 06'],
-  ['20','15 Nov 2026','Full Length Test - 07'],
-  ['21','22 Nov 2026','Full Length Test - 08'],
-  ['22','29 Nov 2026','Full Length Test - 09'],
-  ['23','6 Dec 2026','Full Length Test - 10'],
-  ['24','13 Dec 2026','Full Length Test - 11'],
-  ['25','20 Dec 2026','Full Length Test - 12'],
-  ['26','27 Dec 2026','Full Length Test - 13'],
-  ['27','3 Jan 2027','Full Length Test - 14'],
-  ['28','10 Jan 2027','Full Length Test - 15'],
-];
-
-const OMR_DIPLOMA_SCHEDULE = [
-  ['01','5 Jul 2026','राजस्थान का भूगोल + Building Technology & Construction Management'],
-  ['02','12 Jul 2026','राजस्थान का इतिहास + Surveying, Estimating & Costing'],
-  ['03','19 Jul 2026','राजस्थान की कला एवं संस्कृति + Strength of Materials'],
-  ['04','26 Jul 2026','राजस्थान की राजनीतिक एवं प्रशासनिक व्यवस्था + Reinforced Concrete Design'],
-  ['05','2 Aug 2026','Rajasthan GK Mixed Revision-I + Irrigation & Water Resources'],
-  ['06','9 Aug 2026','Rajasthan GK Mixed Revision-II + Soil Engineering'],
-  ['07','16 Aug 2026','Rajasthan GK Mixed Revision-III + AutoCAD Civil Engineering Drawing'],
-  ['08','23 Aug 2026','Full Length Test - 01'],
-  ['09','30 Aug 2026','Full Length Test - 02'],
-  ['10','6 Sep 2026','Full Length Test - 03'],
-  ['11','13 Sep 2026','Full Length Test - 04'],
-  ['12','20 Sep 2026','Full Length Test - 05'],
-  ['13','27 Sep 2026','Full Length Test - 06'],
-  ['14','4 Oct 2026','Full Length Test - 07'],
-  ['15','11 Oct 2026','Full Length Test - 08'],
-  ['16','18 Oct 2026','Full Length Test - 09'],
-  ['17','25 Oct 2026','Full Length Test - 10'],
-  ['18','1 Nov 2026','Full Length Test - 11'],
-  ['19','8 Nov 2026','Full Length Test - 12'],
-  ['20','15 Nov 2026','Full Length Test - 13'],
-  ['21','22 Nov 2026','Full Length Test - 14'],
-  ['22','29 Nov 2026','Full Length Test - 15'],
-];
-
-function scheduleRowsHtml(schedule) {
-  return schedule.map(([num, date, syllabus]) =>
-    `<tr style="border-bottom:1px solid #e2e8f0;">
-       <td style="padding:7px 10px;font-size:12px;font-weight:700;color:#6366F1;white-space:nowrap;">Test ${num}</td>
-       <td style="padding:7px 10px;font-size:12px;color:#475569;white-space:nowrap;">${date}</td>
-       <td style="padding:7px 10px;font-size:12px;color:#374151;">${syllabus}</td>
-     </tr>`
-  ).join('');
-}
-
-/* ── Parse Tally fields (simplified - only name, email, phone, token) ── */
+/* ── Parse Tally fields (name, email, phone, token, govt ID, photo) ── */
 
 function resolveValue(field) {
   const raw = field.value;
@@ -110,6 +43,15 @@ function parseTallyFields(fields) {
     if (label.includes('phone') || label.includes('mobile') || label.includes('whatsapp') || label.includes('number')) {
       if (!result.phone) result.phone = value;
     }
+    if (label.includes('govt') || label.includes('id proof') || label.includes('aadhar') || label.includes('voter')) {
+      result.govtId = value;
+    }
+    if (label.includes('photo') || label.includes('photograph') || label.includes('picture') || label.includes('image')) {
+      const raw = field.value;
+      if (Array.isArray(raw) && raw.length && raw[0].url) result.photoUrl = raw[0].url;
+      else if (typeof raw === 'object' && raw && raw.url) result.photoUrl = raw.url;
+      else if (typeof raw === 'string' && raw.startsWith('http')) result.photoUrl = raw;
+    }
     if (label === 'token' || label.includes('form token') || label.includes('enrollment token')) {
       result.token = value;
     }
@@ -117,138 +59,102 @@ function parseTallyFields(fields) {
   return result;
 }
 
-/* ── Send rejection email ── */
+/* ── Roll number generator (no physical centre for home-based OMR) ── */
 
-async function sendRejectionEmail(toEmail, reason) {
-  await resendSend({
-    from: FROM,
-    to:   toEmail,
-    subject: 'Enrollment form - action needed | jaspalsingh.in',
-    html: `<!DOCTYPE html><html><head><meta charset="UTF-8"/></head>
-<body style="margin:0;padding:0;background:#f4f5f8;font-family:'Segoe UI',Arial,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f5f8;padding:32px 16px;">
-<tr><td align="center"><table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
-  <tr><td style="background:#0F1117;border-radius:14px 14px 0 0;padding:24px 36px;text-align:center;">
-    <div style="font-size:20px;font-weight:800;color:#fff;">Dr. <span style="color:#C81240;">Jaspal Singh</span></div>
-    <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:4px;letter-spacing:1.5px;text-transform:uppercase;">jaspalsingh.in</div>
-  </td></tr>
-  <tr><td style="background:#fff;padding:32px 36px;">
-    <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:10px;padding:18px 22px;margin-bottom:20px;">
-      <p style="margin:0 0 8px;font-size:15px;font-weight:700;color:#991b1b;">Your form submission could not be processed</p>
-      <p style="margin:0;font-size:14px;color:#7f1d1d;line-height:1.65;">${reason}</p>
-    </div>
-    <p style="font-size:14px;color:#374151;line-height:1.7;margin:0 0 20px;">
-      If you believe this is an error or need help, please contact us immediately on WhatsApp.
-    </p>
-    <a href="https://wa.me/919829133317?text=${encodeURIComponent('Hi, I need help with my OMR enrollment form submission for jaspalsingh.in')}"
-       style="display:inline-block;background:#25D366;color:#fff;border-radius:10px;padding:12px 24px;font-size:14px;font-weight:700;text-decoration:none;">
-      WhatsApp Us Now
-    </a>
-  </td></tr>
-  <tr><td style="background:#f4f5f8;border-radius:0 0 14px 14px;padding:16px 36px;text-align:center;">
-    <p style="margin:0;font-size:12px;color:#9ca3af;">jaspalsingh.in | +91 98291 33317</p>
-  </td></tr>
-</table></td></tr></table>
-</body></html>`,
-  }).catch(e => console.error('[omr rejection email]', e.message));
+function generateOmrRollNumber(isDegreeCourse) {
+  const examCode = isDegreeCourse ? 'DEG' : 'DIP';
+  const num = Math.floor(10000 + Math.random() * 90000);
+  return `OMR-${examCode}-${num}`;
 }
 
-/* ── Main handler: validate token and send confirmation ── */
+/* ── Test schedules (shared by the webhook flow and the admin resend route) ── */
 
-async function processOmrSubmission(fields, type) {
-  const { name, email, phone, token } = parseTallyFields(fields);
+const OMR_SCHEDULE_DEGREE = [
+  ['01','5 Jul 2026','Rajasthan Geography-I + Building Technology & Construction Management'],
+  ['02','12 Jul 2026','Rajasthan History I + Fluid Mechanics'],
+  ['03','19 Jul 2026','Rajasthan Art & Culture-I + Surveying, Estimating Costing & Field Engineering'],
+  ['04','26 Jul 2026','Rajasthan Political & Administrative System-I + Irrigation & Water Resources'],
+  ['05','2 Aug 2026','Rajasthan Geography-II + Theory of Structures & Strength of Materials'],
+  ['06','9 Aug 2026','Rajasthan History II + Structural Analysis'],
+  ['07','16 Aug 2026','Rajasthan Art & Culture-II + Soil Mechanics & Foundation Engineering'],
+  ['08','23 Aug 2026','Rajasthan Political & Administrative System-II + Design of RCC & Masonry Structures'],
+  ['09','30 Aug 2026','Rajasthan GK Mixed Revision-I + Design of Steel Structures'],
+  ['10','6 Sep 2026','Rajasthan GK Mixed Revision-II + Construction Technology'],
+  ['11','13 Sep 2026','Rajasthan GK Mixed Revision-III + AutoCAD Civil Engineering Drawing'],
+  ['12','20 Sep 2026','Rajasthan GK Mixed Revision-IV + Public Health Engineering'],
+  ['13','27 Sep 2026','Rajasthan GK Mixed Revision-V + Highway & Bridges'],
+  ['14','4 Oct 2026','Full Length Test - 01'],
+  ['15','11 Oct 2026','Full Length Test - 02'],
+  ['16','18 Oct 2026','Full Length Test - 03'],
+  ['17','25 Oct 2026','Full Length Test - 04'],
+  ['18','1 Nov 2026','Full Length Test - 05'],
+  ['19','8 Nov 2026','Full Length Test - 06'],
+  ['20','15 Nov 2026','Full Length Test - 07'],
+  ['21','22 Nov 2026','Full Length Test - 08'],
+  ['22','29 Nov 2026','Full Length Test - 09'],
+  ['23','6 Dec 2026','Full Length Test - 10'],
+  ['24','13 Dec 2026','Full Length Test - 11'],
+  ['25','20 Dec 2026','Full Length Test - 12'],
+  ['26','27 Dec 2026','Full Length Test - 13'],
+  ['27','3 Jan 2027','Full Length Test - 14'],
+  ['28','10 Jan 2027','Full Length Test - 15'],
+];
 
-  if (!email) {
-    console.warn('[tally-omr] No email found in fields');
-    return;
-  }
+const OMR_SCHEDULE_DIPLOMA = [
+  ['01','5 Jul 2026','राजस्थान का भूगोल + Building Technology & Construction Management'],
+  ['02','12 Jul 2026','राजस्थान का इतिहास + Surveying, Estimating & Costing'],
+  ['03','19 Jul 2026','राजस्थान की कला एवं संस्कृति + Strength of Materials'],
+  ['04','26 Jul 2026','राजस्थान की राजनीतिक एवं प्रशासनिक व्यवस्था + Reinforced Concrete Design'],
+  ['05','2 Aug 2026','Rajasthan GK Mixed Revision-I + Irrigation & Water Resources'],
+  ['06','9 Aug 2026','Rajasthan GK Mixed Revision-II + Soil Engineering'],
+  ['07','16 Aug 2026','Rajasthan GK Mixed Revision-III + AutoCAD Civil Engineering Drawing'],
+  ['08','23 Aug 2026','Full Length Test - 01'],
+  ['09','30 Aug 2026','Full Length Test - 02'],
+  ['10','6 Sep 2026','Full Length Test - 03'],
+  ['11','13 Sep 2026','Full Length Test - 04'],
+  ['12','20 Sep 2026','Full Length Test - 05'],
+  ['13','27 Sep 2026','Full Length Test - 06'],
+  ['14','4 Oct 2026','Full Length Test - 07'],
+  ['15','11 Oct 2026','Full Length Test - 08'],
+  ['16','18 Oct 2026','Full Length Test - 09'],
+  ['17','25 Oct 2026','Full Length Test - 10'],
+  ['18','1 Nov 2026','Full Length Test - 11'],
+  ['19','8 Nov 2026','Full Length Test - 12'],
+  ['20','15 Nov 2026','Full Length Test - 13'],
+  ['21','22 Nov 2026','Full Length Test - 14'],
+  ['22','29 Nov 2026','Full Length Test - 15'],
+];
 
-  const normEmail = email.toLowerCase().trim();
-  const normPhone = (phone || '').replace(/\D/g, '').slice(-10);
+function getOmrSchedule(isDegreeCourse) {
+  return isDegreeCourse ? OMR_SCHEDULE_DEGREE : OMR_SCHEDULE_DIPLOMA;
+}
 
-  if (!token) {
-    console.warn('[tally-omr] No token in submission - rejecting');
-    await sendRejectionEmail(email,
-      'Your submission did not include a valid enrollment token. This form must be opened using the personal link sent to you in your enrollment email. Please check your email for the "Fill Details Form" button and use that link.'
-    );
-    return;
-  }
+function getOmrLastTestDate(isDegreeCourse) {
+  const schedule = getOmrSchedule(isDegreeCourse);
+  const lastRow = schedule[schedule.length - 1];
+  return `${lastRow[1]} (Test-${lastRow[0]})`;
+}
 
-  /* Look up token in enrollments, scoped to OMR program slugs */
-  const enrResult = await query(
-    `SELECT id, student_email, student_phone, form_used, form_token, program_slug
-     FROM enrollments
-     WHERE form_token = $1 AND program_slug LIKE '%omr%'`,
-    [token]
-  );
-
-  if (!enrResult.rows.length) {
-    console.warn('[tally-omr] Invalid token or not an OMR enrollment:', token);
-    await sendRejectionEmail(email,
-      'The enrollment token in your submission is invalid or does not match any paid OMR enrollment. Please use the original link sent in your enrollment email.'
-    );
-    return;
-  }
-
-  const enrollment = enrResult.rows[0];
-
-  if (enrollment.form_used) {
-    console.warn('[tally-omr] Token already used, enrollment:', enrollment.id);
-    await sendRejectionEmail(email,
-      'This enrollment form has already been submitted. Each enrollment allows only one submission. If you made a mistake, please contact us on WhatsApp.'
-    );
-    return;
-  }
-
-  /* Verify email matches */
-  const expectedEmail = (enrollment.student_email || '').toLowerCase().trim();
-  if (normEmail !== expectedEmail) {
-    console.warn('[tally-omr] Email mismatch - submitted:', normEmail, 'expected:', expectedEmail);
-    await sendRejectionEmail(email,
-      `The email address you entered (${email}) does not match the email used during payment. Please re-open the form using the link in your enrollment email.`
-    );
-    return;
-  }
-
-  /* Verify phone */
-  const expectedPhone = (enrollment.student_phone || '').replace(/\D/g, '').slice(-10);
-  if (normPhone && expectedPhone && normPhone !== expectedPhone) {
-    console.warn('[tally-omr] Phone mismatch - submitted:', normPhone, 'expected:', expectedPhone);
-    await sendRejectionEmail(email,
-      `The mobile number you entered does not match the number used during payment. Please re-open the form using the link in your enrollment email.`
-    );
-    return;
-  }
-
-  /* Atomic claim - WHERE form_used = FALSE ensures only one concurrent
-     request can win even if two webhooks arrive simultaneously. */
-  const claimResult = await query(
-    `UPDATE enrollments SET form_used = TRUE, form_used_at = NOW()
-     WHERE form_token = $1 AND form_used = FALSE
-     RETURNING id`,
-    [token]
-  );
-
-  if (!claimResult.rows.length) {
-    console.warn('[tally-omr] Token race - already claimed, enrollment:', enrollment.id);
-    await sendRejectionEmail(email,
-      'This enrollment form has already been submitted. Each enrollment allows only one submission. If you made a mistake, please contact us on WhatsApp.'
-    );
-    return;
-  }
-
-  console.log('[tally-omr] Token validated, enrollment:', enrollment.id, 'type:', type);
-
-  const isDegreeCourse = type === 'omr-degree';
-  const seriesName = isDegreeCourse
+function getOmrSeriesName(isDegreeCourse) {
+  return isDegreeCourse
     ? 'RSSB JE 2026 - Civil Degree (Home-Based OMR Test Series)'
     : 'RSSB JE 2026 - Civil Diploma (Home-Based OMR Test Series)';
+}
 
-  const schedule = isDegreeCourse ? OMR_DEGREE_SCHEDULE : OMR_DIPLOMA_SCHEDULE;
-  const scheduleRows = scheduleRowsHtml(schedule);
+/* ── Build the full "Identity Verified" confirmation email HTML ──
+   Shared by the automatic Tally webhook flow and the admin resend route. ── */
+function buildOmrConfirmationHtml({ name, isDegreeCourse }) {
+  const seriesName = getOmrSeriesName(isDegreeCourse);
+  const schedule = getOmrSchedule(isDegreeCourse);
+  const scheduleRows = schedule.map(([num, date, syllabus]) =>
+    `<tr style="border-bottom:1px solid #e2e8f0;">
+       <td style="padding:7px 10px;font-size:12px;font-weight:700;color:#6366F1;white-space:nowrap;">Test ${num}</td>
+       <td style="padding:7px 10px;font-size:12px;color:#475569;white-space:nowrap;">${date}</td>
+       <td style="padding:7px 10px;font-size:12px;color:#374151;">${syllabus}</td>
+     </tr>`
+  ).join('');
 
-  /* Send confirmation email */
-  const htmlBody = `<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/></head>
 <body style="margin:0;padding:0;background:#f4f5f8;font-family:'Segoe UI',Arial,sans-serif;">
@@ -385,25 +291,217 @@ async function processOmrSubmission(fields, type) {
 </table>
 </body>
 </html>`;
+}
+
+/* ── Send rejection email ── */
+
+async function sendRejectionEmail(toEmail, reason) {
+  await resendSend({
+    from: FROM,
+    to:   toEmail,
+    subject: 'Enrollment form - action needed | jaspalsingh.in',
+    html: `<!DOCTYPE html><html><head><meta charset="UTF-8"/></head>
+<body style="margin:0;padding:0;background:#f4f5f8;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f5f8;padding:32px 16px;">
+<tr><td align="center"><table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+  <tr><td style="background:#0F1117;border-radius:14px 14px 0 0;padding:24px 36px;text-align:center;">
+    <div style="font-size:20px;font-weight:800;color:#fff;">Dr. <span style="color:#C81240;">Jaspal Singh</span></div>
+    <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:4px;letter-spacing:1.5px;text-transform:uppercase;">jaspalsingh.in</div>
+  </td></tr>
+  <tr><td style="background:#fff;padding:32px 36px;">
+    <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:10px;padding:18px 22px;margin-bottom:20px;">
+      <p style="margin:0 0 8px;font-size:15px;font-weight:700;color:#991b1b;">Your form submission could not be processed</p>
+      <p style="margin:0;font-size:14px;color:#7f1d1d;line-height:1.65;">${reason}</p>
+    </div>
+    <p style="font-size:14px;color:#374151;line-height:1.7;margin:0 0 20px;">
+      If you believe this is an error or need help, please contact us immediately on WhatsApp.
+    </p>
+    <a href="https://wa.me/919829133317?text=${encodeURIComponent('Hi, I need help with my OMR enrollment form submission for jaspalsingh.in')}"
+       style="display:inline-block;background:#25D366;color:#fff;border-radius:10px;padding:12px 24px;font-size:14px;font-weight:700;text-decoration:none;">
+      WhatsApp Us Now
+    </a>
+  </td></tr>
+  <tr><td style="background:#f4f5f8;border-radius:0 0 14px 14px;padding:16px 36px;text-align:center;">
+    <p style="margin:0;font-size:12px;color:#9ca3af;">jaspalsingh.in | +91 98291 33317</p>
+  </td></tr>
+</table></td></tr></table>
+</body></html>`,
+  }).catch(e => console.error('[omr rejection email]', e.message));
+}
+
+/* ── Main handler: validate token and send confirmation ── */
+
+async function processOmrSubmission(fields, type) {
+  const { name, email, phone, token, govtId, photoUrl } = parseTallyFields(fields);
+
+  if (!email) {
+    console.warn('[tally-omr] No email found in fields');
+    return;
+  }
+
+  const normEmail = email.toLowerCase().trim();
+  const normPhone = (phone || '').replace(/\D/g, '').slice(-10);
+
+  if (!token) {
+    console.warn('[tally-omr] No token in submission - rejecting');
+    await sendRejectionEmail(email,
+      'Your submission did not include a valid enrollment token. This form must be opened using the personal link sent to you in your enrollment email. Please check your email for the "Fill Details Form" button and use that link.'
+    );
+    return;
+  }
+
+  /* Look up token in enrollments, scoped to OMR program slugs */
+  const enrResult = await query(
+    `SELECT id, student_email, student_phone, form_used, form_token, program_slug
+     FROM enrollments
+     WHERE form_token = $1 AND program_slug LIKE '%omr%'`,
+    [token]
+  );
+
+  if (!enrResult.rows.length) {
+    console.warn('[tally-omr] Invalid token or not an OMR enrollment:', token);
+    await sendRejectionEmail(email,
+      'The enrollment token in your submission is invalid or does not match any paid OMR enrollment. Please use the original link sent in your enrollment email.'
+    );
+    return;
+  }
+
+  const enrollment = enrResult.rows[0];
+
+  if (enrollment.form_used) {
+    console.warn('[tally-omr] Token already used, enrollment:', enrollment.id);
+    await sendRejectionEmail(email,
+      'This enrollment form has already been submitted. Each enrollment allows only one submission. If you made a mistake, please contact us on WhatsApp.'
+    );
+    return;
+  }
+
+  /* Verify email matches */
+  const expectedEmail = (enrollment.student_email || '').toLowerCase().trim();
+  if (normEmail !== expectedEmail) {
+    console.warn('[tally-omr] Email mismatch - submitted:', normEmail, 'expected:', expectedEmail);
+    await sendRejectionEmail(email,
+      `The email address you entered (${email}) does not match the email used during payment. Please re-open the form using the link in your enrollment email.`
+    );
+    return;
+  }
+
+  /* Verify phone */
+  const expectedPhone = (enrollment.student_phone || '').replace(/\D/g, '').slice(-10);
+  if (normPhone && expectedPhone && normPhone !== expectedPhone) {
+    console.warn('[tally-omr] Phone mismatch - submitted:', normPhone, 'expected:', expectedPhone);
+    await sendRejectionEmail(email,
+      `The mobile number you entered does not match the number used during payment. Please re-open the form using the link in your enrollment email.`
+    );
+    return;
+  }
+
+  /* Atomic claim - WHERE form_used = FALSE ensures only one concurrent
+     request can win even if two webhooks arrive simultaneously. */
+  const claimResult = await query(
+    `UPDATE enrollments SET form_used = TRUE, form_used_at = NOW()
+     WHERE form_token = $1 AND form_used = FALSE
+     RETURNING id`,
+    [token]
+  );
+
+  if (!claimResult.rows.length) {
+    console.warn('[tally-omr] Token race - already claimed, enrollment:', enrollment.id);
+    await sendRejectionEmail(email,
+      'This enrollment form has already been submitted. Each enrollment allows only one submission. If you made a mistake, please contact us on WhatsApp.'
+    );
+    return;
+  }
+
+  console.log('[tally-omr] Token validated, enrollment:', enrollment.id, 'type:', type);
+
+  const isDegreeCourse = type === 'omr-degree';
+  const seriesName = getOmrSeriesName(isDegreeCourse);
+
+  /* Everything below (photo fetch, PDF generation, email send) is wrapped
+     so that any unexpected failure still results in the learner getting a
+     confirmation email (without the PDF) instead of silence - the token is
+     already marked used above, so this is the only remaining chance to
+     reach them without asking them to resubmit the form. */
+  try {
+
+  const rollNumber  = generateOmrRollNumber(isDegreeCourse);
+  const photoBuffer = photoUrl ? await fetchImageBuffer(photoUrl) : null;
+  const lastTestDate = getOmrLastTestDate(isDegreeCourse);
+
+  const pdfBuffer = await generateAdmitCard({
+    name:       name || 'Student',
+    govtId:     govtId || 'N/A',
+    rollNumber,
+    centre:     'Online (Home Based)',
+    targetExam: seriesName,
+    phone:      phone || 'N/A',
+    email:      email || 'N/A',
+    photoBuffer,
+    seriesName,
+    lastTestDate,
+    mode: 'home',
+  });
+
+  const htmlBody = buildOmrConfirmationHtml({ name, isDegreeCourse });
 
   const { error } = await resendSend({
     from:    FROM,
     to:      email,
     subject: `Identity Verified - You're enrolled in ${seriesName}`,
     html:    htmlBody,
+    attachments: [
+      {
+        filename:    `AdmitCard_${rollNumber}.pdf`,
+        content:     pdfBuffer.toString('base64'),
+        contentType: 'application/pdf',
+      },
+    ],
   }, PRIORITY.ACTION_REQUIRED);
 
   if (error) {
     console.error('[tally-omr] Resend error:', error);
   } else {
-    console.log(`[tally-omr] Confirmation email sent to ${email} | type: ${type}`);
+    console.log(`[tally-omr] Confirmation email + Admit Card sent to ${email} | type: ${type} | Roll: ${rollNumber}`);
+  }
+
+  } catch (err) {
+    console.error('[tally-omr] Failed to generate/send Admit Card - sending fallback confirmation without PDF. Enrollment:', enrollment.id, err);
+    await resendSend({
+      from: FROM,
+      to: email,
+      subject: `Identity Verified - You're enrolled in ${seriesName}`,
+      html: `<!DOCTYPE html><html><head><meta charset="UTF-8"/></head>
+<body style="margin:0;padding:0;background:#f4f5f8;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f5f8;padding:32px 16px;">
+<tr><td align="center"><table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;">
+  <tr><td style="background:#0F1117;border-radius:14px 14px 0 0;padding:24px 36px;text-align:center;">
+    <div style="font-size:22px;font-weight:800;color:#fff;">Dr. <span style="color:#C81240;">Jaspal Singh</span></div>
+    <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:4px;letter-spacing:1.5px;text-transform:uppercase;">jaspalsingh.in</div>
+  </td></tr>
+  <tr><td style="background:#fff;padding:32px 36px;">
+    <h2 style="margin:0 0 6px;font-size:20px;color:#1A1A2E;font-weight:800;">Welcome, ${name || 'Learner'}!</h2>
+    <p style="margin:0 0 16px;font-size:15px;color:#6b7280;line-height:1.7;">
+      You are now enrolled in <strong style="color:#1A1A2E;">${seriesName}</strong>. Your identity has been verified successfully.
+    </p>
+    <p style="margin:0 0 16px;font-size:14px;color:#374151;line-height:1.7;">
+      Your Admit Card is being generated and will be emailed to you separately shortly. On each test day morning, you will receive the Question Paper and OMR Sheet PDFs on this email - fill them and reply with a photo before 10:00 PM the same day.
+    </p>
+    <p style="font-size:13px;color:#9ca3af;margin:16px 0 0;">For queries, WhatsApp us at +91 98291 33317.</p>
+  </td></tr>
+  <tr><td style="background:#f4f5f8;border-radius:0 0 14px 14px;padding:16px 36px;text-align:center;">
+    <p style="margin:0;font-size:12px;color:#9ca3af;">jaspalsingh.in | +91 98291 33317</p>
+  </td></tr>
+</table></td></tr></table>
+</body></html>`,
+    }, PRIORITY.ACTION_REQUIRED).catch(e => console.error('[tally-omr] Fallback email also failed:', e.message));
   }
 }
 
 /* ── Main handler: COMBO (Degree + Diploma) OMR submission ──── */
 
 async function processComboOmrSubmission(fields) {
-  const { name, email, phone, token } = parseTallyFields(fields);
+  const { name, email, phone, token, govtId, photoUrl } = parseTallyFields(fields);
 
   if (!email) {
     console.warn('[tally-combo-omr] No email found in fields');
@@ -483,8 +581,20 @@ async function processComboOmrSubmission(fields) {
   console.log('[tally-combo-omr] Token validated, enrollment:', enrollment.id);
 
   const seriesName = 'RSSB JE 2026 - Civil Degree + Diploma Combo (Home-Based OMR Test Series)';
-  const degreeRows  = scheduleRowsHtml(OMR_DEGREE_SCHEDULE);
-  const diplomaRows = scheduleRowsHtml(OMR_DIPLOMA_SCHEDULE);
+  const degreeRows  = OMR_SCHEDULE_DEGREE.map(([num, date, syllabus]) =>
+    `<tr style="border-bottom:1px solid #e2e8f0;">
+       <td style="padding:7px 10px;font-size:12px;font-weight:700;color:#6366F1;white-space:nowrap;">Test ${num}</td>
+       <td style="padding:7px 10px;font-size:12px;color:#475569;white-space:nowrap;">${date}</td>
+       <td style="padding:7px 10px;font-size:12px;color:#374151;">${syllabus}</td>
+     </tr>`
+  ).join('');
+  const diplomaRows = OMR_SCHEDULE_DIPLOMA.map(([num, date, syllabus]) =>
+    `<tr style="border-bottom:1px solid #e2e8f0;">
+       <td style="padding:7px 10px;font-size:12px;font-weight:700;color:#6366F1;white-space:nowrap;">Test ${num}</td>
+       <td style="padding:7px 10px;font-size:12px;color:#475569;white-space:nowrap;">${date}</td>
+       <td style="padding:7px 10px;font-size:12px;color:#374151;">${syllabus}</td>
+     </tr>`
+  ).join('');
 
   const htmlBody = `<!DOCTYPE html>
 <html lang="en">
@@ -626,18 +736,66 @@ async function processComboOmrSubmission(fields) {
 </body>
 </html>`;
 
-  const { error } = await resendSend({
-    from:    FROM,
-    to:      email,
-    subject: `Identity Verified - You're enrolled in ${seriesName}`,
-    html:    htmlBody,
-  }, PRIORITY.ACTION_REQUIRED);
+  /* Everything below (photo fetch, PDF generation, email send) is wrapped so
+     that any unexpected failure still results in the learner getting a
+     confirmation email (without the PDF) instead of silence - the token is
+     already marked used above, so this is the only remaining chance to
+     reach them without asking them to resubmit the form. */
+  try {
+    const rollNumberDegree  = generateOmrRollNumber(true);
+    const rollNumberDiploma = generateOmrRollNumber(false);
+    const photoBuffer = photoUrl ? await fetchImageBuffer(photoUrl) : null;
 
-  if (error) {
-    console.error('[tally-combo-omr] Resend error:', error);
-  } else {
-    console.log(`[tally-combo-omr] Confirmation email sent to ${email}`);
+    const pdfBuffer = await generateComboAdmitCard({
+      name:        name || 'Student',
+      govtId:      govtId || 'N/A',
+      rollNumberDegree,
+      rollNumberDiploma,
+      centre:      'Online (Home Based)',
+      phone:       phone || 'N/A',
+      email:       email || 'N/A',
+      photoBuffer,
+      mode:        'home',
+    });
+
+    const { error } = await resendSend({
+      from:    FROM,
+      to:      email,
+      subject: `Identity Verified - You're enrolled in ${seriesName}`,
+      html:    htmlBody,
+      attachments: [
+        {
+          filename:    `AdmitCard_Combo_${rollNumberDegree}_${rollNumberDiploma}.pdf`,
+          content:     pdfBuffer.toString('base64'),
+          contentType: 'application/pdf',
+        },
+      ],
+    }, PRIORITY.ACTION_REQUIRED);
+
+    if (error) {
+      console.error('[tally-combo-omr] Resend error:', error);
+    } else {
+      console.log(`[tally-combo-omr] Confirmation + Admit Card sent to ${email} | Degree Roll: ${rollNumberDegree} | Diploma Roll: ${rollNumberDiploma}`);
+    }
+  } catch (err) {
+    console.error('[tally-combo-omr] Failed to generate/send Admit Card - sending fallback confirmation without PDF. Enrollment:', enrollment.id, err);
+    await resendSend({
+      from: FROM,
+      to: email,
+      subject: `Identity Verified - You're enrolled in ${seriesName}`,
+      html: htmlBody,
+    }, PRIORITY.ACTION_REQUIRED).catch(e => console.error('[tally-combo-omr] Fallback email also failed:', e.message));
   }
 }
 
-module.exports = { processOmrSubmission, processComboOmrSubmission };
+module.exports = {
+  processOmrSubmission,
+  processComboOmrSubmission,
+  generateOmrRollNumber,
+  getOmrSeriesName,
+  getOmrSchedule,
+  getOmrLastTestDate,
+  buildOmrConfirmationHtml,
+  OMR_SCHEDULE_DEGREE,
+  OMR_SCHEDULE_DIPLOMA,
+};

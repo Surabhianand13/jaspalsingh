@@ -8,6 +8,7 @@ const router   = express.Router();
 const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
 const { query } = require('../config/db');
+const { protectLearner } = require('../middleware/learnerAuth');
 
 /* ── Program slug → clean display label (admin UI only) ──
    The stored program_name text is identical for Offline Degree and
@@ -28,24 +29,22 @@ function programLabel(slug, fallbackName) {
 
 /* ── GET /api/enrollment/account-status ─────────────────────
    Tells the success page whether the buyer already has an account,
-   so the UI can skip the password step.                          */
+   so the UI can skip the password step.
+   Requires form_token (private, unguessable 64-char hex) rather than
+   order_id - order_id is predictable (JSP-<slug>-<timestamp>) and
+   would let account existence + buyer name be enumerated. ── */
 router.get('/account-status', async (req, res) => {
   try {
-    const { form_token, order_id } = req.query;
-    if (!form_token && !order_id) return res.status(400).json({ error: 'Setup link is invalid.' });
+    const { form_token } = req.query;
+    if (!form_token) return res.status(400).json({ error: 'Setup link is invalid.' });
 
-    const enrR = form_token
-      ? await query(
-          `SELECT student_email, student_phone, student_name, form_used FROM enrollments WHERE form_token = $1 AND status = 'paid'`,
-          [form_token]
-        )
-      : await query(
-          `SELECT student_email, student_phone, student_name, form_used FROM enrollments WHERE order_id = $1 AND status = 'paid'`,
-          [order_id]
-        );
+    const enrR = await query(
+      `SELECT student_email, student_phone, student_name, form_used FROM enrollments WHERE form_token = $1 AND status = 'paid'`,
+      [form_token]
+    );
 
     if (!enrR.rows.length) return res.status(404).json({ error: 'Setup link is invalid or has already been used.' });
-    if (enrR.rows[0].form_used && form_token) return res.status(409).json({ error: 'This setup link has already been used.' });
+    if (enrR.rows[0].form_used) return res.status(409).json({ error: 'This setup link has already been used.' });
 
     const enr = enrR.rows[0];
     const existing = await query(
@@ -168,15 +167,9 @@ router.post('/create-account', async (req, res) => {
 });
 
 /* ── GET /api/enrollment/my-enrollments ──────────────────── */
-router.get('/my-enrollments', async (req, res) => {
+router.get('/my-enrollments', protectLearner, async (req, res) => {
   try {
-    const token = (req.headers.authorization || '').replace('Bearer ', '');
-    if (!token) return res.status(401).json({ error: 'Unauthorised.' });
-
-    const jwt = require('jsonwebtoken');
-    let decoded;
-    try { decoded = jwt.verify(token, process.env.JWT_SECRET); }
-    catch(e) { return res.status(401).json({ error: 'Invalid token.' }); }
+    const decoded = req.learner;
 
     // Get the learner's email + phone so we can match purchases that
     // may not yet be linked via learner_id (repeat purchases, etc.)
@@ -415,13 +408,15 @@ router.patch('/admin/:id/email', protect, async (req, res, next) => {
 
 /* ── POST /api/enrollment/admin/resend-admit-card ─────────────
    Admin only - generate and resend admit card for a specific enrollment.
-   Used when the admit card email failed (e.g. Resend rate limit).
-   Body: { enrollment_id, name, govt_id, centre, program_type, photo_url } */
+   Used when the admit card email failed (e.g. Resend rate limit, or the
+   silent-failure bug fixed for OMR learners on 2026-07-04).
+   Body: { enrollment_id, name, govt_id, centre, program_type, photo_url }
+   `centre` is required for offline enrollments only - OMR enrollments are
+   always "Online (Home Based)" and ignore whatever centre is passed in. */
 router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
   try {
     const { enrollment_id, name, govt_id, centre, program_type, photo_url } = req.body;
     if (!enrollment_id) return res.status(400).json({ error: 'enrollment_id required.' });
-    if (!name || !centre)  return res.status(400).json({ error: 'name and centre are required.' });
 
     const enrResult = await query(
       `SELECT id, student_name, student_email, student_phone, program_slug
@@ -431,22 +426,34 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
     if (!enrResult.rows.length) return res.status(404).json({ error: 'Paid enrollment not found.' });
     const enr = enrResult.rows[0];
 
-    const {
-      generateAdmitCard, generateComboAdmitCard, generateRollNumber,
-      buildAdmitCardHtml, buildComboAdmitCardHtml, fetchImageBuffer,
-      getCentreKey, CENTRES, SCHEDULE_DEGREE, SCHEDULE_DIPLOMA,
-    } = require('./tally-webhook');
+    const slug    = enr.program_slug || '';
+    const isOmr   = slug.toLowerCase().includes('omr');
+    const isCombo = slug === 'rssb-je-jaspalsirki-testseries-degree-diploma-combo'
+      || slug === 'rssb-je-jaspalsirki-testseries-degree-diploma-combo-omr';
 
-    const slug      = enr.program_slug || '';
-    const isCombo   = slug === 'rssb-je-jaspalsirki-testseries-degree-diploma-combo';
-    const centreKey  = getCentreKey(centre);
-    const centreInfo = CENTRES[centreKey] || { name: centre, address: 'TBD', mapsLink: '#' };
-    const photoBuffer = photo_url ? await fetchImageBuffer(photo_url) : null;
-    const { send: resendSend, PRIORITY } = require('../services/resendQueue');
+    if (!isCombo) {
+      if (!name)             return res.status(400).json({ error: 'name is required.' });
+      if (!isOmr && !centre) return res.status(400).json({ error: 'centre is required for offline enrollments.' });
+    }
+
+    // fetchImageBufferTrusted (not the webhook's strict fetchImageBuffer) since
+    // photo_url here is admin-supplied, not attacker-reachable webhook input -
+    // it still blocks the obvious SSRF targets (localhost/private ranges/metadata).
+    const { generateAdmitCard, fetchImageBufferTrusted } = require('./tally-webhook');
+    const photoBuffer = photo_url ? await fetchImageBufferTrusted(photo_url) : null;
 
     if (isCombo) {
-      const rollNumberDegree  = generateRollNumber(centreKey || centre, 'degree');
-      const rollNumberDiploma = generateRollNumber(centreKey || centre, 'diploma');
+      const {
+        generateComboAdmitCard, buildComboAdmitCardHtml, generateRollNumber, getCentreKey, CENTRES,
+      } = require('./tally-webhook');
+      const { send: resendSend, PRIORITY } = require('../services/resendQueue');
+
+      const centreKey  = isOmr ? null : getCentreKey(centre);
+      const centreInfo = isOmr ? { name: 'Online (Home Based)', address: '', mapsLink: '#' }
+        : (CENTRES[centreKey] || { name: centre, address: 'TBD', mapsLink: '#' });
+
+      const rollNumberDegree  = await generateRollNumber(centreKey || centreInfo.name, 'degree');
+      const rollNumberDiploma = await generateRollNumber(centreKey || centreInfo.name, 'diploma');
 
       const pdfBuffer = await generateComboAdmitCard({
         name:  name || enr.student_name,
@@ -457,6 +464,7 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
         phone:  enr.student_phone || 'N/A',
         email:  enr.student_email,
         photoBuffer,
+        mode: isOmr ? 'home' : 'offline',
       });
 
       const result = await resendSend({
@@ -473,6 +481,7 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
       }
 
       console.log(`[resend-admit-card] Sent combo to ${enr.student_email} | Degree Roll: ${rollNumberDegree} | Diploma Roll: ${rollNumberDiploma}`);
+      await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2', [`${rollNumberDegree}|${rollNumberDiploma}`, enrollment_id]);
       return res.json({ message: `Admit card sent to ${enr.student_email}`, roll_number_degree: rollNumberDegree, roll_number_diploma: rollNumberDiploma });
     }
 
@@ -480,32 +489,63 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
       : program_type === 'diploma' ? false
       : slug.includes('degree');
 
-    const schedule   = isDegreeCourse ? SCHEDULE_DEGREE : SCHEDULE_DIPLOMA;
-    const seriesName = isDegreeCourse
-      ? 'RSSB JE 2026 - Degree (Civil) - Offline Test Series'
-      : 'RSSB JE 2026 - Diploma (Civil) - Offline Test Series';
-    const lastTestDate = isDegreeCourse ? '10 January 2027 (Test-28)' : '29 November 2026 (Test-22)';
+    let centreForCard, seriesName, schedule, lastTestDate, rollNumber, mode, htmlBody;
 
-    const rollNumber = generateRollNumber(centreKey || centre, isDegreeCourse ? 'degree' : 'diploma');
+    if (isOmr) {
+      const {
+        generateOmrRollNumber, getOmrSeriesName, getOmrLastTestDate, buildOmrConfirmationHtml,
+      } = require('./tally-omr-shared');
+
+      mode         = 'home';
+      centreForCard = 'Online (Home Based)';
+      seriesName   = getOmrSeriesName(isDegreeCourse);
+      lastTestDate = getOmrLastTestDate(isDegreeCourse);
+      rollNumber   = generateOmrRollNumber(isDegreeCourse);
+      htmlBody     = buildOmrConfirmationHtml({ name: name || enr.student_name, isDegreeCourse });
+    } else {
+      const { buildAdmitCardHtml, getCentreKey, CENTRES, SCHEDULE_DEGREE, SCHEDULE_DIPLOMA } = require('./tally-webhook');
+
+      const centreKey  = getCentreKey(centre);
+      const centreInfo = CENTRES[centreKey] || { name: centre, address: 'TBD', mapsLink: '#' };
+      schedule         = isDegreeCourse ? SCHEDULE_DEGREE : SCHEDULE_DIPLOMA;
+
+      mode         = 'offline';
+      centreForCard = centreInfo.name;
+      seriesName   = isDegreeCourse
+        ? 'RSSB JE 2026 - Degree (Civil) - Offline Test Series'
+        : 'RSSB JE 2026 - Diploma (Civil) - Offline Test Series';
+      lastTestDate = isDegreeCourse ? '10 January 2027 (Test-28)' : '29 November 2026 (Test-22)';
+      const prefix = (centreKey || centre || 'JSP').slice(0, 3).toUpperCase();
+      const examCode = isDegreeCourse ? 'DEG' : 'DIP';
+      rollNumber = null;
+      for (let i = 0; i < 10; i++) {
+        const candidate = `${prefix}-${examCode}-${Math.floor(10000 + Math.random() * 90000)}`;
+        const exists = await query('SELECT 1 FROM enrollments WHERE roll_number = $1', [candidate]);
+        if (!exists.rows.length) { rollNumber = candidate; break; }
+      }
+      if (!rollNumber) rollNumber = `${prefix}-${examCode}-${Math.floor(10000 + Math.random() * 90000)}`;
+      htmlBody     = buildAdmitCardHtml({ name: name || enr.student_name, seriesName, centreInfo, schedule, isDegreeCourse });
+    }
 
     const pdfBuffer = await generateAdmitCard({
       name:         name || enr.student_name,
       govtId:       govt_id || 'N/A',
       rollNumber,
-      centre:       centreInfo.name,
+      centre:       centreForCard,
       targetExam:   seriesName,
       phone:        enr.student_phone || 'N/A',
       email:        enr.student_email,
       photoBuffer,
       seriesName,
       lastTestDate,
+      mode,
     });
 
     const result = await resendSend({
       from:        'Dr. Jaspal Singh <team@jaspalsingh.in>',
       to:          enr.student_email,
-      subject:     `Confirmed! Your Admit Card for ${seriesName}`,
-      html:        buildAdmitCardHtml({ name: name || enr.student_name, seriesName, centreInfo, schedule, isDegreeCourse }),
+      subject:     isOmr ? `Identity Verified - You're enrolled in ${seriesName}` : `Confirmed! Your Admit Card for ${seriesName}`,
+      html:        htmlBody,
       attachments: [{ filename: `AdmitCard_${rollNumber}.pdf`, content: pdfBuffer.toString('base64'), contentType: 'application/pdf' }],
     }, PRIORITY.ADMIT_CARD);
 
@@ -515,6 +555,7 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
     }
 
     console.log(`[resend-admit-card] Sent to ${enr.student_email} | Roll: ${rollNumber}`);
+    await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2', [rollNumber, enrollment_id]);
     res.json({ message: `Admit card sent to ${enr.student_email}`, roll_number: rollNumber });
   } catch (err) { next(err); }
 });
@@ -582,33 +623,44 @@ function fetchBuffer(url, depth = 0) {
   });
 }
 
-/* Watermark every page of a PDF with "email | phone" diagonal text */
-async function watermarkPdf(pdfBytes, email, phone) {
+/* Watermark every page of a PDF with "email | phone" diagonal text.
+   `opts.cross` renders it steeper and darker, tilted the opposite way
+   (crosses instead of running parallel under a pre-existing diagonal brand
+   watermark, e.g. the "Jaspal Sir ki Test Series" stamp already baked into
+   some Analysis/Workbook source PDFs - running parallel at the same angle
+   made ours unreadable wherever the two overlapped). Question Paper / OMR
+   Sheet sources have no such pre-existing watermark, so they keep the
+   original subtler style by default. */
+async function watermarkPdf(pdfBytes, email, phone, opts = {}) {
   const pdfDoc  = await PDFDocument.load(pdfBytes);
   const pages   = pdfDoc.getPages();
   const watermarkText = `${email} | ${phone}`;
+
+  const style = opts.cross
+    ? { rotateDeg: -25, color: rgb(0.25, 0.25, 0.25), x: 0.08, opacity: 0.4, size: 16 }
+    : { rotateDeg: 35,  color: rgb(0.6, 0.6, 0.6),    x: 0.10, opacity: 0.18, size: 18 };
 
   for (const page of pages) {
     const { width, height } = page.getSize();
     /* Draw diagonal watermark text across the page center */
     page.drawText(watermarkText, {
-      x:        width  * 0.10,
-      y:        height * 0.45,
-      size:     18,
-      color:    rgb(0.6, 0.6, 0.6),
-      opacity:  0.18,
-      rotate:   degrees(35),
+      x:        width  * style.x,
+      y:        height * (opts.cross ? 0.78 : 0.45),
+      size:     style.size,
+      color:    style.color,
+      opacity:  style.opacity,
+      rotate:   degrees(style.rotateDeg),
       maxWidth: width * 0.85,
     });
     /* Second instance slightly offset for coverage */
     page.drawText(watermarkText, {
-      x:        width  * 0.15,
-      y:        height * 0.20,
-      size:     14,
-      color:    rgb(0.6, 0.6, 0.6),
-      opacity:  0.13,
-      rotate:   degrees(35),
-      maxWidth: width * 0.75,
+      x:        width  * (opts.cross ? style.x : 0.15),
+      y:        height * (opts.cross ? 0.42 : 0.20),
+      size:     opts.cross ? style.size : 14,
+      color:    style.color,
+      opacity:  opts.cross ? style.opacity : 0.13,
+      rotate:   degrees(style.rotateDeg),
+      maxWidth: opts.cross ? width * 0.85 : width * 0.75,
     });
   }
 
@@ -617,7 +669,7 @@ async function watermarkPdf(pdfBytes, email, phone) {
 
 router.post('/admin/send-omr-papers', protect, async (req, res) => {
   try {
-    const { program_slug, test_number, question_paper_url, omr_sheet_url, category } = req.body;
+    const { program_slug, test_number, question_paper_url, omr_sheet_url, category, sample_email, sample_phone, sample_name } = req.body;
 
     if (!program_slug || !test_number || !question_paper_url || !omr_sheet_url) {
       return res.status(400).json({ error: 'program_slug, test_number, question_paper_url and omr_sheet_url are all required.' });
@@ -631,19 +683,26 @@ router.post('/admin/send-omr-papers', protect, async (req, res) => {
       return res.status(400).json({ error: 'category ("degree" or "diploma") is required for combo program slugs.' });
     }
 
-    const enrResult = await query(
-      `SELECT id, student_name, student_email, student_phone
-       FROM enrollments
-       WHERE program_slug = $1 AND status = 'paid'
-       ORDER BY id ASC`,
-      [program_slug]
-    );
+    /* Sample mode: send to a single test address only, skip the enrollments table entirely */
+    const isSample = !!sample_email;
+    let enrollments;
+    if (isSample) {
+      enrollments = [{ id: 'sample', student_name: sample_name || 'Test User', student_email: sample_email, student_phone: sample_phone || '' }];
+    } else {
+      const enrResult = await query(
+        `SELECT id, student_name, student_email, student_phone
+         FROM enrollments
+         WHERE program_slug = $1 AND status = 'paid' AND refund_status != 'initiated'
+         ORDER BY id ASC`,
+        [program_slug]
+      );
 
-    if (!enrResult.rows.length) {
-      return res.json({ sent: 0, failed: 0, message: 'No paid enrollments found for this program.' });
+      if (!enrResult.rows.length) {
+        return res.json({ sent: 0, failed: 0, message: 'No paid enrollments found for this program.' });
+      }
+
+      enrollments = enrResult.rows;
     }
-
-    const enrollments = enrResult.rows;
 
     /* Download both source PDFs once */
     let qpBytes, omrBytes;
@@ -668,11 +727,13 @@ router.post('/admin/send-omr-papers', protect, async (req, res) => {
     const testLabel = `Test ${String(test_number).padStart(2, '0')}`;
     const subject   = `${seriesLabel} - ${testLabel} Question Paper | jaspalsingh.in`;
 
-    /* Respond immediately */
-    res.json({
-      message: `Sending ${testLabel} papers to ${enrollments.length} learners in background...`,
-      total: enrollments.length,
-    });
+    /* Respond immediately for real batch sends; sample sends wait for the result */
+    if (!isSample) {
+      res.json({
+        message: `Sending ${testLabel} papers to ${enrollments.length} learners in background...`,
+        total: enrollments.length,
+      });
+    }
 
     let sent = 0, failed = 0;
     for (const enr of enrollments) {
@@ -792,8 +853,202 @@ router.post('/admin/send-omr-papers', protect, async (req, res) => {
       await new Promise(r => setTimeout(r, 300));
     }
     console.log(`[send-omr-papers] ${testLabel} done. Sent: ${sent}, Failed: ${failed}`);
+
+    if (isSample) {
+      res.json({
+        sent, failed,
+        message: sent ? `Sample email sent to ${sample_email}.` : `Sample email failed to send to ${sample_email}.`,
+      });
+    }
   } catch (err) {
     console.error('[send-omr-papers]', err);
+    if (!res.headersSent) res.status(500).json({ error: 'Server error.' });
+  }
+});
+
+/* ── POST /api/enrollment/admin/send-omr-analysis ────────────
+   Admin endpoint to send the Detailed Analysis & Solutions and
+   Analysis Workbook PDFs (from Google Drive) to all paid
+   enrollments for a given OMR program slug.
+   Watermarks each PDF with the learner's email and phone.
+   Body: { program_slug, test_number, analysis_url, workbook_url }
+   Returns: { sent: N, failed: M }
+   ─────────────────────────────────────────────────────────── */
+router.post('/admin/send-omr-analysis', protect, async (req, res) => {
+  try {
+    const { program_slug, test_number, analysis_urls, workbook_urls, sample_email, sample_phone, sample_name } = req.body;
+
+    /* Each of these can be one or more Drive links (e.g. a multi-part analysis PDF) */
+    const analysisUrls = (Array.isArray(analysis_urls) ? analysis_urls : [analysis_urls]).filter(Boolean);
+    const workbookUrls = (Array.isArray(workbook_urls) ? workbook_urls : [workbook_urls]).filter(Boolean);
+
+    if (!program_slug || !test_number || !analysisUrls.length || !workbookUrls.length) {
+      return res.status(400).json({ error: 'program_slug, test_number, and at least one analysis_urls and workbook_urls link are all required.' });
+    }
+
+    /* Sample mode: send to a single test address only, skip the enrollments table entirely */
+    const isSample = !!sample_email;
+    let enrollments;
+    if (isSample) {
+      enrollments = [{ id: 'sample', student_name: sample_name || 'Test User', student_email: sample_email, student_phone: sample_phone || '' }];
+    } else {
+      const enrResult = await query(
+        `SELECT id, student_name, student_email, student_phone
+         FROM enrollments
+         WHERE program_slug = $1 AND status = 'paid' AND refund_status != 'initiated'
+         ORDER BY id ASC`,
+        [program_slug]
+      );
+
+      if (!enrResult.rows.length) {
+        return res.json({ sent: 0, failed: 0, message: 'No paid enrollments found for this program.' });
+      }
+
+      enrollments = enrResult.rows;
+    }
+
+    /* Download every source PDF once (each list may hold multiple files) */
+    let analysisBytesList, workbookBytesList;
+    try {
+      [analysisBytesList, workbookBytesList] = await Promise.all([
+        Promise.all(analysisUrls.map(u => fetchBuffer(toDriveDownloadUrl(u)))),
+        Promise.all(workbookUrls.map(u => fetchBuffer(toDriveDownloadUrl(u)))),
+      ]);
+    } catch (err) {
+      return res.status(502).json({ error: `Failed to download PDF: ${err.message}` });
+    }
+
+    const isDegreeCourse = program_slug.includes('degree');
+    const seriesLabel = isDegreeCourse
+      ? 'RSSB JE 2026 - Civil Degree (OMR)'
+      : 'RSSB JE 2026 - Civil Diploma (OMR)';
+    const testLabel = `Test ${String(test_number).padStart(2, '0')}`;
+    const subject   = `${seriesLabel} - ${testLabel} Analysis & Solutions | jaspalsingh.in`;
+
+    /* Respond immediately for real batch sends; sample sends wait for the result */
+    if (!isSample) {
+      res.json({
+        message: `Sending ${testLabel} analysis to ${enrollments.length} learners in background...`,
+        total: enrollments.length,
+      });
+    }
+
+    let sent = 0, failed = 0;
+    for (const enr of enrollments) {
+      try {
+        const email = enr.student_email;
+        const phone = (enr.student_phone || '').replace(/\D/g, '').slice(-10);
+        const name  = enr.student_name || 'Learner';
+        const firstName = name.split(' ')[0];
+
+        const [wmAnalysisList, wmWorkbookList] = await Promise.all([
+          Promise.all(analysisBytesList.map(bytes => watermarkPdf(bytes, email, phone, { cross: true }))),
+          Promise.all(workbookBytesList.map(bytes => watermarkPdf(bytes, email, phone, { cross: true }))),
+        ]);
+
+        const html = `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/></head>
+<body style="margin:0;padding:0;background:#f4f5f8;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f5f8;padding:32px 16px;">
+<tr><td align="center">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:580px;">
+  <tr><td style="background:#0F1117;border-radius:14px 14px 0 0;padding:24px 36px;text-align:center;">
+    <div style="font-size:22px;font-weight:800;color:#fff;">Dr. <span style="color:#C81240;">Jaspal Singh</span></div>
+    <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:4px;letter-spacing:1.5px;text-transform:uppercase;">jaspalsingh.in</div>
+  </td></tr>
+  <tr><td style="background:#fff;padding:32px 36px;">
+    <div style="text-align:center;margin-bottom:20px;">
+      <div style="display:inline-block;background:#eef2ff;border:1px solid #c7d2fe;border-radius:50px;padding:8px 22px;">
+        <span style="font-size:13px;font-weight:800;color:#4338CA;">${seriesLabel} - ${testLabel}</span>
+      </div>
+    </div>
+    <h2 style="margin:0 0 8px;font-size:20px;color:#1A1A2E;font-weight:800;">Your Analysis & Solutions are Here, ${firstName}!</h2>
+    <p style="margin:0 0 20px;font-size:15px;color:#6b7280;line-height:1.7;">
+      The <strong>Detailed Analysis & Solutions</strong> and <strong>Analysis Workbook</strong> are attached to this email.
+      Go through them carefully to understand your mistakes and strengthen weak areas before the next test.
+    </p>
+
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:18px 22px;margin-bottom:22px;">
+      <div style="font-size:13px;font-weight:800;color:#1A1A2E;margin-bottom:12px;">What's Inside</div>
+      <table cellpadding="0" cellspacing="0">
+        <tr><td style="padding:4px 0;font-size:13px;color:#374151;line-height:1.7;">
+          <span style="color:#6366F1;font-weight:800;margin-right:8px;">1.</span> <strong>Detailed Analysis & Solutions</strong> - question-wise solutions with concepts explained.
+        </td></tr>
+        <tr><td style="padding:4px 0;font-size:13px;color:#374151;line-height:1.7;">
+          <span style="color:#6366F1;font-weight:800;margin-right:8px;">2.</span> <strong>Analysis Workbook</strong> - practice workbook to reinforce the topics covered.
+        </td></tr>
+        <tr><td style="padding:4px 0;font-size:13px;color:#374151;line-height:1.7;">
+          <span style="color:#6366F1;font-weight:800;margin-right:8px;">3.</span> Review your mistakes and revise the concepts before the next test.
+        </td></tr>
+      </table>
+    </div>
+
+    <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px 18px;margin-bottom:22px;">
+      <p style="margin:0;font-size:13px;color:#78350f;line-height:1.7;">
+        <strong>Note:</strong> Every attached PDF is watermarked with your email and phone number. Do not share them - any leak will be traced back to you.
+      </p>
+    </div>
+
+    <div style="border-top:1px solid #f0f0f6;padding-top:20px;">
+      <p style="margin:0 0 4px;font-size:14px;color:#374151;font-style:italic;line-height:1.7;">
+        "Give your best. Let's crack this together."
+      </p>
+      <p style="margin:0;font-size:13px;color:#C81240;font-weight:700;">- Dr. Jaspal Singh &nbsp;&middot;&nbsp; ESE AIR-04 &nbsp;&middot;&nbsp; GATE AIR-06</p>
+    </div>
+  </td></tr>
+  <tr><td style="background:#f4f5f8;border-radius:0 0 14px 14px;padding:16px 36px;text-align:center;">
+    <p style="margin:0;font-size:12px;color:#9ca3af;">Reply to this email for any queries | +91 98291 33317</p>
+  </td></tr>
+</table>
+</td></tr>
+</table>
+</body></html>`;
+
+        const attachments = [
+          ...wmAnalysisList.map((buf, i) => ({
+            filename:    `DetailedAnalysisAndSolutions_${testLabel.replace(' ', '')}${wmAnalysisList.length > 1 ? `_Part${i + 1}` : ''}.pdf`,
+            content:     buf.toString('base64'),
+            contentType: 'application/pdf',
+          })),
+          ...wmWorkbookList.map((buf, i) => ({
+            filename:    `AnalysisWorkbook_${testLabel.replace(' ', '')}${wmWorkbookList.length > 1 ? `_Part${i + 1}` : ''}.pdf`,
+            content:     buf.toString('base64'),
+            contentType: 'application/pdf',
+          })),
+        ];
+
+        const { error } = await resendSend({
+          from:       OMR_FROM,
+          reply_to:   'team@jaspalsingh.in',
+          to:         email,
+          subject,
+          html,
+          attachments,
+        });
+
+        if (error) {
+          console.error(`[send-omr-analysis] Resend error for ${email}:`, error);
+          failed++;
+        } else {
+          sent++;
+          console.log(`[send-omr-analysis] ${testLabel} sent to ${email} (${sent}/${enrollments.length})`);
+        }
+      } catch (err) {
+        failed++;
+        console.error(`[send-omr-analysis] Failed for enrollment ${enr.id}:`, err.message);
+      }
+      await new Promise(r => setTimeout(r, 300));
+    }
+    console.log(`[send-omr-analysis] ${testLabel} done. Sent: ${sent}, Failed: ${failed}`);
+
+    if (isSample) {
+      res.json({
+        sent, failed,
+        message: sent ? `Sample email sent to ${sample_email}.` : `Sample email failed to send to ${sample_email}.`,
+      });
+    }
+  } catch (err) {
+    console.error('[send-omr-analysis]', err);
     if (!res.headersSent) res.status(500).json({ error: 'Server error.' });
   }
 });

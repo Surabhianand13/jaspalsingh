@@ -8,6 +8,7 @@ const router        = express.Router();
 const PDFDocument   = require('pdfkit');
 const https         = require('https');
 const http          = require('http');
+const sharp         = require('sharp');
 const { send: resendSend, PRIORITY } = require('../services/resendQueue');
 
 const FROM   = 'Dr. Jaspal Singh <team@jaspalsingh.in>';
@@ -131,11 +132,17 @@ DON'Ts:
 
 /* ── Roll number generator ───────────────────────────────── */
 
-function generateRollNumber(centre, targetExam) {
-  const prefix = centre.slice(0, 3).toUpperCase();
+async function generateRollNumber(centre, targetExam) {
+  const prefix   = centre.slice(0, 3).toUpperCase();
   const examCode = targetExam.toLowerCase().includes('degree') ? 'DEG' : 'DIP';
-  const num = Math.floor(10000 + Math.random() * 90000);
-  return `${prefix}-${examCode}-${num}`;
+  let roll;
+  for (let i = 0; i < 10; i++) {
+    const num = Math.floor(10000 + Math.random() * 90000);
+    roll = `${prefix}-${examCode}-${num}`;
+    const exists = await query('SELECT 1 FROM enrollments WHERE roll_number = $1', [roll]);
+    if (!exists.rows.length) return roll;
+  }
+  return roll;
 }
 
 /* ── Parse Tally webhook payload ─────────────────────────── */
@@ -196,6 +203,9 @@ function parseTallyFields(fields) {
     if (label === 'token' || label.includes('form token') || label.includes('enrollment token')) {
       result.token = value;
     }
+    if (label === 'order' || label === 'order_id' || label.includes('order id') || label.includes('order_id') || (label.includes('order') && !label.includes('centre') && !label.includes('center'))) {
+      result.orderId = value;
+    }
   }
 
   console.log('[tally-webhook] Parsed:', result);
@@ -216,25 +226,93 @@ function getCentreKey(centreValue) {
   return null;
 }
 
-/* ── Fetch remote image as buffer ────────────────────────── */
+/* ── SSRF guards ──────────────────────────────────────────
+   photoUrl in the webhook payload is attacker-reachable (anyone who
+   knows a valid unused form_token can POST it directly, bypassing
+   Tally) - restrict that path to Tally's own asset host.
+   The admin "resend admit card" flow supplies photo_url manually from
+   the admin panel; it's behind the admin JWT, so we only block the
+   obvious SSRF targets (localhost / private ranges / cloud metadata)
+   rather than restricting it to a single host. ── */
 
-function fetchImageBuffer(url) {
+function isAllowedTallyAssetUrl(url) {
+  try {
+    const u = new URL(url);
+    if (u.protocol !== 'https:') return false;
+    return u.hostname === 'tally.so' || u.hostname.endsWith('.tally.so');
+  } catch (e) {
+    return false;
+  }
+}
+
+function isSafeExternalUrl(url) {
+  try {
+    const u = new URL(url);
+    if (u.protocol !== 'https:' && u.protocol !== 'http:') return false;
+    const host = u.hostname.toLowerCase();
+    if (host === 'localhost' || host === '169.254.169.254') return false;
+    if (/^(127\.|10\.|192\.168\.|0\.0\.0\.0)/.test(host)) return false;
+    if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(host)) return false;
+    if (host === '::1' || host.startsWith('fc') || host.startsWith('fd') || host.startsWith('fe80')) return false;
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+/* Raw fetch with a timeout - without it, a stalled upstream response hangs
+   this request forever and the whole admit card email silently never sends. */
+function downloadRaw(url) {
   return new Promise((resolve) => {
-    if (!url) return resolve(null);
     const lib = url.startsWith('https') ? https : http;
-    lib.get(url, (res) => {
-      if (res.statusCode !== 200) return resolve(null);
+    const req = lib.get(url, (res) => {
+      if (res.statusCode !== 200) { res.resume(); return resolve(null); }
       const chunks = [];
       res.on('data', c => chunks.push(c));
       res.on('end', () => resolve(Buffer.concat(chunks)));
       res.on('error', () => resolve(null));
-    }).on('error', () => resolve(null));
+    });
+    req.on('error', () => resolve(null));
+    req.setTimeout(10000, () => {
+      req.destroy();
+      resolve(null);
+    });
   });
+}
+
+/* Downscales/recompresses the candidate photo before it gets embedded in the
+   PDF - source uploads can be multi-MB camera photos, which would otherwise
+   bloat the email attachment and occasionally fail to embed cleanly. */
+async function resizeForCard(raw) {
+  try {
+    return await sharp(raw)
+      .rotate() // respect EXIF orientation before resizing
+      .resize({ width: 400, height: 500, fit: 'cover' })
+      .jpeg({ quality: 82 })
+      .toBuffer();
+  } catch (e) {
+    console.warn('[resizeForCard] resize failed, using original:', e.message);
+    return raw;
+  }
+}
+
+/* ── Fetch remote image as buffer (strict allowlist - webhook path) ── */
+async function fetchImageBuffer(url) {
+  if (!url || !isAllowedTallyAssetUrl(url)) return null;
+  const raw = await downloadRaw(url);
+  return raw ? resizeForCard(raw) : null;
+}
+
+/* ── Fetch remote image as buffer (basic SSRF guard - admin path) ── */
+async function fetchImageBufferTrusted(url) {
+  if (!url || !isSafeExternalUrl(url)) return null;
+  const raw = await downloadRaw(url);
+  return raw ? resizeForCard(raw) : null;
 }
 
 /* ── Generate admit card PDF buffer ─────────────────────── */
 
-function generateAdmitCard({ name, govtId, rollNumber, centre, targetExam, phone, email, photoBuffer, seriesName, lastTestDate }) {
+function generateAdmitCard({ name, govtId, rollNumber, centre, targetExam, phone, email, photoBuffer, seriesName, lastTestDate, mode = 'offline' }) {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: 'A4', margin: 0, autoFirstPage: true });
     const chunks = [];
@@ -305,7 +383,7 @@ function generateAdmitCard({ name, govtId, rollNumber, centre, targetExam, phone
        .text(rollNumber, M + 12, y + 14, { lineBreak: false });
     // Series on right
     doc.fillColor(MID).font('Helvetica').fontSize(7.5)
-       .text('EXAM CENTRE', M + 200, y + 5, { lineBreak: false });
+       .text(mode === 'home' ? 'MODE' : 'EXAM CENTRE', M + 200, y + 5, { lineBreak: false });
     doc.fillColor(DARK).font('Helvetica-Bold').fontSize(11)
        .text(centre || 'TBD', M + 200, y + 16, { lineBreak: false });
 
@@ -373,7 +451,14 @@ function generateAdmitCard({ name, govtId, rollNumber, centre, targetExam, phone
        .text('IMPORTANT INSTRUCTIONS', M, y, { lineBreak: false });
     y += 13;
 
-    const instructions = [
+    const instructions = mode === 'home' ? [
+      'Question Paper & OMR Sheet PDFs emailed on each test morning.',
+      'Print both PDFs and attempt the test on paper at home.',
+      'Fill your answers using a blue or black ballpoint pen only.',
+      'Reply to the test email with a clear photo of your filled OMR sheet.',
+      'Submit before 10:00 PM on the same day - no evaluation after that.',
+      'Negative Marking: 0.33 marks deducted per wrong answer.',
+    ] : [
       'Carry this Admit Card (printed or on phone) to every test.',
       'Reach centre at least 15 minutes before test start time.',
       'Bring a valid Govt Photo ID (Aadhar / Voter ID / Passport).',
@@ -566,7 +651,7 @@ const { query } = require('../config/db');
 
 /* programType: 'degree' | 'diploma' | null (auto-detect from field) */
 async function processSubmission(fields, programType) {
-  const { name, govtId, centre: centreRaw, targetExam, phone, email, photoUrl, token } = parseTallyFields(fields);
+  const { name, govtId, centre: centreRaw, targetExam, phone, email, photoUrl, token, orderId } = parseTallyFields(fields);
 
   if (!email) {
     console.warn('[tally-webhook] No email found in fields');
@@ -577,22 +662,28 @@ async function processSubmission(fields, programType) {
   const normEmail = email.toLowerCase().trim();
   const normPhone = (phone || '').replace(/\D/g, '').slice(-10);
 
-  if (!token) {
-    console.warn('[tally-webhook] No token in submission - rejecting');
+  if (!token && !orderId) {
+    console.warn('[tally-webhook] No token or order in submission - rejecting');
     await sendRejectionEmail(email,
       'Your submission did not include a valid enrollment token. This form must be opened using the personal link sent to you in your enrollment email. Please check your email for the "Fill Details Form" button and use that link.'
     );
     return;
   }
 
-  // Look up token - validate it exists and is not already used
-  const lookupResult = await query(
-    `SELECT id, student_email, student_phone, form_used, form_token FROM enrollments WHERE form_token = $1`,
-    [token]
-  );
+  // Look up by token first, fall back to order_id for older offline forms that
+  // don't have the hidden token field configured in Tally.
+  const lookupResult = token
+    ? await query(
+        `SELECT id, student_email, student_phone, form_used, form_token FROM enrollments WHERE form_token = $1`,
+        [token]
+      )
+    : await query(
+        `SELECT id, student_email, student_phone, form_used, form_token FROM enrollments WHERE order_id = $1 AND status = 'paid'`,
+        [orderId]
+      );
 
   if (!lookupResult.rows.length) {
-    console.warn('[tally-webhook] Invalid token:', token);
+    console.warn('[tally-webhook] Invalid token/order - token:', token, 'orderId:', orderId);
     await sendRejectionEmail(email,
       'The enrollment token in your submission is invalid or does not match any paid enrollment. Please use the original link sent in your enrollment email.'
     );
@@ -629,18 +720,19 @@ async function processSubmission(fields, programType) {
     return;
   }
 
-  // Atomically mark token as used - WHERE form_used = FALSE ensures only one
+  // Atomically mark form as used - WHERE form_used = FALSE ensures only one
   // concurrent request can win even if two webhooks arrive simultaneously.
+  // Use id (PK) as the key so this works whether lookup was by token or order_id.
   const claimResult = await query(
     `UPDATE enrollments SET form_used = TRUE, form_used_at = NOW()
-     WHERE form_token = $1 AND form_used = FALSE
+     WHERE id = $1 AND form_used = FALSE
      RETURNING id`,
-    [token]
+    [preCheck.id]
   );
 
   if (!claimResult.rows.length) {
-    // Another concurrent request already claimed this token
-    console.warn('[tally-webhook] Token race - already claimed, enrollment:', preCheck.id);
+    // Another concurrent request already claimed this slot
+    console.warn('[tally-webhook] Race - already claimed, enrollment:', preCheck.id);
     await sendRejectionEmail(email,
       'This enrollment form has already been submitted. Each enrollment allows only one submission. If you made a mistake in your earlier submission, please contact us on WhatsApp immediately and we will assist you.'
     );
@@ -664,49 +756,57 @@ async function processSubmission(fields, programType) {
     : 'RSSB JE 2026 - Diploma (Civil) - Offline Test Series';
   const lastTestDate = isDegreeCourse ? '10 January 2027 (Test-28)' : '29 November 2026 (Test-22)';
 
-  const rollNumber   = generateRollNumber(centreKey || centreRaw, targetExam || '');
-  const photoBuffer  = photoUrl ? await fetchImageBuffer(photoUrl) : null;
+  try {
+    const rollNumber   = await generateRollNumber(centreKey || centreRaw, targetExam || '');
+    const photoBuffer  = photoUrl ? await fetchImageBuffer(photoUrl) : null;
 
-  const pdfBuffer = await generateAdmitCard({
-    name:         name || 'Student',
-    govtId:       govtId || 'N/A',
-    rollNumber,
-    centre:       centreInfo.name,
-    targetExam:   targetExam || seriesName,
-    phone:        phone || 'N/A',
-    email:        email || 'N/A',
-    photoBuffer,
-    seriesName,
-    lastTestDate,
-  });
+    const pdfBuffer = await generateAdmitCard({
+      name:         name || 'Student',
+      govtId:       govtId || 'N/A',
+      rollNumber,
+      centre:       centreInfo.name,
+      targetExam:   targetExam || seriesName,
+      phone:        phone || 'N/A',
+      email:        email || 'N/A',
+      photoBuffer,
+      seriesName,
+      lastTestDate,
+    });
 
-  const htmlBody = buildAdmitCardHtml({ name, seriesName, centreInfo, schedule, isDegreeCourse });
+    const htmlBody = buildAdmitCardHtml({ name, seriesName, centreInfo, schedule, isDegreeCourse });
 
-  /* Send email via Resend queue */
-  const result = await resendSend({
-    from:        FROM,
-    to:          email,
-    subject:     `Confirmed! Your Admit Card for ${seriesName}`,
-    html:        htmlBody,
-    attachments: [
-      {
-        filename:    `AdmitCard_${rollNumber}.pdf`,
-        content:     pdfBuffer.toString('base64'),
-        contentType: 'application/pdf',
-      },
-    ],
-  }, PRIORITY.ADMIT_CARD);
+    const result = await resendSend({
+      from:        FROM,
+      to:          email,
+      subject:     `Confirmed! Your Admit Card for ${seriesName}`,
+      html:        htmlBody,
+      attachments: [
+        {
+          filename:    `AdmitCard_${rollNumber}.pdf`,
+          content:     pdfBuffer.toString('base64'),
+          contentType: 'application/pdf',
+        },
+      ],
+    }, PRIORITY.ADMIT_CARD);
 
-  if (result.error) {
-    console.error('[tally-webhook] Resend error:', result.error);
-  } else {
-    console.log(`[tally-webhook] Email sent to ${email} | Roll: ${rollNumber}`);
+    if (result.error) {
+      console.error('[tally-webhook] Resend error:', result.error);
+      await query('UPDATE enrollments SET form_used = FALSE, form_used_at = NULL WHERE id = $1', [enrollment.id]);
+      console.log('[tally-webhook] Reset form_used to FALSE so student can resubmit:', enrollment.id);
+    } else {
+      console.log(`[tally-webhook] Email sent to ${email} | Roll: ${rollNumber}`);
+      await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2', [rollNumber, enrollment.id]);
+    }
+  } catch (err) {
+    console.error('[tally-webhook] Admit card generation failed:', err.message);
+    await query('UPDATE enrollments SET form_used = FALSE, form_used_at = NULL WHERE id = $1', [enrollment.id]);
+    console.log('[tally-webhook] Reset form_used to FALSE so student can resubmit:', enrollment.id);
   }
 }
 
 /* ── Generate COMBO admit card PDF (both Degree + Diploma roll numbers) ── */
 
-function generateComboAdmitCard({ name, govtId, rollNumberDegree, rollNumberDiploma, centre, phone, email, photoBuffer }) {
+function generateComboAdmitCard({ name, govtId, rollNumberDegree, rollNumberDiploma, centre, phone, email, photoBuffer, mode = 'offline' }) {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: 'A4', margin: 0, autoFirstPage: true });
     const chunks = [];
@@ -731,7 +831,9 @@ function generateComboAdmitCard({ name, govtId, rollNumberDegree, rollNumberDipl
     const AMBERB = '#78350f';
     const AMBERG = '#fff7ed';
 
-    const seriesName = 'RSSB JE 2026 - Civil Degree + Diploma Combo - Offline Test Series';
+    const seriesName = mode === 'home'
+      ? 'RSSB JE 2026 - Civil Degree + Diploma Combo - Home-Based OMR Test Series'
+      : 'RSSB JE 2026 - Civil Degree + Diploma Combo - Offline Test Series';
 
     doc.rect(0, 0, W, 110).fill(NAVY);
     doc.rect(0, 0, W, 4).fill(RED);
@@ -768,7 +870,7 @@ function generateComboAdmitCard({ name, govtId, rollNumberDegree, rollNumberDipl
     doc.fillColor(DARK).font('Helvetica-Bold').fontSize(13)
        .text(rollNumberDiploma, M + 12, y + 39, { lineBreak: false });
     doc.fillColor(MID).font('Helvetica').fontSize(7.5)
-       .text('EXAM CENTRE', M + 260, y + 6, { lineBreak: false });
+       .text(mode === 'home' ? 'MODE' : 'EXAM CENTRE', M + 260, y + 6, { lineBreak: false });
     doc.fillColor(DARK).font('Helvetica-Bold').fontSize(11)
        .text(centre || 'TBD', M + 260, y + 17, { lineBreak: false });
 
@@ -1058,41 +1160,50 @@ async function processComboSubmission(fields) {
   const centreKey  = getCentreKey(centreRaw);
   const centreInfo = CENTRES[centreKey] || { name: centreRaw || 'TBD', address: 'TBD', mapsLink: '#' };
 
-  const rollNumberDegree  = generateRollNumber(centreKey || centreRaw, 'degree');
-  const rollNumberDiploma = generateRollNumber(centreKey || centreRaw, 'diploma');
-  const photoBuffer = photoUrl ? await fetchImageBuffer(photoUrl) : null;
+  try {
+    const rollNumberDegree  = await generateRollNumber(centreKey || centreRaw, 'degree');
+    const rollNumberDiploma = await generateRollNumber(centreKey || centreRaw, 'diploma');
+    const photoBuffer = photoUrl ? await fetchImageBuffer(photoUrl) : null;
 
-  const pdfBuffer = await generateComboAdmitCard({
-    name:        name || 'Student',
-    govtId:      govtId || 'N/A',
-    rollNumberDegree,
-    rollNumberDiploma,
-    centre:      centreInfo.name,
-    phone:       phone || 'N/A',
-    email:       email || 'N/A',
-    photoBuffer,
-  });
+    const pdfBuffer = await generateComboAdmitCard({
+      name:        name || 'Student',
+      govtId:      govtId || 'N/A',
+      rollNumberDegree,
+      rollNumberDiploma,
+      centre:      centreInfo.name,
+      phone:       phone || 'N/A',
+      email:       email || 'N/A',
+      photoBuffer,
+    });
 
-  const htmlBody = buildComboAdmitCardHtml({ name, centreInfo });
+    const htmlBody = buildComboAdmitCardHtml({ name, centreInfo });
 
-  const result = await resendSend({
-    from:        FROM,
-    to:          email,
-    subject:     `Confirmed! Your Admit Card for RSSB JE 2026 - Degree + Diploma Combo`,
-    html:        htmlBody,
-    attachments: [
-      {
-        filename:    `AdmitCard_Combo_${rollNumberDegree}_${rollNumberDiploma}.pdf`,
-        content:     pdfBuffer.toString('base64'),
-        contentType: 'application/pdf',
-      },
-    ],
-  }, PRIORITY.ADMIT_CARD);
+    const result = await resendSend({
+      from:        FROM,
+      to:          email,
+      subject:     `Confirmed! Your Admit Card for RSSB JE 2026 - Degree + Diploma Combo`,
+      html:        htmlBody,
+      attachments: [
+        {
+          filename:    `AdmitCard_Combo_${rollNumberDegree}_${rollNumberDiploma}.pdf`,
+          content:     pdfBuffer.toString('base64'),
+          contentType: 'application/pdf',
+        },
+      ],
+    }, PRIORITY.ADMIT_CARD);
 
-  if (result.error) {
-    console.error('[tally-combo] Resend error:', result.error);
-  } else {
-    console.log(`[tally-combo] Email sent to ${email} | Degree Roll: ${rollNumberDegree} | Diploma Roll: ${rollNumberDiploma}`);
+    if (result.error) {
+      console.error('[tally-combo] Resend error:', result.error);
+      await query('UPDATE enrollments SET form_used = FALSE, form_used_at = NULL WHERE id = $1', [enrollment.id]);
+      console.log('[tally-combo] Reset form_used to FALSE so student can resubmit:', enrollment.id);
+    } else {
+      console.log(`[tally-combo] Email sent to ${email} | Degree Roll: ${rollNumberDegree} | Diploma Roll: ${rollNumberDiploma}`);
+      await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2', [`${rollNumberDegree}|${rollNumberDiploma}`, enrollment.id]);
+    }
+  } catch (err) {
+    console.error('[tally-combo] Admit card generation failed:', err.message);
+    await query('UPDATE enrollments SET form_used = FALSE, form_used_at = NULL WHERE id = $1', [enrollment.id]);
+    console.log('[tally-combo] Reset form_used to FALSE so student can resubmit:', enrollment.id);
   }
 }
 
@@ -1116,6 +1227,7 @@ module.exports.generateComboAdmitCard   = generateComboAdmitCard;
 module.exports.buildAdmitCardHtml       = buildAdmitCardHtml;
 module.exports.buildComboAdmitCardHtml  = buildComboAdmitCardHtml;
 module.exports.fetchImageBuffer         = fetchImageBuffer;
+module.exports.fetchImageBufferTrusted  = fetchImageBufferTrusted;
 module.exports.getCentreKey             = getCentreKey;
 module.exports.generateRollNumber       = generateRollNumber;
 module.exports.CENTRES                  = CENTRES;

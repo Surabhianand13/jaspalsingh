@@ -12,14 +12,14 @@
      router.post('/api/blog',      uploadImage.single('cover_image'), ctrl.create);
    ============================================================ */
 
-const multer              = require('multer');
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const cloudinary          = require('../config/cloudinary');
+const multer            = require('multer');
+const cloudinaryStorage = require('./cloudinaryStorage');
+const cloudinary        = require('../config/cloudinary');
 
 /* ── Cloudinary storage targets ─────────────────────────────── */
 
 /* PDFs → raw resource type, stored in jaspalsingh/resources/ */
-const pdfStorage = new CloudinaryStorage({
+const pdfStorage = cloudinaryStorage({
   cloudinary,
   params: async (req, file) => ({
     folder:        'jaspalsingh/resources',
@@ -31,7 +31,7 @@ const pdfStorage = new CloudinaryStorage({
 });
 
 /* Images for blog covers / testimonial photos */
-const imageStorage = new CloudinaryStorage({
+const imageStorage = cloudinaryStorage({
   cloudinary,
   params: async (req, file) => ({
     folder:        'jaspalsingh/images',
@@ -45,7 +45,7 @@ const imageStorage = new CloudinaryStorage({
 });
 
 /* Profile / hero photo */
-const profileStorage = new CloudinaryStorage({
+const profileStorage = cloudinaryStorage({
   cloudinary,
   params: async (req, file) => ({
     folder:        'jaspalsingh/profile',
@@ -55,6 +55,29 @@ const profileStorage = new CloudinaryStorage({
       { width: 800, height: 800, crop: 'limit', quality: 'auto', fetch_format: 'auto' },
     ],
     public_id: `jaspal_profile_${Date.now()}`,
+  }),
+});
+
+/* OMR submission photos - full resolution kept (no downscale) since the
+   bubble detector needs maximum detail; stored separately from blog/testimonial images */
+const omrPhotoStorage = cloudinaryStorage({
+  cloudinary,
+  params: async (req, file) => ({
+    folder:        'jaspalsingh/omr-submissions',
+    resource_type: 'image',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    public_id:     `omr_sub_${Date.now()}`,
+  }),
+});
+
+/* OMR reference sheet images (used to calibrate a template) */
+const omrReferenceStorage = cloudinaryStorage({
+  cloudinary,
+  params: async (req, file) => ({
+    folder:        'jaspalsingh/omr-templates',
+    resource_type: 'image',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    public_id:     `omr_ref_${Date.now()}`,
   }),
 });
 
@@ -96,6 +119,18 @@ const uploadProfile = multer({
   fileFilter: imageFilter,
 });
 
+const uploadOmrPhoto = multer({
+  storage:    omrPhotoStorage,
+  limits:     { fileSize: 15 * 1024 * 1024 },  // 15 MB - phone photos can be large
+  fileFilter: imageFilter,
+});
+
+const uploadOmrReference = multer({
+  storage:    omrReferenceStorage,
+  limits:     { fileSize: 15 * 1024 * 1024 },
+  fileFilter: imageFilter,
+});
+
 /* ── Multer error handler (attach to route or global) ───────── */
 /* Wrap in a route handler to catch multer-specific errors neatly */
 const handleUploadError = (err, req, res, next) => {
@@ -105,4 +140,4 @@ const handleUploadError = (err, req, res, next) => {
   next(err);
 };
 
-module.exports = { uploadPDF, uploadImage, uploadProfile, handleUploadError };
+module.exports = { uploadPDF, uploadImage, uploadProfile, uploadOmrPhoto, uploadOmrReference, handleUploadError };
