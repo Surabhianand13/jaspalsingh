@@ -12,17 +12,26 @@ const FROM   = 'Dr. Jaspal Singh <team@jaspalsingh.in>';
 const SITE   = 'https://jaspalsingh.in';
 const ADMIN_EMAIL = 'jaspalsingh.pec@gmail.com';
 
-const TALLY_FORM_URL_DIPLOMA     = process.env.TALLY_FORM_URL_DIPLOMA     || 'https://tally.so/r/b5AY87';
-const TALLY_FORM_URL_DEGREE      = process.env.TALLY_FORM_URL_DEGREE      || 'https://tally.so/r/b5AD1Z';
-const TALLY_FORM_URL_OMR_DIPLOMA = process.env.TALLY_FORM_URL_OMR_DIPLOMA || 'https://tally.so/r/jagNz4';
-const TALLY_FORM_URL_OMR_DEGREE  = process.env.TALLY_FORM_URL_OMR_DEGREE  || 'https://tally.so/r/ZjW0P5';
-const TALLY_FORM_URL_REFERRAL    = process.env.TALLY_FORM_URL_REFERRAL    || 'https://tally.so/r/xXog2G';
+const TALLY_FORM_URL_DIPLOMA        = process.env.TALLY_FORM_URL_DIPLOMA        || 'https://tally.so/r/b5AY87';
+const TALLY_FORM_URL_DEGREE         = process.env.TALLY_FORM_URL_DEGREE         || 'https://tally.so/r/b5AD1Z';
+const TALLY_FORM_URL_OMR_DIPLOMA    = process.env.TALLY_FORM_URL_OMR_DIPLOMA    || 'https://tally.so/r/jagNz4';
+const TALLY_FORM_URL_OMR_DEGREE     = process.env.TALLY_FORM_URL_OMR_DEGREE     || 'https://tally.so/r/ZjW0P5';
+const TALLY_FORM_URL_COMBO_OFFLINE  = process.env.TALLY_FORM_URL_COMBO_OFFLINE  || 'https://tally.so/r/5B5kpP';
+const TALLY_FORM_URL_COMBO_OMR      = process.env.TALLY_FORM_URL_COMBO_OMR      || 'https://tally.so/r/dWVAky';
+const TALLY_FORM_URL_REFERRAL       = process.env.TALLY_FORM_URL_REFERRAL       || 'https://tally.so/r/xXog2G';
 
 const WA_GROUP_DIPLOMA     = 'https://chat.whatsapp.com/Iq5hz6qm9kPFdjOEESK4Ka?s=sh&p=a&ilr=4';
 const WA_GROUP_DEGREE      = 'https://chat.whatsapp.com/K0Upt2jTmdQLkaI5c0CvM0?s=sh&p=a&ilr=4';
 const WA_GROUP_OMR_DIPLOMA = 'https://chat.whatsapp.com/GK6ASDe1SKND7WAxXOrrlp?s=sh&p=a&ilr=4';
 const WA_GROUP_OMR_DEGREE  = 'https://chat.whatsapp.com/Im6ILJK7W1D5IQsZARS3IG?s=sh&p=a&ilr=4';
 const WA_GROUP_RPSC_AE     = '';
+
+/* Combo slugs contain BOTH "degree" and "diploma" (and one contains "omr")
+   so they must be matched exactly, before the generic substring checks
+   below - otherwise they'd silently fall into the wrong Degree/OMR-Degree
+   branch since those checks run first. */
+const SLUG_COMBO_OFFLINE = 'rssb-je-jaspalsirki-testseries-degree-diploma-combo';
+const SLUG_COMBO_OMR     = 'rssb-je-jaspalsirki-testseries-degree-diploma-combo-omr';
 
 function esc(s) {
   return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -136,17 +145,38 @@ async function sendWelcomePaymentEmail(enrollment) {
   const firstName = esc((enrollment.student_name || 'there').split(' ')[0]);
 
   const slug = enrollment.program_slug || '';
-  const tallyBase = slug.includes('omr') && slug.includes('degree') ? TALLY_FORM_URL_OMR_DEGREE
-    : slug.includes('omr') && slug.includes('diploma')              ? TALLY_FORM_URL_OMR_DIPLOMA
+  const isComboOffline = slug === SLUG_COMBO_OFFLINE;
+  const isComboOmr     = slug === SLUG_COMBO_OMR;
+
+  const tallyBase = isComboOffline ? TALLY_FORM_URL_COMBO_OFFLINE
+    : isComboOmr                                                    ? TALLY_FORM_URL_COMBO_OMR
+    : slug.includes('omr') && slug.includes('degree')                ? TALLY_FORM_URL_OMR_DEGREE
+    : slug.includes('omr') && slug.includes('diploma')                ? TALLY_FORM_URL_OMR_DIPLOMA
     : slug.includes('degree')                                        ? TALLY_FORM_URL_DEGREE
     :                                                                  TALLY_FORM_URL_DIPLOMA;
   const formUrl = `${tallyBase}?name=${encodeURIComponent(enrollment.student_name)}&email=${encodeURIComponent(enrollment.student_email)}&phone=${encodeURIComponent(enrollment.student_phone || '')}&order=${encodeURIComponent(enrollment.order_id)}&token=${encodeURIComponent(enrollment.form_token || '')}`;
 
-  const waGroup = slug.includes('omr') && slug.includes('degree')  ? WA_GROUP_OMR_DEGREE
-    : slug.includes('omr') && slug.includes('diploma') ? WA_GROUP_OMR_DIPLOMA
-    : slug.includes('degree')                          ? WA_GROUP_DEGREE
-    : slug.includes('diploma')                         ? WA_GROUP_DIPLOMA
-    :                                                    WA_GROUP_RPSC_AE;
+  /* Combo enrollees are in both cohorts, so they get both batch group
+     links; everyone else gets the single group matching their program. */
+  let waGroups;
+  if (isComboOffline) {
+    waGroups = [
+      { label: 'Degree Batch',  link: WA_GROUP_DEGREE },
+      { label: 'Diploma Batch', link: WA_GROUP_DIPLOMA },
+    ].filter(g => g.link);
+  } else if (isComboOmr) {
+    waGroups = [
+      { label: 'Degree Batch (OMR)',  link: WA_GROUP_OMR_DEGREE },
+      { label: 'Diploma Batch (OMR)', link: WA_GROUP_OMR_DIPLOMA },
+    ].filter(g => g.link);
+  } else {
+    const singleGroup = slug.includes('omr') && slug.includes('degree')  ? WA_GROUP_OMR_DEGREE
+      : slug.includes('omr') && slug.includes('diploma') ? WA_GROUP_OMR_DIPLOMA
+      : slug.includes('degree')                          ? WA_GROUP_DEGREE
+      : slug.includes('diploma')                         ? WA_GROUP_DIPLOMA
+      :                                                    WA_GROUP_RPSC_AE;
+    waGroups = singleGroup ? [{ label: null, link: singleGroup }] : [];
+  }
 
   const normPhone = (enrollment.student_phone || '').replace(/\D/g, '').slice(-10);
 
@@ -211,18 +241,19 @@ async function sendWelcomePaymentEmail(enrollment) {
       </p>
     </div>
 
-    ${waGroup ? `
-    <!-- WHATSAPP GROUP -->
+    ${waGroups.length ? `
+    <!-- WHATSAPP GROUP(S) -->
     <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:12px;padding:20px 24px;margin-bottom:28px;">
       <div style="font-size:13px;font-weight:800;color:#166534;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">
-        Join Your WhatsApp Batch Group
+        ${waGroups.length > 1 ? 'Join Your WhatsApp Batch Groups' : 'Join Your WhatsApp Batch Group'}
       </div>
       <p style="margin:0 0 16px;font-size:14px;color:#374151;line-height:1.7;">
-        Get live updates, schedule notifications, and connect with your batch. Join using the link below.
+        Get live updates, schedule notifications, and connect with your batch${waGroups.length > 1 ? '. You are enrolled in both categories, so please join both groups below' : ''}. Join using the link${waGroups.length > 1 ? 's' : ''} below.
       </p>
-      <a href="${waGroup}" style="display:inline-block;background:#25D366;color:#fff;border-radius:10px;padding:13px 24px;font-size:15px;font-weight:700;text-decoration:none;">
-        Join WhatsApp Group →
-      </a>
+      ${waGroups.map((g, i) => `
+      <a href="${g.link}" style="display:inline-block;background:#25D366;color:#fff;border-radius:10px;padding:13px 24px;font-size:15px;font-weight:700;text-decoration:none;${i > 0 ? 'margin-top:10px;' : ''}">
+        ${g.label ? `Join ${g.label} →` : 'Join WhatsApp Group →'}
+      </a>${i < waGroups.length - 1 ? '<br/>' : ''}`).join('')}
       <p style="margin:10px 0 0;font-size:12px;color:#6b7280;">
         This is a one-time invite link for your program. Do not share it publicly.
       </p>

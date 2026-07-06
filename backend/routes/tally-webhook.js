@@ -704,6 +704,398 @@ async function processSubmission(fields, programType) {
   }
 }
 
+/* ── Generate COMBO admit card PDF (both Degree + Diploma roll numbers) ── */
+
+function generateComboAdmitCard({ name, govtId, rollNumberDegree, rollNumberDiploma, centre, phone, email, photoBuffer }) {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ size: 'A4', margin: 0, autoFirstPage: true });
+    const chunks = [];
+    doc.on('data',  c => chunks.push(c));
+    doc.on('end',   () => resolve(Buffer.concat(chunks)));
+    doc.on('error', err => reject(err));
+
+    const W  = doc.page.width;
+    const H  = doc.page.height;
+    const M  = 30;
+    const CW = W - M * 2;
+
+    const RED    = '#C81240';
+    const DARK   = '#0f172a';
+    const NAVY   = '#1A1A2E';
+    const MID    = '#475569';
+    const LIGHT  = '#94a3b8';
+    const BG     = '#f8fafc';
+    const WHITE  = '#ffffff';
+    const BORD   = '#e2e8f0';
+    const AMBER  = '#f59e0b';
+    const AMBERB = '#78350f';
+    const AMBERG = '#fff7ed';
+
+    const seriesName = 'RSSB JE 2026 - Civil Degree + Diploma Combo - Offline Test Series';
+
+    doc.rect(0, 0, W, 110).fill(NAVY);
+    doc.rect(0, 0, W, 4).fill(RED);
+
+    doc.fillColor('#ffffff').opacity(0.04).font('Helvetica-Bold').fontSize(72)
+       .text('ADMIT', 60, 20, { lineBreak: false });
+    doc.opacity(1);
+
+    doc.fillColor(WHITE).font('Helvetica-Bold').fontSize(22)
+       .text('Dr. Jaspal Singh', M, 18, { width: CW, align: 'center', lineBreak: false });
+    doc.fillColor(LIGHT).font('Helvetica').fontSize(8.5)
+       .text(seriesName + '  |  jaspalsingh.in', M, 46, { width: CW, align: 'center', lineBreak: false });
+
+    const bW = 126, bH = 22, bX = (W - bW) / 2, bY = 62;
+    doc.roundedRect(bX, bY, bW, bH, 11).fill(RED);
+    doc.fillColor(WHITE).font('Helvetica-Bold').fontSize(8.5)
+       .text('A D M I T   C A R D', bX, bY + 6.5, { width: bW, align: 'center', lineBreak: false });
+
+    doc.rect(0, 109, W, 1.5).fill(RED);
+
+    doc.rect(0, 110, W, H - 110).fill(WHITE);
+
+    let y = 120;
+
+    /* ── Roll numbers highlight bar - both Degree and Diploma ── */
+    doc.rect(M, y, CW, 44).fill(BG);
+    doc.rect(M, y, 3, 44).fill(RED);
+    doc.fillColor(MID).font('Helvetica').fontSize(7.5)
+       .text('DEGREE ROLL NUMBER', M + 12, y + 6, { lineBreak: false });
+    doc.fillColor(DARK).font('Helvetica-Bold').fontSize(13)
+       .text(rollNumberDegree, M + 12, y + 15, { lineBreak: false });
+    doc.fillColor(MID).font('Helvetica').fontSize(7.5)
+       .text('DIPLOMA ROLL NUMBER', M + 12, y + 30, { lineBreak: false });
+    doc.fillColor(DARK).font('Helvetica-Bold').fontSize(13)
+       .text(rollNumberDiploma, M + 12, y + 39, { lineBreak: false });
+    doc.fillColor(MID).font('Helvetica').fontSize(7.5)
+       .text('EXAM CENTRE', M + 260, y + 6, { lineBreak: false });
+    doc.fillColor(DARK).font('Helvetica-Bold').fontSize(11)
+       .text(centre || 'TBD', M + 260, y + 17, { lineBreak: false });
+
+    y += 52;
+
+    const PHOTO_W = 88, PHOTO_H = 108;
+    const photoX  = W - M - PHOTO_W;
+    const detailsW = CW - PHOTO_W - 16;
+
+    doc.roundedRect(photoX, y, PHOTO_W, PHOTO_H, 4)
+       .lineWidth(1.5).strokeColor(BORD).stroke();
+    if (photoBuffer) {
+      try {
+        doc.save();
+        doc.roundedRect(photoX + 1.5, y + 1.5, PHOTO_W - 3, PHOTO_H - 3, 3).clip();
+        doc.image(photoBuffer, photoX + 1.5, y + 1.5, { width: PHOTO_W - 3, height: PHOTO_H - 3, cover: [PHOTO_W - 3, PHOTO_H - 3] });
+        doc.restore();
+      } catch(e) {
+        doc.fillColor(LIGHT).font('Helvetica').fontSize(7)
+           .text('Photo', photoX, y + PHOTO_H / 2 - 4, { width: PHOTO_W, align: 'center', lineBreak: false });
+      }
+    } else {
+      doc.roundedRect(photoX, y, PHOTO_W, PHOTO_H, 4).fill('#f1f5f9');
+      doc.fillColor(LIGHT).font('Helvetica').fontSize(7)
+         .text('Photograph', photoX, y + PHOTO_H / 2 - 4, { width: PHOTO_W, align: 'center', lineBreak: false });
+    }
+    doc.fillColor(LIGHT).font('Helvetica').fontSize(6.5)
+       .text('Candidate Photo', photoX, y + PHOTO_H + 3, { width: PHOTO_W, align: 'center', lineBreak: false });
+
+    doc.fillColor(RED).font('Helvetica-Bold').fontSize(8)
+       .text('STUDENT DETAILS', M, y, { lineBreak: false });
+    y += 13;
+
+    const details = [
+      ['Candidate Name', name],
+      ['Govt ID',        govtId || 'N/A'],
+      ['Mobile',         phone],
+      ['Email',          email],
+      ['Program',        seriesName],
+    ];
+
+    for (const [lbl, val] of details) {
+      doc.fillColor(LIGHT).font('Helvetica').fontSize(7)
+         .text(lbl, M, y, { width: detailsW, lineBreak: false });
+      y += 9;
+      doc.fillColor(DARK).font('Helvetica-Bold').fontSize(8.5)
+         .text(val || 'N/A', M, y, { width: detailsW, lineBreak: false });
+      y += 14;
+    }
+
+    const photoBottom = 172 + PHOTO_H + 14;
+    if (y < photoBottom) y = photoBottom;
+
+    doc.rect(M, y, CW, 0.75).fill(BORD);
+    y += 12;
+
+    doc.fillColor(RED).font('Helvetica-Bold').fontSize(8.5)
+       .text('IMPORTANT INSTRUCTIONS', M, y, { lineBreak: false });
+    y += 13;
+
+    const instructions = [
+      'Carry this Admit Card (printed or on phone) to every test.',
+      'Reach centre at least 15 minutes before test start time.',
+      'Bring a valid Govt Photo ID (Aadhar / Voter ID / Passport).',
+      'Negative Marking: 0.33 marks deducted per wrong answer.',
+      'No mobile phones or electronic devices inside the exam hall.',
+      'Detailed Solution Booklet will be distributed after each test.',
+    ];
+
+    const colW = (CW - 12) / 2;
+    const startY = y;
+    instructions.forEach((line, i) => {
+      const col = i < 3 ? 0 : 1;
+      const cx  = M + col * (colW + 12);
+      const cy  = startY + (i % 3) * 16;
+      doc.roundedRect(cx, cy + 3.5, 4, 4, 2).fill(RED);
+      doc.fillColor(DARK).font('Helvetica').fontSize(7.5)
+         .text(line, cx + 9, cy, { width: colW - 9, lineBreak: false });
+    });
+    y = startY + 3 * 16 + 8;
+
+    doc.rect(M, y, CW, 0.75).fill(BORD);
+    y += 10;
+
+    const validityText = `Degree tests valid till 10 January 2027 (Test-28)  |  Diploma tests valid till 29 November 2026 (Test-22)  |  Schedule subject to change - notified via email & WhatsApp.`;
+    doc.rect(M, y, CW, 22).fill(AMBERG);
+    doc.rect(M, y, 3, 22).fill(AMBER);
+    doc.fillColor(AMBERB).font('Helvetica-Bold').fontSize(7)
+       .text('VALIDITY NOTE  ', M + 10, y + 7.5, { continued: true, lineBreak: false })
+       .font('Helvetica').fontSize(6.5)
+       .text(validityText, { width: CW - 20, lineBreak: false });
+    y += 30;
+
+    doc.rect(M + CW - 120, y, 120, 0.75).fill(DARK);
+    doc.fillColor(MID).font('Helvetica').fontSize(7)
+       .text('Authorised Signatory', M + CW - 120, y + 3, { width: 120, align: 'center', lineBreak: false });
+    y += 22;
+
+    doc.rect(0, y, W, 28).fill(DARK);
+    doc.fillColor(LIGHT).font('Helvetica').fontSize(7)
+       .text(
+         'Computer-generated  |  No signature required  |  jaspalsingh.in  |  +91 98291 33317',
+         M, y + 9.5, { width: CW, align: 'center', lineBreak: false }
+       );
+
+    doc.end();
+  });
+}
+
+/* ── Build COMBO admit card email HTML (both schedules) ──────── */
+
+function buildComboAdmitCardHtml({ name, centreInfo }) {
+  const scheduleTable = (rows) => `
+    <table style="width:100%;border-collapse:collapse;font-size:12.5px;">
+      <thead>
+        <tr style="background:#0f172a;color:#fff;">
+          <th style="padding:7px 9px;text-align:left;">Test</th>
+          <th style="padding:7px 9px;text-align:left;">Date</th>
+          <th style="padding:7px 9px;text-align:left;">Syllabus</th>
+          <th style="padding:7px 9px;text-align:center;">Qs</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map((r, i) => `
+        <tr style="background:${i % 2 === 0 ? '#fff' : '#f8fafc'};">
+          <td style="padding:6px 9px;border-bottom:1px solid #e2e8f0;">${r.test}</td>
+          <td style="padding:6px 9px;border-bottom:1px solid #e2e8f0;white-space:nowrap;">${r.date}</td>
+          <td style="padding:6px 9px;border-bottom:1px solid #e2e8f0;">${r.syllabus}</td>
+          <td style="padding:6px 9px;border-bottom:1px solid #e2e8f0;text-align:center;">${r.questions}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8" /></head>
+<body style="font-family:Arial,sans-serif;color:#0f172a;max-width:640px;margin:0 auto;padding:20px;">
+
+  <div style="background:#0f172a;border-radius:12px;padding:28px 32px;margin-bottom:24px;text-align:center;">
+    <h1 style="color:#fff;margin:0;font-size:22px;">Dr. Jaspal Singh</h1>
+    <p style="color:#94a3b8;margin:6px 0 0;font-size:13px;">jaspalsingh.in</p>
+  </div>
+
+  <p style="font-size:16px;">Dear <strong>${name || 'Student'}</strong>,</p>
+  <p>Congratulations! Your registration for the <strong>RSSB JE 2026 - Civil Degree + Diploma Combo (Offline Test Series)</strong> has been confirmed - you are enrolled in <strong>both</strong> the Degree and Diploma categories.</p>
+  <p>Please find your <strong>combined Admit Card attached</strong> to this email as a PDF, with a separate roll number for each category. Carry it (printed or on your phone) to every test.</p>
+
+  <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:20px 24px;margin:20px 0;">
+    <h2 style="font-size:15px;margin:0 0 12px;color:#c81240;">Your Exam Centre</h2>
+    <p style="margin:4px 0;"><strong>Centre:</strong> ${centreInfo.name}</p>
+    <p style="margin:4px 0;"><strong>Address:</strong> ${centreInfo.address}</p>
+    <p style="margin:8px 0 0;">
+      <a href="${centreInfo.mapsLink}" style="background:#c81240;color:#fff;text-decoration:none;padding:8px 18px;border-radius:6px;font-size:13px;font-weight:bold;">
+        View on Google Maps
+      </a>
+    </p>
+  </div>
+
+  <div style="margin:20px 0;">
+    <h2 style="font-size:15px;color:#0F766E;margin-bottom:12px;">Civil Degree Test Schedule (28 Tests)</h2>
+    ${scheduleTable(SCHEDULE_DEGREE)}
+  </div>
+
+  <div style="margin:20px 0;">
+    <h2 style="font-size:15px;color:#c81240;margin-bottom:12px;">Civil Diploma Test Schedule (22 Tests)</h2>
+    ${scheduleTable(SCHEDULE_DIPLOMA)}
+  </div>
+
+  <p style="font-size:12px;color:#64748b;">
+    * Both schedules run on the same Sundays at the same centre. Schedule may be revised after the official RSSB JE 2026 examination date announcement.
+  </p>
+
+  <div style="background:#fefce8;border:1px solid #fde68a;border-radius:10px;padding:20px 24px;margin:20px 0;">
+    <h2 style="font-size:15px;margin:0 0 12px;color:#92400e;">Do's and Don'ts</h2>
+    <p style="font-size:13px;font-weight:bold;margin:10px 0 6px;color:#15803d;">DOs:</p>
+    <ul style="margin:0 0 12px;padding-left:20px;font-size:13px;line-height:1.7;">
+      <li>Carry this Admit Card (printed or on phone) to every test</li>
+      <li>Reach the centre at least <strong>15 minutes before</strong> the test start time</li>
+      <li>Bring a valid Govt Photo ID (Aadhar, Voter ID, Driving Licence, Passport)</li>
+      <li>Use only a <strong>blue or black ballpoint pen</strong></li>
+      <li>Negative Marking: <strong>0.33 marks deducted per wrong answer</strong></li>
+      <li>Collect your Detailed Solution Booklet after each test</li>
+    </ul>
+    <p style="font-size:13px;font-weight:bold;margin:10px 0 6px;color:#dc2626;">DON'Ts:</p>
+    <ul style="margin:0;padding-left:20px;font-size:13px;line-height:1.7;">
+      <li>Do NOT bring mobile phones, smartwatches, or electronic devices inside the exam hall</li>
+      <li>Do NOT use pencil, gel pens, or whitener on the OMR sheet</li>
+      <li>Do NOT arrive late - latecomers may not be allowed entry</li>
+      <li>Do NOT carry books, notes, or study material into the exam hall</li>
+    </ul>
+  </div>
+
+  <p style="font-size:14px;">For any queries, feel free to reach out on WhatsApp or call us directly.</p>
+  <p style="font-size:14px;margin-top:20px;">
+    Best wishes for your preparation!<br/>
+    <strong>Dr. Jaspal Singh</strong><br/>
+    <a href="https://jaspalsingh.in" style="color:#c81240;">jaspalsingh.in</a>
+  </p>
+  <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0;" />
+  <p style="font-size:11px;color:#94a3b8;text-align:center;">This is an automated confirmation email. Please do not reply to this email.</p>
+</body>
+</html>`;
+}
+
+/* ── Process COMBO (Degree + Diploma) submission ─────────────── */
+
+async function processComboSubmission(fields) {
+  const { name, govtId, centre: centreRaw, phone, email, photoUrl, token } = parseTallyFields(fields);
+
+  if (!email) {
+    console.warn('[tally-combo] No email found in fields');
+    return;
+  }
+
+  const normEmail = email.toLowerCase().trim();
+  const normPhone = (phone || '').replace(/\D/g, '').slice(-10);
+
+  if (!token) {
+    console.warn('[tally-combo] No token in submission - rejecting');
+    await sendRejectionEmail(email,
+      'Your submission did not include a valid enrollment token. This form must be opened using the personal link sent to you in your enrollment email. Please check your email for the "Fill Details Form" button and use that link.'
+    );
+    return;
+  }
+
+  const lookupResult = await query(
+    `SELECT id, student_email, student_phone, form_used, form_token FROM enrollments WHERE form_token = $1`,
+    [token]
+  );
+
+  if (!lookupResult.rows.length) {
+    console.warn('[tally-combo] Invalid token:', token);
+    await sendRejectionEmail(email,
+      'The enrollment token in your submission is invalid or does not match any paid enrollment. Please use the original link sent in your enrollment email.'
+    );
+    return;
+  }
+
+  if (lookupResult.rows[0].form_used) {
+    console.warn('[tally-combo] Token already used (pre-check), enrollment:', lookupResult.rows[0].id);
+    await sendRejectionEmail(email,
+      'This enrollment form has already been submitted. Each enrollment allows only one submission. If you made a mistake in your earlier submission, please contact us on WhatsApp immediately and we will assist you.'
+    );
+    return;
+  }
+
+  const preCheck = lookupResult.rows[0];
+
+  const expectedEmail = (preCheck.student_email || '').toLowerCase().trim();
+  if (normEmail !== expectedEmail) {
+    console.warn('[tally-combo] Email mismatch - submitted:', normEmail, 'expected:', expectedEmail);
+    await sendRejectionEmail(email,
+      `The email address you entered (${email}) does not match the email used during payment (${preCheck.student_email}). Please re-open the form using the link in your enrollment email and enter the same email address you used at checkout.`
+    );
+    return;
+  }
+
+  const expectedPhone = (preCheck.student_phone || '').replace(/\D/g, '').slice(-10);
+  if (normPhone && expectedPhone && normPhone !== expectedPhone) {
+    console.warn('[tally-combo] Phone mismatch - submitted:', normPhone, 'expected:', expectedPhone);
+    await sendRejectionEmail(email,
+      `The mobile number you entered does not match the number used during payment (+91 ${expectedPhone}). Please re-open the form using the link in your enrollment email and enter the same mobile number you used at checkout.`
+    );
+    return;
+  }
+
+  /* Atomic claim - same idempotency guard as the individual Degree/Diploma
+     flow, so concurrent/duplicate webhook deliveries can't double-process. */
+  const claimResult = await query(
+    `UPDATE enrollments SET form_used = TRUE, form_used_at = NOW()
+     WHERE form_token = $1 AND form_used = FALSE
+     RETURNING id`,
+    [token]
+  );
+
+  if (!claimResult.rows.length) {
+    console.warn('[tally-combo] Token race - already claimed, enrollment:', preCheck.id);
+    await sendRejectionEmail(email,
+      'This enrollment form has already been submitted. Each enrollment allows only one submission. If you made a mistake in your earlier submission, please contact us on WhatsApp immediately and we will assist you.'
+    );
+    return;
+  }
+
+  const enrollment = preCheck;
+  console.log('[tally-combo] Token claimed, processing combo enrollment:', enrollment.id);
+
+  const centreKey  = getCentreKey(centreRaw);
+  const centreInfo = CENTRES[centreKey] || { name: centreRaw || 'TBD', address: 'TBD', mapsLink: '#' };
+
+  const rollNumberDegree  = generateRollNumber(centreKey || centreRaw, 'degree');
+  const rollNumberDiploma = generateRollNumber(centreKey || centreRaw, 'diploma');
+  const photoBuffer = photoUrl ? await fetchImageBuffer(photoUrl) : null;
+
+  const pdfBuffer = await generateComboAdmitCard({
+    name:        name || 'Student',
+    govtId:      govtId || 'N/A',
+    rollNumberDegree,
+    rollNumberDiploma,
+    centre:      centreInfo.name,
+    phone:       phone || 'N/A',
+    email:       email || 'N/A',
+    photoBuffer,
+  });
+
+  const htmlBody = buildComboAdmitCardHtml({ name, centreInfo });
+
+  const result = await resendSend({
+    from:        FROM,
+    to:          email,
+    subject:     `Confirmed! Your Admit Card for RSSB JE 2026 - Degree + Diploma Combo`,
+    html:        htmlBody,
+    attachments: [
+      {
+        filename:    `AdmitCard_Combo_${rollNumberDegree}_${rollNumberDiploma}.pdf`,
+        content:     pdfBuffer.toString('base64'),
+        contentType: 'application/pdf',
+      },
+    ],
+  }, PRIORITY.ADMIT_CARD);
+
+  if (result.error) {
+    console.error('[tally-combo] Resend error:', result.error);
+  } else {
+    console.log(`[tally-combo] Email sent to ${email} | Degree Roll: ${rollNumberDegree} | Diploma Roll: ${rollNumberDiploma}`);
+  }
+}
+
 /* ── POST /api/tally-webhook (legacy combined form) ─────── */
 
 router.post('/', (req, res) => {
@@ -717,11 +1109,15 @@ router.post('/', (req, res) => {
 });
 
 module.exports = router;
-module.exports.processSubmission   = processSubmission;
-module.exports.generateAdmitCard   = generateAdmitCard;
-module.exports.buildAdmitCardHtml  = buildAdmitCardHtml;
-module.exports.fetchImageBuffer    = fetchImageBuffer;
-module.exports.getCentreKey        = getCentreKey;
-module.exports.CENTRES             = CENTRES;
-module.exports.SCHEDULE_DEGREE     = SCHEDULE_DEGREE;
-module.exports.SCHEDULE_DIPLOMA    = SCHEDULE_DIPLOMA;
+module.exports.processSubmission        = processSubmission;
+module.exports.processComboSubmission   = processComboSubmission;
+module.exports.generateAdmitCard        = generateAdmitCard;
+module.exports.generateComboAdmitCard   = generateComboAdmitCard;
+module.exports.buildAdmitCardHtml       = buildAdmitCardHtml;
+module.exports.buildComboAdmitCardHtml  = buildComboAdmitCardHtml;
+module.exports.fetchImageBuffer         = fetchImageBuffer;
+module.exports.getCentreKey             = getCentreKey;
+module.exports.generateRollNumber       = generateRollNumber;
+module.exports.CENTRES                  = CENTRES;
+module.exports.SCHEDULE_DEGREE          = SCHEDULE_DEGREE;
+module.exports.SCHEDULE_DIPLOMA         = SCHEDULE_DIPLOMA;

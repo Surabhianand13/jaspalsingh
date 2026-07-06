@@ -18,6 +18,8 @@ const PROGRAM_LABELS = {
   'rssb-jen-degree-test-series':       'Offline Degree',
   'rssb-je-omr-degree-test-series':    'OMR Degree',
   'rssb-jen-omr-diploma-test-series':  'OMR Diploma',
+  'rssb-je-jaspalsirki-testseries-degree-diploma-combo':     'Combo Offline',
+  'rssb-je-jaspalsirki-testseries-degree-diploma-combo-omr': 'Combo OMR',
   'rpsc-ae-interview':                 'RPSC AE Interview Guidance',
 };
 function programLabel(slug, fallbackName) {
@@ -430,28 +432,61 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
     const enr = enrResult.rows[0];
 
     const {
-      generateAdmitCard, buildAdmitCardHtml, fetchImageBuffer,
+      generateAdmitCard, generateComboAdmitCard, generateRollNumber,
+      buildAdmitCardHtml, buildComboAdmitCardHtml, fetchImageBuffer,
       getCentreKey, CENTRES, SCHEDULE_DEGREE, SCHEDULE_DIPLOMA,
     } = require('./tally-webhook');
 
-    const slug = enr.program_slug || '';
+    const slug      = enr.program_slug || '';
+    const isCombo   = slug === 'rssb-je-jaspalsirki-testseries-degree-diploma-combo';
+    const centreKey  = getCentreKey(centre);
+    const centreInfo = CENTRES[centreKey] || { name: centre, address: 'TBD', mapsLink: '#' };
+    const photoBuffer = photo_url ? await fetchImageBuffer(photo_url) : null;
+    const { send: resendSend, PRIORITY } = require('../services/resendQueue');
+
+    if (isCombo) {
+      const rollNumberDegree  = generateRollNumber(centreKey || centre, 'degree');
+      const rollNumberDiploma = generateRollNumber(centreKey || centre, 'diploma');
+
+      const pdfBuffer = await generateComboAdmitCard({
+        name:  name || enr.student_name,
+        govtId: govt_id || 'N/A',
+        rollNumberDegree,
+        rollNumberDiploma,
+        centre: centreInfo.name,
+        phone:  enr.student_phone || 'N/A',
+        email:  enr.student_email,
+        photoBuffer,
+      });
+
+      const result = await resendSend({
+        from:        'Dr. Jaspal Singh <team@jaspalsingh.in>',
+        to:          enr.student_email,
+        subject:     `Confirmed! Your Admit Card for RSSB JE 2026 - Degree + Diploma Combo`,
+        html:        buildComboAdmitCardHtml({ name: name || enr.student_name, centreInfo }),
+        attachments: [{ filename: `AdmitCard_Combo_${rollNumberDegree}_${rollNumberDiploma}.pdf`, content: pdfBuffer.toString('base64'), contentType: 'application/pdf' }],
+      }, PRIORITY.ADMIT_CARD);
+
+      if (result.error) {
+        console.error('[resend-admit-card] Resend error:', result.error);
+        return res.status(502).json({ error: `Email send failed: ${result.error.message}` });
+      }
+
+      console.log(`[resend-admit-card] Sent combo to ${enr.student_email} | Degree Roll: ${rollNumberDegree} | Diploma Roll: ${rollNumberDiploma}`);
+      return res.json({ message: `Admit card sent to ${enr.student_email}`, roll_number_degree: rollNumberDegree, roll_number_diploma: rollNumberDiploma });
+    }
+
     const isDegreeCourse = program_type === 'degree' ? true
       : program_type === 'diploma' ? false
       : slug.includes('degree');
 
-    const centreKey  = getCentreKey(centre);
-    const centreInfo = CENTRES[centreKey] || { name: centre, address: 'TBD', mapsLink: '#' };
     const schedule   = isDegreeCourse ? SCHEDULE_DEGREE : SCHEDULE_DIPLOMA;
     const seriesName = isDegreeCourse
       ? 'RSSB JE 2026 - Degree (Civil) - Offline Test Series'
       : 'RSSB JE 2026 - Diploma (Civil) - Offline Test Series';
     const lastTestDate = isDegreeCourse ? '10 January 2027 (Test-28)' : '29 November 2026 (Test-22)';
 
-    const prefix     = (centreKey || centre || 'JSP').slice(0, 3).toUpperCase();
-    const examCode   = isDegreeCourse ? 'DEG' : 'DIP';
-    const rollNumber = `${prefix}-${examCode}-${Math.floor(10000 + Math.random() * 90000)}`;
-
-    const photoBuffer = photo_url ? await fetchImageBuffer(photo_url) : null;
+    const rollNumber = generateRollNumber(centreKey || centre, isDegreeCourse ? 'degree' : 'diploma');
 
     const pdfBuffer = await generateAdmitCard({
       name:         name || enr.student_name,
@@ -465,8 +500,6 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
       seriesName,
       lastTestDate,
     });
-
-    const { send: resendSend, PRIORITY } = require('../services/resendQueue');
 
     const result = await resendSend({
       from:        'Dr. Jaspal Singh <team@jaspalsingh.in>',
@@ -584,10 +617,18 @@ async function watermarkPdf(pdfBytes, email, phone) {
 
 router.post('/admin/send-omr-papers', protect, async (req, res) => {
   try {
-    const { program_slug, test_number, question_paper_url, omr_sheet_url } = req.body;
+    const { program_slug, test_number, question_paper_url, omr_sheet_url, category } = req.body;
 
     if (!program_slug || !test_number || !question_paper_url || !omr_sheet_url) {
       return res.status(400).json({ error: 'program_slug, test_number, question_paper_url and omr_sheet_url are all required.' });
+    }
+    /* The combo slug covers both Degree and Diploma, each with its own
+       question paper - send this endpoint twice (once per category) and
+       pass category explicitly so the email subject/label is correct.
+       For the 4 individual programs, category is inferred from the slug
+       as before and does not need to be passed. */
+    if (program_slug.includes('combo') && !category) {
+      return res.status(400).json({ error: 'category ("degree" or "diploma") is required for combo program slugs.' });
     }
 
     const enrResult = await query(
@@ -615,10 +656,15 @@ router.post('/admin/send-omr-papers', protect, async (req, res) => {
       return res.status(502).json({ error: `Failed to download PDF: ${err.message}` });
     }
 
-    const isDegreeCourse = program_slug.includes('degree');
-    const seriesLabel = isDegreeCourse
-      ? 'RSSB JE 2026 - Civil Degree (OMR)'
-      : 'RSSB JE 2026 - Civil Diploma (OMR)';
+    const isDegreeCourse = category === 'degree' ? true
+      : category === 'diploma' ? false
+      : program_slug.includes('degree');
+    const isCombo = program_slug.includes('combo');
+    const seriesLabel = isCombo
+      ? `RSSB JE 2026 - Degree + Diploma Combo (OMR) - ${isDegreeCourse ? 'Degree' : 'Diploma'} Paper`
+      : isDegreeCourse
+        ? 'RSSB JE 2026 - Civil Degree (OMR)'
+        : 'RSSB JE 2026 - Civil Diploma (OMR)';
     const testLabel = `Test ${String(test_number).padStart(2, '0')}`;
     const subject   = `${seriesLabel} - ${testLabel} Question Paper | jaspalsingh.in`;
 

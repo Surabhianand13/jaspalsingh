@@ -102,6 +102,8 @@ app.use('/api/tally-diploma',  require('./routes/tally-diploma'));
 app.use('/api/tally-degree',   require('./routes/tally-degree'));
 app.use('/api/tally-omr-degree',  require('./routes/tally-omr-degree'));
 app.use('/api/tally-omr-diploma', require('./routes/tally-omr-diploma'));
+app.use('/api/tally-combo-offline', require('./routes/tally-combo-offline'));
+app.use('/api/tally-combo-omr',     require('./routes/tally-combo-omr'));
 
 /* ── Health Check ────────────────────────────────────────── */
 
