@@ -81,6 +81,8 @@ app.use('/api/tally-diploma',      apiLimiter, tallyRaw, verifyTallySignature, r
 app.use('/api/tally-degree',       apiLimiter, tallyRaw, verifyTallySignature, require('./routes/tally-degree'));
 app.use('/api/tally-omr-degree',   apiLimiter, tallyRaw, verifyTallySignature, require('./routes/tally-omr-degree'));
 app.use('/api/tally-omr-diploma',  apiLimiter, tallyRaw, verifyTallySignature, require('./routes/tally-omr-diploma'));
+app.use('/api/tally-combo-offline', apiLimiter, tallyRaw, verifyTallySignature, require('./routes/tally-combo-offline'));
+app.use('/api/tally-combo-omr',     apiLimiter, tallyRaw, verifyTallySignature, require('./routes/tally-combo-omr'));
 
 /* ── Body Parsing ────────────────────────────────────────── */
 
