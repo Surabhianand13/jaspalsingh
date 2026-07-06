@@ -132,11 +132,17 @@ DON'Ts:
 
 /* ── Roll number generator ───────────────────────────────── */
 
-function generateRollNumber(centre, targetExam) {
-  const prefix = centre.slice(0, 3).toUpperCase();
+async function generateRollNumber(centre, targetExam) {
+  const prefix   = centre.slice(0, 3).toUpperCase();
   const examCode = targetExam.toLowerCase().includes('degree') ? 'DEG' : 'DIP';
-  const num = Math.floor(10000 + Math.random() * 90000);
-  return `${prefix}-${examCode}-${num}`;
+  let roll;
+  for (let i = 0; i < 10; i++) {
+    const num = Math.floor(10000 + Math.random() * 90000);
+    roll = `${prefix}-${examCode}-${num}`;
+    const exists = await query('SELECT 1 FROM enrollments WHERE roll_number = $1', [roll]);
+    if (!exists.rows.length) return roll;
+  }
+  return roll;
 }
 
 /* ── Parse Tally webhook payload ─────────────────────────── */
@@ -750,43 +756,51 @@ async function processSubmission(fields, programType) {
     : 'RSSB JE 2026 - Diploma (Civil) - Offline Test Series';
   const lastTestDate = isDegreeCourse ? '10 January 2027 (Test-28)' : '29 November 2026 (Test-22)';
 
-  const rollNumber   = generateRollNumber(centreKey || centreRaw, targetExam || '');
-  const photoBuffer  = photoUrl ? await fetchImageBuffer(photoUrl) : null;
+  try {
+    const rollNumber   = await generateRollNumber(centreKey || centreRaw, targetExam || '');
+    const photoBuffer  = photoUrl ? await fetchImageBuffer(photoUrl) : null;
 
-  const pdfBuffer = await generateAdmitCard({
-    name:         name || 'Student',
-    govtId:       govtId || 'N/A',
-    rollNumber,
-    centre:       centreInfo.name,
-    targetExam:   targetExam || seriesName,
-    phone:        phone || 'N/A',
-    email:        email || 'N/A',
-    photoBuffer,
-    seriesName,
-    lastTestDate,
-  });
+    const pdfBuffer = await generateAdmitCard({
+      name:         name || 'Student',
+      govtId:       govtId || 'N/A',
+      rollNumber,
+      centre:       centreInfo.name,
+      targetExam:   targetExam || seriesName,
+      phone:        phone || 'N/A',
+      email:        email || 'N/A',
+      photoBuffer,
+      seriesName,
+      lastTestDate,
+    });
 
-  const htmlBody = buildAdmitCardHtml({ name, seriesName, centreInfo, schedule, isDegreeCourse });
+    const htmlBody = buildAdmitCardHtml({ name, seriesName, centreInfo, schedule, isDegreeCourse });
 
-  /* Send email via Resend queue */
-  const result = await resendSend({
-    from:        FROM,
-    to:          email,
-    subject:     `Confirmed! Your Admit Card for ${seriesName}`,
-    html:        htmlBody,
-    attachments: [
-      {
-        filename:    `AdmitCard_${rollNumber}.pdf`,
-        content:     pdfBuffer.toString('base64'),
-        contentType: 'application/pdf',
-      },
-    ],
-  }, PRIORITY.ADMIT_CARD);
+    const result = await resendSend({
+      from:        FROM,
+      to:          email,
+      subject:     `Confirmed! Your Admit Card for ${seriesName}`,
+      html:        htmlBody,
+      attachments: [
+        {
+          filename:    `AdmitCard_${rollNumber}.pdf`,
+          content:     pdfBuffer.toString('base64'),
+          contentType: 'application/pdf',
+        },
+      ],
+    }, PRIORITY.ADMIT_CARD);
 
-  if (result.error) {
-    console.error('[tally-webhook] Resend error:', result.error);
-  } else {
-    console.log(`[tally-webhook] Email sent to ${email} | Roll: ${rollNumber}`);
+    if (result.error) {
+      console.error('[tally-webhook] Resend error:', result.error);
+      await query('UPDATE enrollments SET form_used = FALSE, form_used_at = NULL WHERE id = $1', [enrollment.id]);
+      console.log('[tally-webhook] Reset form_used to FALSE so student can resubmit:', enrollment.id);
+    } else {
+      console.log(`[tally-webhook] Email sent to ${email} | Roll: ${rollNumber}`);
+      await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2', [rollNumber, enrollment.id]);
+    }
+  } catch (err) {
+    console.error('[tally-webhook] Admit card generation failed:', err.message);
+    await query('UPDATE enrollments SET form_used = FALSE, form_used_at = NULL WHERE id = $1', [enrollment.id]);
+    console.log('[tally-webhook] Reset form_used to FALSE so student can resubmit:', enrollment.id);
   }
 }
 

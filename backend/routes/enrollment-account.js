@@ -469,7 +469,13 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
       lastTestDate = isDegreeCourse ? '10 January 2027 (Test-28)' : '29 November 2026 (Test-22)';
       const prefix = (centreKey || centre || 'JSP').slice(0, 3).toUpperCase();
       const examCode = isDegreeCourse ? 'DEG' : 'DIP';
-      rollNumber   = `${prefix}-${examCode}-${Math.floor(10000 + Math.random() * 90000)}`;
+      rollNumber = null;
+      for (let i = 0; i < 10; i++) {
+        const candidate = `${prefix}-${examCode}-${Math.floor(10000 + Math.random() * 90000)}`;
+        const exists = await query('SELECT 1 FROM enrollments WHERE roll_number = $1', [candidate]);
+        if (!exists.rows.length) { rollNumber = candidate; break; }
+      }
+      if (!rollNumber) rollNumber = `${prefix}-${examCode}-${Math.floor(10000 + Math.random() * 90000)}`;
       htmlBody     = buildAdmitCardHtml({ name: name || enr.student_name, seriesName, centreInfo, schedule, isDegreeCourse });
     }
 
@@ -503,6 +509,7 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
     }
 
     console.log(`[resend-admit-card] Sent to ${enr.student_email} | Roll: ${rollNumber}`);
+    await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2', [rollNumber, enrollment_id]);
     res.json({ message: `Admit card sent to ${enr.student_email}`, roll_number: rollNumber });
   } catch (err) { next(err); }
 });
