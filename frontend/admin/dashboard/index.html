@@ -1484,6 +1484,8 @@
 
 <script>
 /* ── Free Resources ── */
+const FR_API = location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://jaspalsingh.onrender.com';
+
 function openUploadModal() {
   document.getElementById('freeResourceModal').style.display = 'flex';
   document.getElementById('fr-title').value = '';
@@ -1516,7 +1518,7 @@ async function uploadFreeResource() {
   if (desc) formData.append('description', desc);
 
   try {
-    const r = await fetch(`${API_BASE}/api/free-resources`, {
+    const r = await fetch(`${FR_API}/api/free-resources`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` },
       body: formData,
@@ -1544,7 +1546,7 @@ async function loadFreeResources() {
   const el = document.getElementById('free-resources-list');
   if (!el) return;
   try {
-    const r = await fetch(`${API_BASE}/api/free-resources/admin`, {
+    const r = await fetch(`${FR_API}/api/free-resources/admin`, {
       headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` },
     });
     const rows = await r.json();
@@ -1590,7 +1592,7 @@ async function loadFreeResources() {
 }
 
 async function toggleResource(id, visible) {
-  await fetch(`${API_BASE}/api/free-resources/${id}`, {
+  await fetch(`${FR_API}/api/free-resources/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('adminToken')}` },
     body: JSON.stringify({ visible }),
@@ -1599,7 +1601,7 @@ async function toggleResource(id, visible) {
 
 async function deleteFreeResource(id) {
   if (!confirm('Delete this resource? This cannot be undone.')) return;
-  await fetch(`${API_BASE}/api/free-resources/${id}`, {
+  await fetch(`${FR_API}/api/free-resources/${id}`, {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` },
   });
