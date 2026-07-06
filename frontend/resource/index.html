@@ -45,6 +45,18 @@
 </head>
 <body>
   <a href="#main-content" class="skip-to-main">Skip to main content</a>
+
+  <header class="site-header" id="siteHeader" role="banner">
+    <div class="container header-inner">
+      <div class="header-left">
+        <a href="/" class="header-brand" aria-label="Dr. Jaspal Singh - Home">
+          <img src="/assets/images/jaspal-hero.png" class="header-avatar" alt="Dr. Jaspal Singh" onerror="this.style.display='none'" />
+          <span class="wordmark">Dr. Jaspal Singh</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
   <div id="main-content" class="resource-wrap">
     <div class="resource-icon"><i class="fa-solid fa-file-pdf"></i></div>
     <div class="resource-title" id="res-title">Loading resource...</div>
@@ -231,6 +243,11 @@
       } catch (e) {
         console.error(e);
       }
+    }
+
+    // Set initial title if no resource id
+    if (!resourceId) {
+      document.getElementById('res-title').textContent = 'Free Resource';
     }
 
     // Auto-show resource if already logged in
