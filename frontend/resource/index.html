@@ -113,7 +113,8 @@
   </div>
 
   <script>
-    const API = 'https://api.jaspalsingh.in';
+    const API = 'https://jaspalsingh.onrender.com';
+    const TOKEN_KEY = 'jaspal_learner_token';
     const params = new URLSearchParams(location.search);
     const resourceId = params.get('id');
 
@@ -147,7 +148,7 @@
         });
         const d = await r.json();
         if (!r.ok) throw new Error(d.error || 'Login failed');
-        localStorage.setItem('learnerToken', d.token);
+        localStorage.setItem('jaspal_learner_token', d.token);
         showResource();
       } catch (e) {
         showMsg('login-msg', e.message, 'error');
@@ -196,7 +197,7 @@
         });
         const d = await r.json();
         if (!r.ok) throw new Error(d.error || 'Registration failed');
-        localStorage.setItem('learnerToken', d.token);
+        localStorage.setItem('jaspal_learner_token', d.token);
         showResource();
       } catch (e) {
         showMsg('signup-msg', e.message, 'error');
@@ -205,7 +206,7 @@
     }
 
     async function showResource() {
-      const token = localStorage.getItem('learnerToken');
+      const token = localStorage.getItem('jaspal_learner_token');
       if (!token) return;
       try {
         let url = `${API}/api/free-resources`;
@@ -233,7 +234,7 @@
     }
 
     // Auto-show resource if already logged in
-    if (localStorage.getItem('learnerToken')) showResource();
+    if (localStorage.getItem('jaspal_learner_token')) showResource();
   </script>
 </body>
 </html>
