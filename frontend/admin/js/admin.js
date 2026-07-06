@@ -2489,7 +2489,7 @@
 
   function bindBizSections(){
     /* OMR Papers - send test papers to enrolled learners (or a single test address when `sample` is set) */
-    function sendOmrPapers(slug, testNum, qpUrl, omrUrl, btn, resultEl, sample) {
+    function sendOmrPapers(slug, testNum, qpUrl, omrUrl, btn, resultEl, sample, category) {
       if (!testNum) { alert('Please select a test number.'); return; }
       if (!qpUrl || !qpUrl.startsWith('http')) { alert('Please enter a valid Question Paper Google Drive URL.'); return; }
       if (!omrUrl || !omrUrl.startsWith('http')) { alert('Please enter a valid OMR Sheet Google Drive URL.'); return; }
@@ -2503,6 +2503,7 @@
       btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
       resultEl.style.display = 'none';
       var body = { program_slug: slug, test_number: testNum, question_paper_url: qpUrl, omr_sheet_url: omrUrl };
+      if (category) body.category = category;
       if (sample) { body.sample_email = sample.email; if (sample.phone) body.sample_phone = sample.phone; }
       fetch(API_BASE + '/api/enrollment/admin/send-omr-papers', {
         method: 'POST',
@@ -2560,6 +2561,26 @@
           document.getElementById('omrDiplomaQpUrl').value,
           document.getElementById('omrDiplomaOmrUrl').value,
           btnDiplomaOmr, document.getElementById('omrDiplomaResult'));
+      });
+    }
+    var btnComboDegreeOmr = document.getElementById('btnSendComboDegreeOmr');
+    if (btnComboDegreeOmr) {
+      btnComboDegreeOmr.addEventListener('click', function() {
+        sendOmrPapers('rssb-je-jaspalsirki-testseries-degree-diploma-combo-omr',
+          document.getElementById('omrComboDegreeTestNum').value,
+          document.getElementById('omrComboDegreeQpUrl').value,
+          document.getElementById('omrComboDegreeOmrUrl').value,
+          btnComboDegreeOmr, document.getElementById('omrComboDegreeResult'), null, 'degree');
+      });
+    }
+    var btnComboDiplomaOmr = document.getElementById('btnSendComboDiplomaOmr');
+    if (btnComboDiplomaOmr) {
+      btnComboDiplomaOmr.addEventListener('click', function() {
+        sendOmrPapers('rssb-je-jaspalsirki-testseries-degree-diploma-combo-omr',
+          document.getElementById('omrComboDiplomaTestNum').value,
+          document.getElementById('omrComboDiplomaQpUrl').value,
+          document.getElementById('omrComboDiplomaOmrUrl').value,
+          btnComboDiplomaOmr, document.getElementById('omrComboDiplomaResult'), null, 'diploma');
       });
     }
     var btnDiplomaOmrSample = document.getElementById('btnSendDiplomaOmrSample');

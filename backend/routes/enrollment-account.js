@@ -19,6 +19,8 @@ const PROGRAM_LABELS = {
   'rssb-jen-degree-test-series':       'Offline Degree',
   'rssb-je-omr-degree-test-series':    'OMR Degree',
   'rssb-jen-omr-diploma-test-series':  'OMR Diploma',
+  'rssb-je-jaspalsirki-testseries-degree-diploma-combo':     'Combo Offline',
+  'rssb-je-jaspalsirki-testseries-degree-diploma-combo-omr': 'Combo OMR',
   'rpsc-ae-interview':                 'RPSC AE Interview Guidance',
 };
 function programLabel(slug, fallbackName) {
@@ -424,22 +426,68 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
     if (!enrResult.rows.length) return res.status(404).json({ error: 'Paid enrollment not found.' });
     const enr = enrResult.rows[0];
 
-    const slug  = enr.program_slug || '';
-    const isOmr = slug.toLowerCase().includes('omr');
+    const slug    = enr.program_slug || '';
+    const isOmr   = slug.toLowerCase().includes('omr');
+    const isCombo = slug === 'rssb-je-jaspalsirki-testseries-degree-diploma-combo'
+      || slug === 'rssb-je-jaspalsirki-testseries-degree-diploma-combo-omr';
 
-    if (!name)                return res.status(400).json({ error: 'name is required.' });
-    if (!isOmr && !centre)    return res.status(400).json({ error: 'centre is required for offline enrollments.' });
+    if (!isCombo) {
+      if (!name)             return res.status(400).json({ error: 'name is required.' });
+      if (!isOmr && !centre) return res.status(400).json({ error: 'centre is required for offline enrollments.' });
+    }
 
     // fetchImageBufferTrusted (not the webhook's strict fetchImageBuffer) since
     // photo_url here is admin-supplied, not attacker-reachable webhook input -
     // it still blocks the obvious SSRF targets (localhost/private ranges/metadata).
     const { generateAdmitCard, fetchImageBufferTrusted } = require('./tally-webhook');
+    const photoBuffer = photo_url ? await fetchImageBufferTrusted(photo_url) : null;
+
+    if (isCombo) {
+      const {
+        generateComboAdmitCard, buildComboAdmitCardHtml, generateRollNumber, getCentreKey, CENTRES,
+      } = require('./tally-webhook');
+      const { send: resendSend, PRIORITY } = require('../services/resendQueue');
+
+      const centreKey  = isOmr ? null : getCentreKey(centre);
+      const centreInfo = isOmr ? { name: 'Online (Home Based)', address: '', mapsLink: '#' }
+        : (CENTRES[centreKey] || { name: centre, address: 'TBD', mapsLink: '#' });
+
+      const rollNumberDegree  = await generateRollNumber(centreKey || centreInfo.name, 'degree');
+      const rollNumberDiploma = await generateRollNumber(centreKey || centreInfo.name, 'diploma');
+
+      const pdfBuffer = await generateComboAdmitCard({
+        name:  name || enr.student_name,
+        govtId: govt_id || 'N/A',
+        rollNumberDegree,
+        rollNumberDiploma,
+        centre: centreInfo.name,
+        phone:  enr.student_phone || 'N/A',
+        email:  enr.student_email,
+        photoBuffer,
+        mode: isOmr ? 'home' : 'offline',
+      });
+
+      const result = await resendSend({
+        from:        'Dr. Jaspal Singh <team@jaspalsingh.in>',
+        to:          enr.student_email,
+        subject:     `Confirmed! Your Admit Card for RSSB JE 2026 - Degree + Diploma Combo`,
+        html:        buildComboAdmitCardHtml({ name: name || enr.student_name, centreInfo }),
+        attachments: [{ filename: `AdmitCard_Combo_${rollNumberDegree}_${rollNumberDiploma}.pdf`, content: pdfBuffer.toString('base64'), contentType: 'application/pdf' }],
+      }, PRIORITY.ADMIT_CARD);
+
+      if (result.error) {
+        console.error('[resend-admit-card] Resend error:', result.error);
+        return res.status(502).json({ error: `Email send failed: ${result.error.message}` });
+      }
+
+      console.log(`[resend-admit-card] Sent combo to ${enr.student_email} | Degree Roll: ${rollNumberDegree} | Diploma Roll: ${rollNumberDiploma}`);
+      await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2', [`${rollNumberDegree}|${rollNumberDiploma}`, enrollment_id]);
+      return res.json({ message: `Admit card sent to ${enr.student_email}`, roll_number_degree: rollNumberDegree, roll_number_diploma: rollNumberDiploma });
+    }
 
     const isDegreeCourse = program_type === 'degree' ? true
       : program_type === 'diploma' ? false
       : slug.includes('degree');
-
-    const photoBuffer = photo_url ? await fetchImageBufferTrusted(photo_url) : null;
 
     let centreForCard, seriesName, schedule, lastTestDate, rollNumber, mode, htmlBody;
 
@@ -492,8 +540,6 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
       lastTestDate,
       mode,
     });
-
-    const { send: resendSend, PRIORITY } = require('../services/resendQueue');
 
     const result = await resendSend({
       from:        'Dr. Jaspal Singh <team@jaspalsingh.in>',
@@ -623,10 +669,18 @@ async function watermarkPdf(pdfBytes, email, phone, opts = {}) {
 
 router.post('/admin/send-omr-papers', protect, async (req, res) => {
   try {
-    const { program_slug, test_number, question_paper_url, omr_sheet_url, sample_email, sample_phone, sample_name } = req.body;
+    const { program_slug, test_number, question_paper_url, omr_sheet_url, category, sample_email, sample_phone, sample_name } = req.body;
 
     if (!program_slug || !test_number || !question_paper_url || !omr_sheet_url) {
       return res.status(400).json({ error: 'program_slug, test_number, question_paper_url and omr_sheet_url are all required.' });
+    }
+    /* The combo slug covers both Degree and Diploma, each with its own
+       question paper - send this endpoint twice (once per category) and
+       pass category explicitly so the email subject/label is correct.
+       For the 4 individual programs, category is inferred from the slug
+       as before and does not need to be passed. */
+    if (program_slug.includes('combo') && !category) {
+      return res.status(400).json({ error: 'category ("degree" or "diploma") is required for combo program slugs.' });
     }
 
     /* Sample mode: send to a single test address only, skip the enrollments table entirely */
@@ -661,10 +715,15 @@ router.post('/admin/send-omr-papers', protect, async (req, res) => {
       return res.status(502).json({ error: `Failed to download PDF: ${err.message}` });
     }
 
-    const isDegreeCourse = program_slug.includes('degree');
-    const seriesLabel = isDegreeCourse
-      ? 'RSSB JE 2026 - Civil Degree (OMR)'
-      : 'RSSB JE 2026 - Civil Diploma (OMR)';
+    const isDegreeCourse = category === 'degree' ? true
+      : category === 'diploma' ? false
+      : program_slug.includes('degree');
+    const isCombo = program_slug.includes('combo');
+    const seriesLabel = isCombo
+      ? `RSSB JE 2026 - Degree + Diploma Combo (OMR) - ${isDegreeCourse ? 'Degree' : 'Diploma'} Paper`
+      : isDegreeCourse
+        ? 'RSSB JE 2026 - Civil Degree (OMR)'
+        : 'RSSB JE 2026 - Civil Diploma (OMR)';
     const testLabel = `Test ${String(test_number).padStart(2, '0')}`;
     const subject   = `${seriesLabel} - ${testLabel} Question Paper | jaspalsingh.in`;
 
