@@ -112,6 +112,11 @@
           <i class="fas fa-check-double" aria-hidden="true"></i>
           OMR Test Checker
         </button>
+
+        <button class="admin-nav-link" data-section="free-resources">
+          <i class="fas fa-file-pdf" aria-hidden="true"></i>
+          Free Resources
+        </button>
       </div>
     </nav>
 
@@ -1051,8 +1056,50 @@
         <div id="analyticsBody"><p class="admin-empty">Loading…</p></div>
       </section>
 
+      <!-- FREE RESOURCES SECTION -->
+      <section class="admin-section" id="section-free-resources" aria-label="Free Resources">
+        <div class="section-header">
+          <h2 class="section-title">Free Resources</h2>
+          <div class="section-actions">
+            <button class="btn-admin-primary" onclick="openUploadModal()">
+              <i class="fas fa-upload"></i> Upload PDF
+            </button>
+          </div>
+        </div>
+        <p style="font-size:13px;color:#64748b;margin:0 0 20px;">Upload PDFs here. Each resource gets a shareable URL + QR code that learners can scan to access after login.</p>
+        <div id="free-resources-list"><p class="admin-empty">Loading...</p></div>
+      </section>
+
     </div><!-- /.admin-content -->
   </main><!-- /.admin-main -->
+
+  <!-- FREE RESOURCE UPLOAD MODAL -->
+  <div class="admin-modal-overlay" id="freeResourceModal" style="display:none;">
+    <div class="admin-modal" style="max-width:480px;">
+      <div class="admin-modal-head">
+        <h3>Upload Free Resource</h3>
+        <button class="admin-modal-close" onclick="closeUploadModal()">&times;</button>
+      </div>
+      <div class="admin-modal-body">
+        <div style="margin-bottom:14px;">
+          <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:5px;">Title *</label>
+          <input type="text" id="fr-title" placeholder="e.g. 5th July Test - Solutions" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;box-sizing:border-box;" />
+        </div>
+        <div style="margin-bottom:14px;">
+          <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:5px;">Description (optional)</label>
+          <input type="text" id="fr-desc" placeholder="e.g. Full solutions with explanations" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;box-sizing:border-box;" />
+        </div>
+        <div style="margin-bottom:20px;">
+          <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:5px;">PDF File *</label>
+          <input type="file" id="fr-file" accept="application/pdf" style="font-size:13px;" />
+        </div>
+        <button class="btn-admin-primary" id="fr-upload-btn" onclick="uploadFreeResource()" style="width:100%;">
+          <i class="fas fa-upload"></i> Upload & Publish
+        </button>
+        <div id="fr-msg" style="margin-top:12px;font-size:13px;display:none;padding:10px 14px;border-radius:8px;"></div>
+      </div>
+    </div>
+  </div>
 
   <!-- ── Program editor modal ── -->
   <div class="admin-modal-overlay" id="programModal" style="display:none;">
@@ -1434,6 +1481,157 @@
 
 <!-- Admin JS -->
 <script src="/admin/js/admin.js"></script>
+
+<script>
+/* ── Free Resources ── */
+function openUploadModal() {
+  document.getElementById('freeResourceModal').style.display = 'flex';
+  document.getElementById('fr-title').value = '';
+  document.getElementById('fr-desc').value = '';
+  document.getElementById('fr-file').value = '';
+  document.getElementById('fr-msg').style.display = 'none';
+  document.getElementById('fr-upload-btn').disabled = false;
+  document.getElementById('fr-upload-btn').innerHTML = '<i class="fas fa-upload"></i> Upload & Publish';
+}
+function closeUploadModal() {
+  document.getElementById('freeResourceModal').style.display = 'none';
+}
+
+async function uploadFreeResource() {
+  const title = document.getElementById('fr-title').value.trim();
+  const desc  = document.getElementById('fr-desc').value.trim();
+  const file  = document.getElementById('fr-file').files[0];
+  const msg   = document.getElementById('fr-msg');
+  const btn   = document.getElementById('fr-upload-btn');
+
+  if (!title) return showFrMsg('Title is required.', 'error');
+  if (!file)  return showFrMsg('Please select a PDF file.', 'error');
+
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+
+  const formData = new FormData();
+  formData.append('pdf', file);
+  formData.append('title', title);
+  if (desc) formData.append('description', desc);
+
+  try {
+    const r = await fetch(`${API_BASE}/api/free-resources`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` },
+      body: formData,
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Upload failed');
+    showFrMsg('Uploaded successfully!', 'success');
+    setTimeout(() => { closeUploadModal(); loadFreeResources(); }, 1200);
+  } catch (e) {
+    showFrMsg(e.message, 'error');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-upload"></i> Upload & Publish';
+  }
+}
+
+function showFrMsg(text, type) {
+  const el = document.getElementById('fr-msg');
+  el.textContent = text;
+  el.style.display = 'block';
+  el.style.background = type === 'error' ? '#fef2f2' : '#f0fdf4';
+  el.style.color = type === 'error' ? '#991b1b' : '#166534';
+}
+
+async function loadFreeResources() {
+  const el = document.getElementById('free-resources-list');
+  if (!el) return;
+  try {
+    const r = await fetch(`${API_BASE}/api/free-resources/admin`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` },
+    });
+    const rows = await r.json();
+    if (!rows.length) { el.innerHTML = '<p class="admin-empty">No resources uploaded yet.</p>'; return; }
+
+    el.innerHTML = `<table class="admin-table" style="width:100%;">
+      <thead><tr>
+        <th>Title</th><th>Description</th><th>Visible</th><th>Shareable URL</th><th>Actions</th>
+      </tr></thead>
+      <tbody>${rows.map(res => {
+        const shareUrl = `https://jaspalsingh.in/resource?id=${res.id}`;
+        return `<tr>
+          <td><strong>${res.title}</strong></td>
+          <td style="color:#64748b;font-size:13px;">${res.description || '-'}</td>
+          <td>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+              <input type="checkbox" ${res.visible ? 'checked' : ''} onchange="toggleResource(${res.id}, this.checked)" />
+              <span style="font-size:12px;">${res.visible ? 'Live' : 'Hidden'}</span>
+            </label>
+          </td>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <code style="font-size:11px;background:#f1f5f9;padding:4px 8px;border-radius:4px;white-space:nowrap;">/resource?id=${res.id}</code>
+              <button class="btn-admin-secondary btn-admin-sm" onclick="copyUrl('${shareUrl}')">
+                <i class="fas fa-copy"></i>
+              </button>
+              <button class="btn-admin-secondary btn-admin-sm" onclick="showQr(${res.id}, '${res.title.replace(/'/g,"\\'")}')">
+                <i class="fas fa-qrcode"></i> QR
+              </button>
+            </div>
+          </td>
+          <td>
+            <button class="btn-admin-danger btn-admin-sm" onclick="deleteFreeResource(${res.id})">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>`;
+  } catch (e) {
+    el.innerHTML = '<p class="admin-empty">Failed to load resources.</p>';
+  }
+}
+
+async function toggleResource(id, visible) {
+  await fetch(`${API_BASE}/api/free-resources/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('adminToken')}` },
+    body: JSON.stringify({ visible }),
+  });
+}
+
+async function deleteFreeResource(id) {
+  if (!confirm('Delete this resource? This cannot be undone.')) return;
+  await fetch(`${API_BASE}/api/free-resources/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` },
+  });
+  loadFreeResources();
+}
+
+function copyUrl(url) {
+  navigator.clipboard.writeText(url);
+  alert('Link copied: ' + url);
+}
+
+function showQr(id, title) {
+  const url = `https://jaspalsingh.in/resource?id=${id}`;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(url)}`;
+  const w = window.open('', '_blank', 'width=340,height=400');
+  w.document.write(`<html><body style="text-align:center;font-family:sans-serif;padding:20px;">
+    <h3 style="font-size:15px;margin-bottom:12px;">${title}</h3>
+    <img src="${qrUrl}" width="250" height="250" />
+    <p style="font-size:11px;color:#64748b;margin-top:12px;word-break:break-all;">${url}</p>
+    <button onclick="window.print()" style="margin-top:10px;padding:8px 16px;background:#c81240;color:#fff;border:none;border-radius:6px;cursor:pointer;">Print / Save</button>
+  </body></html>`);
+}
+
+// Load when section becomes active
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.admin-nav-link').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.section === 'free-resources') loadFreeResources();
+    });
+  });
+});
+</script>
 
 </body>
 </html>

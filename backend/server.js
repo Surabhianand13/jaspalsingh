@@ -115,7 +115,8 @@ app.use('/api/programs',      require('./routes/programs'));
 app.use('/api/banners',       require('./routes/banners'));
 /* Tally webhook routes are registered above (before express.json()) so
    verifyTallySignature can see the raw body - do not re-register here. */
-app.use('/api/omr-check',      require('./routes/omr-check'));
+app.use('/api/omr-check',        require('./routes/omr-check'));
+app.use('/api/free-resources',   require('./routes/free-resources'));
 
 /* ── Health Check ────────────────────────────────────────── */
 
@@ -287,6 +288,15 @@ async function migrate() {
   await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS refunded_by VARCHAR(255)`);
   await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS roll_number VARCHAR(30)`);
   await query(`CREATE UNIQUE INDEX IF NOT EXISTS enrollments_roll_number_uidx ON enrollments (roll_number) WHERE roll_number IS NOT NULL`);
+  await query(`CREATE TABLE IF NOT EXISTS free_resources (
+    id          SERIAL PRIMARY KEY,
+    title       TEXT NOT NULL,
+    description TEXT,
+    pdf_url     TEXT NOT NULL,
+    r2_key      TEXT NOT NULL,
+    visible     BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`);
 
   /* ── One-time cleanup: close out stale 'pending' rows left behind by
      retried checkouts where a sibling order for the same learner+program
