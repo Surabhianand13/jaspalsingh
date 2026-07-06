@@ -102,6 +102,16 @@
           <i class="fas fa-paper-plane" aria-hidden="true"></i>
           OMR Papers
         </button>
+
+        <button class="admin-nav-link" data-section="omr-analysis">
+          <i class="fas fa-chart-line" aria-hidden="true"></i>
+          OMR Analysis
+        </button>
+
+        <button class="admin-nav-link" data-section="omr-checker">
+          <i class="fas fa-check-double" aria-hidden="true"></i>
+          OMR Test Checker
+        </button>
       </div>
     </nav>
 
@@ -530,6 +540,14 @@
                 <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--body-color);display:block;margin-bottom:5px;">OMR Sheet (Google Drive URL)</label>
                 <input id="omrDegreeOmrUrl" type="url" placeholder="https://drive.google.com/file/d/..." style="width:100%;padding:9px 12px;border:1.5px solid rgba(26,26,46,.12);border-radius:8px;font-size:13px;box-sizing:border-box;" />
               </div>
+              <div style="border-top:1px dashed #c7d2fe;padding-top:12px;">
+                <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--body-color);display:block;margin-bottom:5px;">Test Email (send a sample here first)</label>
+                <input id="omrDegreeTestEmail" type="email" placeholder="you@example.com" style="width:100%;padding:9px 12px;border:1.5px solid rgba(26,26,46,.12);border-radius:8px;font-size:13px;box-sizing:border-box;margin-bottom:8px;" />
+                <input id="omrDegreeTestPhone" type="tel" placeholder="Test phone (optional)" style="width:100%;padding:9px 12px;border:1.5px solid rgba(26,26,46,.12);border-radius:8px;font-size:13px;box-sizing:border-box;" />
+              </div>
+              <button id="btnSendDegreeOmrSample" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:9px 20px;border-radius:50px;background:#fff;color:#4338CA;font-size:13px;font-weight:700;border:1.5px solid #4338CA;cursor:pointer;">
+                <i class="fas fa-vial"></i> Send Sample
+              </button>
               <button id="btnSendDegreeOmr" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 20px;border-radius:50px;background:linear-gradient(135deg,#4338CA,#6366F1);color:#fff;font-size:13px;font-weight:700;border:none;cursor:pointer;">
                 <i class="fas fa-paper-plane"></i> Send to All Degree OMR Learners
               </button>
@@ -579,6 +597,14 @@
                 <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--body-color);display:block;margin-bottom:5px;">OMR Sheet (Google Drive URL)</label>
                 <input id="omrDiplomaOmrUrl" type="url" placeholder="https://drive.google.com/file/d/..." style="width:100%;padding:9px 12px;border:1.5px solid rgba(26,26,46,.12);border-radius:8px;font-size:13px;box-sizing:border-box;" />
               </div>
+              <div style="border-top:1px dashed #c7d2fe;padding-top:12px;">
+                <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--body-color);display:block;margin-bottom:5px;">Test Email (send a sample here first)</label>
+                <input id="omrDiplomaTestEmail" type="email" placeholder="you@example.com" style="width:100%;padding:9px 12px;border:1.5px solid rgba(26,26,46,.12);border-radius:8px;font-size:13px;box-sizing:border-box;margin-bottom:8px;" />
+                <input id="omrDiplomaTestPhone" type="tel" placeholder="Test phone (optional)" style="width:100%;padding:9px 12px;border:1.5px solid rgba(26,26,46,.12);border-radius:8px;font-size:13px;box-sizing:border-box;" />
+              </div>
+              <button id="btnSendDiplomaOmrSample" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:9px 20px;border-radius:50px;background:#fff;color:#4338CA;font-size:13px;font-weight:700;border:1.5px solid #4338CA;cursor:pointer;">
+                <i class="fas fa-vial"></i> Send Sample
+              </button>
               <button id="btnSendDiplomaOmr" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 20px;border-radius:50px;background:linear-gradient(135deg,#4338CA,#6366F1);color:#fff;font-size:13px;font-weight:700;border:none;cursor:pointer;">
                 <i class="fas fa-paper-plane"></i> Send to All Diploma OMR Learners
               </button>
@@ -590,6 +616,179 @@
 
         <p style="font-size:12px;color:var(--body-color);margin-top:16px;">Make sure both Google Drive files are set to "Anyone with link can view" before sending.</p>
       </section><!-- /#section-omr-papers -->
+
+      <!-- ── OMR ANALYSIS ── -->
+      <section class="admin-section" id="section-omr-analysis" aria-label="Send OMR analysis and workbook">
+        <div class="section-header">
+          <h2 class="section-title">Send Analysis & Solutions</h2>
+        </div>
+
+        <p style="font-size:14px;color:var(--body-color);line-height:1.7;margin-bottom:28px;max-width:620px;">
+          Upload the Detailed Analysis & Solutions and Analysis Workbook PDFs to Google Drive, paste the share links below, and send to all learners for the selected program and test. Each PDF is watermarked with the learner's email and phone before delivery.
+        </p>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;max-width:900px;">
+
+          <!-- Degree Analysis -->
+          <div style="background:#f8f9ff;border:1.5px solid #c7d2fe;border-radius:14px;padding:22px;">
+            <div style="font-size:13px;font-weight:800;color:#4338CA;margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+              <i class="fas fa-graduation-cap"></i> RSSB JE Degree (OMR)
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div>
+                <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--body-color);display:block;margin-bottom:5px;">Test Number</label>
+                <select id="analysisDegreeTestNum" style="width:100%;padding:9px 12px;border:1.5px solid rgba(26,26,46,.12);border-radius:8px;font-size:13px;background:#fff;">
+                  <option value="">-- Select Test --</option>
+                  <option value="1">Test 01 - 5 Jul 2026</option>
+                  <option value="2">Test 02 - 12 Jul 2026</option>
+                  <option value="3">Test 03 - 19 Jul 2026</option>
+                  <option value="4">Test 04 - 26 Jul 2026</option>
+                  <option value="5">Test 05 - 2 Aug 2026</option>
+                  <option value="6">Test 06 - 9 Aug 2026</option>
+                  <option value="7">Test 07 - 16 Aug 2026</option>
+                  <option value="8">Test 08 - 23 Aug 2026</option>
+                  <option value="9">Test 09 - 30 Aug 2026</option>
+                  <option value="10">Test 10 - 6 Sep 2026</option>
+                  <option value="11">Test 11 - 13 Sep 2026</option>
+                  <option value="12">Test 12 - 20 Sep 2026</option>
+                  <option value="13">Test 13 - 27 Sep 2026</option>
+                  <option value="14">Test 14 - 4 Oct 2026 (Full Length)</option>
+                  <option value="15">Test 15 - 11 Oct 2026 (Full Length)</option>
+                  <option value="16">Test 16 - 18 Oct 2026 (Full Length)</option>
+                  <option value="17">Test 17 - 25 Oct 2026 (Full Length)</option>
+                  <option value="18">Test 18 - 1 Nov 2026 (Full Length)</option>
+                  <option value="19">Test 19 - 8 Nov 2026 (Full Length)</option>
+                  <option value="20">Test 20 - 15 Nov 2026 (Full Length)</option>
+                  <option value="21">Test 21 - 22 Nov 2026 (Full Length)</option>
+                  <option value="22">Test 22 - 29 Nov 2026 (Full Length)</option>
+                  <option value="23">Test 23 - 6 Dec 2026 (Full Length)</option>
+                  <option value="24">Test 24 - 13 Dec 2026 (Full Length)</option>
+                  <option value="25">Test 25 - 20 Dec 2026 (Full Length)</option>
+                  <option value="26">Test 26 - 27 Dec 2026 (Full Length)</option>
+                  <option value="27">Test 27 - 3 Jan 2027 (Full Length)</option>
+                  <option value="28">Test 28 - 10 Jan 2027 (Full Length)</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--body-color);display:block;margin-bottom:5px;">Detailed Analysis & Solutions (Google Drive URL)</label>
+                <div id="analysisDegreeAnalysisUrls" style="display:flex;flex-direction:column;gap:8px;">
+                  <div style="display:flex;gap:6px;align-items:center;">
+                    <input type="url" class="analysisDegreeAnalysisUrlInput" placeholder="https://drive.google.com/file/d/..." style="flex:1;min-width:0;padding:9px 12px;border:1.5px solid rgba(26,26,46,.12);border-radius:8px;font-size:13px;box-sizing:border-box;" />
+                  </div>
+                </div>
+                <button type="button" id="btnAddAnalysisDegreeAnalysisUrl" style="margin-top:6px;background:none;border:none;color:#4338CA;font-size:12px;font-weight:700;cursor:pointer;padding:4px 0;">+ Add another link</button>
+              </div>
+              <div>
+                <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--body-color);display:block;margin-bottom:5px;">Analysis Workbook (Google Drive URL)</label>
+                <div id="analysisDegreeWorkbookUrls" style="display:flex;flex-direction:column;gap:8px;">
+                  <div style="display:flex;gap:6px;align-items:center;">
+                    <input type="url" class="analysisDegreeWorkbookUrlInput" placeholder="https://drive.google.com/file/d/..." style="flex:1;min-width:0;padding:9px 12px;border:1.5px solid rgba(26,26,46,.12);border-radius:8px;font-size:13px;box-sizing:border-box;" />
+                  </div>
+                </div>
+                <button type="button" id="btnAddAnalysisDegreeWorkbookUrl" style="margin-top:6px;background:none;border:none;color:#4338CA;font-size:12px;font-weight:700;cursor:pointer;padding:4px 0;">+ Add another link</button>
+              </div>
+              <div style="border-top:1px dashed #c7d2fe;padding-top:12px;">
+                <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--body-color);display:block;margin-bottom:5px;">Test Email (send a sample here first)</label>
+                <input id="analysisDegreeTestEmail" type="email" placeholder="you@example.com" style="width:100%;padding:9px 12px;border:1.5px solid rgba(26,26,46,.12);border-radius:8px;font-size:13px;box-sizing:border-box;margin-bottom:8px;" />
+                <input id="analysisDegreeTestPhone" type="tel" placeholder="Test phone (optional)" style="width:100%;padding:9px 12px;border:1.5px solid rgba(26,26,46,.12);border-radius:8px;font-size:13px;box-sizing:border-box;" />
+              </div>
+              <button id="btnSendDegreeAnalysisSample" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:9px 20px;border-radius:50px;background:#fff;color:#4338CA;font-size:13px;font-weight:700;border:1.5px solid #4338CA;cursor:pointer;">
+                <i class="fas fa-vial"></i> Send Sample
+              </button>
+              <button id="btnSendDegreeAnalysis" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 20px;border-radius:50px;background:linear-gradient(135deg,#4338CA,#6366F1);color:#fff;font-size:13px;font-weight:700;border:none;cursor:pointer;">
+                <i class="fas fa-paper-plane"></i> Send to All Degree OMR Learners
+              </button>
+              <div id="analysisDegreeResult" style="display:none;padding:12px 16px;border-radius:8px;font-size:13px;"></div>
+            </div>
+          </div>
+
+          <!-- Diploma Analysis -->
+          <div style="background:#f8f9ff;border:1.5px solid #c7d2fe;border-radius:14px;padding:22px;">
+            <div style="font-size:13px;font-weight:800;color:#4338CA;margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+              <i class="fas fa-certificate"></i> RSSB JE Diploma (OMR)
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div>
+                <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--body-color);display:block;margin-bottom:5px;">Test Number</label>
+                <select id="analysisDiplomaTestNum" style="width:100%;padding:9px 12px;border:1.5px solid rgba(26,26,46,.12);border-radius:8px;font-size:13px;background:#fff;">
+                  <option value="">-- Select Test --</option>
+                  <option value="1">Test 01 - 5 Jul 2026</option>
+                  <option value="2">Test 02 - 12 Jul 2026</option>
+                  <option value="3">Test 03 - 19 Jul 2026</option>
+                  <option value="4">Test 04 - 26 Jul 2026</option>
+                  <option value="5">Test 05 - 2 Aug 2026</option>
+                  <option value="6">Test 06 - 9 Aug 2026</option>
+                  <option value="7">Test 07 - 16 Aug 2026</option>
+                  <option value="8">Test 08 - 23 Aug 2026 (Full Length)</option>
+                  <option value="9">Test 09 - 30 Aug 2026 (Full Length)</option>
+                  <option value="10">Test 10 - 6 Sep 2026 (Full Length)</option>
+                  <option value="11">Test 11 - 13 Sep 2026 (Full Length)</option>
+                  <option value="12">Test 12 - 20 Sep 2026 (Full Length)</option>
+                  <option value="13">Test 13 - 27 Sep 2026 (Full Length)</option>
+                  <option value="14">Test 14 - 4 Oct 2026 (Full Length)</option>
+                  <option value="15">Test 15 - 11 Oct 2026 (Full Length)</option>
+                  <option value="16">Test 16 - 18 Oct 2026 (Full Length)</option>
+                  <option value="17">Test 17 - 25 Oct 2026 (Full Length)</option>
+                  <option value="18">Test 18 - 1 Nov 2026 (Full Length)</option>
+                  <option value="19">Test 19 - 8 Nov 2026 (Full Length)</option>
+                  <option value="20">Test 20 - 15 Nov 2026 (Full Length)</option>
+                  <option value="21">Test 21 - 22 Nov 2026 (Full Length)</option>
+                  <option value="22">Test 22 - 29 Nov 2026 (Full Length)</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--body-color);display:block;margin-bottom:5px;">Detailed Analysis & Solutions (Google Drive URL)</label>
+                <div id="analysisDiplomaAnalysisUrls" style="display:flex;flex-direction:column;gap:8px;">
+                  <div style="display:flex;gap:6px;align-items:center;">
+                    <input type="url" class="analysisDiplomaAnalysisUrlInput" placeholder="https://drive.google.com/file/d/..." style="flex:1;min-width:0;padding:9px 12px;border:1.5px solid rgba(26,26,46,.12);border-radius:8px;font-size:13px;box-sizing:border-box;" />
+                  </div>
+                </div>
+                <button type="button" id="btnAddAnalysisDiplomaAnalysisUrl" style="margin-top:6px;background:none;border:none;color:#4338CA;font-size:12px;font-weight:700;cursor:pointer;padding:4px 0;">+ Add another link</button>
+              </div>
+              <div>
+                <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--body-color);display:block;margin-bottom:5px;">Analysis Workbook (Google Drive URL)</label>
+                <div id="analysisDiplomaWorkbookUrls" style="display:flex;flex-direction:column;gap:8px;">
+                  <div style="display:flex;gap:6px;align-items:center;">
+                    <input type="url" class="analysisDiplomaWorkbookUrlInput" placeholder="https://drive.google.com/file/d/..." style="flex:1;min-width:0;padding:9px 12px;border:1.5px solid rgba(26,26,46,.12);border-radius:8px;font-size:13px;box-sizing:border-box;" />
+                  </div>
+                </div>
+                <button type="button" id="btnAddAnalysisDiplomaWorkbookUrl" style="margin-top:6px;background:none;border:none;color:#4338CA;font-size:12px;font-weight:700;cursor:pointer;padding:4px 0;">+ Add another link</button>
+              </div>
+              <div style="border-top:1px dashed #c7d2fe;padding-top:12px;">
+                <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--body-color);display:block;margin-bottom:5px;">Test Email (send a sample here first)</label>
+                <input id="analysisDiplomaTestEmail" type="email" placeholder="you@example.com" style="width:100%;padding:9px 12px;border:1.5px solid rgba(26,26,46,.12);border-radius:8px;font-size:13px;box-sizing:border-box;margin-bottom:8px;" />
+                <input id="analysisDiplomaTestPhone" type="tel" placeholder="Test phone (optional)" style="width:100%;padding:9px 12px;border:1.5px solid rgba(26,26,46,.12);border-radius:8px;font-size:13px;box-sizing:border-box;" />
+              </div>
+              <button id="btnSendDiplomaAnalysisSample" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:9px 20px;border-radius:50px;background:#fff;color:#4338CA;font-size:13px;font-weight:700;border:1.5px solid #4338CA;cursor:pointer;">
+                <i class="fas fa-vial"></i> Send Sample
+              </button>
+              <button id="btnSendDiplomaAnalysis" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 20px;border-radius:50px;background:linear-gradient(135deg,#4338CA,#6366F1);color:#fff;font-size:13px;font-weight:700;border:none;cursor:pointer;">
+                <i class="fas fa-paper-plane"></i> Send to All Diploma OMR Learners
+              </button>
+              <div id="analysisDiplomaResult" style="display:none;padding:12px 16px;border-radius:8px;font-size:13px;"></div>
+            </div>
+          </div>
+
+        </div>
+
+        <p style="font-size:12px;color:var(--body-color);margin-top:16px;">Make sure both Google Drive files are set to "Anyone with link can view" before sending.</p>
+      </section><!-- /#section-omr-analysis -->
+
+      <!-- ── OMR TEST CHECKER (admin-only bubble-sheet grading tool) ── -->
+      <section class="admin-section" id="section-omr-checker" aria-label="OMR test checker">
+        <div class="section-header">
+          <h2 class="section-title">OMR Test Checker</h2>
+        </div>
+        <p style="font-size:14px;color:var(--body-color);line-height:1.7;margin-bottom:20px;max-width:680px;">
+          Calibrate a bubble-sheet template once, define an answer key + marking scheme per test, upload photographed OMR sheets, review the auto-detected answers, and push final scores to Google Sheets.
+        </p>
+        <div style="display:flex;gap:8px;margin-bottom:20px;">
+          <button class="btn-admin-secondary btn-admin-sm omr-check-tab active" data-omr-tab="templates">Templates</button>
+          <button class="btn-admin-secondary btn-admin-sm omr-check-tab" data-omr-tab="tests">Tests</button>
+          <button class="btn-admin-secondary btn-admin-sm omr-check-tab" data-omr-tab="submissions">Submissions</button>
+        </div>
+        <div id="omrCheckerBody"><p class="admin-empty">Loading…</p></div>
+      </section>
 
       <!-- ── PROGRAMS ── -->
       <section class="admin-section" id="section-programs" aria-label="Programs management">

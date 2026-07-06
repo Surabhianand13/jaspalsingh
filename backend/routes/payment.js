@@ -3,15 +3,28 @@
    Dr. Jaspal Singh Website  -  jaspalsingh.in
    ============================================================ */
 
-const express = require('express');
-const router  = express.Router();
+const express   = require('express');
+const router    = express.Router();
+const rateLimit = require('express-rate-limit');
 const { query } = require('../config/db');
 const crypto  = require('crypto');
 const { sendInvoiceEmail, sendWelcomePaymentEmail, sendAdminPaymentNotification, sendReferralCodeEmail } = require('../services/paymentEmailService');
 const { protect } = require('../middleware/auth');
 const { protectLearner, optionalLearner } = require('../middleware/learnerAuth');
+const { isObviousTestSubmission } = require('../utils/spamFilter');
+const { verifyTurnstile } = require('../utils/turnstile');
 
 const REFERRAL_DISCOUNT = 100;
+
+/* Dedicated limiter for order creation - each hit creates a real Razorpay
+   order + a pending DB row, so it needs tighter throttling than the
+   blanket 500/15min apiLimiter (a genuine buyer retries at most a few
+   times; a bot script would otherwise be free to spam this). */
+const createOrderLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  message: { error: 'Too many checkout attempts. Please wait a few minutes and try again.' },
+});
 
 /* ── Generate a unique referral code for a newly-paid enrollment ── */
 async function ensureReferralCode(enrollment) {
@@ -136,6 +149,14 @@ const COUPONS = {
     singleUse:  true,
     label:      'Special offer - Rs 2,499',
   },
+  // One-time-use code: diploma offline test series for Rs 1,000 flat.
+  // Exclusive - referral codes cannot be combined with it.
+  'DIP1000E62A': {
+    programPrices: { 'rssb-jen-diploma-test-series': 1000 },
+    exclusive:  true,
+    singleUse:  true,
+    label:      'Special offer - Rs 1,000',
+  },
 };
 
 /* ── Has a single-use coupon already been redeemed on a paid order? ── */
@@ -242,6 +263,18 @@ const PROGRAMS = {
     price:     2999,
     mrp:       7999,
   },
+  'rssb-je-jaspalsirki-testseries-degree-diploma-combo-omr': {
+    name:      'RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Degree + Diploma Combo (Home-Based OMR Test Series)',
+    shortName: 'RSSB JE Degree + Diploma Combo OMR',
+    price:     2499,
+    mrp:       4999,
+  },
+  'rssb-je-jaspalsirki-testseries-degree-diploma-combo': {
+    name:      'RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Degree + Diploma Combo Offline',
+    shortName: 'RSSB JE Degree + Diploma Combo',
+    price:     5499,
+    mrp:       9999,
+  },
 };
 
 /* ── Razorpay instance ───────────────────────────────────── */
@@ -305,12 +338,22 @@ router.post('/validate-referral', optionalLearner, async (req, res) => {
 });
 
 /* ── POST /api/payment/create-order ─────────────────────── */
-router.post('/create-order', optionalLearner, async (req, res) => {
+router.post('/create-order', createOrderLimiter, optionalLearner, async (req, res) => {
   try {
-    const { program_slug, name, email, phone, coupon_code, referral_code } = req.body;
+    const { program_slug, name, email, phone, coupon_code, referral_code, turnstile_token } = req.body;
 
     if (!program_slug || !name || !email || !phone) {
       return res.status(400).json({ error: 'name, email, phone and program_slug are required.' });
+    }
+
+    const humanCheck = await verifyTurnstile(turnstile_token, req.ip);
+    if (!humanCheck) {
+      return res.status(400).json({ error: 'Verification failed. Please refresh the page and try again.' });
+    }
+
+    if (isObviousTestSubmission({ name, email, phone })) {
+      console.warn(`[create-order] Blocked obvious test submission: ${name} / ${email} / ${phone}`);
+      return res.status(400).json({ error: 'Please enter your real name, email and mobile number.' });
     }
 
     const program = PROGRAMS[program_slug];
