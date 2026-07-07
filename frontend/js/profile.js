@@ -39,6 +39,7 @@
     loadProfile();
     loadReferralCode();
     loadEnrolledPrograms();
+    loadFreeResources();
     loadDownloads();
     setupPhotoUpload();
 
@@ -298,6 +299,50 @@
     }).catch(function () {
       document.getElementById('downloadsBody').innerHTML =
         '<p class="profile-empty">Could not load download history.</p>';
+    });
+  }
+
+  function loadFreeResources() {
+    var body = document.getElementById('freeResourcesBody');
+    if (!body) return;
+    authFetch('/api/free-resources').then(function (resources) {
+      if (!resources.length) {
+        body.innerHTML = '<p class="profile-empty"><i class="fas fa-inbox"></i> No free resources available yet. Check back soon!</p>';
+        return;
+      }
+      var cards = resources.map(function (r) {
+        return '<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-bottom:1px solid rgba(26,26,46,.07);">' +
+          '<div style="display:flex;align-items:center;gap:12px;">' +
+            '<div style="width:36px;height:36px;border-radius:10px;background:#fff0f4;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+              '<i class="fas fa-file-pdf" style="color:#c81240;font-size:15px;"></i>' +
+            '</div>' +
+            '<div>' +
+              '<div style="font-size:14px;font-weight:700;color:#0f172a;">' + esc(r.title) + '</div>' +
+              (r.description ? '<div style="font-size:12px;color:#64748b;margin-top:2px;">' + esc(r.description) + '</div>' : '') +
+            '</div>' +
+          '</div>' +
+          '<a href="' + esc(r.pdf_url) + '" target="_blank" rel="noopener" ' +
+             'style="flex-shrink:0;display:inline-flex;align-items:center;gap:6px;background:#c81240;color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;">' +
+            '<i class="fas fa-eye"></i> View' +
+          '</a>' +
+        '</div>';
+      }).join('');
+      body.innerHTML = '<div style="padding:0 4px;">' + cards + '</div>' +
+        '<div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(26,26,46,.07);text-align:center;">' +
+          '<a href="/" style="font-size:13px;font-weight:600;color:#c81240;text-decoration:none;">' +
+            '<i class="fas fa-arrow-left"></i> Explore Programs &rarr;' +
+          '</a>' +
+        '</div>';
+
+      /* Auto-scroll if arriving from resource page */
+      if (window.location.hash === '#free-resources') {
+        setTimeout(function () {
+          var sec = document.getElementById('free-resources');
+          if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 400);
+      }
+    }).catch(function () {
+      body.innerHTML = '<p class="profile-empty">Could not load free resources.</p>';
     });
   }
 
