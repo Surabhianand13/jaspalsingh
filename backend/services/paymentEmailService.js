@@ -33,6 +33,23 @@ const WA_GROUP_RPSC_AE     = '';
 const SLUG_COMBO_OFFLINE = 'rssb-je-jaspalsirki-testseries-degree-diploma-combo';
 const SLUG_COMBO_OMR     = 'rssb-je-jaspalsirki-testseries-degree-diploma-combo-omr';
 
+/* ── ESE 2027 Prelims - 6 programs, matched by exact slug (config-driven) ── */
+const {
+  ESE_PROGRAMS,
+  TALLY_FORM_URL_PAPER1, TALLY_FORM_URL_PAPER2, TALLY_FORM_URL_COMBINED,
+  TALLY_FORM_URL_PAPER1_OMR, TALLY_FORM_URL_PAPER2_OMR, TALLY_FORM_URL_COMBINED_OMR,
+  WA_GROUP_OFFLINE: ESE_WA_GROUP_OFFLINE, WA_GROUP_OMR: ESE_WA_GROUP_OMR,
+} = require('../config/eseTestSeries');
+
+const ESE_TALLY_FORM_URLS = {
+  [ESE_PROGRAMS.paper1.slug]:      TALLY_FORM_URL_PAPER1,
+  [ESE_PROGRAMS.paper2.slug]:      TALLY_FORM_URL_PAPER2,
+  [ESE_PROGRAMS.combined.slug]:    TALLY_FORM_URL_COMBINED,
+  [ESE_PROGRAMS.paper1Omr.slug]:   TALLY_FORM_URL_PAPER1_OMR,
+  [ESE_PROGRAMS.paper2Omr.slug]:   TALLY_FORM_URL_PAPER2_OMR,
+  [ESE_PROGRAMS.combinedOmr.slug]: TALLY_FORM_URL_COMBINED_OMR,
+};
+
 function esc(s) {
   return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
@@ -147,8 +164,10 @@ async function sendWelcomePaymentEmail(enrollment) {
   const slug = enrollment.program_slug || '';
   const isComboOffline = slug === SLUG_COMBO_OFFLINE;
   const isComboOmr     = slug === SLUG_COMBO_OMR;
+  const isEse          = !!ESE_TALLY_FORM_URLS[slug];
 
-  const tallyBase = isComboOffline ? TALLY_FORM_URL_COMBO_OFFLINE
+  const tallyBase = isEse ? ESE_TALLY_FORM_URLS[slug]
+    : isComboOffline ? TALLY_FORM_URL_COMBO_OFFLINE
     : isComboOmr                                                    ? TALLY_FORM_URL_COMBO_OMR
     : slug.includes('omr') && slug.includes('degree')                ? TALLY_FORM_URL_OMR_DEGREE
     : slug.includes('omr') && slug.includes('diploma')                ? TALLY_FORM_URL_OMR_DIPLOMA
@@ -169,6 +188,9 @@ async function sendWelcomePaymentEmail(enrollment) {
       { label: 'Degree Batch (OMR)',  link: WA_GROUP_OMR_DEGREE },
       { label: 'Diploma Batch (OMR)', link: WA_GROUP_OMR_DIPLOMA },
     ].filter(g => g.link);
+  } else if (isEse) {
+    const eseGroup = slug.includes('omr') ? ESE_WA_GROUP_OMR : ESE_WA_GROUP_OFFLINE;
+    waGroups = eseGroup ? [{ label: null, link: eseGroup }] : [];
   } else {
     const singleGroup = slug.includes('omr') && slug.includes('degree')  ? WA_GROUP_OMR_DEGREE
       : slug.includes('omr') && slug.includes('diploma') ? WA_GROUP_OMR_DIPLOMA
