@@ -9,7 +9,7 @@
 const { query }  = require('../config/db');
 const { send: resendSend, PRIORITY } = require('../services/resendQueue');
 const {
-  generateAdmitCard, generateComboAdmitCard, fetchImageBuffer,
+  generateAdmitCard, fetchImageBuffer,
 } = require('./tally-webhook');
 const { ESE_CENTRES, getEseCentreKey, ESE_PROGRAMS } = require('../config/eseTestSeries');
 
@@ -195,7 +195,7 @@ function buildEseComboAdmitCardHtml({ name, centreInfo }) {
   </div>
   <p style="font-size:16px;">Dear <strong>${name || 'Student'}</strong>,</p>
   <p>Congratulations! Your registration for the <strong>ESE 2027 Prelims - Paper 1 + 2 (GS, Eng. Aptitude & Civil) - Offline Test Series</strong> has been confirmed - you are enrolled in <strong>both</strong> Paper 1 and Paper 2.</p>
-  <p>Please find your <strong>combined Admit Card attached</strong> to this email as a PDF, with a separate roll number for each paper. Carry it (printed or on your phone) to every test.</p>
+  <p>Please find your <strong>combined Admit Card attached</strong> to this email as a PDF, with a single roll number valid for both papers. Carry it (printed or on your phone) to every test.</p>
   <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:20px 24px;margin:20px 0;">
     <h2 style="font-size:15px;margin:0 0 12px;color:#c81240;">Your Exam Centre</h2>
     <p style="margin:4px 0;"><strong>Centre:</strong> ${centreInfo.name}</p>
@@ -445,24 +445,21 @@ async function processEseCombinedSubmission(fields, programKey) {
     : (ESE_CENTRES[centreKey] || { name: centreRaw || 'TBD', address: 'TBD', mapsLink: '#' });
 
   try {
-    const rollNumberPaper1 = await generateEseRollNumber(isOmr ? 'ESE' : (centreKey || centreRaw), 'P1');
-    const rollNumberPaper2 = await generateEseRollNumber(isOmr ? 'ESE' : (centreKey || centreRaw), 'P2');
+    const rollNumber  = await generateEseRollNumber(isOmr ? 'ESE' : (centreKey || centreRaw), 'CMB');
     const photoBuffer = photoUrl ? await fetchImageBuffer(photoUrl) : null;
 
-    const pdfBuffer = await generateComboAdmitCard({
-      name:  name || 'Student',
-      govtId: govtId || 'N/A',
-      rollNumberDegree:  rollNumberPaper1,
-      rollNumberDiploma: rollNumberPaper2,
-      centre: centreInfo.name,
-      phone:  phone || 'N/A',
-      email:  email || 'N/A',
+    const pdfBuffer = await generateAdmitCard({
+      name:         name || 'Student',
+      govtId:       govtId || 'N/A',
+      rollNumber,
+      centre:       centreInfo.name,
+      targetExam:   cfg.seriesName,
+      phone:        phone || 'N/A',
+      email:        email || 'N/A',
       photoBuffer,
-      mode: isOmr ? 'home' : 'offline',
       seriesName:   cfg.seriesName,
-      rollLabel1:   'PAPER 1 ROLL NUMBER',
-      rollLabel2:   'PAPER 2 ROLL NUMBER',
-      validityText: 'Schedule subject to change after the official ESE 2027 examination date announcement - notified via email & WhatsApp.',
+      lastTestDate: '17 January 2027 (Test-22)',
+      mode:         isOmr ? 'home' : 'offline',
     });
 
     const htmlBody = buildEseComboAdmitCardHtml({ name, centreInfo });
@@ -473,7 +470,7 @@ async function processEseCombinedSubmission(fields, programKey) {
       subject:     `Confirmed! Your Admit Card for ${cfg.seriesName}`,
       html:        htmlBody,
       attachments: [
-        { filename: `AdmitCard_${rollNumberPaper1}_${rollNumberPaper2}.pdf`, content: pdfBuffer.toString('base64'), contentType: 'application/pdf' },
+        { filename: `AdmitCard_${rollNumber}.pdf`, content: pdfBuffer.toString('base64'), contentType: 'application/pdf' },
       ],
     }, PRIORITY.ADMIT_CARD);
 
@@ -482,8 +479,8 @@ async function processEseCombinedSubmission(fields, programKey) {
       await query('UPDATE enrollments SET form_used = FALSE, form_used_at = NULL WHERE id = $1', [enrollment.id]);
       console.log(`[tally-ese-${programKey}] Reset form_used to FALSE so student can resubmit:`, enrollment.id);
     } else {
-      console.log(`[tally-ese-${programKey}] Email sent to ${email} | Paper1 Roll: ${rollNumberPaper1} | Paper2 Roll: ${rollNumberPaper2}`);
-      await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2', [`${rollNumberPaper1}|${rollNumberPaper2}`, enrollment.id]);
+      console.log(`[tally-ese-${programKey}] Email sent to ${email} | Roll: ${rollNumber}`);
+      await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2', [rollNumber, enrollment.id]);
     }
   } catch (err) {
     console.error(`[tally-ese-${programKey}] Admit card generation failed:`, err.message);

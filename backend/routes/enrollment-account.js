@@ -497,7 +497,6 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
 
     if (isEse) {
       const { ESE_CENTRES, getEseCentreKey } = require('../config/eseTestSeries');
-      const { generateAdmitCard, generateComboAdmitCard } = require('./tally-webhook');
       const {
         generateEseRollNumber, buildEseAdmitCardHtml, buildEseComboAdmitCardHtml,
       } = require('./tally-ese-shared');
@@ -509,23 +508,20 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
         : (ESE_CENTRES[centreKey] || { name: centre, address: 'TBD', mapsLink: '#' });
 
       if (isEseCombined) {
-        const rollNumberPaper1 = await generateEseRollNumber(isOmr ? 'ESE' : (centreKey || centreInfo.name), 'P1');
-        const rollNumberPaper2 = await generateEseRollNumber(isOmr ? 'ESE' : (centreKey || centreInfo.name), 'P2');
+        const rollNumber = await generateEseRollNumber(isOmr ? 'ESE' : (centreKey || centreInfo.name), 'CMB');
 
-        const pdfBuffer = await generateComboAdmitCard({
-          name:  name || enr.student_name,
-          govtId: govt_id || 'N/A',
-          rollNumberDegree:  rollNumberPaper1,
-          rollNumberDiploma: rollNumberPaper2,
-          centre: centreInfo.name,
-          phone:  enr.student_phone || 'N/A',
-          email:  enr.student_email,
+        const pdfBuffer = await generateAdmitCard({
+          name:         name || enr.student_name,
+          govtId:       govt_id || 'N/A',
+          rollNumber,
+          centre:       centreInfo.name,
+          targetExam:   cfg.seriesName,
+          phone:        enr.student_phone || 'N/A',
+          email:        enr.student_email,
           photoBuffer,
-          mode: isOmr ? 'home' : 'offline',
           seriesName:   cfg.seriesName,
-          rollLabel1:   'PAPER 1 ROLL NUMBER',
-          rollLabel2:   'PAPER 2 ROLL NUMBER',
-          validityText: 'Schedule subject to change after the official ESE 2027 examination date announcement - notified via email & WhatsApp.',
+          lastTestDate: '17 January 2027 (Test-22)',
+          mode:         isOmr ? 'home' : 'offline',
         });
 
         const result = await resendSend({
@@ -533,7 +529,7 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
           to:          enr.student_email,
           subject:     `Confirmed! Your Admit Card for ${cfg.seriesName}`,
           html:        buildEseComboAdmitCardHtml({ name: name || enr.student_name, centreInfo }),
-          attachments: [{ filename: `AdmitCard_${rollNumberPaper1}_${rollNumberPaper2}.pdf`, content: pdfBuffer.toString('base64'), contentType: 'application/pdf' }],
+          attachments: [{ filename: `AdmitCard_${rollNumber}.pdf`, content: pdfBuffer.toString('base64'), contentType: 'application/pdf' }],
         }, PRIORITY.ADMIT_CARD);
 
         if (result.error) {
@@ -541,9 +537,9 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
           return res.status(502).json({ error: `Email send failed: ${result.error.message}` });
         }
 
-        console.log(`[resend-admit-card] Sent ESE combined to ${enr.student_email} | Paper1 Roll: ${rollNumberPaper1} | Paper2 Roll: ${rollNumberPaper2}`);
-        await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2', [`${rollNumberPaper1}|${rollNumberPaper2}`, enrollment_id]);
-        return res.json({ message: `Admit card sent to ${enr.student_email}`, roll_number_paper1: rollNumberPaper1, roll_number_paper2: rollNumberPaper2 });
+        console.log(`[resend-admit-card] Sent ESE combined to ${enr.student_email} | Roll: ${rollNumber}`);
+        await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2', [rollNumber, enrollment_id]);
+        return res.json({ message: `Admit card sent to ${enr.student_email}`, roll_number: rollNumber });
       }
 
       const rollNumber = await generateEseRollNumber(isOmr ? 'ESE' : (centreKey || centreInfo.name), cfg.examCode);
