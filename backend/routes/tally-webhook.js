@@ -806,7 +806,11 @@ async function processSubmission(fields, programType) {
 
 /* ── Generate COMBO admit card PDF (both Degree + Diploma roll numbers) ── */
 
-function generateComboAdmitCard({ name, govtId, rollNumberDegree, rollNumberDiploma, centre, phone, email, photoBuffer, mode = 'offline' }) {
+function generateComboAdmitCard({
+  name, govtId, rollNumberDegree, rollNumberDiploma, centre, phone, email, photoBuffer, mode = 'offline',
+  seriesName: seriesNameOverride, rollLabel1 = 'DEGREE ROLL NUMBER', rollLabel2 = 'DIPLOMA ROLL NUMBER',
+  validityText: validityTextOverride,
+}) {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: 'A4', margin: 0, autoFirstPage: true });
     const chunks = [];
@@ -831,9 +835,9 @@ function generateComboAdmitCard({ name, govtId, rollNumberDegree, rollNumberDipl
     const AMBERB = '#78350f';
     const AMBERG = '#fff7ed';
 
-    const seriesName = mode === 'home'
+    const seriesName = seriesNameOverride || (mode === 'home'
       ? 'RSSB JE 2026 - Civil Degree + Diploma Combo - Home-Based OMR Test Series'
-      : 'RSSB JE 2026 - Civil Degree + Diploma Combo - Offline Test Series';
+      : 'RSSB JE 2026 - Civil Degree + Diploma Combo - Offline Test Series');
 
     doc.rect(0, 0, W, 110).fill(NAVY);
     doc.rect(0, 0, W, 4).fill(RED);
@@ -862,11 +866,11 @@ function generateComboAdmitCard({ name, govtId, rollNumberDegree, rollNumberDipl
     doc.rect(M, y, CW, 44).fill(BG);
     doc.rect(M, y, 3, 44).fill(RED);
     doc.fillColor(MID).font('Helvetica').fontSize(7.5)
-       .text('DEGREE ROLL NUMBER', M + 12, y + 6, { lineBreak: false });
+       .text(rollLabel1, M + 12, y + 6, { lineBreak: false });
     doc.fillColor(DARK).font('Helvetica-Bold').fontSize(13)
        .text(rollNumberDegree, M + 12, y + 15, { lineBreak: false });
     doc.fillColor(MID).font('Helvetica').fontSize(7.5)
-       .text('DIPLOMA ROLL NUMBER', M + 12, y + 30, { lineBreak: false });
+       .text(rollLabel2, M + 12, y + 30, { lineBreak: false });
     doc.fillColor(DARK).font('Helvetica-Bold').fontSize(13)
        .text(rollNumberDiploma, M + 12, y + 39, { lineBreak: false });
     doc.fillColor(MID).font('Helvetica').fontSize(7.5)
@@ -955,7 +959,7 @@ function generateComboAdmitCard({ name, govtId, rollNumberDegree, rollNumberDipl
     doc.rect(M, y, CW, 0.75).fill(BORD);
     y += 10;
 
-    const validityText = `Degree tests valid till 10 January 2027 (Test-28)  |  Diploma tests valid till 29 November 2026 (Test-22)  |  Schedule subject to change - notified via email & WhatsApp.`;
+    const validityText = validityTextOverride || `Degree tests valid till 10 January 2027 (Test-28)  |  Diploma tests valid till 29 November 2026 (Test-22)  |  Schedule subject to change - notified via email & WhatsApp.`;
     doc.rect(M, y, CW, 22).fill(AMBERG);
     doc.rect(M, y, 3, 22).fill(AMBER);
     doc.fillColor(AMBERB).font('Helvetica-Bold').fontSize(7)
