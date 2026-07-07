@@ -22,6 +22,12 @@ const PROGRAM_LABELS = {
   'rssb-je-jaspalsirki-testseries-degree-diploma-combo':     'Combo Offline',
   'rssb-je-jaspalsirki-testseries-degree-diploma-combo-omr': 'Combo OMR',
   'rpsc-ae-interview':                 'RPSC AE Interview Guidance',
+  'ese-2027-prelims-jaspalsirki-testseries-paper1':              'ESE Paper 1',
+  'ese-2027-prelims-jaspalsirki-testseries-paper2-civil':        'ESE Paper 2 (Civil)',
+  'ese-2027-prelims-jaspalsirki-testseries-combined':            'ESE Combined',
+  'ese-2027-prelims-jaspalsirki-testseries-paper1-omr':          'ESE Paper 1 OMR',
+  'ese-2027-prelims-jaspalsirki-testseries-paper2-civil-omr':    'ESE Paper 2 (Civil) OMR',
+  'ese-2027-prelims-jaspalsirki-testseries-combined-omr':        'ESE Combined OMR',
 };
 function programLabel(slug, fallbackName) {
   return PROGRAM_LABELS[slug] || fallbackName || slug || 'Unknown Program';
@@ -430,8 +436,12 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
     const isOmr   = slug.toLowerCase().includes('omr');
     const isCombo = slug === 'rssb-je-jaspalsirki-testseries-degree-diploma-combo'
       || slug === 'rssb-je-jaspalsirki-testseries-degree-diploma-combo-omr';
+    const { ESE_PROGRAMS } = require('../config/eseTestSeries');
+    const eseKey = Object.keys(ESE_PROGRAMS).find(k => ESE_PROGRAMS[k].slug === slug);
+    const isEse = !!eseKey;
+    const isEseCombined = eseKey === 'combined' || eseKey === 'combinedOmr';
 
-    if (!isCombo) {
+    if (!isCombo && !isEseCombined) {
       if (!name)             return res.status(400).json({ error: 'name is required.' });
       if (!isOmr && !centre) return res.status(400).json({ error: 'centre is required for offline enrollments.' });
     }
@@ -483,6 +493,87 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
       console.log(`[resend-admit-card] Sent combo to ${enr.student_email} | Degree Roll: ${rollNumberDegree} | Diploma Roll: ${rollNumberDiploma}`);
       await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2', [`${rollNumberDegree}|${rollNumberDiploma}`, enrollment_id]);
       return res.json({ message: `Admit card sent to ${enr.student_email}`, roll_number_degree: rollNumberDegree, roll_number_diploma: rollNumberDiploma });
+    }
+
+    if (isEse) {
+      const { ESE_CENTRES, getEseCentreKey } = require('../config/eseTestSeries');
+      const { generateAdmitCard, generateComboAdmitCard } = require('./tally-webhook');
+      const {
+        generateEseRollNumber, buildEseAdmitCardHtml, buildEseComboAdmitCardHtml,
+      } = require('./tally-ese-shared');
+      const { send: resendSend, PRIORITY } = require('../services/resendQueue');
+      const cfg = ESE_PROGRAMS[eseKey];
+
+      const centreKey  = isOmr ? null : getEseCentreKey(centre);
+      const centreInfo = isOmr ? { name: 'Online (Home Based)', address: '', mapsLink: '#' }
+        : (ESE_CENTRES[centreKey] || { name: centre, address: 'TBD', mapsLink: '#' });
+
+      if (isEseCombined) {
+        const rollNumberPaper1 = await generateEseRollNumber(isOmr ? 'ESE' : (centreKey || centreInfo.name), 'P1');
+        const rollNumberPaper2 = await generateEseRollNumber(isOmr ? 'ESE' : (centreKey || centreInfo.name), 'P2');
+
+        const pdfBuffer = await generateComboAdmitCard({
+          name:  name || enr.student_name,
+          govtId: govt_id || 'N/A',
+          rollNumberDegree:  rollNumberPaper1,
+          rollNumberDiploma: rollNumberPaper2,
+          centre: centreInfo.name,
+          phone:  enr.student_phone || 'N/A',
+          email:  enr.student_email,
+          photoBuffer,
+          mode: isOmr ? 'home' : 'offline',
+        });
+
+        const result = await resendSend({
+          from:        'Dr. Jaspal Singh <team@jaspalsingh.in>',
+          to:          enr.student_email,
+          subject:     `Confirmed! Your Admit Card for ${cfg.seriesName}`,
+          html:        buildEseComboAdmitCardHtml({ name: name || enr.student_name, centreInfo }),
+          attachments: [{ filename: `AdmitCard_${rollNumberPaper1}_${rollNumberPaper2}.pdf`, content: pdfBuffer.toString('base64'), contentType: 'application/pdf' }],
+        }, PRIORITY.ADMIT_CARD);
+
+        if (result.error) {
+          console.error('[resend-admit-card] Resend error:', result.error);
+          return res.status(502).json({ error: `Email send failed: ${result.error.message}` });
+        }
+
+        console.log(`[resend-admit-card] Sent ESE combined to ${enr.student_email} | Paper1 Roll: ${rollNumberPaper1} | Paper2 Roll: ${rollNumberPaper2}`);
+        await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2', [`${rollNumberPaper1}|${rollNumberPaper2}`, enrollment_id]);
+        return res.json({ message: `Admit card sent to ${enr.student_email}`, roll_number_paper1: rollNumberPaper1, roll_number_paper2: rollNumberPaper2 });
+      }
+
+      const rollNumber = await generateEseRollNumber(isOmr ? 'ESE' : (centreKey || centreInfo.name), cfg.examCode);
+
+      const pdfBuffer = await generateAdmitCard({
+        name:         name || enr.student_name,
+        govtId:       govt_id || 'N/A',
+        rollNumber,
+        centre:       centreInfo.name,
+        targetExam:   cfg.seriesName,
+        phone:        enr.student_phone || 'N/A',
+        email:        enr.student_email,
+        photoBuffer,
+        seriesName:   cfg.seriesName,
+        lastTestDate: cfg.lastTestDate,
+        mode:         isOmr ? 'home' : 'offline',
+      });
+
+      const result = await resendSend({
+        from:        'Dr. Jaspal Singh <team@jaspalsingh.in>',
+        to:          enr.student_email,
+        subject:     `Confirmed! Your Admit Card for ${cfg.seriesName}`,
+        html:        buildEseAdmitCardHtml({ name: name || enr.student_name, seriesName: cfg.seriesName, centreInfo, schedule: cfg.schedule }),
+        attachments: [{ filename: `AdmitCard_${rollNumber}.pdf`, content: pdfBuffer.toString('base64'), contentType: 'application/pdf' }],
+      }, PRIORITY.ADMIT_CARD);
+
+      if (result.error) {
+        console.error('[resend-admit-card] Resend error:', result.error);
+        return res.status(502).json({ error: `Email send failed: ${result.error.message}` });
+      }
+
+      console.log(`[resend-admit-card] Sent ESE to ${enr.student_email} | Roll: ${rollNumber}`);
+      await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2', [rollNumber, enrollment_id]);
+      return res.json({ message: `Admit card sent to ${enr.student_email}`, roll_number: rollNumber });
     }
 
     const isDegreeCourse = program_type === 'degree' ? true
