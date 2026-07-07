@@ -347,15 +347,36 @@ const adminUpdateEmail = async (req, res, next) => {
 /* ── GET /api/learners/stats  -  ADMIN ───────────────────────── */
 const adminStats = async (req, res, next) => {
   try {
-    const [totalR, last7R, examR] = await Promise.all([
+    const [totalR, last7R, examR, revenueR] = await Promise.all([
       query('SELECT COUNT(*) FROM learners'),
       query("SELECT COUNT(*) FROM learners WHERE created_at > NOW() - INTERVAL '7 days'"),
       query('SELECT target_exam, COUNT(*)::int AS count FROM learners GROUP BY target_exam ORDER BY count DESC'),
+      // Revenue grouped by program category, derived from the program_slug actually
+      // sold (not the learner's self-picked target_exam) - so a newly launched
+      // program's sales show up here automatically with no manual mapping.
+      query(`
+        SELECT
+          CASE
+            WHEN program_slug LIKE 'ese-%'        THEN 'ESE 2027 Prelims'
+            WHEN program_slug LIKE 'rssb-je%'
+              OR program_slug LIKE 'rssb-jen%'    THEN 'RSSB JE/JEN 2026'
+            WHEN program_slug LIKE 'rpsc-ae%'     THEN 'RPSC AE'
+            WHEN program_slug LIKE 'gate-%'       THEN 'GATE/ESE 2028'
+            ELSE 'Other'
+          END AS category,
+          COALESCE(SUM(amount), 0)::int AS revenue,
+          COUNT(*)::int AS count
+        FROM enrollments
+        WHERE status = 'paid' AND refund_status <> 'initiated'
+        GROUP BY category
+        ORDER BY revenue DESC
+      `),
     ]);
     res.json({
-      total:    parseInt(totalR.rows[0].count, 10),
-      last_7d:  parseInt(last7R.rows[0].count, 10),
-      by_exam:  examR.rows,
+      total:              parseInt(totalR.rows[0].count, 10),
+      last_7d:            parseInt(last7R.rows[0].count, 10),
+      by_exam:            examR.rows,
+      by_program_revenue: revenueR.rows,
     });
   } catch (err) { next(err); }
 };
