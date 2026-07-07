@@ -1332,7 +1332,7 @@
 .ticker-track {
   display: flex;
   width: max-content;
-  animation: marqueeLeft 32s linear infinite;
+  animation: marqueeLeft 90s linear infinite;
 }
 .ticker-strip:hover .ticker-track { animation-play-state: paused; }
 .ticker-group {
@@ -1365,7 +1365,7 @@ a.ticker-item:hover i { color: #fff; }
 @media (max-width: 600px) {
   .ticker-item { font-size: 12.5px; }
   .ticker-dot { padding: 0 14px; }
-  .ticker-track { animation-duration: 24s; }
+  .ticker-track { animation-duration: 65s; }
 }
 @media (prefers-reduced-motion: reduce) {
   .ticker-track { animation: none; }
