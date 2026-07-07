@@ -423,8 +423,6 @@
       if (el) el.textContent = data.total || 0;
       var elWeek = $('statWeekLearners');
       if (elWeek) elWeek.textContent = data.last_7d || 0;
-      /* Quick stats summary */
-      renderQuickStats(data);
     }).catch(function () {
       ['statLearners', 'statWeekLearners'].forEach(function (id) {
         var el = $(id); if (el) el.textContent = 'Err';
@@ -485,32 +483,6 @@
         '</div>'
       );
     }).join('');
-  }
-
-  /** Render quick stats card */
-  function renderQuickStats(data) {
-    var el = $('quickStats');
-    if (!el) return;
-
-    var rows = [
-      { label: 'Total Learners',   value: data.total || 0,           icon: 'fa-users',        color: '#10b981' },
-      { label: 'New (Last 7 Days)', value: data.last_7d || 0,          icon: 'fa-user-check',   color: '#67C8E8' },
-      { label: 'New This Month',   value: data.new_this_month || data.last_7d || 0, icon: 'fa-user-plus', color: '#8b5cf6' }
-    ];
-
-    el.innerHTML = rows.map(function (r) {
-      return (
-        '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--admin-border);">' +
-          '<div style="display:flex;align-items:center;gap:10px;">' +
-            '<div style="width:32px;height:32px;border-radius:8px;background:' + r.color + '1a;display:flex;align-items:center;justify-content:center;color:' + r.color + ';font-size:13px;">' +
-              '<i class="fas ' + r.icon + '"></i>' +
-            '</div>' +
-            '<span style="font-size:13.5px;font-weight:500;color:var(--admin-text);">' + escapeHtml(r.label) + '</span>' +
-          '</div>' +
-          '<span style="font-family:\'Plus Jakarta Sans\',sans-serif;font-size:18px;font-weight:700;color:var(--admin-text);">' + r.value + '</span>' +
-        '</div>'
-      );
-    }).join('') + '<div style="height:1px;"></div>';
   }
 
   /** Update the Messages sidebar badge with unread count */
