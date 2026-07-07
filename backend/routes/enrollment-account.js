@@ -522,6 +522,10 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
           email:  enr.student_email,
           photoBuffer,
           mode: isOmr ? 'home' : 'offline',
+          seriesName:   cfg.seriesName,
+          rollLabel1:   'PAPER 1 ROLL NUMBER',
+          rollLabel2:   'PAPER 2 ROLL NUMBER',
+          validityText: 'Schedule subject to change after the official ESE 2027 examination date announcement - notified via email & WhatsApp.',
         });
 
         const result = await resendSend({
