@@ -135,7 +135,10 @@ const COUPONS = {
     label:      'Special offer - Rs 2,000',
   },
   'DIP20001506': {
-    programPrices: { 'rssb-jen-diploma-test-series': 2000 },
+    programPrices: {
+      'rssb-jen-diploma-test-series': 2000,
+      'rssb-jen-degree-test-series':  2000,
+    },
     exclusive:  true,
     singleUse:  true,
     label:      'Special offer - Rs 2,000',
