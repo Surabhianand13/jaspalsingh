@@ -64,14 +64,7 @@
       </div>
     </div>
 
-    <!-- Resource card (shown after login) -->
-    <div class="resource-card" id="resource-card">
-      <h3 id="card-title"></h3>
-      <p id="card-desc"></p>
-      <a href="#" id="card-link" class="btn-view" target="_blank" rel="noopener">
-        <i class="fa-solid fa-file-pdf"></i> View PDF
-      </a>
-    </div>
+
   </div>
 
   <script src="/js/learner-auth.js"></script>
@@ -94,69 +87,23 @@
     }
 
     function onAuthSuccess() {
-      document.getElementById('auth-gate').style.display = 'none';
-      loadResource();
+      window.location.href = '/profile#free-resources';
     }
 
-    function loadResource() {
+    function checkAuth() {
       var token = localStorage.getItem(TOKEN_KEY);
-      if (!token) {
-        document.getElementById('res-title').textContent = 'Free Resource';
-        document.getElementById('res-desc').textContent = 'Sign in or create a free account to access this resource.';
-        document.getElementById('auth-gate').style.display = '';
-        return;
-      }
-
-      var controller = new AbortController();
-      var tid = setTimeout(function () { controller.abort(); }, 15000);
-      var qs  = resourceId ? ('?id=' + encodeURIComponent(resourceId)) : '';
-
-      fetch(API + '/api/free-resources' + qs, {
-        headers: { Authorization: 'Bearer ' + token },
-        signal: controller.signal,
-      })
-      .then(function (r) {
-        clearTimeout(tid);
-        if (r.status === 401) {
-          /* Token expired - clear and show auth gate */
-          localStorage.removeItem(TOKEN_KEY);
-          loadResource();
-          return null;
-        }
-        if (!r.ok) throw new Error('Could not load resource (' + r.status + ')');
-        return r.json();
-      })
-      .then(function (resources) {
-        if (!resources) return;
-        var res = resourceId
-          ? resources.find(function (x) { return String(x.id) === resourceId; })
-          : resources[0];
-
-        if (!res) {
-          document.getElementById('res-title').textContent = 'Resource not found';
-          document.getElementById('res-desc').textContent = 'This resource may have been removed or the link may be incorrect.';
-          return;
-        }
-
-        document.getElementById('res-title').textContent = res.title;
-        document.getElementById('res-desc').textContent  = res.description || '';
-        document.getElementById('card-title').textContent = res.title;
-        document.getElementById('card-desc').textContent  = res.description || '';
-        document.getElementById('card-link').href         = res.pdf_url;
-        document.getElementById('resource-card').style.display = '';
-        document.getElementById('auth-gate').style.display     = 'none';
-      })
-      .catch(function (err) {
-        clearTimeout(tid);
+      if (token) {
+        /* Already logged in - go straight to profile */
+        window.location.href = '/profile#free-resources';
+      } else {
         document.getElementById('res-title').textContent = 'Free Resource';
         document.getElementById('res-desc').textContent  = 'Sign in or create a free account to access this resource.';
         document.getElementById('auth-gate').style.display = '';
-        console.error(err);
-      });
+      }
     }
 
     /* Start */
-    loadResource();
+    checkAuth();
   </script>
 </body>
 </html>
