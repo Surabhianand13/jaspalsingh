@@ -646,25 +646,26 @@
   function loadExamDonut() {
     adminFetch('GET', '/api/learners/stats')
       .then(function (data) {
-        var examData = data.by_exam || [];
-        /* Render quick text stats */
+        var revData = data.by_program_revenue || [];
+        /* Render quick text stats - revenue actually collected per program
+           category, derived from paid enrollments rather than the learner's
+           self-picked target_exam, so a newly launched program (e.g. ESE)
+           shows up here the moment it has a sale, with no manual mapping. */
         var el = $('quickStats');
         if (el) {
           var html = '<div style="display:flex;flex-direction:column;gap:8px;">';
-          examData.forEach(function (row) {
+          revData.forEach(function (row) {
             html += '<div style="display:flex;justify-content:space-between;font-size:13px;">' +
-                    '<span>' + escapeHtml(row.target_exam || 'General') + '</span>' +
-                    '<strong>' + (row.count || 0) + '</strong></div>';
+                    '<span>' + escapeHtml(row.category || 'Other') + '</span>' +
+                    '<strong>' + inrIndian(row.revenue || 0) + ' <span style="color:var(--admin-text-muted,#888);font-weight:400;">(' + (row.count || 0) + ')</span></strong></div>';
           });
-          html += '<div style="margin-top:8px;padding-top:8px;border-top:1px solid #e8e8f0;display:flex;justify-content:space-between;font-size:13px;">' +
-                  '<span>Signups this week</span><strong>' + (data.last_7d || 0) + '</strong></div>';
           html += '</div>';
           el.innerHTML = html;
         }
         /* Donut chart */
-        if (!examData.length) return;
-        var labels   = examData.map(function (r) { return r.target_exam || 'General'; });
-        var values   = examData.map(function (r) { return r.count || 0; });
+        if (!revData.length) return;
+        var labels   = revData.map(function (r) { return r.category || 'Other'; });
+        var values   = revData.map(function (r) { return r.revenue || 0; });
         var bgColors = [CHART_COLORS.magenta, CHART_COLORS.sky, CHART_COLORS.green, CHART_COLORS.amber, CHART_COLORS.purple];
         var ctx = document.getElementById('chartExamDonut');
         if (!ctx) return;
@@ -685,6 +686,7 @@
             cutout: '62%',
             plugins: {
               legend: { display: true, position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12, padding: 8 } },
+              tooltip: { callbacks: { label: function (ctx) { return ctx.label + ': ' + inrIndian(ctx.parsed); } } },
             },
           },
         });
