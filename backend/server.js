@@ -89,6 +89,10 @@ app.use('/api/tally-ese-combined',      apiLimiter, tallyRaw, verifyTallySignatu
 app.use('/api/tally-ese-paper1-omr',    apiLimiter, tallyRaw, verifyTallySignature, require('./routes/tally-ese-paper1-omr'));
 app.use('/api/tally-ese-paper2-omr',    apiLimiter, tallyRaw, verifyTallySignature, require('./routes/tally-ese-paper2-omr'));
 app.use('/api/tally-ese-combined-omr',  apiLimiter, tallyRaw, verifyTallySignature, require('./routes/tally-ese-combined-omr'));
+// Generic webhook for programs launched entirely from admin (Phase 6 - hybrid
+// launch). Existing 13 programs keep using their bespoke routes above; this
+// only activates for a program whose `launch_config` column is set.
+app.use('/api/tally-generic/:programSlug', apiLimiter, tallyRaw, verifyTallySignature, require('./routes/tally-generic'));
 
 /* ── Body Parsing ────────────────────────────────────────── */
 
@@ -123,6 +127,8 @@ app.use('/api/banners',       require('./routes/banners'));
    verifyTallySignature can see the raw body - do not re-register here. */
 app.use('/api/omr-check',        require('./routes/omr-check'));
 app.use('/api/free-resources',   require('./routes/free-resources'));
+app.use('/api/coupons',          require('./routes/coupons'));
+app.use('/api/homepage-content', require('./routes/homepage-content'));
 
 /* ── Health Check ────────────────────────────────────────── */
 
@@ -544,6 +550,163 @@ async function migrate() {
   `);
   await query(`CREATE INDEX IF NOT EXISTS idx_omr_submissions_test ON omr_submissions(test_id)`);
   await query(`CREATE INDEX IF NOT EXISTS idx_omr_submissions_status ON omr_submissions(status)`);
+
+  /* ═══════════════════════════════════════════════════════════
+     Admin self-serve platform (2026-07-08): coupons, generic OMR
+     sending, programs-as-pricing-source-of-truth, and homepage
+     content management. See CLAUDE.md-adjacent PR description for
+     the full rationale - this block is additive and every new
+     column defaults to NULL/FALSE so existing rows are unaffected.
+     ═══════════════════════════════════════════════════════════ */
+
+  /* ── Coupons (admin self-serve, replaces the hardcoded COUPONS
+     object that used to live in routes/payment.js) ── */
+  await query(`
+    CREATE TABLE IF NOT EXISTS coupons (
+      id              SERIAL PRIMARY KEY,
+      code            VARCHAR(50) UNIQUE NOT NULL,
+      type            VARCHAR(20) NOT NULL DEFAULT 'fixed_discount', -- fixed_discount | flat_price | program_price_map
+      discount_amount INTEGER,        -- rupees off (fixed_discount) or the flat final price (flat_price)
+      program_prices  JSONB,          -- program_price_map only: { slug: finalPrice }
+      program_slugs   JSONB,          -- fixed_discount/flat_price scope; null/empty = all programs
+      max_uses        INTEGER,        -- null = unlimited; 1 = one-time-use; N = limited
+      exclusive       BOOLEAN NOT NULL DEFAULT FALSE, -- blocks stacking with a referral code
+      is_active       BOOLEAN NOT NULL DEFAULT TRUE,
+      label           VARCHAR(200),
+      expires_at      TIMESTAMPTZ,
+      created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+  await query(`CREATE INDEX IF NOT EXISTS idx_coupons_active ON coupons(is_active)`);
+
+  /* Seed the previously-hardcoded coupons once, so existing links/emails
+     with these codes keep working exactly as before. */
+  const couponCount = await query(`SELECT COUNT(*)::int AS n FROM coupons`);
+  if (couponCount.rows[0].n === 0) {
+    const couponSeed = [
+      // code, type, discount_amount, program_prices, program_slugs, max_uses, exclusive, label
+      ['FIRST',       'flat_price',        1,    null, null, null, false, 'First-time offer'],
+      ['JASPALSIR',   'fixed_discount',    1000, null, null, null, false, 'Get Rs 1,000 off'],
+      ['JASPAL200',   'fixed_discount',    1200, null, null, null, true,  'Special Rs 1,200 off'],
+      ['DOST', 'program_price_map', null, {
+        'rssb-jen-diploma-test-series':     2699,
+        'rssb-jen-degree-test-series':      2899,
+        'rssb-je-omr-degree-test-series':   899,
+        'rssb-jen-omr-diploma-test-series': 899,
+      }, null, null, true, 'DOST Partner offer'],
+      ['DIP2000E0B4', 'program_price_map', null, { 'rssb-jen-diploma-test-series': 2000 }, null, 1, true, 'Special offer - Rs 2,000'],
+      ['DIP20001506', 'program_price_map', null, { 'rssb-jen-diploma-test-series': 2000, 'rssb-jen-degree-test-series': 2000 }, null, 1, true, 'Special offer - Rs 2,000'],
+      ['DIP2499X9F3', 'program_price_map', null, { 'rssb-jen-diploma-test-series': 2499, 'rssb-jen-degree-test-series': 2499 }, null, 1, true, 'Special offer - Rs 2,499'],
+      ['DIP1000E62A', 'program_price_map', null, { 'rssb-jen-diploma-test-series': 1000 }, null, 1, true, 'Special offer - Rs 1,000'],
+    ];
+    for (const c of couponSeed) {
+      await query(
+        `INSERT INTO coupons (code, type, discount_amount, program_prices, program_slugs, max_uses, exclusive, label)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT (code) DO NOTHING`,
+        [c[0], c[1], c[2], c[3] ? JSON.stringify(c[3]) : null, c[4] ? JSON.stringify(c[4]) : null, c[5], c[6], c[7]]
+      );
+    }
+    console.log('✅ Seeded 8 coupons from legacy hardcoded catalogue');
+  }
+
+  /* ── Programs: new columns for pricing-source-of-truth, generic OMR
+     sending, and preset tag badges ── */
+  await query(`ALTER TABLE programs ADD COLUMN IF NOT EXISTS short_name VARCHAR(300)`);
+  await query(`ALTER TABLE programs ADD COLUMN IF NOT EXISTS icon_class VARCHAR(60)`);
+  await query(`ALTER TABLE programs ADD COLUMN IF NOT EXISTS omr_enabled BOOLEAN NOT NULL DEFAULT FALSE`);
+  await query(`ALTER TABLE programs ADD COLUMN IF NOT EXISTS total_tests INTEGER`);
+  await query(`ALTER TABLE programs ADD COLUMN IF NOT EXISTS omr_categories JSONB`); // e.g. ["degree","diploma"] for combo programs
+  // Hybrid program launch (Phase 6) - lets admin wire a brand-new program's
+  // Tally intake + admit card without a code deploy. NULL launch_config means
+  // "this program uses one of the bespoke, hand-written Tally routes" (all
+  // 13 programs live today) - the generic webhook only activates when set.
+  await query(`ALTER TABLE programs ADD COLUMN IF NOT EXISTS launch_config JSONB`);
+
+  /* Backfill the 8 programs that were launched via one-off code changes and
+     never got a row in this table, plus fix metadata on rows already here so
+     checkout can safely start reading price/mrp/branding from the DB. Uses
+     COALESCE so any value an admin may already have edited wins over the seed. */
+  const programBackfill = [
+    // slug, title, category, exam, level, status, price, mrp, accent, icon_class, thumb, short_name, sort_order, omr_enabled, total_tests, omr_categories
+    ['ese-2027-prelims-jaspalsirki-testseries-paper1', 'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 1 (GS & Engineering Aptitude)', 'test-series', 'ESE 2027 Prelims', 'Paper 1', 'enrolling', 2999, 4999, 'purple', 'fa-book-reader', '/assets/images/thumb-ese-2027-prelims.jpg', 'ESE 2027 Prelims Paper 1', 10, false, 22, null],
+    ['ese-2027-prelims-jaspalsirki-testseries-paper2-civil', 'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 2 (Civil)', 'test-series', 'ESE 2027 Prelims', 'Paper 2 (Civil)', 'enrolling', 2999, 4999, 'purple', 'fa-drafting-compass', '/assets/images/thumb-ese-2027-prelims.jpg', 'ESE 2027 Prelims Paper 2 (Civil)', 11, false, 22, null],
+    ['ese-2027-prelims-jaspalsirki-testseries-combined', 'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 1 + 2 (GS, Eng. Aptitude & Civil)', 'test-series', 'ESE 2027 Prelims', 'Paper 1+2', 'enrolling', 4499, 9999, 'purple', 'fa-layer-group', '/assets/images/thumb-ese-2027-prelims.jpg', 'ESE 2027 Prelims Paper 1+2', 12, false, 22, JSON.stringify(['paper1', 'paper2'])],
+    ['ese-2027-prelims-jaspalsirki-testseries-paper1-omr', 'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 1 (Home-Based OMR Test Series)', 'test-series', 'ESE 2027 Prelims', 'Paper 1', 'enrolling', 2499, 3999, 'indigo', 'fa-book-reader', '/assets/images/thumb-ese-2027-prelims.jpg', 'ESE 2027 Prelims Paper 1 OMR', 13, true, 22, null],
+    ['ese-2027-prelims-jaspalsirki-testseries-paper2-civil-omr', 'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 2 Civil (Home-Based OMR Test Series)', 'test-series', 'ESE 2027 Prelims', 'Paper 2 (Civil)', 'enrolling', 2499, 3999, 'indigo', 'fa-drafting-compass', '/assets/images/thumb-ese-2027-prelims.jpg', 'ESE 2027 Prelims Paper 2 OMR', 14, true, 22, null],
+    ['ese-2027-prelims-jaspalsirki-testseries-combined-omr', 'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 1 + 2 Civil (Home-Based OMR Test Series)', 'test-series', 'ESE 2027 Prelims', 'Paper 1+2', 'enrolling', 2999, 7999, 'indigo', 'fa-layer-group', '/assets/images/thumb-ese-2027-prelims.jpg', 'ESE 2027 Prelims Paper 1+2 OMR', 15, true, 22, JSON.stringify(['paper1', 'paper2'])],
+    ['rssb-je-jaspalsirki-testseries-degree-diploma-combo-omr', 'RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Degree + Diploma Combo (Home-Based OMR Test Series)', 'test-series', 'RSSB JE 2026', 'Degree + Diploma', 'enrolling', 2499, 4999, 'indigo', 'fa-layer-group', '/assets/images/thumb-rssb-je-test-series.jpg?v=2', 'RSSB JE Degree + Diploma Combo OMR', 16, true, 28, JSON.stringify(['degree', 'diploma'])],
+    ['rssb-je-jaspalsirki-testseries-degree-diploma-combo', 'RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Degree + Diploma Combo Offline', 'test-series', 'RSSB JE 2026', 'Degree + Diploma', 'enrolling', 5499, 9999, 'teal', 'fa-layer-group', '/assets/images/thumb-rssb-je-test-series.jpg?v=2', 'RSSB JE Degree + Diploma Combo', 17, false, 28, JSON.stringify(['degree', 'diploma'])],
+  ];
+  for (const p of programBackfill) {
+    await query(
+      `INSERT INTO programs (slug, title, category, exam, level, status, price, mrp, accent, icon_class, thumbnail_url, short_name, sort_order, omr_enabled, total_tests, omr_categories, is_visible)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,TRUE)
+       ON CONFLICT (slug) DO UPDATE SET
+         icon_class     = COALESCE(programs.icon_class, EXCLUDED.icon_class),
+         thumbnail_url  = COALESCE(programs.thumbnail_url, EXCLUDED.thumbnail_url),
+         short_name     = COALESCE(programs.short_name, EXCLUDED.short_name),
+         omr_enabled    = programs.omr_enabled OR EXCLUDED.omr_enabled,
+         total_tests    = COALESCE(programs.total_tests, EXCLUDED.total_tests),
+         omr_categories = COALESCE(programs.omr_categories, EXCLUDED.omr_categories)`,
+      [p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13], p[14], p[15]]
+    );
+  }
+
+  // Fix metadata on the 3 pre-existing programs that predate these columns
+  // (short_name/icon_class/thumb were never set for them; the 2 OMR rows also
+  // had the wrong accent - "purple" instead of the "indigo" checkout actually
+  // uses for every *-omr program).
+  await query(`UPDATE programs SET short_name = COALESCE(short_name, 'RSSB JE 2026 Test Series'), icon_class = COALESCE(icon_class, 'fa-clipboard-list'), thumbnail_url = COALESCE(thumbnail_url, '/assets/images/thumb-rssb-je-test-series.jpg?v=2') WHERE slug = 'rssb-jen-diploma-test-series'`);
+  await query(`UPDATE programs SET short_name = COALESCE(short_name, 'RSSB JE 2026 Test Series'), icon_class = COALESCE(icon_class, 'fa-clipboard-check'), thumbnail_url = COALESCE(thumbnail_url, '/assets/images/thumb-rssb-je-test-series.jpg?v=2') WHERE slug = 'rssb-jen-degree-test-series'`);
+  await query(`UPDATE programs SET short_name = COALESCE(short_name, 'RPSC AE Interview Guidance'), icon_class = COALESCE(icon_class, 'fa-user-tie'), thumbnail_url = COALESCE(thumbnail_url, '/assets/images/thumb-rpsc-ae-interview.jpg') WHERE slug = 'rpsc-ae-interview'`);
+  await query(`UPDATE programs SET accent = 'indigo', short_name = COALESCE(short_name, 'RSSB JE 2026 OMR Degree Test Series'), icon_class = COALESCE(icon_class, 'fa-clipboard-check'), thumbnail_url = COALESCE(thumbnail_url, '/assets/images/thumb-rssb-je-test-series.jpg?v=2'), omr_enabled = TRUE, total_tests = COALESCE(total_tests, 28) WHERE slug = 'rssb-je-omr-degree-test-series'`);
+  await query(`UPDATE programs SET accent = 'indigo', short_name = COALESCE(short_name, 'RSSB JE 2026 OMR Diploma Test Series'), icon_class = COALESCE(icon_class, 'fa-clipboard-list'), thumbnail_url = COALESCE(thumbnail_url, '/assets/images/thumb-rssb-je-test-series.jpg?v=2'), omr_enabled = TRUE, total_tests = COALESCE(total_tests, 22) WHERE slug = 'rssb-jen-omr-diploma-test-series'`);
+
+  /* ── Homepage content sections (carousel, ticker, quick links) ── */
+  await query(`
+    CREATE TABLE IF NOT EXISTS homepage_carousel (
+      id          SERIAL PRIMARY KEY,
+      image_url   VARCHAR(1000) NOT NULL,
+      link_url    VARCHAR(300),
+      title       VARCHAR(200),
+      badge       VARCHAR(40),         -- e.g. "New", "Bestseller" - rendered via the same preset badge colours as program tags
+      sort_order  INTEGER NOT NULL DEFAULT 0,
+      is_visible  BOOLEAN NOT NULL DEFAULT TRUE,
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+  await query(`
+    CREATE TABLE IF NOT EXISTS homepage_ticker (
+      id          SERIAL PRIMARY KEY,
+      text        VARCHAR(300) NOT NULL,
+      link_url    VARCHAR(300),
+      badge       VARCHAR(40),
+      sort_order  INTEGER NOT NULL DEFAULT 0,
+      is_visible  BOOLEAN NOT NULL DEFAULT TRUE,
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+  await query(`
+    CREATE TABLE IF NOT EXISTS homepage_quicklinks (
+      id          SERIAL PRIMARY KEY,
+      label       VARCHAR(200) NOT NULL,
+      link_url    VARCHAR(300) NOT NULL,
+      badge       VARCHAR(40),
+      group_name  VARCHAR(60) NOT NULL DEFAULT 'default', -- lets multiple quick-link menus share one table
+      sort_order  INTEGER NOT NULL DEFAULT 0,
+      is_visible  BOOLEAN NOT NULL DEFAULT TRUE,
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+
+  /* No seed data here on purpose: frontend/index.html's carousel, ticker,
+     and nav quick-links are still hand-coded and stay exactly as they are.
+     These 3 tables are additive - the homepage fetches them and appends any
+     new admin-added item alongside the existing static content (deduped by
+     URL so nothing can double up), rather than replacing what's already
+     there. Seeding them with the current static content would just render
+     as visible duplicates. */
 
   /* ── Seed second admin user from env var (never hardcode passwords) ── */
   {

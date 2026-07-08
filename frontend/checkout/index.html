@@ -345,7 +345,11 @@
   <script>
     const API = 'https://jaspalsingh.onrender.com';
 
-    const PROGRAMS = {
+    /* FALLBACK_PROGRAMS is the pre-2026-07-08 hardcoded catalogue - kept as a
+       safety net only. The real catalogue now comes from /api/payment/programs
+       (backed by the `programs` DB table), so admin price/title/branding edits
+       take effect immediately with no code deploy - see the async IIFE below. */
+    const FALLBACK_PROGRAMS = {
       'rssb-jen-diploma-test-series': {
         name: 'RSSB JE 2026 - Jaspal Sir Ki Test Series Offline',
         price: 3799, mrp: 7999,
@@ -439,8 +443,21 @@
       },
     };
 
-    const params  = new URLSearchParams(window.location.search);
-    const slug    = params.get('program');
+    /* Everything below is wrapped in an async IIFE so we can fetch the live
+       program catalogue before rendering - DB values (admin edits) win per
+       slug, FALLBACK_PROGRAMS covers anything missing (API hiccup, or a
+       legacy slug), matching exactly what ran here before 2026-07-08. */
+    (async function () {
+
+    const params = new URLSearchParams(window.location.search);
+    const slug   = params.get('program');
+
+    let livePrograms = {};
+    try {
+      const r = await fetch(API + '/api/payment/programs');
+      if (r.ok) livePrograms = await r.json();
+    } catch (e) { /* network error - FALLBACK_PROGRAMS still covers us below */ }
+    const PROGRAMS = Object.assign({}, FALLBACK_PROGRAMS, livePrograms);
     const program = PROGRAMS[slug];
 
     /* ── Tracking: checkout funnel ── */
@@ -798,6 +815,8 @@
     function resetTurnstile() {
       if (typeof turnstile !== 'undefined') turnstile.reset();
     }
+
+    })(); // end async IIFE
   </script>
 </body>
 </html>
