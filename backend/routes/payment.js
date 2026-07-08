@@ -694,3 +694,9 @@ router.patch('/admin/referral-credits/:id/reject', protect, async (req, res) => 
 });
 
 module.exports = router;
+// Shared with enrollment-account.js's admin "mark as paid" flow, so a
+// manually-created enrollment triggers the exact same welcome
+// email/referral-code/duplicate-cleanup pipeline a real Razorpay payment does.
+module.exports.sendAllPaymentEmails = sendAllPaymentEmails;
+module.exports.onEnrollmentPaid     = onEnrollmentPaid;
+module.exports.getProgramData       = getProgramData;

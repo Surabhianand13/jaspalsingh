@@ -1923,11 +1923,14 @@
         var admitBtn = (x.status === 'paid' && x.form_used)
           ? '<button class="btn-admin-secondary btn-admin-sm" style="margin-top:4px;font-size:11px;color:#7c3aed;border-color:#7c3aed;" data-admitcard="'+x.id+'" data-slug="'+(x.program_slug||'')+'" title="Generate and resend admit card PDF">Send Admit Card</button>'
           : '';
+        var markPaidBtn = (x.status === 'pending')
+          ? '<button class="btn-admin-secondary btn-admin-sm" style="margin-top:4px;font-size:11px;color:#059669;border-color:#059669;" data-markpaid="'+x.id+'" title="Mark as paid without a Razorpay payment - sends the welcome email with the enrollment form link">Mark as Paid</button>'
+          : '';
         return '<tr><td>'+e(x.student_name)+'<br><span style="color:#9999b0;font-size:12px;">'+e(x.student_phone)+(x.student_email?' · '+e(x.student_email):'')+
           ' <a href="#" data-edit-enroll-email="'+x.id+'" data-current-email="'+e(x.student_email||'')+'" style="color:#4f46e5;">edit</a></span></td>' +
           '<td>'+e(x.program_label||x.program_name)+'</td><td>'+inr(x.amount)+(x.coupon_code?'<br><span style="color:#16a34a;font-size:11px;">'+e(x.coupon_code)+'</span>':'')+'</td>' +
           '<td><span class="admin-badge admin-badge--'+(x.status==='paid'?'green':x.status==='pending'?'orange':'grey')+'">'+e(x.status)+'</span></td>' +
-          '<td>'+formBadge+emailBadge+reissueBtn+markBtn+admitBtn+'</td>'+
+          '<td>'+formBadge+emailBadge+reissueBtn+markBtn+admitBtn+markPaidBtn+'</td>'+
           '<td>'+fmtDate(x.paid_at||x.created_at)+'</td><td style="font-size:11px;color:#9999b0;">'+e(x.order_id)+'</td></tr>';
       }).join('');
       body.innerHTML = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Student</th><th>Program</th><th>Amount</th><th>Status</th><th>Form</th><th>Date</th><th>Order</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
@@ -1976,6 +1979,60 @@
           showAdmitCardModal(parseInt(id), slug.includes('degree'), slug.includes('omr'));
         });
       });
+      // Wire up mark-as-paid buttons (manual/corrected enrollments, no Razorpay)
+      body.querySelectorAll('[data-markpaid]').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          var id = btn.getAttribute('data-markpaid');
+          if (!confirm('Mark this enrollment as paid? This sends the welcome email with the enrollment form link immediately - only do this once you have actually collected payment.')) return;
+          btn.disabled = true; btn.textContent = 'Saving...';
+          adminFetch('POST', '/api/enrollment/admin/' + id + '/mark-paid')
+            .then(function(d){ showToast(d.message || 'Marked as paid', 'success'); loadEnrollments(); })
+            .catch(function(err){ showToast(err.message || 'Failed', 'error'); btn.disabled = false; btn.textContent = 'Mark as Paid'; });
+        });
+      });
+  }
+
+  /* ── Add Enrollment (manual/corrected, no Razorpay) ──
+     Used to fix a learner who paid for the wrong program: create a row
+     here for the correct program, then use "Mark as Paid" on it to send
+     the welcome email with that program's Tally form link. Cancelling
+     the original wrong enrollment is a separate manual step (refund flag
+     on that row) - this tool doesn't touch it automatically. */
+  function openAddEnrollmentModal(){
+    var body = document.getElementById('addEnrollmentModalBody');
+    body.innerHTML = '<p class="admin-empty">Loading programs…</p>';
+    document.getElementById('addEnrollmentModal').style.display = 'flex';
+    adminFetch('GET', '/api/programs/admin/all').then(function(d){
+      var ps = (d.programs || []).filter(function(p){ return p.price != null; });
+      var progOpts = ps.map(function(p){ return '<option value="'+e(p.slug)+'" data-price="'+(p.price||'')+'">'+e(p.title)+' ('+inr(p.price)+')</option>'; }).join('');
+      body.innerHTML =
+        '<label class="admin-field"><span>Program</span><select class="admin-input" id="ae_program">'+progOpts+'</select></label>' +
+        fld('Student Name','ae_name','') +
+        fld('Email (optional)','ae_email','') +
+        fld('Phone','ae_phone','') +
+        fld('Amount (defaults to program price)','ae_amount', ps.length ? ps[0].price : '') +
+        '<div class="admin-form-hint" style="margin-top:-8px;">Creates a <strong>pending</strong> enrollment. Use "Mark as Paid" on the Enrollments list to actually trigger the welcome email once you\'ve confirmed payment.</div>' +
+        '<button class="btn" id="ae_save" style="margin-top:12px;">Create Enrollment</button>';
+      var progSel = document.getElementById('ae_program');
+      if (progSel) progSel.addEventListener('change', function(){
+        var opt = progSel.options[progSel.selectedIndex];
+        var amtEl = document.getElementById('ae_amount');
+        if (opt && amtEl) amtEl.value = opt.getAttribute('data-price') || '';
+      });
+      document.getElementById('ae_save').onclick = function(){
+        var payload = {
+          program_slug: val('ae_program'), student_name: val('ae_name'),
+          student_email: val('ae_email'), student_phone: val('ae_phone'),
+          amount: val('ae_amount') || '',
+        };
+        if (!payload.program_slug || !payload.student_name || !payload.student_phone) {
+          showToast('Program, name and phone are required', 'error'); return;
+        }
+        adminFetch('POST', '/api/enrollment/admin/create', payload)
+          .then(function(d){ showToast(d.message || 'Enrollment created', 'success'); document.getElementById('addEnrollmentModal').style.display = 'none'; loadEnrollments(); })
+          .catch(function(err){ showToast(err.message || 'Failed', 'error'); });
+      };
+    }).catch(function(err){ body.innerHTML = '<p class="admin-empty">'+e(err.message)+'</p>'; });
   }
 
   function loadEnrollments(){
@@ -2963,6 +3020,8 @@
       applyEnrollFilters();
     };
     var re=document.getElementById('btnRefreshEnrollments'); if(re) re.onclick=loadEnrollments;
+    var ae=document.getElementById('btnAddEnrollment'); if(ae) ae.onclick=openAddEnrollmentModal;
+    var aec=document.getElementById('addEnrollmentModalClose'); if(aec) aec.onclick=function(){document.getElementById('addEnrollmentModal').style.display='none';};
 
     /* Enrollment period tabs */
     var enrollPeriodBtns = document.querySelectorAll('#enrollPeriodTabs .filter-tab');
