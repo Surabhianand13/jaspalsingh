@@ -1237,3 +1237,5 @@ module.exports.generateRollNumber       = generateRollNumber;
 module.exports.CENTRES                  = CENTRES;
 module.exports.SCHEDULE_DEGREE          = SCHEDULE_DEGREE;
 module.exports.SCHEDULE_DIPLOMA         = SCHEDULE_DIPLOMA;
+module.exports.parseTallyFields         = parseTallyFields;
+module.exports.sendRejectionEmail       = sendRejectionEmail;

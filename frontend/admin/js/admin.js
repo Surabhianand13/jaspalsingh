@@ -199,7 +199,10 @@
     'programleads': 'Interest / Leads',
     'banners':      'Banners & Promo Images',
     'analytics':    'Analytics',
-    'omr-checker':  'OMR Test Checker'
+    'omr-checker':  'OMR Test Checker',
+    'omr-papers':   'Send OMR Content',
+    'coupons':      'Coupons',
+    'homepage':     'Homepage Content'
   };
 
   /**
@@ -248,6 +251,8 @@
       case 'banners':      loadBanners();      break;
       case 'analytics':    loadBizAnalytics(); break;
       case 'omr-checker':  loadOmrChecker();   break;
+      case 'coupons':      loadCoupons();      break;
+      case 'homepage':     loadHomepageContent('carousel'); loadHomepageContent('ticker'); loadHomepageContent('quicklinks'); break;
     }
   }
 
@@ -1810,11 +1815,13 @@
   function openProgramModal(p){
     p = p || {};
     var isEdit = !!p.id;
+    var lc = p.launch_config || null;
     document.getElementById('programModalTitle').textContent = isEdit ? 'Edit Program' : 'New Program';
     var body = document.getElementById('programModalBody');
     body.innerHTML =
       fld('Slug (URL)','pm_slug',p.slug||'', isEdit) +
       fld('Title','pm_title',p.title||'') +
+      fld('Short name (used internally, e.g. payment notes)','pm_shortname',p.short_name||'') +
       sel('Category','pm_category',['test-series','interview','course'],p.category||'test-series') +
       fld('Exam','pm_exam',p.exam||'') +
       fld('Level','pm_level',p.level||'') +
@@ -1822,17 +1829,45 @@
       fld('Price (blank = hide)','pm_price',p.price||'') +
       fld('MRP','pm_mrp',p.mrp||'') +
       fld('Thumbnail URL','pm_thumb',p.thumbnail_url||'') +
-      fld('Tags (comma separated)','pm_tags',(p.tags||[]).join(', ')) +
+      fld('Icon (Font Awesome class, e.g. fa-clipboard-list)','pm_icon',p.icon_class||'') +
+      sel('Accent colour','pm_accent',['blue','teal','purple','indigo','orange','green'],p.accent||'blue') +
+      tagCheckboxes('pm_tag', p.tags||[]) +
       fld('Sort order','pm_sort',p.sort_order||0) +
+      '<div style="border-top:1px dashed rgba(26,26,46,.15);margin:14px 0;padding-top:14px;">' +
+        '<label class="admin-field" style="flex-direction:row;align-items:center;gap:10px;"><input type="checkbox" id="pm_omr" style="width:auto;"'+(p.omr_enabled?' checked':'')+'> <span>OMR / Home-Based program (shows up in the OMR sending picker)</span></label>' +
+        fld('Total tests in this series','pm_total_tests',p.total_tests||'') +
+        fld('Categories for combo programs (comma separated, e.g. degree, diploma - leave blank if not a combo)','pm_omr_categories',(p.omr_categories||[]).join(', ')) +
+      '</div>' +
+      '<div style="border-top:1px dashed rgba(26,26,46,.15);margin:14px 0;padding-top:14px;">' +
+        '<label class="admin-field" style="flex-direction:row;align-items:center;gap:10px;"><input type="checkbox" id="pm_launch_enabled" style="width:auto;"'+(lc?' checked':'')+'> <span>Enable self-serve Tally intake (no code needed to go live)</span></label>' +
+        '<div class="admin-form-hint" style="margin:-4px 0 10px;">Point this program\'s Tally form webhook at: <code>/api/tally-generic/'+e(p.slug||'&lt;slug&gt;')+'</code></div>' +
+        fld('Series name shown on admit card & emails','pm_lc_series',(lc&&lc.seriesName)||'') +
+        sel('Mode','pm_lc_mode',['home','offline'],(lc&&lc.mode)||'home') +
+        fld('Roll number prefix (e.g. GEN)','pm_lc_prefix',(lc&&lc.rollPrefix)||'') +
+        fld('WhatsApp group link (optional)','pm_lc_wa',(lc&&lc.waGroupUrl)||'') +
+        fld('Last test date text shown on admit card (optional)','pm_lc_lasttest',(lc&&lc.lastTestDate)||'') +
+      '</div>' +
       '<button class="btn" id="pm_save" style="margin-top:8px;">'+(isEdit?'Save Changes':'Create Program')+'</button>';
     document.getElementById('programModal').style.display='flex';
     document.getElementById('pm_save').onclick = function(){
+      var launchEnabled = checked('pm_launch_enabled');
       var payload = {
-        slug: val('pm_slug'), title: val('pm_title'), category: val('pm_category'),
-        exam: val('pm_exam'), level: val('pm_level'), status: val('pm_status'),
+        slug: val('pm_slug'), title: val('pm_title'), short_name: val('pm_shortname'),
+        category: val('pm_category'), exam: val('pm_exam'), level: val('pm_level'), status: val('pm_status'),
         price: val('pm_price')||'', mrp: val('pm_mrp')||'', thumbnail_url: val('pm_thumb'),
-        tags: val('pm_tags').split(',').map(function(t){return t.trim();}).filter(Boolean),
-        sort_order: parseInt(val('pm_sort')||'0',10)
+        icon_class: val('pm_icon'), accent: val('pm_accent'),
+        tags: collectTagCheckboxes('pm_tag'),
+        sort_order: parseInt(val('pm_sort')||'0',10),
+        omr_enabled: checked('pm_omr'),
+        total_tests: val('pm_total_tests') ? parseInt(val('pm_total_tests'),10) : '',
+        omr_categories: val('pm_omr_categories') ? val('pm_omr_categories').split(',').map(function(c){return c.trim();}).filter(Boolean) : null,
+        launch_config: launchEnabled ? {
+          seriesName: val('pm_lc_series') || val('pm_title'),
+          mode: val('pm_lc_mode'),
+          rollPrefix: val('pm_lc_prefix') || 'GEN',
+          waGroupUrl: val('pm_lc_wa') || null,
+          lastTestDate: val('pm_lc_lasttest') || null,
+        } : null,
       };
       var req = isEdit ? adminFetch('PUT','/api/programs/'+p.id,payload) : adminFetch('POST','/api/programs',payload);
       req.then(function(){ showToast(isEdit?'Saved':'Created','success'); document.getElementById('programModal').style.display='none'; loadPrograms(); })
@@ -2416,6 +2451,172 @@
     };
   }
 
+  /* ── COUPONS ── */
+  function couponScopeText(c){
+    if (c.type === 'program_price_map') return Object.keys(c.program_prices||{}).length + ' program(s), fixed price';
+    var slugs = c.program_slugs;
+    return (slugs && slugs.length) ? (slugs.length + ' program(s)') : 'All programs';
+  }
+  function couponUsageText(c){
+    var used = c.used_count || 0;
+    if (c.max_uses == null) return used + ' used / unlimited';
+    return used + ' / ' + c.max_uses + ' used';
+  }
+  function loadCoupons(){
+    var body = document.getElementById('couponsBody');
+    adminFetch('GET','/api/coupons/admin/all').then(function(d){
+      var cs = d.coupons||[];
+      if (!cs.length){ body.innerHTML='<p class="admin-empty">No coupons yet. Add one with the button above.</p>'; return; }
+      var rows = cs.map(function(c){
+        return '<tr><td><strong>'+e(c.code)+'</strong>'+(c.label?'<br><span style="color:#9999b0;font-size:12px;">'+e(c.label)+'</span>':'')+'</td>' +
+          '<td>'+e(c.type)+'</td>' +
+          '<td>'+couponScopeText(c)+'</td>' +
+          '<td>'+couponUsageText(c)+'</td>' +
+          '<td>'+(c.exclusive?'<span class="admin-badge admin-badge--orange">Blocks referral</span>':'-')+'</td>' +
+          '<td><label class="admin-switch"><input type="checkbox" data-cpn-active="'+c.id+'" '+(c.is_active?'checked':'')+'><span></span></label></td>' +
+          '<td><button class="btn btn-sm" data-cpn-edit="'+c.id+'">Edit</button> <button class="btn btn-sm btn-ghost" data-cpn-del="'+c.id+'">Delete</button></td></tr>';
+      }).join('');
+      body.innerHTML = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Code</th><th>Type</th><th>Scope</th><th>Usage</th><th>Referral</th><th>Active</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+      bindCouponRowActions(cs);
+    }).catch(function(err){ body.innerHTML='<p class="admin-empty">'+e(err.message)+'</p>'; });
+  }
+  function bindCouponRowActions(cs){
+    document.querySelectorAll('[data-cpn-active]').forEach(function(cb){
+      cb.addEventListener('change', function(){
+        adminFetch('PATCH','/api/coupons/'+cb.getAttribute('data-cpn-active')+'/active',{is_active:cb.checked})
+          .then(function(){ showToast('Updated','success'); }).catch(function(e){ showToast(e.message,'error'); cb.checked=!cb.checked; });
+      });
+    });
+    document.querySelectorAll('[data-cpn-edit]').forEach(function(b){
+      b.addEventListener('click', function(){ openCouponModal(cs.filter(function(x){return x.id==b.getAttribute('data-cpn-edit');})[0]); });
+    });
+    document.querySelectorAll('[data-cpn-del]').forEach(function(b){
+      b.addEventListener('click', function(){
+        if (!confirm('Delete this coupon? Existing orders that used it keep their price - only future use is blocked.')) return;
+        adminFetch('DELETE','/api/coupons/'+b.getAttribute('data-cpn-del')).then(function(){ showToast('Deleted','success'); loadCoupons(); }).catch(function(e){ showToast(e.message,'error'); });
+      });
+    });
+  }
+  function openCouponModal(c){
+    c = c || {}; var isEdit = !!c.id;
+    document.getElementById('couponModalTitle').textContent = isEdit ? 'Edit Coupon' : 'New Coupon';
+    document.getElementById('couponModalBody').innerHTML =
+      fld('Code','cp_code',c.code||'', isEdit) +
+      sel('Type','cp_type',['fixed_discount','flat_price','program_price_map'],c.type||'fixed_discount') +
+      '<div class="admin-form-hint" style="margin-top:-8px;">fixed_discount = rupees off &middot; flat_price = every eligible program costs this flat price &middot; program_price_map = a specific final price per program (paste JSON below)</div>' +
+      fld('Discount amount / flat price (rupees)','cp_amount',c.discount_amount||'') +
+      fld('Program price map (JSON, e.g. {"slug-a":999,"slug-b":1499}) - only for program_price_map type','cp_pricemap', c.program_prices?JSON.stringify(c.program_prices):'') +
+      fld('Restrict to these program slugs (comma separated, blank = all programs)','cp_scope',(c.program_slugs||[]).join(', ')) +
+      fld('Usage limit (blank = unlimited, 1 = one-time-use, N = limited)','cp_maxuses',c.max_uses==null?'':c.max_uses) +
+      fld('Label shown to buyer','cp_label',c.label||'') +
+      fld('Expires at (YYYY-MM-DD, optional)','cp_expiry',c.expires_at?String(c.expires_at).slice(0,10):'') +
+      '<label class="admin-field" style="flex-direction:row;align-items:center;gap:10px;"><input type="checkbox" id="cp_exclusive" style="width:auto;"'+(c.exclusive?' checked':'')+'> <span>Exclusive - blocks stacking with a referral code</span></label>' +
+      '<label class="admin-field" style="flex-direction:row;align-items:center;gap:10px;"><input type="checkbox" id="cp_active" style="width:auto;"'+(c.is_active!==false?' checked':'')+'> <span>Active</span></label>' +
+      '<button class="btn" id="cp_save" style="margin-top:8px;">'+(isEdit?'Save Changes':'Create Coupon')+'</button>';
+    document.getElementById('couponModal').style.display='flex';
+    document.getElementById('cp_save').onclick = function(){
+      var payload = {
+        code: val('cp_code'), type: val('cp_type'),
+        discount_amount: val('cp_amount') ? parseInt(val('cp_amount'),10) : '',
+        program_slugs: val('cp_scope') ? val('cp_scope').split(',').map(function(s){return s.trim();}).filter(Boolean) : [],
+        max_uses: val('cp_maxuses') ? parseInt(val('cp_maxuses'),10) : '',
+        exclusive: checked('cp_exclusive'),
+        is_active: checked('cp_active'),
+        label: val('cp_label'),
+        expires_at: val('cp_expiry') || null,
+      };
+      var pmRaw = val('cp_pricemap');
+      if (pmRaw) {
+        try { payload.program_prices = JSON.parse(pmRaw); }
+        catch(err) { showToast('Program price map must be valid JSON','error'); return; }
+      }
+      var req = isEdit ? adminFetch('PUT','/api/coupons/'+c.id,payload) : adminFetch('POST','/api/coupons',payload);
+      req.then(function(){ showToast(isEdit?'Saved':'Created','success'); document.getElementById('couponModal').style.display='none'; loadCoupons(); })
+         .catch(function(e){ showToast(e.message,'error'); });
+    };
+  }
+
+  /* ── HOMEPAGE CONTENT (carousel, ticker, quick links) ──
+     All 3 sections share the same admin table + modal shape, driven by
+     /api/homepage-content/:section, so one set of generic functions
+     handles all of them instead of tripling near-identical code. */
+  var HOMEPAGE_SECTIONS = {
+    carousel:   { label: 'Carousel Slide', fields: [
+      { id:'image_url',  label:'Image URL', required:true },
+      { id:'link_url',   label:'Link URL' },
+      { id:'title',      label:'Title (optional overlay text)' },
+      { id:'badge',      label:'Badge (e.g. New)' },
+    ]},
+    ticker:     { label: 'Ticker Item', fields: [
+      { id:'text',      label:'Text', required:true },
+      { id:'link_url',  label:'Link URL' },
+      { id:'badge',     label:'Badge (e.g. New)' },
+    ]},
+    quicklinks: { label: 'Quick Link', fields: [
+      { id:'label',      label:'Label', required:true },
+      { id:'link_url',   label:'Link URL', required:true },
+      { id:'badge',      label:'Badge (e.g. New)' },
+      { id:'group_name', label:'Group name (default: "default")' },
+    ]},
+  };
+  function loadHomepageContent(section){
+    var body = document.getElementById('homepage_' + section + '_Body');
+    if (!body) return;
+    adminFetch('GET','/api/homepage-content/'+section+'/admin/all').then(function(d){
+      var items = d.items||[];
+      if (!items.length){ body.innerHTML='<p class="admin-empty">Nothing here yet. Add one with the button above.</p>'; return; }
+      var cfg = HOMEPAGE_SECTIONS[section];
+      var rows = items.map(function(it){
+        var primary = it[cfg.fields[0].id] || '';
+        return '<tr><td>'+e(primary)+'</td><td>'+e(it.badge||'-')+'</td><td>'+it.sort_order+'</td>' +
+          '<td><label class="admin-switch"><input type="checkbox" data-hc-vis="'+it.id+'" '+(it.is_visible?'checked':'')+'><span></span></label></td>' +
+          '<td><button class="btn btn-sm" data-hc-edit="'+it.id+'">Edit</button> <button class="btn btn-sm btn-ghost" data-hc-del="'+it.id+'">Delete</button></td></tr>';
+      }).join('');
+      body.innerHTML = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>'+e(cfg.fields[0].label)+'</th><th>Badge</th><th>Order</th><th>Visible</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+      bindHomepageRowActions(section, items);
+    }).catch(function(err){ body.innerHTML='<p class="admin-empty">'+e(err.message)+'</p>'; });
+  }
+  function bindHomepageRowActions(section, items){
+    document.querySelectorAll('[data-hc-vis]').forEach(function(cb){
+      cb.addEventListener('change', function(){
+        adminFetch('PATCH','/api/homepage-content/'+section+'/'+cb.getAttribute('data-hc-vis')+'/visibility',{is_visible:cb.checked})
+          .then(function(){ showToast('Updated','success'); }).catch(function(e){ showToast(e.message,'error'); cb.checked=!cb.checked; });
+      });
+    });
+    document.querySelectorAll('[data-hc-edit]').forEach(function(b){
+      b.addEventListener('click', function(){ openHomepageModal(section, items.filter(function(x){return x.id==b.getAttribute('data-hc-edit');})[0]); });
+    });
+    document.querySelectorAll('[data-hc-del]').forEach(function(b){
+      b.addEventListener('click', function(){
+        if (!confirm('Delete this item?')) return;
+        adminFetch('DELETE','/api/homepage-content/'+section+'/'+b.getAttribute('data-hc-del')).then(function(){ showToast('Deleted','success'); loadHomepageContent(section); }).catch(function(e){ showToast(e.message,'error'); });
+      });
+    });
+  }
+  function openHomepageModal(section, it){
+    it = it || {}; var isEdit = !!it.id;
+    var cfg = HOMEPAGE_SECTIONS[section];
+    document.getElementById('homepageModalTitle').textContent = (isEdit?'Edit ':'New ') + cfg.label;
+    document.getElementById('homepageModalBody').innerHTML =
+      cfg.fields.map(function(f){ return fld(f.label + (f.required?' *':''), 'hc_'+f.id, it[f.id]||''); }).join('') +
+      fld('Sort order (lower = first)','hc_sort',it.sort_order||0) +
+      '<label class="admin-field" style="flex-direction:row;align-items:center;gap:10px;"><input type="checkbox" id="hc_visible" style="width:auto;"'+(it.is_visible!==false?' checked':'')+'> <span>Visible</span></label>' +
+      '<button class="btn" id="hc_save" style="margin-top:8px;">'+(isEdit?'Save Changes':'Create')+'</button>';
+    document.getElementById('homepageModal').style.display='flex';
+    document.getElementById('hc_save').onclick = function(){
+      var payload = { sort_order: parseInt(val('hc_sort')||'0',10), is_visible: checked('hc_visible') };
+      var missing = null;
+      cfg.fields.forEach(function(f){
+        payload[f.id] = val('hc_'+f.id);
+        if (f.required && !payload[f.id]) missing = f.label;
+      });
+      if (missing) { showToast(missing+' is required','error'); return; }
+      var req = isEdit ? adminFetch('PUT','/api/homepage-content/'+section+'/'+it.id,payload) : adminFetch('POST','/api/homepage-content/'+section,payload);
+      req.then(function(){ showToast(isEdit?'Saved':'Created','success'); document.getElementById('homepageModal').style.display='none'; loadHomepageContent(section); })
+         .catch(function(e){ showToast(e.message,'error'); });
+    };
+  }
+
   /* ── ANALYTICS ── */
   function loadBizAnalytics(){
     var activeBtn = document.querySelector('.anal-period.active');
@@ -2459,7 +2660,41 @@
   function fld(label,id,v,disabled){ return '<label class="admin-field"><span>'+e(label)+'</span><input class="admin-input" id="'+id+'" value="'+e(v)+'"'+(disabled?' disabled':'')+'></label>'; }
   function sel(label,id,opts,cur){ return '<label class="admin-field"><span>'+e(label)+'</span><select class="admin-input" id="'+id+'">'+opts.map(function(o){return '<option value="'+o+'"'+(o===cur?' selected':'')+'>'+(STATUS_LABELS[o]||o)+'</option>';}).join('')+'</select></label>'; }
   function val(id){ var el=document.getElementById(id); return el?el.value.trim():''; }
+  function checked(id){ var el=document.getElementById(id); return el?!!el.checked:false; }
   function statCard(label,v){ return '<div class="admin-stat-card"><div class="admin-stat-val">'+e(v)+'</div><div class="admin-stat-lbl">'+e(label)+'</div></div>'; }
+
+  /* ── PRESET TAG BADGES ──
+     Same fixed list + colour map used for program cards, so admins
+     pick from a known set instead of free-typing inconsistent tags. */
+  var PRESET_TAGS = {
+    'New':             '#C81240',
+    'Bestseller':      '#B45309',
+    'Highest Enrolled':'#166534',
+    'Limited Seats':   '#9A3412',
+    'Closing Soon':    '#6D28D9',
+  };
+  function tagCheckboxes(idPrefix, current){
+    current = current || [];
+    return '<label class="admin-field"><span>Tags</span><div style="display:flex;flex-wrap:wrap;gap:12px;padding:8px 0;">' +
+      Object.keys(PRESET_TAGS).map(function(t){
+        var cid = idPrefix + '_' + t.replace(/\s+/g,'');
+        return '<label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;">' +
+          '<input type="checkbox" id="'+cid+'" data-tag="'+e(t)+'"'+(current.indexOf(t)!==-1?' checked':'')+'> '+e(t) +
+          '</label>';
+      }).join('') + '</div></label>';
+  }
+  function collectTagCheckboxes(idPrefix){
+    return Object.keys(PRESET_TAGS).filter(function(t){
+      var cid = idPrefix + '_' + t.replace(/\s+/g,'');
+      return checked(cid);
+    });
+  }
+  function tagBadgesHtml(tags){
+    return (tags||[]).map(function(t){
+      var color = PRESET_TAGS[t] || '#6b6b8a';
+      return '<span style="font-size:9px;font-weight:800;color:'+color+';background:'+color+'1a;border-radius:8px;padding:2px 7px;margin-right:4px;vertical-align:middle;">'+e(t)+'</span>';
+    }).join('');
+  }
 
   function bindBizSections(){
     /* OMR Papers - send test papers to enrolled learners (or a single test address when `sample` is set) */
@@ -2506,66 +2741,75 @@
       });
     }
 
-    var btnDegreeOmr = document.getElementById('btnSendDegreeOmr');
-    if (btnDegreeOmr) {
-      btnDegreeOmr.addEventListener('click', function() {
-        sendOmrPapers('rssb-je-omr-degree-test-series',
-          document.getElementById('omrDegreeTestNum').value,
-          document.getElementById('omrDegreeQpUrl').value,
-          document.getElementById('omrDegreeOmrUrl').value,
-          btnDegreeOmr, document.getElementById('omrDegreeResult'));
+    /* ── Generic program picker shared by both the Papers and Analysis
+       cards: populated from every OMR-enabled program in the DB, instead
+       of the old hardcoded Degree/Diploma/Combo dropdowns. Selecting a
+       combo program (one with omr_categories set) reveals a Category
+       picker so the admin can send the Degree paper vs the Diploma
+       paper (or Paper 1 vs Paper 2) separately, same as before. ── */
+    var omrProgramsCache = [];
+    function loadOmrProgramPicker() {
+      var sel = document.getElementById('omrProgramSelect');
+      if (!sel) return;
+      adminFetch('GET', '/api/programs/admin/all').then(function(d) {
+        omrProgramsCache = (d.programs || []).filter(function(p) { return p.omr_enabled; });
+        sel.innerHTML = '<option value="">-- Select Program --</option>' +
+          omrProgramsCache.map(function(p) { return '<option value="' + p.slug + '">' + e(p.title) + '</option>'; }).join('');
+        updateOmrCategoryPicker();
+      }).catch(function(err) { sel.innerHTML = '<option value="">Failed to load programs</option>'; showToast(err.message, 'error'); });
+    }
+    function selectedOmrProgram() {
+      var sel = document.getElementById('omrProgramSelect');
+      var slug = sel ? sel.value : '';
+      return omrProgramsCache.filter(function(p) { return p.slug === slug; })[0] || null;
+    }
+    function updateOmrCategoryPicker() {
+      var p = selectedOmrProgram();
+      var row = document.getElementById('omrCategoryRow');
+      var catSel = document.getElementById('omrCategorySelect');
+      if (!row || !catSel) return;
+      var cats = (p && Array.isArray(p.omr_categories)) ? p.omr_categories : [];
+      if (cats.length) {
+        catSel.innerHTML = cats.map(function(c) { return '<option value="' + e(c) + '">' + e(c.charAt(0).toUpperCase() + c.slice(1)) + '</option>'; }).join('');
+        row.style.display = '';
+      } else {
+        row.style.display = 'none';
+      }
+      var totalEl = document.getElementById('omrTestNum');
+      if (totalEl) totalEl.max = (p && p.total_tests) ? p.total_tests : '';
+    }
+    var omrProgramSelectEl = document.getElementById('omrProgramSelect');
+    if (omrProgramSelectEl) omrProgramSelectEl.addEventListener('change', updateOmrCategoryPicker);
+
+    /* ── Send Test Papers (generic) ── */
+    var btnSendOmrPapers = document.getElementById('btnSendOmrPapers');
+    if (btnSendOmrPapers) {
+      btnSendOmrPapers.addEventListener('click', function() {
+        var p = selectedOmrProgram();
+        if (!p) { alert('Please select a program.'); return; }
+        var catSel = document.getElementById('omrCategorySelect');
+        var category = (document.getElementById('omrCategoryRow').style.display !== 'none' && catSel) ? catSel.value : null;
+        sendOmrPapers(p.slug,
+          document.getElementById('omrTestNum').value,
+          document.getElementById('omrQpUrl').value,
+          document.getElementById('omrSheetUrl').value,
+          btnSendOmrPapers, document.getElementById('omrPapersResult'), null, category);
       });
     }
-    var btnDegreeOmrSample = document.getElementById('btnSendDegreeOmrSample');
-    if (btnDegreeOmrSample) {
-      btnDegreeOmrSample.addEventListener('click', function() {
-        sendOmrPapers('rssb-je-omr-degree-test-series',
-          document.getElementById('omrDegreeTestNum').value,
-          document.getElementById('omrDegreeQpUrl').value,
-          document.getElementById('omrDegreeOmrUrl').value,
-          btnDegreeOmrSample, document.getElementById('omrDegreeResult'),
-          { email: document.getElementById('omrDegreeTestEmail').value.trim(), phone: document.getElementById('omrDegreeTestPhone').value.trim() });
-      });
-    }
-    var btnDiplomaOmr = document.getElementById('btnSendDiplomaOmr');
-    if (btnDiplomaOmr) {
-      btnDiplomaOmr.addEventListener('click', function() {
-        sendOmrPapers('rssb-jen-omr-diploma-test-series',
-          document.getElementById('omrDiplomaTestNum').value,
-          document.getElementById('omrDiplomaQpUrl').value,
-          document.getElementById('omrDiplomaOmrUrl').value,
-          btnDiplomaOmr, document.getElementById('omrDiplomaResult'));
-      });
-    }
-    var btnComboDegreeOmr = document.getElementById('btnSendComboDegreeOmr');
-    if (btnComboDegreeOmr) {
-      btnComboDegreeOmr.addEventListener('click', function() {
-        sendOmrPapers('rssb-je-jaspalsirki-testseries-degree-diploma-combo-omr',
-          document.getElementById('omrComboDegreeTestNum').value,
-          document.getElementById('omrComboDegreeQpUrl').value,
-          document.getElementById('omrComboDegreeOmrUrl').value,
-          btnComboDegreeOmr, document.getElementById('omrComboDegreeResult'), null, 'degree');
-      });
-    }
-    var btnComboDiplomaOmr = document.getElementById('btnSendComboDiplomaOmr');
-    if (btnComboDiplomaOmr) {
-      btnComboDiplomaOmr.addEventListener('click', function() {
-        sendOmrPapers('rssb-je-jaspalsirki-testseries-degree-diploma-combo-omr',
-          document.getElementById('omrComboDiplomaTestNum').value,
-          document.getElementById('omrComboDiplomaQpUrl').value,
-          document.getElementById('omrComboDiplomaOmrUrl').value,
-          btnComboDiplomaOmr, document.getElementById('omrComboDiplomaResult'), null, 'diploma');
-      });
-    }
-    var btnDiplomaOmrSample = document.getElementById('btnSendDiplomaOmrSample');
-    if (btnDiplomaOmrSample) {
-      btnDiplomaOmrSample.addEventListener('click', function() {
-        sendOmrPapers('rssb-jen-omr-diploma-test-series',
-          document.getElementById('omrDiplomaTestNum').value,
-          document.getElementById('omrDiplomaQpUrl').value,
-          document.getElementById('omrDiplomaOmrUrl').value,
-          btnDiplomaOmrSample, document.getElementById('omrDiplomaResult'),
-          { email: document.getElementById('omrDiplomaTestEmail').value.trim(), phone: document.getElementById('omrDiplomaTestPhone').value.trim() });
+    var btnSendOmrPapersSample = document.getElementById('btnSendOmrPapersSample');
+    if (btnSendOmrPapersSample) {
+      btnSendOmrPapersSample.addEventListener('click', function() {
+        var p = selectedOmrProgram();
+        if (!p) { alert('Please select a program.'); return; }
+        var catSel = document.getElementById('omrCategorySelect');
+        var category = (document.getElementById('omrCategoryRow').style.display !== 'none' && catSel) ? catSel.value : null;
+        sendOmrPapers(p.slug,
+          document.getElementById('omrTestNum').value,
+          document.getElementById('omrQpUrl').value,
+          document.getElementById('omrSheetUrl').value,
+          btnSendOmrPapersSample, document.getElementById('omrPapersResult'),
+          { email: document.getElementById('omrPapersTestEmail').value.trim(), phone: document.getElementById('omrPapersTestPhone').value.trim() },
+          category);
       });
     }
 
@@ -2597,17 +2841,15 @@
         .filter(function(v){ return v && v.startsWith('http'); });
     }
     [
-      ['btnAddAnalysisDegreeAnalysisUrl',  'analysisDegreeAnalysisUrls',   'analysisDegreeAnalysisUrlInput'],
-      ['btnAddAnalysisDegreeWorkbookUrl',  'analysisDegreeWorkbookUrls',   'analysisDegreeWorkbookUrlInput'],
-      ['btnAddAnalysisDiplomaAnalysisUrl', 'analysisDiplomaAnalysisUrls',  'analysisDiplomaAnalysisUrlInput'],
-      ['btnAddAnalysisDiplomaWorkbookUrl', 'analysisDiplomaWorkbookUrls',  'analysisDiplomaWorkbookUrlInput'],
+      ['btnAddAnalysisAnalysisUrl', 'analysisAnalysisUrls', 'analysisAnalysisUrlInput'],
+      ['btnAddAnalysisWorkbookUrl', 'analysisWorkbookUrls', 'analysisWorkbookUrlInput'],
     ].forEach(function(cfg) {
       var btn = document.getElementById(cfg[0]);
       if (btn) btn.addEventListener('click', function(){ addOmrUrlRow(cfg[1], cfg[2]); });
     });
 
     /* OMR Analysis - send Detailed Analysis & Solutions + Workbook (each may be multiple files) to enrolled learners (or a single test address when `sample` is set) */
-    function sendOmrAnalysis(slug, testNum, analysisUrls, workbookUrls, btn, resultEl, sample) {
+    function sendOmrAnalysis(slug, testNum, analysisUrls, workbookUrls, btn, resultEl, sample, category) {
       if (!testNum) { alert('Please select a test number.'); return; }
       if (!analysisUrls.length) { alert('Please enter at least one valid Detailed Analysis & Solutions Google Drive URL.'); return; }
       if (!workbookUrls.length)  { alert('Please enter at least one valid Analysis Workbook Google Drive URL.'); return; }
@@ -2621,6 +2863,7 @@
       btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
       resultEl.style.display = 'none';
       var body = { program_slug: slug, test_number: testNum, analysis_urls: analysisUrls, workbook_urls: workbookUrls };
+      if (category) body.category = category;
       if (sample) { body.sample_email = sample.email; if (sample.phone) body.sample_phone = sample.phone; }
       fetch(API_BASE + '/api/enrollment/admin/send-omr-analysis', {
         method: 'POST',
@@ -2649,53 +2892,51 @@
       });
     }
 
-    var btnDegreeAnalysis = document.getElementById('btnSendDegreeAnalysis');
-    if (btnDegreeAnalysis) {
-      btnDegreeAnalysis.addEventListener('click', function() {
-        sendOmrAnalysis('rssb-je-omr-degree-test-series',
-          document.getElementById('analysisDegreeTestNum').value,
-          collectOmrUrls('analysisDegreeAnalysisUrlInput'),
-          collectOmrUrls('analysisDegreeWorkbookUrlInput'),
-          btnDegreeAnalysis, document.getElementById('analysisDegreeResult'));
+    /* ── Send Analysis & Workbook (generic) - reuses the same program/category/test-number picker as the Papers card above ── */
+    var btnSendOmrAnalysis = document.getElementById('btnSendOmrAnalysis');
+    if (btnSendOmrAnalysis) {
+      btnSendOmrAnalysis.addEventListener('click', function() {
+        var p = selectedOmrProgram();
+        if (!p) { alert('Please select a program.'); return; }
+        var catSel = document.getElementById('omrCategorySelect');
+        var category = (document.getElementById('omrCategoryRow').style.display !== 'none' && catSel) ? catSel.value : null;
+        sendOmrAnalysis(p.slug,
+          document.getElementById('omrTestNum').value,
+          collectOmrUrls('analysisAnalysisUrlInput'),
+          collectOmrUrls('analysisWorkbookUrlInput'),
+          btnSendOmrAnalysis, document.getElementById('analysisResult'), null, category);
       });
     }
-    var btnDegreeAnalysisSample = document.getElementById('btnSendDegreeAnalysisSample');
-    if (btnDegreeAnalysisSample) {
-      btnDegreeAnalysisSample.addEventListener('click', function() {
-        sendOmrAnalysis('rssb-je-omr-degree-test-series',
-          document.getElementById('analysisDegreeTestNum').value,
-          collectOmrUrls('analysisDegreeAnalysisUrlInput'),
-          collectOmrUrls('analysisDegreeWorkbookUrlInput'),
-          btnDegreeAnalysisSample, document.getElementById('analysisDegreeResult'),
-          { email: document.getElementById('analysisDegreeTestEmail').value.trim(), phone: document.getElementById('analysisDegreeTestPhone').value.trim() });
+    var btnSendOmrAnalysisSample = document.getElementById('btnSendOmrAnalysisSample');
+    if (btnSendOmrAnalysisSample) {
+      btnSendOmrAnalysisSample.addEventListener('click', function() {
+        var p = selectedOmrProgram();
+        if (!p) { alert('Please select a program.'); return; }
+        var catSel = document.getElementById('omrCategorySelect');
+        var category = (document.getElementById('omrCategoryRow').style.display !== 'none' && catSel) ? catSel.value : null;
+        sendOmrAnalysis(p.slug,
+          document.getElementById('omrTestNum').value,
+          collectOmrUrls('analysisAnalysisUrlInput'),
+          collectOmrUrls('analysisWorkbookUrlInput'),
+          btnSendOmrAnalysisSample, document.getElementById('analysisResult'),
+          { email: document.getElementById('analysisTestEmail').value.trim(), phone: document.getElementById('analysisTestPhone').value.trim() },
+          category);
       });
     }
-    var btnDiplomaAnalysis = document.getElementById('btnSendDiplomaAnalysis');
-    if (btnDiplomaAnalysis) {
-      btnDiplomaAnalysis.addEventListener('click', function() {
-        sendOmrAnalysis('rssb-jen-omr-diploma-test-series',
-          document.getElementById('analysisDiplomaTestNum').value,
-          collectOmrUrls('analysisDiplomaAnalysisUrlInput'),
-          collectOmrUrls('analysisDiplomaWorkbookUrlInput'),
-          btnDiplomaAnalysis, document.getElementById('analysisDiplomaResult'));
-      });
-    }
-    var btnDiplomaAnalysisSample = document.getElementById('btnSendDiplomaAnalysisSample');
-    if (btnDiplomaAnalysisSample) {
-      btnDiplomaAnalysisSample.addEventListener('click', function() {
-        sendOmrAnalysis('rssb-jen-omr-diploma-test-series',
-          document.getElementById('analysisDiplomaTestNum').value,
-          collectOmrUrls('analysisDiplomaAnalysisUrlInput'),
-          collectOmrUrls('analysisDiplomaWorkbookUrlInput'),
-          btnDiplomaAnalysisSample, document.getElementById('analysisDiplomaResult'),
-          { email: document.getElementById('analysisDiplomaTestEmail').value.trim(), phone: document.getElementById('analysisDiplomaTestPhone').value.trim() });
-      });
-    }
+
+    loadOmrProgramPicker();
 
     var np=document.getElementById('btnNewProgram'); if(np) np.onclick=function(){openProgramModal(null);};
     var nb=document.getElementById('btnNewBanner'); if(nb) nb.onclick=function(){openBannerModal(null);};
     var pc=document.getElementById('programModalClose'); if(pc) pc.onclick=function(){document.getElementById('programModal').style.display='none';};
     var bc=document.getElementById('bannerModalClose'); if(bc) bc.onclick=function(){document.getElementById('bannerModal').style.display='none';};
+    var ncp=document.getElementById('btnNewCoupon'); if(ncp) ncp.onclick=function(){openCouponModal(null);};
+    var cpc=document.getElementById('couponModalClose'); if(cpc) cpc.onclick=function(){document.getElementById('couponModal').style.display='none';};
+    ['carousel','ticker','quicklinks'].forEach(function(section){
+      var btn = document.getElementById('btnNewHomepage_' + section);
+      if (btn) btn.onclick = function(){ openHomepageModal(section, null); };
+    });
+    var hmc=document.getElementById('homepageModalClose'); if(hmc) hmc.onclick=function(){document.getElementById('homepageModal').style.display='none';};
     // Status filter triggers client-side filter (no reload needed)
     var rpf=document.getElementById('referralPayoutFilter'); if(rpf) rpf.onchange=loadReferralPayouts;
     var bbf=document.getElementById('btnBackfillReferralCodes'); if(bbf) bbf.onclick=function(){

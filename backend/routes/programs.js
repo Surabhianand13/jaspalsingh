@@ -17,8 +17,9 @@ const { protect } = require('../middleware/auth');
 router.get('/', async (req, res, next) => {
   try {
     const result = await query(
-      `SELECT slug, title, category, exam, level, status, price, mrp,
-              thumbnail_url, accent, tags, short_desc, detail_url, sort_order
+      `SELECT slug, title, short_name, category, exam, level, status, price, mrp,
+              thumbnail_url, accent, icon_class, tags, short_desc, detail_url, sort_order,
+              omr_enabled, total_tests, omr_categories
        FROM programs WHERE is_visible = TRUE
        ORDER BY sort_order ASC, id ASC`
     );
@@ -40,17 +41,21 @@ router.post('/', protect, async (req, res, next) => {
     const b = req.body || {};
     if (!b.slug || !b.title) return res.status(400).json({ error: 'slug and title are required.' });
     const result = await query(
-      `INSERT INTO programs (slug, title, category, exam, level, status, price, mrp,
-                             thumbnail_url, accent, tags, short_desc, detail_url, is_visible, sort_order)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+      `INSERT INTO programs (slug, title, short_name, category, exam, level, status, price, mrp,
+                             thumbnail_url, accent, icon_class, tags, short_desc, detail_url, is_visible, sort_order,
+                             omr_enabled, total_tests, omr_categories, launch_config)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
        RETURNING *`,
       [
-        b.slug.trim(), b.title.trim(), b.category || 'test-series', b.exam || null, b.level || null,
+        b.slug.trim(), b.title.trim(), b.short_name || null, b.category || 'test-series', b.exam || null, b.level || null,
         b.status || 'enrolling', b.price || null, b.mrp || null, b.thumbnail_url || null,
-        b.accent || null, JSON.stringify(b.tags || []), b.short_desc || null,
+        b.accent || null, b.icon_class || null, JSON.stringify(b.tags || []), b.short_desc || null,
         b.detail_url || ('/programs/' + b.slug.trim() + '/'),
         b.is_visible !== undefined ? b.is_visible : true,
         b.sort_order || 0,
+        !!b.omr_enabled, b.total_tests || null,
+        b.omr_categories ? JSON.stringify(b.omr_categories) : null,
+        b.launch_config ? JSON.stringify(b.launch_config) : null,
       ]
     );
     res.status(201).json({ program: result.rows[0] });
@@ -73,8 +78,11 @@ router.put('/:id', protect, async (req, res, next) => {
          tags = COALESCE($10,tags), short_desc = COALESCE($11,short_desc),
          detail_url = COALESCE($12,detail_url),
          is_visible = COALESCE($13,is_visible), sort_order = COALESCE($14,sort_order),
+         short_name = COALESCE($15,short_name), icon_class = COALESCE($16,icon_class),
+         omr_enabled = COALESCE($17,omr_enabled), total_tests = $18,
+         omr_categories = $19, launch_config = $20,
          updated_at = NOW()
-       WHERE id = $15 RETURNING *`,
+       WHERE id = $21 RETURNING *`,
       [
         b.title || null, b.category || null, b.exam || null, b.level || null,
         b.status || null, (b.price === '' ? null : b.price), (b.mrp === '' ? null : b.mrp),
@@ -82,6 +90,13 @@ router.put('/:id', protect, async (req, res, next) => {
         b.tags ? JSON.stringify(b.tags) : null, b.short_desc || null, b.detail_url || null,
         (b.is_visible !== undefined ? b.is_visible : null),
         (b.sort_order !== undefined ? b.sort_order : null),
+        b.short_name || null, b.icon_class || null,
+        (b.omr_enabled !== undefined ? !!b.omr_enabled : null),
+        (b.total_tests === '' || b.total_tests === undefined ? null : b.total_tests),
+        // Direct assignment (not COALESCE) - omr_categories/launch_config must be
+        // clearable by submitting the program form with them unset/unchecked.
+        (b.omr_categories && b.omr_categories.length) ? JSON.stringify(b.omr_categories) : null,
+        b.launch_config ? JSON.stringify(b.launch_config) : null,
         req.params.id,
       ]
     );

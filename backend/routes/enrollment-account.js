@@ -758,6 +758,23 @@ async function watermarkPdf(pdfBytes, email, phone, opts = {}) {
   return Buffer.from(await pdfDoc.save());
 }
 
+/* ── Look up a program's display title + combo categories from the DB,
+   so the email subject/admit-card label works for any OMR program instead
+   of guessing "RSSB JE 2026 - Civil Degree/Diploma" from the slug text. ── */
+async function getOmrProgramInfo(program_slug) {
+  const result = await query(`SELECT title, omr_categories FROM programs WHERE slug = $1`, [program_slug]);
+  if (!result.rows.length) return { title: program_slug, categories: [] };
+  const row = result.rows[0];
+  return { title: row.title, categories: Array.isArray(row.omr_categories) ? row.omr_categories : [] };
+}
+function omrSeriesLabel(programInfo, category) {
+  if (category && programInfo.categories.length) {
+    const label = category.charAt(0).toUpperCase() + category.slice(1);
+    return `${programInfo.title} - ${label} Paper`;
+  }
+  return programInfo.title;
+}
+
 router.post('/admin/send-omr-papers', protect, async (req, res) => {
   try {
     const { program_slug, test_number, question_paper_url, omr_sheet_url, category, sample_email, sample_phone, sample_name } = req.body;
@@ -765,13 +782,14 @@ router.post('/admin/send-omr-papers', protect, async (req, res) => {
     if (!program_slug || !test_number || !question_paper_url || !omr_sheet_url) {
       return res.status(400).json({ error: 'program_slug, test_number, question_paper_url and omr_sheet_url are all required.' });
     }
-    /* The combo slug covers both Degree and Diploma, each with its own
-       question paper - send this endpoint twice (once per category) and
-       pass category explicitly so the email subject/label is correct.
-       For the 4 individual programs, category is inferred from the slug
-       as before and does not need to be passed. */
-    if (program_slug.includes('combo') && !category) {
-      return res.status(400).json({ error: 'category ("degree" or "diploma") is required for combo program slugs.' });
+
+    const programInfo = await getOmrProgramInfo(program_slug);
+    /* Combo/multi-paper programs (omr_categories set, e.g. ["degree","diploma"]
+       or ["paper1","paper2"]) have a separate question paper per category -
+       send this endpoint once per category and pass it explicitly so the
+       email subject/label is correct. Single-category programs don't need it. */
+    if (programInfo.categories.length && !category) {
+      return res.status(400).json({ error: `category (one of: ${programInfo.categories.join(', ')}) is required for this program.` });
     }
 
     /* Sample mode: send to a single test address only, skip the enrollments table entirely */
@@ -806,15 +824,7 @@ router.post('/admin/send-omr-papers', protect, async (req, res) => {
       return res.status(502).json({ error: `Failed to download PDF: ${err.message}` });
     }
 
-    const isDegreeCourse = category === 'degree' ? true
-      : category === 'diploma' ? false
-      : program_slug.includes('degree');
-    const isCombo = program_slug.includes('combo');
-    const seriesLabel = isCombo
-      ? `RSSB JE 2026 - Degree + Diploma Combo (OMR) - ${isDegreeCourse ? 'Degree' : 'Diploma'} Paper`
-      : isDegreeCourse
-        ? 'RSSB JE 2026 - Civil Degree (OMR)'
-        : 'RSSB JE 2026 - Civil Diploma (OMR)';
+    const seriesLabel = omrSeriesLabel(programInfo, category);
     const testLabel = `Test ${String(test_number).padStart(2, '0')}`;
     const subject   = `${seriesLabel} - ${testLabel} Question Paper | jaspalsingh.in`;
 
@@ -967,7 +977,7 @@ router.post('/admin/send-omr-papers', protect, async (req, res) => {
    ─────────────────────────────────────────────────────────── */
 router.post('/admin/send-omr-analysis', protect, async (req, res) => {
   try {
-    const { program_slug, test_number, analysis_urls, workbook_urls, sample_email, sample_phone, sample_name } = req.body;
+    const { program_slug, test_number, analysis_urls, workbook_urls, category, sample_email, sample_phone, sample_name } = req.body;
 
     /* Each of these can be one or more Drive links (e.g. a multi-part analysis PDF) */
     const analysisUrls = (Array.isArray(analysis_urls) ? analysis_urls : [analysis_urls]).filter(Boolean);
@@ -975,6 +985,11 @@ router.post('/admin/send-omr-analysis', protect, async (req, res) => {
 
     if (!program_slug || !test_number || !analysisUrls.length || !workbookUrls.length) {
       return res.status(400).json({ error: 'program_slug, test_number, and at least one analysis_urls and workbook_urls link are all required.' });
+    }
+
+    const programInfo = await getOmrProgramInfo(program_slug);
+    if (programInfo.categories.length && !category) {
+      return res.status(400).json({ error: `category (one of: ${programInfo.categories.join(', ')}) is required for this program.` });
     }
 
     /* Sample mode: send to a single test address only, skip the enrollments table entirely */
@@ -1009,10 +1024,7 @@ router.post('/admin/send-omr-analysis', protect, async (req, res) => {
       return res.status(502).json({ error: `Failed to download PDF: ${err.message}` });
     }
 
-    const isDegreeCourse = program_slug.includes('degree');
-    const seriesLabel = isDegreeCourse
-      ? 'RSSB JE 2026 - Civil Degree (OMR)'
-      : 'RSSB JE 2026 - Civil Diploma (OMR)';
+    const seriesLabel = omrSeriesLabel(programInfo, category);
     const testLabel = `Test ${String(test_number).padStart(2, '0')}`;
     const subject   = `${seriesLabel} - ${testLabel} Analysis & Solutions | jaspalsingh.in`;
 
