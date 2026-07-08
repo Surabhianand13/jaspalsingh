@@ -388,6 +388,72 @@ router.post('/admin/mark-submitted', protect, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/* ── POST /api/enrollment/admin/create ───────────────────────
+   Admin only - manually creates an enrollment row (no Razorpay
+   involved). Used to correct a learner who paid for the wrong
+   program: admin cancels/refund-flags the original enrollment
+   themselves via the existing refund toggle, then creates a fresh
+   row here for the correct program and marks it paid (below) to
+   trigger the normal welcome email with that program's Tally form
+   link. Also usable for any other manually-collected payment
+   (cash, bank transfer, comp). Body: { program_slug, student_name,
+   student_email, student_phone, amount } - amount defaults to the
+   program's list price from the `programs` table if omitted. */
+const { getProgramData, sendAllPaymentEmails, onEnrollmentPaid } = require('./payment');
+
+router.post('/admin/create', protect, async (req, res, next) => {
+  try {
+    const { program_slug, student_name, student_email, student_phone, amount } = req.body;
+    if (!program_slug || !student_name || !student_phone) {
+      return res.status(400).json({ error: 'program_slug, student_name and student_phone are required.' });
+    }
+
+    const program = await getProgramData(program_slug);
+    if (!program) return res.status(400).json({ error: 'Unknown program_slug.' });
+
+    const finalAmount = (amount !== undefined && amount !== null && amount !== '') ? parseInt(amount, 10) : program.price;
+    if (isNaN(finalAmount) || finalAmount < 0) return res.status(400).json({ error: 'Invalid amount.' });
+
+    const order_id = `JSP-MANUAL-${Date.now()}`;
+    const result = await query(
+      `INSERT INTO enrollments (order_id, program_slug, program_name, amount, student_name, student_email, student_phone, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')
+       RETURNING *`,
+      [order_id, program_slug, program.name, finalAmount, student_name.trim(), (student_email || '').toLowerCase().trim() || null, student_phone]
+    );
+
+    res.status(201).json({ message: `Enrollment created for ${student_name} (${program.name}).`, enrollment: result.rows[0] });
+  } catch (err) { next(err); }
+});
+
+/* ── POST /api/enrollment/admin/:id/mark-paid ────────────────
+   Admin only - flips a pending enrollment to paid without a
+   Razorpay payment, then runs it through the exact same pipeline a
+   real payment does (form_token, welcome email with the Tally form
+   link, referral code assignment, admin notification), so the
+   learner gets the correct onboarding flow immediately. ── */
+router.post('/admin/:id/mark-paid', protect, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const formToken = crypto.randomBytes(32).toString('hex');
+
+    const result = await query(
+      `UPDATE enrollments
+       SET status = 'paid', paid_at = NOW(), form_token = COALESCE(form_token, $1)
+       WHERE id = $2 AND status = 'pending'
+       RETURNING *`,
+      [formToken, id]
+    );
+    if (!result.rows.length) return res.status(404).json({ error: 'Pending enrollment not found (already paid, cancelled, or does not exist).' });
+
+    const enrollment = result.rows[0];
+    sendAllPaymentEmails(enrollment).catch(err => console.error('[mark-paid] welcome email failed:', err.message));
+    onEnrollmentPaid(enrollment).catch(err => console.error('[mark-paid] onEnrollmentPaid failed:', err.message));
+
+    res.json({ message: `Marked as paid for ${enrollment.student_name}. Welcome email with the enrollment form link is sending now.` });
+  } catch (err) { next(err); }
+});
+
 /* ── PATCH /api/enrollment/admin/:id/email ───────────────────
    Admin only - corrects the email stored directly on an enrollment
    row (e.g. typo at checkout). This is the address "Re-issue form
