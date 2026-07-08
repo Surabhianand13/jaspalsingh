@@ -1248,12 +1248,29 @@
       return { dot:'seat-ok', text:'Enrolling Now' };
     }
 
+    // Preset badge tags (admin-selected via checkboxes in the dashboard) render
+    // as a coloured pill on the thumbnail, same as the hand-written "NEW"
+    // ribbons elsewhere on this page. Any other tag text is treated as a
+    // descriptive feature bullet, same as before.
+    var BADGE_TAG_COLORS = {
+      'New':              '#C81240',
+      'Bestseller':       '#B45309',
+      'Highest Enrolled': '#166534',
+      'Limited Seats':    '#9A3412',
+      'Closing Soon':     '#6D28D9',
+    };
+
     function buildCard(p) {
       var acc = ACCENTS[p.accent] || { grad:'#C81240,#7C3AED', fi:'op-fi-purple' };
       var cat = p.category || 'test-series';
       var st  = statusBits(p.status);
-      var tags = Array.isArray(p.tags) ? p.tags : (p.tags ? JSON.parse(p.tags) : []);
-      var feats = tags.slice(0, 4).map(function(t) {
+      var allTags  = Array.isArray(p.tags) ? p.tags : (p.tags ? JSON.parse(p.tags) : []);
+      var badgeTags = allTags.filter(function(t){ return BADGE_TAG_COLORS[t]; });
+      var descTags  = allTags.filter(function(t){ return !BADGE_TAG_COLORS[t]; });
+      var badgesHtml = badgeTags.map(function(t){
+        return '<span class="op-thumb-new-badge" style="background:' + BADGE_TAG_COLORS[t] + ';">' + esc(t) + '</span>';
+      }).join('');
+      var feats = descTags.slice(0, 4).map(function(t) {
         return '<li><span class="op-fi ' + acc.fi + '"><i class="fas fa-check"></i></span>' + esc(t) + '</li>';
       }).join('');
       if (!feats && p.short_desc) feats = '<li><span class="op-fi ' + acc.fi + '"><i class="fas fa-info-circle"></i></span>' + esc(p.short_desc) + '</li>';
@@ -1274,6 +1291,7 @@
       art.innerHTML =
         '<div class="op-thumb" style="background:linear-gradient(145deg,' + acc.grad + ')">' +
           (p.thumbnail_url ? '<img class="op-thumb-img" src="' + esc(p.thumbnail_url) + '" alt="" loading="lazy" onload="this.parentElement.classList.add(\'has-img\')" onerror="this.remove()">' : '') +
+          badgesHtml +
           (p.exam ? '<span class="op-thumb-exam">' + esc(p.exam) + '</span>' : '') +
           '<i class="fas ' + (CAT_ICON[cat] || 'fa-book') + ' op-thumb-icon"></i>' +
           '<span class="op-thumb-label">' + esc(CAT_LABEL[cat] || cat) + '</span>' +

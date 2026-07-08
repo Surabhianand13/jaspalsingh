@@ -103,182 +103,94 @@ async function onEnrollmentPaid(enrollment) {
   await cancelDuplicatePendingEnrollments(enrollment);
 }
 
-/* ── Coupon catalogue ────────────────────────────────────── */
-const COUPONS = {
-  'FIRST':     { discountedPrice: 1,    label: 'First-time offer' },
-  'JASPALSIR': { discount: 1000,        label: 'Get Rs 1,000 off' },
-  'JASPAL200': {
-    // Already a special discount - referral codes cannot be combined with it.
-    discount:  1200,
-    exclusive: true,
-    label:     'Special Rs 1,200 off',
-  },
-  'DOST': {
-    // Partnership code: fixed final price per program, only valid on these 4.
-    // Exclusive - referral codes cannot be combined with it.
-    programPrices: {
-      'rssb-jen-diploma-test-series':     2699,
-      'rssb-jen-degree-test-series':      2899,
-      'rssb-je-omr-degree-test-series':   899,
-      'rssb-jen-omr-diploma-test-series': 899,
-    },
-    exclusive: true,
-    label: 'DOST Partner offer',
-  },
-  // One-time-use codes: diploma offline test series for Rs 2,000 flat.
-  // Exclusive - referral codes cannot be combined with them.
-  // singleUse enforced via isSingleUseCouponUsed() against paid enrollments.
-  'DIP2000E0B4': {
-    programPrices: { 'rssb-jen-diploma-test-series': 2000 },
-    exclusive:  true,
-    singleUse:  true,
-    label:      'Special offer - Rs 2,000',
-  },
-  'DIP20001506': {
-    programPrices: {
-      'rssb-jen-diploma-test-series': 2000,
-      'rssb-jen-degree-test-series':  2000,
-    },
-    exclusive:  true,
-    singleUse:  true,
-    label:      'Special offer - Rs 2,000',
-  },
-  'DIP2499X9F3': {
-    programPrices: {
-      'rssb-jen-diploma-test-series': 2499,
-      'rssb-jen-degree-test-series':  2499,
-    },
-    exclusive:  true,
-    singleUse:  true,
-    label:      'Special offer - Rs 2,499',
-  },
-  // One-time-use code: diploma offline test series for Rs 1,000 flat.
-  // Exclusive - referral codes cannot be combined with it.
-  'DIP1000E62A': {
-    programPrices: { 'rssb-jen-diploma-test-series': 1000 },
-    exclusive:  true,
-    singleUse:  true,
-    label:      'Special offer - Rs 1,000',
-  },
+/* ── Coupon catalogue ────────────────────────────────────────
+   Coupons now live in the `coupons` table (admin-editable from the
+   dashboard) - see server.js migrate() for the one-time seed of the
+   codes that used to be hardcoded here. This lookup + FALLBACK_COUPONS
+   exist purely so an active coupon link never 404s even if the DB is
+   briefly unreachable. ── */
+const FALLBACK_COUPONS = {
+  'FIRST':     { type: 'flat_price',        discount_amount: 1,    label: 'First-time offer' },
+  'JASPALSIR': { type: 'fixed_discount',     discount_amount: 1000, label: 'Get Rs 1,000 off' },
+  'JASPAL200': { type: 'fixed_discount',     discount_amount: 1200, exclusive: true, label: 'Special Rs 1,200 off' },
 };
 
-/* ── Has a single-use coupon already been redeemed on a paid order? ── */
-async function isSingleUseCouponUsed(code) {
-  const result = await query(
-    `SELECT 1 FROM enrollments WHERE coupon_code = $1 AND status = 'paid' LIMIT 1`,
-    [code.toUpperCase()]
-  );
-  return result.rows.length > 0;
+async function getCoupon(code) {
+  const upper = (code || '').toUpperCase();
+  if (!upper) return null;
+  try {
+    const result = await query(`SELECT * FROM coupons WHERE code = $1 AND is_active = TRUE`, [upper]);
+    if (result.rows.length) return result.rows[0];
+  } catch (err) {
+    console.error('[getCoupon] DB error, falling back to hardcoded coupon:', err.message);
+  }
+  const fb = FALLBACK_COUPONS[upper];
+  return fb ? { code: upper, program_prices: null, program_slugs: null, max_uses: null, exclusive: false, expires_at: null, ...fb } : null;
 }
 
-function applyCoupon(coupon, originalPrice, programSlug) {
-  if (!coupon) return { finalPrice: originalPrice, discount: 0, label: null, exclusive: false };
-  const c = COUPONS[coupon.toUpperCase()];
-  if (!c) return null;
+/* ── Has this coupon hit its usage limit (if any)? ── */
+async function isCouponUsageExceeded(couponRow) {
+  if (couponRow.max_uses == null) return false;
+  const result = await query(
+    `SELECT COUNT(*)::int AS n FROM enrollments WHERE coupon_code = $1 AND status = 'paid'`,
+    [couponRow.code.toUpperCase()]
+  );
+  return result.rows[0].n >= couponRow.max_uses;
+}
 
-  if (c.programPrices) {
-    const fixedPrice = c.programPrices[programSlug];
-    if (fixedPrice == null) return null; // not valid on this program
-    return {
-      finalPrice: fixedPrice,
-      discount:   originalPrice - fixedPrice,
-      label:      c.label,
-      exclusive:  !!c.exclusive,
-    };
+async function applyCoupon(coupon, originalPrice, programSlug) {
+  if (!coupon) return { finalPrice: originalPrice, discount: 0, label: null, exclusive: false };
+  const c = await getCoupon(coupon);
+  if (!c) return null;
+  if (c.expires_at && new Date(c.expires_at) < new Date()) return null;
+
+  const scopeSlugs = Array.isArray(c.program_slugs) ? c.program_slugs : (c.program_slugs ? Object.values(c.program_slugs) : null);
+  if (c.type !== 'program_price_map' && scopeSlugs && scopeSlugs.length && !scopeSlugs.includes(programSlug)) {
+    return null; // coupon not valid on this program
   }
 
-  const discountAmt = c.discountedPrice != null
-    ? originalPrice - c.discountedPrice
-    : c.discount;
+  if (c.type === 'program_price_map') {
+    const fixedPrice = (c.program_prices || {})[programSlug];
+    if (fixedPrice == null) return null; // not valid on this program
+    return { finalPrice: fixedPrice, discount: originalPrice - fixedPrice, label: c.label, exclusive: !!c.exclusive, couponRow: c };
+  }
+
+  const discountAmt = c.type === 'flat_price' ? (originalPrice - c.discount_amount) : c.discount_amount;
   return {
     finalPrice: originalPrice - discountAmt,
     discount:   discountAmt,
     label:      c.label,
     exclusive:  !!c.exclusive,
+    couponRow:  c,
   };
 }
 
-/* ── Program catalogue ───────────────────────────────────── */
-const PROGRAMS = {
-  'rssb-jen-diploma-test-series': {
-    name:      'RSSB JE 2026 - Jaspal Sir Ki Test Series Offline',
-    shortName: 'RSSB JE 2026 Test Series',
-    price:     3799,
-    mrp:       7999,
-  },
-  'rssb-jen-degree-test-series': {
-    name:      'RSSB JE 2026 - Jaspal Sir Ki Test Series Offline',
-    shortName: 'RSSB JE 2026 Test Series',
-    price:     3999,
-    mrp:       7999,
-  },
-  'rpsc-ae-interview': {
-    name:      'RPSC AE 2024 - Interview Guidance Programme',
-    shortName: 'RPSC AE Interview Guidance',
-    price:     4999,
-    mrp:       8999,
-  },
-  'rssb-je-omr-degree-test-series': {
-    name:      'RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Degree (Home-Based OMR Test Series)',
-    shortName: 'RSSB JE 2026 OMR Degree Test Series',
-    price:     1999,
-    mrp:       2999,
-  },
-  'rssb-jen-omr-diploma-test-series': {
-    name:      'RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Diploma (Home-Based OMR Test Series)',
-    shortName: 'RSSB JE 2026 OMR Diploma Test Series',
-    price:     1999,
-    mrp:       2999,
-  },
-  'ese-2027-prelims-jaspalsirki-testseries-paper1': {
-    name:      'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 1 (GS & Engineering Aptitude)',
-    shortName: 'ESE 2027 Prelims Paper 1',
-    price:     2999,
-    mrp:       4999,
-  },
-  'ese-2027-prelims-jaspalsirki-testseries-paper2-civil': {
-    name:      'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 2 (Civil)',
-    shortName: 'ESE 2027 Prelims Paper 2 (Civil)',
-    price:     2999,
-    mrp:       4999,
-  },
-  'ese-2027-prelims-jaspalsirki-testseries-combined': {
-    name:      'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 1 + 2 (GS, Eng. Aptitude & Civil)',
-    shortName: 'ESE 2027 Prelims Paper 1+2',
-    price:     4499,
-    mrp:       9999,
-  },
-  'ese-2027-prelims-jaspalsirki-testseries-paper1-omr': {
-    name:      'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 1 (Home-Based OMR Test Series)',
-    shortName: 'ESE 2027 Prelims Paper 1 OMR',
-    price:     2499,
-    mrp:       3999,
-  },
-  'ese-2027-prelims-jaspalsirki-testseries-paper2-civil-omr': {
-    name:      'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 2 Civil (Home-Based OMR Test Series)',
-    shortName: 'ESE 2027 Prelims Paper 2 OMR',
-    price:     2499,
-    mrp:       3999,
-  },
-  'ese-2027-prelims-jaspalsirki-testseries-combined-omr': {
-    name:      'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 1 + 2 Civil (Home-Based OMR Test Series)',
-    shortName: 'ESE 2027 Prelims Paper 1+2 OMR',
-    price:     2999,
-    mrp:       7999,
-  },
-  'rssb-je-jaspalsirki-testseries-degree-diploma-combo-omr': {
-    name:      'RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Degree + Diploma Combo (Home-Based OMR Test Series)',
-    shortName: 'RSSB JE Degree + Diploma Combo OMR',
-    price:     2499,
-    mrp:       4999,
-  },
-  'rssb-je-jaspalsirki-testseries-degree-diploma-combo': {
-    name:      'RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Degree + Diploma Combo Offline',
-    shortName: 'RSSB JE Degree + Diploma Combo',
-    price:     5499,
-    mrp:       9999,
-  },
+/* ── Program catalogue ─────────────────────────────────────────
+   Pricing now lives in the `programs` table (admin-editable), so a
+   price/title change made in the dashboard takes effect immediately
+   with no code deploy. FALLBACK_PROGRAMS is the pre-2026-07-08 hardcoded
+   catalogue, kept only as a safety net if the DB is briefly unreachable
+   or a row is somehow missing. ── */
+const FALLBACK_PROGRAMS = {
+  'rssb-jen-diploma-test-series':     { name: 'RSSB JE 2026 - Jaspal Sir Ki Test Series Offline', shortName: 'RSSB JE 2026 Test Series', price: 3799, mrp: 7999 },
+  'rssb-jen-degree-test-series':      { name: 'RSSB JE 2026 - Jaspal Sir Ki Test Series Offline', shortName: 'RSSB JE 2026 Test Series', price: 3999, mrp: 7999 },
+  'rpsc-ae-interview':                { name: 'RPSC AE 2024 - Interview Guidance Programme', shortName: 'RPSC AE Interview Guidance', price: 4999, mrp: 8999 },
+  'rssb-je-omr-degree-test-series':   { name: 'RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Degree (Home-Based OMR Test Series)', shortName: 'RSSB JE 2026 OMR Degree Test Series', price: 1999, mrp: 2999 },
+  'rssb-jen-omr-diploma-test-series': { name: 'RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Diploma (Home-Based OMR Test Series)', shortName: 'RSSB JE 2026 OMR Diploma Test Series', price: 1999, mrp: 2999 },
 };
+
+async function getProgramData(slug) {
+  try {
+    const result = await query(`SELECT slug, title, short_name, price, mrp FROM programs WHERE slug = $1`, [slug]);
+    if (result.rows.length && result.rows[0].price != null && result.rows[0].mrp != null) {
+      const row = result.rows[0];
+      return { name: row.title, shortName: row.short_name || row.title, price: row.price, mrp: row.mrp };
+    }
+  } catch (err) {
+    console.error('[getProgramData] DB error, falling back to hardcoded catalogue:', err.message);
+  }
+  return FALLBACK_PROGRAMS[slug] || null;
+}
 
 /* ── Razorpay instance ───────────────────────────────────── */
 const Razorpay = require('razorpay');
@@ -292,14 +204,13 @@ router.post('/validate-coupon', async (req, res) => {
   const { coupon_code, program_slug } = req.body;
   if (!coupon_code || !program_slug) return res.status(400).json({ error: 'coupon_code and program_slug required.' });
 
-  const program = PROGRAMS[program_slug];
+  const program = await getProgramData(program_slug);
   if (!program) return res.status(400).json({ error: 'Invalid program.' });
 
-  const result = applyCoupon(coupon_code, program.price, program_slug);
+  const result = await applyCoupon(coupon_code, program.price, program_slug);
   if (!result) return res.status(400).json({ valid: false, error: 'Invalid coupon code.' });
 
-  const c = COUPONS[coupon_code.toUpperCase()];
-  if (c.singleUse && await isSingleUseCouponUsed(coupon_code)) {
+  if (await isCouponUsageExceeded(result.couponRow)) {
     return res.status(400).json({ valid: false, error: 'This coupon has already been used.' });
   }
 
@@ -330,7 +241,7 @@ router.post('/validate-referral', optionalLearner, async (req, res) => {
   const { referral_code, program_slug, phone, email } = req.body;
   if (!referral_code || !program_slug) return res.status(400).json({ error: 'referral_code and program_slug required.' });
 
-  const program = PROGRAMS[program_slug];
+  const program = await getProgramData(program_slug);
   if (!program) return res.status(400).json({ error: 'Invalid program.' });
 
   const lookup = await lookupReferral(referral_code, phone || '', email || '', req.learner?.id);
@@ -359,16 +270,15 @@ router.post('/create-order', createOrderLimiter, optionalLearner, async (req, re
       return res.status(400).json({ error: 'Please enter your real name, email and mobile number.' });
     }
 
-    const program = PROGRAMS[program_slug];
+    const program = await getProgramData(program_slug);
     if (!program) return res.status(400).json({ error: 'Invalid program.' });
 
     let finalPrice = program.price;
     let couponApplied = null;
     let couponExclusive = false;
     if (coupon_code) {
-      const coup = applyCoupon(coupon_code, program.price, program_slug);
-      const couponDef = COUPONS[coupon_code.toUpperCase()];
-      if (coup && couponDef?.singleUse && await isSingleUseCouponUsed(coupon_code)) {
+      const coup = await applyCoupon(coupon_code, program.price, program_slug);
+      if (coup && coup.couponRow && await isCouponUsageExceeded(coup.couponRow)) {
         return res.status(400).json({ error: 'This coupon has already been used.' });
       }
       if (coup) { finalPrice = coup.finalPrice; couponApplied = coupon_code.toUpperCase(); couponExclusive = coup.exclusive; }
@@ -568,9 +478,46 @@ router.post('/verify', async (req, res) => {
 });
 
 
-/* ── GET /api/payment/programs ───────────────────────────── */
-router.get('/programs', (req, res) => {
-  res.json(PROGRAMS);
+/* ── GET /api/payment/programs ─────────────────────────────
+   DB-backed catalogue for the checkout page: price/mrp/branding all
+   come from the `programs` table (i.e. admin edits take effect with
+   no code deploy), decorated with a fixed accent->gradient map and a
+   category-based icon fallback so every row renders sensibly even if
+   an admin hasn't set icon_class/accent explicitly. ── */
+const ACCENT_GRADIENTS = {
+  blue:   'linear-gradient(145deg,#0369A1,#0284C7)',
+  teal:   'linear-gradient(145deg,#0F766E,#0D9488)',
+  purple: 'linear-gradient(145deg,#6D28D9,#7C3AED)',
+  indigo: 'linear-gradient(145deg,#4338CA,#6366F1)',
+  orange: 'linear-gradient(145deg,#C2410C,#EA580C)',
+  green:  'linear-gradient(145deg,#15803D,#16A34A)',
+};
+const DEFAULT_ICON_BY_CATEGORY = { 'test-series': 'fa-clipboard-list', interview: 'fa-user-tie', course: 'fa-book' };
+
+router.get('/programs', async (req, res) => {
+  const out = {};
+  for (const [slug, p] of Object.entries(FALLBACK_PROGRAMS)) {
+    out[slug] = { name: p.name, price: p.price, mrp: p.mrp, icon: 'fa-clipboard-list', color: ACCENT_GRADIENTS.blue, thumb: null };
+  }
+  try {
+    const result = await query(
+      `SELECT slug, title, price, mrp, thumbnail_url, accent, icon_class, category
+       FROM programs WHERE price IS NOT NULL AND mrp IS NOT NULL`
+    );
+    for (const row of result.rows) {
+      out[row.slug] = {
+        name:  row.title,
+        price: row.price,
+        mrp:   row.mrp,
+        icon:  row.icon_class || DEFAULT_ICON_BY_CATEGORY[row.category] || 'fa-clipboard-list',
+        color: ACCENT_GRADIENTS[row.accent] || ACCENT_GRADIENTS.blue,
+        thumb: row.thumbnail_url || null,
+      };
+    }
+  } catch (err) {
+    console.error('[GET /programs] DB error, serving hardcoded fallback catalogue only:', err.message);
+  }
+  res.json(out);
 });
 
 /* ── POST /api/payment/admin/backfill-referral-codes ─────────

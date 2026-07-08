@@ -1953,5 +1953,76 @@
     setInterval(showToast, 25000);
   })();
   </script>
+
+  <!-- ── Admin-managed homepage content (ticker + quick links) ──
+       Additive only: appends admin-added items alongside the existing
+       hand-coded ones above, deduped by URL so nothing can double up.
+       If the API is unreachable, the page looks exactly as it does today -
+       nothing here can break the homepage. Carousel slides are managed in
+       admin but not yet wired into rendering here (see PR notes). ── -->
+  <script>
+  (function () {
+    var API = location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://jaspalsingh.onrender.com';
+
+    function existingHrefs(selector) {
+      var set = {};
+      document.querySelectorAll(selector).forEach(function (el) {
+        var href = el.getAttribute('href');
+        if (href) set[href] = true;
+      });
+      return set;
+    }
+
+    function badgeHtml(badge, bg) {
+      if (!badge) return '';
+      return ' <span style="font-size:9px;font-weight:800;color:#fff;background:' + (bg || '#C81240') + ';border-radius:8px;padding:2px 7px;margin-left:4px;vertical-align:middle;">' + badge + '</span>';
+    }
+
+    fetch(API + '/api/homepage-content/ticker')
+      .then(function (r) { return r.ok ? r.json() : { items: [] }; })
+      .then(function (d) {
+        var items = d.items || [];
+        if (!items.length) return;
+        var seen = existingHrefs('.ticker-item');
+        var groups = document.querySelectorAll('.ticker-group');
+        if (!groups.length) return;
+        items.forEach(function (it) {
+          if (!it.link_url || seen[it.link_url]) return;
+          groups.forEach(function (group) {
+            var dot = document.createElement('span');
+            dot.className = 'ticker-dot';
+            dot.innerHTML = '&bull;';
+            var a = document.createElement('a');
+            a.className = 'ticker-item';
+            a.href = it.link_url;
+            a.innerHTML = it.text + badgeHtml(it.badge);
+            group.appendChild(dot);
+            group.appendChild(a);
+          });
+        });
+      })
+      .catch(function () { /* homepage stays exactly as-is if this fails */ });
+
+    fetch(API + '/api/homepage-content/quicklinks')
+      .then(function (r) { return r.ok ? r.json() : { items: [] }; })
+      .then(function (d) {
+        var items = d.items || [];
+        if (!items.length) return;
+        var seen = existingHrefs('.drawer-acc-link, .dd-card');
+        var drawerSection = document.querySelector('.drawer-acc-section');
+        items.forEach(function (it) {
+          if (!it.link_url || seen[it.link_url]) return;
+          if (drawerSection) {
+            var a = document.createElement('a');
+            a.className = 'drawer-acc-link';
+            a.href = it.link_url;
+            a.innerHTML = it.label + badgeHtml(it.badge);
+            drawerSection.appendChild(a);
+          }
+        });
+      })
+      .catch(function () { /* homepage stays exactly as-is if this fails */ });
+  })();
+  </script>
 </body>
 </html>
