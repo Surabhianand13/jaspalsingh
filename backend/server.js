@@ -726,6 +726,12 @@ async function migrate() {
   `);
   await query(`CREATE INDEX IF NOT EXISTS idx_program_schedule_slug ON program_schedule(program_slug)`);
 
+  /* ── Program page content: "Who Is This For" bullets + FAQ ──
+     Admin-editable free text for the generic /programs/view/ detail page,
+     matching the equivalent hand-written sections on the 13 bespoke pages. */
+  await query(`ALTER TABLE programs ADD COLUMN IF NOT EXISTS who_for JSONB`);   // string[]
+  await query(`ALTER TABLE programs ADD COLUMN IF NOT EXISTS faqs JSONB`);      // { question, answer }[]
+
   /* ── Seed second admin user from env var (never hardcode passwords) ── */
   {
     const bcrypt = require('bcryptjs');
