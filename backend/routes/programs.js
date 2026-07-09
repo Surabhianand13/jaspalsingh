@@ -197,12 +197,24 @@ router.get('/:slug', async (req, res, next) => {
     const result = await query(
       `SELECT slug, title, short_name, category, exam, level, status, price, mrp,
               thumbnail_url, accent, icon_class, tags, short_desc, detail_url, sort_order,
-              omr_enabled, total_tests, omr_categories
+              omr_enabled, total_tests, omr_categories, launch_config
        FROM programs WHERE slug = $1 AND is_visible = TRUE`,
       [req.params.slug]
     );
     if (!result.rows.length) return res.status(404).json({ error: 'Program not found.' });
-    res.json({ program: result.rows[0] });
+
+    // launch_config carries the Tally form URL, which must never be public
+    // (it's how the post-payment webhook trusts a submission belongs to this
+    // program). Only forward the two harmless display fields - mode and the
+    // test centre's name - to the client, used to show a Mode/Location row
+    // on the generic detail page.
+    const row = result.rows[0];
+    const lc = row.launch_config;
+    delete row.launch_config;
+    row.mode = lc ? lc.mode : null;
+    row.centre_name = (lc && lc.centre) ? lc.centre.name : null;
+
+    res.json({ program: row });
   } catch (err) { next(err); }
 });
 
