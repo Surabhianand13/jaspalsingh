@@ -67,6 +67,14 @@
     .ii-icon { width:36px; height:36px; flex-shrink:0; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:14px; background:rgba(15,118,110,.10); color:#0F766E; }
     .ii-body { display:flex; flex-direction:column; gap:3px; }
     .ii-title { font-family:var(--font-heading); font-size:14px; font-weight:700; color:var(--heading-color); }
+    .sched-cards { display:flex; flex-direction:column; gap:8px; }
+    .sched-card { display:grid; grid-template-columns:52px 100px 1fr 48px; align-items:center; gap:14px; padding:13px 16px; background:#fff; border:1.5px solid rgba(26,26,46,.07); border-radius:12px; }
+    .sched-num { width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-family:var(--font-heading); font-size:13px; font-weight:800; flex-shrink:0; background:rgba(15,118,110,.1); color:#0F766E; }
+    .sched-date { font-family:var(--font-heading); font-size:12px; font-weight:700; color:var(--body-color); white-space:nowrap; }
+    .sched-syllabus { font-size:13.5px; color:var(--heading-color); line-height:1.5; font-weight:500; }
+    .sched-qs { font-family:var(--font-heading); font-size:13px; font-weight:800; color:var(--heading-color); text-align:right; white-space:nowrap; }
+    .sched-qs span { font-size:10px; font-weight:600; color:var(--body-color); display:block; }
+    @media (max-width:600px) { .sched-card { grid-template-columns:40px 1fr; grid-template-rows:auto auto; } .sched-qs { grid-column:2; text-align:left; } }
     .pv-loading, .pv-notfound { padding:120px 0 96px; text-align:center; }
     .pv-notfound i { font-size:40px; color:rgba(26,26,46,.25); margin-bottom:16px; }
     .pv-notfound h1 { font-family:var(--font-heading); font-size:22px; color:var(--heading-color); margin-bottom:10px; }
@@ -170,6 +178,10 @@
               <div class="detail-block">
                 <h2 class="detail-section-title">What's Included</h2>
                 <div class="included-list" id="pvIncludedList"></div>
+              </div>
+              <div class="detail-block" id="pvScheduleBlock" style="display:none;">
+                <h2 class="detail-section-title">Complete Test Schedule</h2>
+                <div class="sched-cards" id="pvScheduleCards"></div>
               </div>
             </div>
           </div>
@@ -335,6 +347,24 @@
         includedHtml = '<div class="included-item"><div class="ii-icon"><i class="fas fa-comments"></i></div><div class="ii-body"><span class="ii-title">Full details on WhatsApp</span><span class="ii-desc">Message us for the complete syllabus, test schedule and centre details for this programme.</span></div></div>';
       }
       document.getElementById('pvIncludedList').innerHTML = includedHtml;
+
+      fetch(API + '/api/programs/' + encodeURIComponent(p.slug) + '/schedule')
+        .then(function (r) { return r.ok ? r.json() : { schedule: [] }; })
+        .then(function (d) { renderSchedule(d.schedule || []); })
+        .catch(function () { /* schedule is optional - page still works without it */ });
+    }
+
+    function renderSchedule(rows) {
+      if (!rows.length) return;
+      document.getElementById('pvScheduleBlock').style.display = 'block';
+      document.getElementById('pvScheduleCards').innerHTML = rows.map(function (r) {
+        return '<div class="sched-card">' +
+          '<div class="sched-num">' + String(r.test_number).padStart(2, '0') + '</div>' +
+          '<div class="sched-date">' + esc(r.test_date || '') + '</div>' +
+          '<div class="sched-syllabus">' + esc(r.syllabus || '') + '</div>' +
+          '<div class="sched-qs">' + (r.questions || '') + (r.questions ? '<span>Qs</span>' : '') + '</div>' +
+        '</div>';
+      }).join('');
     }
   })();
   </script>

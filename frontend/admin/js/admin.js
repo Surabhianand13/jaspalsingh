@@ -1784,7 +1784,7 @@
           '<td>'+(p.price?inr(p.price):'-')+(p.mrp?' <s style="color:#aaa">'+inr(p.mrp)+'</s>':'')+'</td>' +
           '<td><span class="admin-badge admin-badge--'+(p.status==='enrolling'?'green':p.status==='coming_soon'?'orange':'grey')+'">'+(STATUS_LABELS[p.status]||p.status)+'</span></td>' +
           '<td><label class="admin-switch"><input type="checkbox" data-prog-vis="'+p.id+'" '+(p.is_visible?'checked':'')+'><span></span></label></td>' +
-          '<td><button class="btn btn-sm" data-prog-edit="'+p.id+'">Edit</button> <button class="btn btn-sm btn-ghost" data-prog-del="'+p.id+'">Delete</button></td>' +
+          '<td><button class="btn btn-sm" data-prog-edit="'+p.id+'">Edit</button> <button class="btn btn-sm btn-ghost" data-prog-schedule="'+e(p.slug)+'" data-prog-title="'+e(p.title)+'">Schedule</button> <button class="btn btn-sm btn-ghost" data-prog-del="'+p.id+'">Delete</button></td>' +
           '</tr>';
       }).join('');
       body.innerHTML = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Program</th><th>Type</th><th>Price</th><th>Status</th><th>Visible</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
@@ -1810,6 +1810,59 @@
         adminFetch('DELETE','/api/programs/'+b.getAttribute('data-prog-del')).then(function(){ showToast('Deleted','success'); loadPrograms(); }).catch(function(e){ showToast(e.message,'error'); });
       });
     });
+    document.querySelectorAll('[data-prog-schedule]').forEach(function(b){
+      b.addEventListener('click', function(){
+        openScheduleModal(b.getAttribute('data-prog-schedule'), b.getAttribute('data-prog-title'));
+      });
+    });
+  }
+
+  /* ── PROGRAM SCHEDULE (bulk upload) ──
+     Paste one test per line as "Test Number | Date | Syllabus | Questions"
+     (Questions optional) - replaces the whole schedule for that program.
+     Used by frontend/programs/view/index.html's generic detail page; the
+     13 hand-built program pages have their own hardcoded schedule tables
+     and don't read from this. */
+  function loadScheduleRows(slug){
+    var listEl = document.getElementById('sch_list');
+    adminFetch('GET', '/api/programs/'+encodeURIComponent(slug)+'/schedule/admin').then(function(d){
+      var rows = d.schedule || [];
+      if (!rows.length) { listEl.innerHTML = '<p class="admin-empty">No schedule uploaded yet.</p>'; return; }
+      listEl.innerHTML = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Test</th><th>Date</th><th>Syllabus</th><th>Qs</th><th></th></tr></thead><tbody>' +
+        rows.map(function(r){
+          return '<tr><td>'+r.test_number+'</td><td>'+e(r.test_date||'-')+'</td><td>'+e(r.syllabus||'-')+'</td><td>'+(r.questions||'-')+'</td>' +
+            '<td><button class="btn btn-sm btn-ghost" data-sch-del="'+r.id+'">Delete</button></td></tr>';
+        }).join('') + '</tbody></table></div>';
+      listEl.querySelectorAll('[data-sch-del]').forEach(function(b){
+        b.addEventListener('click', function(){
+          adminFetch('DELETE', '/api/programs/'+encodeURIComponent(slug)+'/schedule/'+b.getAttribute('data-sch-del'))
+            .then(function(){ showToast('Deleted','success'); loadScheduleRows(slug); }).catch(function(e){ showToast(e.message,'error'); });
+        });
+      });
+    }).catch(function(err){ listEl.innerHTML = '<p class="admin-empty">'+e(err.message)+'</p>'; });
+  }
+  function openScheduleModal(slug, title){
+    document.getElementById('scheduleModalTitle').textContent = 'Schedule - ' + title;
+    document.getElementById('scheduleModalBody').innerHTML =
+      '<div class="admin-form-hint" style="margin-bottom:8px;">Paste one test per line: <code>Test Number | Date | Syllabus | Questions</code> (Questions is optional). This replaces the entire schedule below when saved.</div>' +
+      '<textarea class="admin-input" id="sch_paste" rows="8" style="width:100%;font-family:monospace;font-size:12.5px;" placeholder="1 | 26 July 2026 | Rajasthan GK + Building Technology | 120\n2 | 2 August 2026 | Surveying + Fluid Mechanics | 120"></textarea>' +
+      '<button class="btn" id="sch_save" style="margin-top:10px;">Save Schedule</button>' +
+      '<div style="margin-top:20px;border-top:1px dashed rgba(26,26,46,.15);padding-top:14px;"><strong style="font-size:13px;">Current schedule</strong><div id="sch_list" style="margin-top:10px;"><p class="admin-empty">Loading…</p></div></div>';
+    document.getElementById('scheduleModal').style.display = 'flex';
+    document.getElementById('sch_save').onclick = function(){
+      var lines = document.getElementById('sch_paste').value.split('\n').map(function(l){return l.trim();}).filter(Boolean);
+      if (!lines.length) { showToast('Paste at least one row','error'); return; }
+      var rows = [];
+      for (var i = 0; i < lines.length; i++) {
+        var parts = lines[i].split('|').map(function(p){return p.trim();});
+        if (!parts[0] || isNaN(parseInt(parts[0],10))) { showToast('Line '+(i+1)+': first column must be a test number','error'); return; }
+        rows.push({ test_number: parseInt(parts[0],10), test_date: parts[1]||'', syllabus: parts[2]||'', questions: parts[3]||'' });
+      }
+      adminFetch('POST', '/api/programs/'+encodeURIComponent(slug)+'/schedule/bulk', { rows: rows })
+        .then(function(d){ showToast(d.message||'Saved','success'); document.getElementById('sch_paste').value=''; loadScheduleRows(slug); })
+        .catch(function(e){ showToast(e.message,'error'); });
+    };
+    loadScheduleRows(slug);
   }
 
   function openProgramModal(p){
@@ -3039,6 +3092,7 @@
     var re=document.getElementById('btnRefreshEnrollments'); if(re) re.onclick=loadEnrollments;
     var ae=document.getElementById('btnAddEnrollment'); if(ae) ae.onclick=openAddEnrollmentModal;
     var aec=document.getElementById('addEnrollmentModalClose'); if(aec) aec.onclick=function(){document.getElementById('addEnrollmentModal').style.display='none';};
+    var scc=document.getElementById('scheduleModalClose'); if(scc) scc.onclick=function(){document.getElementById('scheduleModal').style.display='none';};
 
     /* Enrollment period tabs */
     var enrollPeriodBtns = document.querySelectorAll('#enrollPeriodTabs .filter-tab');
