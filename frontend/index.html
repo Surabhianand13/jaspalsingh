@@ -1959,7 +1959,9 @@
        hand-coded ones above, deduped by URL so nothing can double up.
        If the API is unreachable, the page looks exactly as it does today -
        nothing here can break the homepage. Carousel slides are managed in
-       admin but not yet wired into rendering here (see PR notes). ── -->
+       admin but not yet wired into the hero banner rendering here - see
+       the separate script below for the embedded #progsCarousel section,
+       which now is admin-driven. ── -->
   <script>
   (function () {
     var API = location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://jaspalsingh.onrender.com';
@@ -2022,6 +2024,116 @@
         });
       })
       .catch(function () { /* homepage stays exactly as-is if this fails */ });
+  })();
+  </script>
+
+  <!-- ── Sync the embedded program carousel (#progsCarousel) with admin-
+       created programs - mirrors frontend/programs/index.html's buildCard()/
+       syncPrograms() exactly (same .op-card markup, same CSS), scoped to
+       this carousel instead of the full grid. Without this, a program
+       created purely from the admin dashboard never appears anywhere on
+       the homepage, even though it already shows on /programs. ── -->
+  <script>
+  (function () {
+    var API = location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://jaspalsingh.onrender.com';
+    var carousel = document.getElementById('progsCarousel');
+    if (!carousel) return;
+
+    var ACCENTS = {
+      blue:   { grad:'#0369A1,#0284C7', fi:'op-fi-blue'   },
+      teal:   { grad:'#0F766E,#0D9488', fi:'op-fi-teal'   },
+      purple: { grad:'#6D28D9,#7C3AED', fi:'op-fi-purple' },
+      orange: { grad:'#C2410C,#EA580C', fi:'op-fi-orange' },
+      green:  { grad:'#15803D,#16A34A', fi:'op-fi-green'  }
+    };
+    var CAT_LABEL = { 'test-series':'Offline Test Series', 'interview':'Interview Guidance', 'course':'Course & Batch' };
+    var CAT_ICON  = { 'test-series':'fa-clipboard-list', 'interview':'fa-user-tie', 'course':'fa-graduation-cap' };
+    var BADGE_TAG_COLORS = {
+      'New':              '#C81240',
+      'Bestseller':       '#B45309',
+      'Highest Enrolled': '#166534',
+      'Limited Seats':    '#9A3412',
+      'Closing Soon':     '#6D28D9',
+    };
+
+    function esc(s) { var d = document.createElement('div'); d.textContent = (s == null ? '' : String(s)); return d.innerHTML; }
+    function inr(n) { return '₹' + Number(n).toLocaleString('en-IN'); }
+    function slugFromHref(href) { var m = (href || '').match(/\/programs\/([^\/]+)\/?$/); return m ? m[1] : ''; }
+    function statusBits(status) {
+      if (status === 'coming_soon') return { dot:'seat-soon', text:'Coming Soon' };
+      if (status === 'closed')      return { dot:'seat-warn', text:'Enrollment Closed' };
+      return { dot:'seat-ok', text:'Enrolling Now' };
+    }
+
+    function buildCard(p) {
+      var acc = ACCENTS[p.accent] || { grad:'#C81240,#7C3AED', fi:'op-fi-purple' };
+      var cat = p.category || 'test-series';
+      var st  = statusBits(p.status);
+      var allTags  = Array.isArray(p.tags) ? p.tags : (p.tags ? JSON.parse(p.tags) : []);
+      var badgeTags = allTags.filter(function(t){ return BADGE_TAG_COLORS[t]; });
+      var descTags  = allTags.filter(function(t){ return !BADGE_TAG_COLORS[t]; });
+      var badgesHtml = badgeTags.map(function(t){
+        return '<span class="op-thumb-new-badge" style="background:' + BADGE_TAG_COLORS[t] + ';">' + esc(t) + '</span>';
+      }).join('');
+      var feats = descTags.slice(0, 4).map(function(t) {
+        return '<li><span class="op-fi ' + acc.fi + '"><i class="fas fa-check"></i></span>' + esc(t) + '</li>';
+      }).join('');
+      if (!feats && p.short_desc) feats = '<li><span class="op-fi ' + acc.fi + '"><i class="fas fa-info-circle"></i></span>' + esc(p.short_desc) + '</li>';
+
+      var priceRow;
+      if (p.price && Number(p.price) > 0) {
+        var save = (p.mrp && Number(p.mrp) > Number(p.price)) ? Math.round((1 - p.price / p.mrp) * 100) : 0;
+        priceRow = '<span class="op-price-offer">' + inr(p.price) + '</span>' +
+                   (p.mrp ? '<span class="op-price-mrp">' + inr(p.mrp) + '</span>' : '') +
+                   (save ? '<span class="op-price-save">Save ' + save + '%</span>' : '');
+      } else {
+        priceRow = '<span class="op-price-offer" style="font-size:16px;color:var(--magenta);">Launching Soon</span>';
+      }
+
+      var art = document.createElement('article');
+      art.className = 'op-card';
+      art.setAttribute('data-cat', cat);
+      art.innerHTML =
+        '<div class="op-thumb" style="background:linear-gradient(145deg,' + acc.grad + ')">' +
+          (p.thumbnail_url ? '<img class="op-thumb-img" src="' + esc(p.thumbnail_url) + '" alt="" loading="lazy" onload="this.parentElement.classList.add(\'has-img\')" onerror="this.remove()">' : '') +
+          badgesHtml +
+          (p.exam ? '<span class="op-thumb-exam">' + esc(p.exam) + '</span>' : '') +
+          '<i class="fas ' + (CAT_ICON[cat] || 'fa-book') + ' op-thumb-icon"></i>' +
+          '<span class="op-thumb-label">' + esc(CAT_LABEL[cat] || cat) + '</span>' +
+          '<span class="op-thumb-seats"><span class="op-seat-dot ' + st.dot + '"></span>' + st.text + '</span>' +
+        '</div>' +
+        '<div class="op-card-content">' +
+          '<span class="op-type-label">' + esc(CAT_LABEL[cat] || cat) + (p.level ? ' &middot; ' + esc(p.level) : '') + '</span>' +
+          '<h3 class="op-title">' + esc(p.title) + '</h3>' +
+          (feats ? '<ul class="op-features">' + feats + '</ul>' : '') +
+          '<div class="op-price-divider"></div>' +
+          '<div class="op-price-row">' + priceRow + '</div>' +
+        '</div>' +
+        '<a href="' + esc(p.detail_url || ('/programs/view/?slug=' + encodeURIComponent(p.slug))) + '" class="op-card-cta">View Full Details <i class="fas fa-arrow-right"></i></a>';
+      return art;
+    }
+
+    fetch(API + '/api/programs')
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+      .then(function (data) {
+        var list = (data && data.programs) || [];
+        if (!list.length) return;
+        var visible = {};
+        list.forEach(function (p) { visible[p.slug] = p; });
+
+        var existing = {};
+        carousel.querySelectorAll('.op-card').forEach(function (card) {
+          var cta = card.querySelector('.op-card-cta');
+          var slug = card.getAttribute('data-slug') || (cta ? slugFromHref(cta.getAttribute('href')) : '');
+          if (slug) existing[slug] = card;
+          if (slug && !visible[slug]) card.remove();
+        });
+
+        list.forEach(function (p) {
+          if (!existing[p.slug]) carousel.appendChild(buildCard(p));
+        });
+      })
+      .catch(function () { /* homepage carousel stays exactly as-is if this fails */ });
   })();
   </script>
 </body>
