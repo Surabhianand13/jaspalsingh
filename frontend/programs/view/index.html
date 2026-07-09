@@ -183,6 +183,10 @@
                 <h2 class="detail-section-title">Complete Test Schedule</h2>
                 <div class="sched-cards" id="pvScheduleCards"></div>
               </div>
+              <div class="detail-block" id="pvWhoForBlock" style="display:none;">
+                <h2 class="detail-section-title">Who Is This For</h2>
+                <div class="for-grid" id="pvWhoForGrid"></div>
+              </div>
               <!-- Same instructor bio on every program page - not program-specific,
                    so it's safe to hardcode here rather than needing admin input. -->
               <div class="detail-block">
@@ -201,6 +205,10 @@
                     <p class="instructor-bio">Dr. Jaspal Singh secured All India Rank 4 in both the Engineering Services Examination (ESE/IES) and GATE Civil Engineering, and served as a Scientist with the Government of India. He has been coaching Civil Engineering aspirants offline across Rajasthan for over 15 years, with a track record of producing state-level toppers in RSSB JEN, RPSC AE and GATE.</p>
                   </div>
                 </div>
+              </div>
+              <div class="detail-block" id="pvFaqBlock" style="display:none;">
+                <h2 class="detail-section-title">Frequently Asked Questions</h2>
+                <div class="faq-list" id="pvFaqList"></div>
               </div>
             </div>
           </div>
@@ -371,6 +379,20 @@
         includedHtml = '<div class="included-item"><div class="ii-icon"><i class="fas fa-comments"></i></div><div class="ii-body"><span class="ii-title">Full details on WhatsApp</span><span class="ii-desc">Message us for the complete syllabus, test schedule and centre details for this programme.</span></div></div>';
       }
       document.getElementById('pvIncludedList').innerHTML = includedHtml;
+
+      if (Array.isArray(p.who_for) && p.who_for.length) {
+        document.getElementById('pvWhoForBlock').style.display = 'block';
+        document.getElementById('pvWhoForGrid').innerHTML = p.who_for.map(function (t) {
+          return '<div class="for-item"><i class="fas fa-check for-check"></i><span class="for-text">' + esc(t) + '</span></div>';
+        }).join('');
+      }
+
+      if (Array.isArray(p.faqs) && p.faqs.length) {
+        document.getElementById('pvFaqBlock').style.display = 'block';
+        document.getElementById('pvFaqList').innerHTML = p.faqs.map(function (f) {
+          return '<details class="faq-item"><summary>' + esc(f.question) + '</summary><p class="faq-body">' + esc(f.answer) + '</p></details>';
+        }).join('');
+      }
 
       fetch(API + '/api/programs/' + encodeURIComponent(p.slug) + '/schedule')
         .then(function (r) { return r.ok ? r.json() : { schedule: [] }; })

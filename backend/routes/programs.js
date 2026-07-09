@@ -187,6 +187,22 @@ router.delete('/:slug/schedule/:id', protect, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/* ADMIN: replace "Who Is This For" bullets + FAQ for a program. Kept as its
+   own small endpoint (like /schedule/bulk) rather than folding into the
+   already-long main program PUT body. */
+router.put('/:slug/content', protect, async (req, res, next) => {
+  try {
+    const whoFor = Array.isArray(req.body.who_for) ? req.body.who_for.filter(Boolean) : [];
+    const faqs   = Array.isArray(req.body.faqs) ? req.body.faqs.filter(f => f && f.question && f.answer) : [];
+    const result = await query(
+      `UPDATE programs SET who_for = $1, faqs = $2, updated_at = NOW() WHERE slug = $3 RETURNING slug, who_for, faqs`,
+      [whoFor.length ? JSON.stringify(whoFor) : null, faqs.length ? JSON.stringify(faqs) : null, req.params.slug]
+    );
+    if (!result.rows.length) return res.status(404).json({ error: 'Program not found.' });
+    res.json({ message: 'Saved.', program: result.rows[0] });
+  } catch (err) { next(err); }
+});
+
 /* ── PUBLIC: single visible program by slug ──────────────────
    Registered last so it never shadows /admin/all or the numeric-id
    admin routes above. Used by frontend/programs/view/index.html - the
@@ -197,7 +213,7 @@ router.get('/:slug', async (req, res, next) => {
     const result = await query(
       `SELECT slug, title, short_name, category, exam, level, status, price, mrp,
               thumbnail_url, accent, icon_class, tags, short_desc, detail_url, sort_order,
-              omr_enabled, total_tests, omr_categories, launch_config
+              omr_enabled, total_tests, omr_categories, launch_config, who_for, faqs
        FROM programs WHERE slug = $1 AND is_visible = TRUE`,
       [req.params.slug]
     );

@@ -1784,7 +1784,7 @@
           '<td>'+(p.price?inr(p.price):'-')+(p.mrp?' <s style="color:#aaa">'+inr(p.mrp)+'</s>':'')+'</td>' +
           '<td><span class="admin-badge admin-badge--'+(p.status==='enrolling'?'green':p.status==='coming_soon'?'orange':'grey')+'">'+(STATUS_LABELS[p.status]||p.status)+'</span></td>' +
           '<td><label class="admin-switch"><input type="checkbox" data-prog-vis="'+p.id+'" '+(p.is_visible?'checked':'')+'><span></span></label></td>' +
-          '<td><button class="btn btn-sm" data-prog-edit="'+p.id+'">Edit</button> <button class="btn btn-sm btn-ghost" data-prog-schedule="'+e(p.slug)+'" data-prog-title="'+e(p.title)+'">Schedule</button> <button class="btn btn-sm btn-ghost" data-prog-del="'+p.id+'">Delete</button></td>' +
+          '<td><button class="btn btn-sm" data-prog-edit="'+p.id+'">Edit</button> <button class="btn btn-sm btn-ghost" data-prog-schedule="'+e(p.slug)+'" data-prog-title="'+e(p.title)+'">Schedule</button> <button class="btn btn-sm btn-ghost" data-prog-content="'+e(p.slug)+'" data-prog-title="'+e(p.title)+'">Page Content</button> <button class="btn btn-sm btn-ghost" data-prog-del="'+p.id+'">Delete</button></td>' +
           '</tr>';
       }).join('');
       body.innerHTML = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Program</th><th>Type</th><th>Price</th><th>Status</th><th>Visible</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
@@ -1815,6 +1815,53 @@
         openScheduleModal(b.getAttribute('data-prog-schedule'), b.getAttribute('data-prog-title'));
       });
     });
+    document.querySelectorAll('[data-prog-content]').forEach(function(b){
+      b.addEventListener('click', function(){
+        var p = ps.filter(function(x){ return x.slug === b.getAttribute('data-prog-content'); })[0] || {};
+        openContentModal(b.getAttribute('data-prog-content'), b.getAttribute('data-prog-title'), p);
+      });
+    });
+  }
+
+  /* ── PROGRAM PAGE CONTENT ("Who Is This For" + FAQ) ──
+     Free text, admin-authored - "Who Is This For" is one bullet per line;
+     FAQ is Q:/A: blocks separated by a blank line. Both are optional and
+     the generic detail page simply omits the section if empty. */
+  function parseWhoFor(text){
+    return text.split('\n').map(function(l){ return l.trim(); }).filter(Boolean);
+  }
+  function parseFaqs(text){
+    var blocks = text.split(/\n\s*\n/);
+    var faqs = [];
+    blocks.forEach(function(block){
+      var qMatch = block.match(/Q:\s*(.+)/i);
+      var aMatch = block.match(/A:\s*([\s\S]+)/i);
+      if (qMatch && aMatch) faqs.push({ question: qMatch[1].trim(), answer: aMatch[1].trim() });
+    });
+    return faqs;
+  }
+  function openContentModal(slug, title, p){
+    p = p || {};
+    var whoForText = (p.who_for || []).join('\n');
+    var faqsText = (p.faqs || []).map(function(f){ return 'Q: ' + f.question + '\nA: ' + f.answer; }).join('\n\n');
+    document.getElementById('scheduleModalTitle').textContent = 'Page Content - ' + title;
+    document.getElementById('scheduleModalBody').innerHTML =
+      '<label class="admin-field"><span>Who Is This For (one bullet per line, optional)</span></label>' +
+      '<textarea class="admin-input" id="pc_whofor" rows="4" style="width:100%;">'+e(whoForText)+'</textarea>' +
+      '<label class="admin-field" style="margin-top:12px;"><span>FAQ (optional)</span></label>' +
+      '<div class="admin-form-hint" style="margin-top:-6px;">One Q&amp;A per block, separated by a blank line:<br><code>Q: Your question&lt;br&gt;A: Your answer</code></div>' +
+      '<textarea class="admin-input" id="pc_faqs" rows="8" style="width:100%;font-family:monospace;font-size:12.5px;">'+e(faqsText)+'</textarea>' +
+      '<button class="btn" id="pc_save" style="margin-top:12px;">Save Page Content</button>';
+    document.getElementById('scheduleModal').style.display = 'flex';
+    document.getElementById('pc_save').onclick = function(){
+      var payload = {
+        who_for: parseWhoFor(document.getElementById('pc_whofor').value),
+        faqs: parseFaqs(document.getElementById('pc_faqs').value),
+      };
+      adminFetch('PUT', '/api/programs/' + encodeURIComponent(slug) + '/content', payload)
+        .then(function(d){ showToast(d.message || 'Saved', 'success'); document.getElementById('scheduleModal').style.display = 'none'; })
+        .catch(function(e){ showToast(e.message, 'error'); });
+    };
   }
 
   /* ── PROGRAM SCHEDULE (bulk upload) ──
