@@ -176,12 +176,31 @@
           <div class="detail-layout">
             <div class="detail-main">
               <div class="detail-block">
-                <h2 class="detail-section-title">What's Included</h2>
+                <h2 class="detail-section-title">Key Features</h2>
                 <div class="included-list" id="pvIncludedList"></div>
               </div>
               <div class="detail-block" id="pvScheduleBlock" style="display:none;">
                 <h2 class="detail-section-title">Complete Test Schedule</h2>
                 <div class="sched-cards" id="pvScheduleCards"></div>
+              </div>
+              <!-- Same instructor bio on every program page - not program-specific,
+                   so it's safe to hardcode here rather than needing admin input. -->
+              <div class="detail-block">
+                <h2 class="detail-section-title">About the Instructor</h2>
+                <div class="instructor-card">
+                  <img src="/assets/images/jaspal-hero.png" alt="Dr. Jaspal Singh" class="instructor-avatar" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+                  <div class="instructor-avatar-placeholder" style="display:none;">JS</div>
+                  <div class="instructor-info">
+                    <div class="instructor-name">Dr. Jaspal Singh</div>
+                    <div class="instructor-tags">
+                      <span class="inst-tag">AIR-04 - ESE (Engg. Services)</span>
+                      <span class="inst-tag">GATE Civil AIR-06</span>
+                      <span class="inst-tag">Scientist - Govt. of India</span>
+                      <span class="inst-tag">15+ Years Teaching</span>
+                    </div>
+                    <p class="instructor-bio">Dr. Jaspal Singh secured All India Rank 4 in both the Engineering Services Examination (ESE/IES) and GATE Civil Engineering, and served as a Scientist with the Government of India. He has been coaching Civil Engineering aspirants offline across Rajasthan for over 15 years, with a track record of producing state-level toppers in RSSB JEN, RPSC AE and GATE.</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -298,15 +317,20 @@
       document.getElementById('pvHeroTitle').textContent = p.title;
       document.getElementById('pvHeroDesc').textContent = p.short_desc || ('A ' + catLabel.toLowerCase() + ' programme by Dr. Jaspal Singh. Message us on WhatsApp for the full syllabus, schedule and centre details.');
 
+      var modeLabel = p.mode === 'offline' ? 'Offline' : (p.mode === 'home' ? 'Home-Based OMR' : null);
+
       var metaHtml = '';
       if (p.exam)  metaHtml += '<div class="hm-item"><span class="hm-label">Exam</span><span class="hm-val">' + esc(p.exam) + '</span></div>';
       if (p.level) metaHtml += '<div class="hm-item"><span class="hm-label">Level</span><span class="hm-val">' + esc(p.level) + '</span></div>';
+      if (modeLabel) metaHtml += '<div class="hm-item"><span class="hm-label">Mode</span><span class="hm-val">' + esc(modeLabel) + '</span></div>';
+      if (p.centre_name) metaHtml += '<div class="hm-item"><span class="hm-label">Location</span><span class="hm-val">' + esc(p.centre_name) + '</span></div>';
       metaHtml += '<div class="hm-item"><span class="hm-label">Status</span><span class="hm-val" style="color:' + (p.status === 'enrolling' ? 'var(--green)' : 'var(--magenta)') + ';">' + (p.status === 'enrolling' ? 'Enrolling Now' : p.status === 'coming_soon' ? 'Coming Soon' : 'Closed') + '</span></div>';
       document.getElementById('pvMetaRow').innerHTML = metaHtml;
 
       var highlightsHtml = '';
       if (p.total_tests) highlightsHtml += '<div class="ph-item"><i class="fas fa-file-alt"></i><span class="ph-num">' + p.total_tests + '</span><span class="ph-label">Tests</span></div>';
       if (p.omr_enabled) highlightsHtml += '<div class="ph-item"><i class="fas fa-house"></i><span class="ph-num" style="font-size:13px;">Home-Based</span><span class="ph-label">OMR Format</span></div>';
+      if (p.centre_name) highlightsHtml += '<div class="ph-item"><i class="fas fa-map-marker-alt"></i><span class="ph-num" style="font-size:13px;">' + esc(p.centre_name) + '</span><span class="ph-label">Location</span></div>';
       document.getElementById('pvHighlights').innerHTML = highlightsHtml;
 
       var thumbEl = document.getElementById('pvThumb');
