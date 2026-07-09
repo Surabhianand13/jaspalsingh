@@ -708,6 +708,24 @@ async function migrate() {
      there. Seeding them with the current static content would just render
      as visible duplicates. */
 
+  /* ── Program test schedule (admin-uploaded, shown on the generic
+     /programs/view/ detail page) - the 13 hand-built program pages keep
+     their own hardcoded schedule tables; this is only for programs
+     launched entirely from the admin dashboard. ── */
+  await query(`
+    CREATE TABLE IF NOT EXISTS program_schedule (
+      id            SERIAL PRIMARY KEY,
+      program_slug  VARCHAR(120) NOT NULL,
+      test_number   INTEGER NOT NULL,
+      test_date     VARCHAR(60),
+      syllabus      TEXT,
+      questions     INTEGER,
+      sort_order    INTEGER NOT NULL DEFAULT 0,
+      created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+  await query(`CREATE INDEX IF NOT EXISTS idx_program_schedule_slug ON program_schedule(program_slug)`);
+
   /* ── Seed second admin user from env var (never hardcode passwords) ── */
   {
     const bcrypt = require('bcryptjs');
