@@ -1881,10 +1881,12 @@
       sel('Status','pm_status',['enrolling','coming_soon','closed'],p.status||'enrolling') +
       fld('Price (blank = hide)','pm_price',p.price||'') +
       fld('MRP','pm_mrp',p.mrp||'') +
-      fld('Thumbnail URL','pm_thumb',p.thumbnail_url||'') +
+      fld('Thumbnail / banner image URL','pm_thumb',p.thumbnail_url||'') +
+      '<div class="admin-form-hint" style="margin-top:-8px;">For the same "premium" look as the other live programs (Jaspal Sir\'s photo banner), upload an image the same way you would for a Banner (Homepage Content &gt; Banners, or your usual image host) and paste its URL here. Leave blank to fall back to a plain accent-colour tile with an icon.</div>' +
       fld('Icon (Font Awesome class, e.g. fa-clipboard-list)','pm_icon',p.icon_class||'') +
       sel('Accent colour','pm_accent',['blue','teal','purple','indigo','orange','green'],p.accent||'blue') +
       tagCheckboxes('pm_tag', p.tags||[]) +
+      fld('Feature bullets shown on the card (comma separated, e.g. Subject-wise Mock Tests, Full-Length Papers, Expert Review)','pm_features', (p.tags||[]).filter(function(t){ return !PRESET_TAGS[t]; }).join(', ')) +
       fld('Sort order','pm_sort',p.sort_order||0) +
       '<div style="border-top:1px dashed rgba(26,26,46,.15);margin:14px 0;padding-top:14px;">' +
         '<label class="admin-field" style="flex-direction:row;align-items:center;gap:10px;"><input type="checkbox" id="pm_omr" style="width:auto;"'+(p.omr_enabled?' checked':'')+'> <span>OMR / Home-Based program (shows up in the OMR sending picker)</span></label>' +
@@ -1914,7 +1916,9 @@
         category: val('pm_category'), exam: val('pm_exam'), level: val('pm_level'), status: val('pm_status'),
         price: val('pm_price')||'', mrp: val('pm_mrp')||'', thumbnail_url: val('pm_thumb'),
         icon_class: val('pm_icon'), accent: val('pm_accent'),
-        tags: collectTagCheckboxes('pm_tag'),
+        tags: collectTagCheckboxes('pm_tag').concat(
+          val('pm_features').split(',').map(function(t){return t.trim();}).filter(Boolean)
+        ),
         sort_order: parseInt(val('pm_sort')||'0',10),
         omr_enabled: checked('pm_omr'),
         total_tests: val('pm_total_tests') ? parseInt(val('pm_total_tests'),10) : '',
