@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title id="pvTitle">Dr. Jaspal Singh - Civil Engineering Educator</title>
+  <meta id="pvDesc" name="description" content="Test series and coaching programs by Dr. Jaspal Singh." />
+  <meta name="author" content="Dr. Jaspal Singh" />
+  <meta name="robots" content="noindex, follow" />
+  <!-- noindex: this is a generic fallback renderer for programs launched via
+       the admin dashboard. Once a program gets its own hand-built static
+       page (like the rest of frontend/programs/*), give that page its own
+       indexable canonical and this generic view stops being used for it. -->
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon-32.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/pages.css" />
+  <link rel="stylesheet" href="/css/additions.css" />
+  <style>
+    .prog-detail-hero { padding-top:calc(var(--header-h) + 56px + 36px); padding-bottom:0; background:var(--light-grey); position:relative; overflow:hidden; }
+    .prog-detail-hero::after { content:''; position:absolute; bottom:0; left:0; right:0; height:3px; background:var(--gradient); }
+    .breadcrumb { font-size:13px; color:var(--body-color); opacity:.65; font-weight:500; margin-bottom:18px; }
+    .breadcrumb a { color:var(--magenta); opacity:1; }
+    .hero-layout { display:grid; grid-template-columns:1fr 340px; gap:48px; align-items:start; padding-bottom:56px; }
+    .hero-type-tag { display:inline-flex; align-items:center; gap:8px; font-family:var(--font-heading); font-size:11px; font-weight:700; letter-spacing:1.4px; text-transform:uppercase; padding:6px 16px; border-radius:var(--radius-pill); margin-bottom:18px; background:rgba(15,118,110,.09); color:#0F766E; border:1px solid rgba(15,118,110,.20); }
+    .hero-title { font-family:var(--font-heading); font-size:clamp(26px,4vw,40px); font-weight:800; color:var(--heading-color); line-height:1.15; letter-spacing:-.5px; margin-bottom:16px; }
+    .hero-desc { font-size:15px; color:var(--body-color); line-height:1.8; margin-bottom:28px; max-width:560px; }
+    .hero-meta-row { display:flex; flex-wrap:wrap; gap:20px; margin-bottom:0; }
+    .hm-item { display:flex; flex-direction:column; gap:3px; }
+    .hm-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; color:rgba(74,74,104,.45); }
+    .hm-val { font-family:var(--font-heading); font-size:14px; font-weight:700; color:var(--heading-color); }
+    .prog-highlights { display:flex; flex-wrap:wrap; gap:22px; margin-top:24px; }
+    .ph-item { display:flex; flex-direction:column; align-items:flex-start; gap:2px; }
+    .ph-item i { color:#0F766E; font-size:15px; margin-bottom:4px; }
+    .ph-num { font-family:var(--font-heading); font-size:18px; font-weight:800; color:var(--heading-color); }
+    .ph-label { font-size:11px; color:var(--body-color); font-weight:600; }
+    .enroll-card { background:var(--white); border:1.5px solid rgba(26,26,46,.09); border-radius:var(--radius-md); box-shadow:var(--shadow-md); overflow:hidden; position:sticky; top:calc(var(--header-h) + 24px); }
+    .enroll-thumb { height:160px; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
+    .enroll-thumb::before { content:''; position:absolute; inset:0; background-image:radial-gradient(circle,rgba(255,255,255,.10) 1px,transparent 1px); background-size:22px 22px; }
+    .enroll-thumb-icon { font-size:52px; color:rgba(255,255,255,.88); position:relative; z-index:1; filter:drop-shadow(0 4px 12px rgba(0,0,0,.28)); }
+    .enroll-body { padding:22px; }
+    .enroll-label { font-family:var(--font-heading); font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:rgba(74,74,104,.45); margin-bottom:6px; }
+    .enroll-program-name { font-family:var(--font-heading); font-size:15px; font-weight:800; color:var(--heading-color); line-height:1.3; margin-bottom:16px; }
+    .enroll-detail-rows { display:flex; flex-direction:column; gap:10px; margin-bottom:16px; }
+    .enroll-row { display:flex; justify-content:space-between; align-items:center; font-size:13px; border-bottom:1px solid rgba(26,26,46,.06); padding-bottom:10px; }
+    .enroll-row:last-child { border-bottom:none; padding-bottom:0; }
+    .er-key { color:var(--body-color); font-weight:500; }
+    .er-val { font-family:var(--font-heading); font-weight:700; color:var(--heading-color); font-size:13px; }
+    .er-val.green { color:var(--green); }
+    .price-block { margin-bottom:14px; }
+    .price-mrp { font-size:12px; color:var(--body-color); }
+    .price-mrp span { text-decoration:line-through; }
+    .price-offer { font-family:var(--font-heading); font-weight:800; color:var(--heading-color); }
+    .enroll-btn { display:block; width:100%; text-align:center; padding:13px 20px; border-radius:var(--radius-pill); font-family:var(--font-heading); font-size:14px; font-weight:800; background:var(--gradient); color:#fff; text-decoration:none; box-shadow:0 4px 18px rgba(200,18,64,.30); transition:var(--transition); }
+    .enroll-btn:hover { transform:translateY(-2px); box-shadow:0 8px 26px rgba(200,18,64,.42); color:#fff; }
+    .enroll-wa { display:flex; align-items:center; justify-content:center; gap:8px; margin-top:10px; padding:11px 20px; border-radius:var(--radius-pill); font-family:var(--font-heading); font-size:13px; font-weight:700; background:rgba(37,211,102,.10); color:#1a7a40; border:1.5px solid rgba(37,211,102,.25); text-decoration:none; transition:var(--transition); }
+    .enroll-wa:hover { background:rgba(37,211,102,.18); color:#1a7a40; }
+    .prog-detail-body { padding:72px 0 96px; }
+    .detail-layout { display:grid; grid-template-columns:1fr 340px; gap:48px; align-items:start; }
+    .detail-main { display:flex; flex-direction:column; gap:48px; }
+    .detail-section-title { font-family:var(--font-heading); font-size:20px; font-weight:800; color:var(--heading-color); line-height:1.2; margin-bottom:20px; padding-bottom:12px; border-bottom:2px solid rgba(26,26,46,.07); }
+    .included-list { display:flex; flex-direction:column; gap:12px; }
+    .included-item { display:flex; gap:14px; align-items:flex-start; padding:14px 16px; background:var(--light-grey); border-radius:var(--radius-sm); border:1.5px solid rgba(26,26,46,.06); }
+    .ii-icon { width:36px; height:36px; flex-shrink:0; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:14px; background:rgba(15,118,110,.10); color:#0F766E; }
+    .ii-body { display:flex; flex-direction:column; gap:3px; }
+    .ii-title { font-family:var(--font-heading); font-size:14px; font-weight:700; color:var(--heading-color); }
+    .pv-loading, .pv-notfound { padding:120px 0 96px; text-align:center; }
+    .pv-notfound i { font-size:40px; color:rgba(26,26,46,.25); margin-bottom:16px; }
+    .pv-notfound h1 { font-family:var(--font-heading); font-size:22px; color:var(--heading-color); margin-bottom:10px; }
+    .pv-notfound p { color:var(--body-color); margin-bottom:22px; }
+    @media (max-width:900px) { .hero-layout,.detail-layout { grid-template-columns:1fr; } .enroll-card { position:static; } }
+    @media (max-width:600px) { .prog-detail-hero { padding-top:calc(var(--header-h) + 36px + 36px); } }
+  </style>
+<script src="/js/loader.js"></script>
+  <script src="/js/login-wall.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-to-main">Skip to main content</a>
+
+  <header class="site-header" id="siteHeader" role="banner">
+    <div class="container header-inner">
+      <div class="header-left">
+        <a href="/" class="header-brand" aria-label="Dr. Jaspal Singh - Home">
+          <img src="/assets/images/jaspal-hero.png" class="header-avatar" alt="Dr. Jaspal Singh" onerror="this.style.display='none'" />
+          <span class="wordmark">Dr. Jaspal Singh</span>
+        </a>
+      </div>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="/" class="nav-link">Home</a>
+        <a href="/programs" class="nav-link">Programs</a>
+        <a href="/about" class="nav-link">About</a>
+      </nav>
+      <div class="header-right">
+        <a href="tel:+919829133317" class="header-phone" aria-label="Call us">
+          <span class="phone-ring-wrap"><i class="fas fa-phone phone-icon"></i></span>
+          <span class="phone-text">+91 98291 33317</span>
+        </a>
+        <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false" aria-controls="mobileDrawer">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </header>
+  <div class="drawer-overlay" id="drawerOverlay" aria-hidden="true"></div>
+  <aside class="mobile-drawer" id="mobileDrawer" aria-label="Mobile navigation">
+    <button class="drawer-close" id="drawerClose" aria-label="Close menu"><i class="fas fa-times"></i></button>
+    <a href="/" class="drawer-wordmark">Dr. Jaspal Singh</a>
+    <nav class="drawer-nav">
+      <a href="/" class="drawer-link">Home</a>
+      <a href="/programs" class="drawer-link">Programs</a>
+      <a href="/about" class="drawer-link">About</a>
+    </nav>
+    <div class="drawer-social">
+      <a href="tel:+919829133317" class="drawer-contact-btn"><i class="fas fa-phone"></i> Call Us</a>
+      <a href="https://wa.me/919829133317" target="_blank" rel="noopener" class="drawer-contact-btn drawer-contact-wa"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+    </div>
+  </aside>
+
+  <main id="main-content">
+
+    <div id="pvLoading" class="pv-loading"><i class="fas fa-spinner fa-spin" style="font-size:28px;color:var(--magenta);"></i></div>
+
+    <div id="pvNotFound" class="pv-notfound" style="display:none;">
+      <i class="fas fa-map-signs"></i>
+      <h1>Program not found</h1>
+      <p>This program may have been removed, renamed, or isn't published yet.</p>
+      <a href="/programs" class="enroll-btn" style="display:inline-block;width:auto;padding:12px 28px;">Browse All Programs</a>
+    </div>
+
+    <div id="pvContent" style="display:none;">
+      <section class="prog-detail-hero">
+        <div class="container">
+          <p class="breadcrumb"><a href="/">Home</a> / <a href="/programs">Programs</a> / <span id="pvBreadcrumb"></span></p>
+          <div class="hero-layout">
+            <div>
+              <span class="hero-type-tag" id="pvTypeTag"></span>
+              <span id="pvBadges"></span>
+              <h1 class="hero-title" id="pvHeroTitle"></h1>
+              <p class="hero-desc" id="pvHeroDesc"></p>
+              <div class="hero-meta-row" id="pvMetaRow"></div>
+              <div class="prog-highlights" id="pvHighlights"></div>
+            </div>
+            <div class="enroll-card">
+              <div class="enroll-thumb" id="pvThumb">
+                <i class="fas fa-clipboard-list enroll-thumb-icon" id="pvThumbIcon"></i>
+              </div>
+              <div class="enroll-body">
+                <p class="enroll-label">You are viewing</p>
+                <p class="enroll-program-name" id="pvEnrollName"></p>
+                <div class="enroll-detail-rows" id="pvEnrollRows"></div>
+                <div class="price-block">
+                  <div class="price-mrp" id="pvPriceMrp"></div>
+                  <div class="price-offer" style="font-size:22px;" id="pvPriceOffer"></div>
+                </div>
+                <a href="#" class="enroll-btn" id="pvEnrollBtn">Enroll Now</a>
+                <a href="#" target="_blank" rel="noopener" class="enroll-wa" id="pvWaBtn"><i class="fab fa-whatsapp"></i> Ask on WhatsApp</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="prog-detail-body">
+        <div class="container">
+          <div class="detail-layout">
+            <div class="detail-main">
+              <div class="detail-block">
+                <h2 class="detail-section-title">What's Included</h2>
+                <div class="included-list" id="pvIncludedList"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+  </main>
+
+  <footer class="site-footer" role="contentinfo" style="background:#0D0F1A;padding:56px 0 0;">
+    <div class="container" style="display:grid;grid-template-columns:220px 1fr 240px;gap:48px;padding-bottom:48px;border-bottom:1px solid rgba(255,255,255,0.06);">
+      <div>
+        <a href="/" style="font-size:22px;font-weight:800;color:#fff;text-decoration:none;letter-spacing:-0.3px;">Dr. <span style="color:#C81240;">Jaspal Singh</span></a>
+        <p style="font-size:13px;color:rgba(255,255,255,0.38);line-height:1.6;margin-top:10px;">Because Har Aspirant Deserves a Teacher Who Truly Cares.</p>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:18px;">
+          <span style="font-size:10px;font-weight:700;letter-spacing:.06em;padding:3px 10px;border-radius:20px;background:rgba(200,18,64,0.15);color:#E8547A;border:1px solid rgba(200,18,64,0.2);">ESE AIR-04</span>
+          <span style="font-size:10px;font-weight:700;letter-spacing:.06em;padding:3px 10px;border-radius:20px;background:rgba(200,18,64,0.15);color:#E8547A;border:1px solid rgba(200,18,64,0.2);">GATE AIR-06</span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr;gap:32px;">
+        <div>
+          <div style="font-size:10px;font-weight:800;letter-spacing:.14em;color:rgba(255,255,255,0.3);text-transform:uppercase;margin-bottom:14px;">Explore</div>
+          <a href="/programs" style="display:block;font-size:13px;color:rgba(255,255,255,0.55);text-decoration:none;padding:4px 0;">All Programs</a>
+          <a href="/about" style="display:block;font-size:13px;color:rgba(255,255,255,0.55);text-decoration:none;padding:4px 0;">About Dr. Jaspal Singh</a>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:800;letter-spacing:.14em;color:rgba(255,255,255,0.3);text-transform:uppercase;margin-bottom:16px;">Contact</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <div style="width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-phone" style="font-size:11px;color:#C81240;"></i></div>
+          <a href="tel:+919829133317" style="font-size:12.5px;color:rgba(255,255,255,0.55);text-decoration:none;">+91 98291 33317</a>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <div style="width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fab fa-whatsapp" style="font-size:11px;color:#C81240;"></i></div>
+          <a href="https://wa.me/919829133317" target="_blank" rel="noopener" style="font-size:12.5px;color:rgba(255,255,255,0.55);text-decoration:none;">WhatsApp Us</a>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <div style="width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-envelope" style="font-size:11px;color:#C81240;"></i></div>
+          <a href="mailto:team@jaspalsingh.in" style="font-size:12.5px;color:rgba(255,255,255,0.55);text-decoration:none;">team@jaspalsingh.in</a>
+        </div>
+      </div>
+    </div>
+    <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(200,18,64,0.35),rgba(255,107,53,0.2),transparent);"></div>
+    <div class="container" style="display:flex;align-items:center;justify-content:space-between;padding:18px 0;flex-wrap:wrap;gap:12px;">
+      <p style="font-size:11.5px;color:rgba(255,255,255,0.25);">&copy; 2026 Dr. Jaspal Singh &middot; jaspalsingh.in &middot; Empowering Civil Engineering aspirants across India.</p>
+      <div style="display:flex;gap:20px;">
+        <a href="/privacy-policy" style="font-size:11.5px;color:rgba(255,255,255,0.3);text-decoration:none;">Privacy Policy</a>
+        <a href="/terms" style="font-size:11.5px;color:rgba(255,255,255,0.3);text-decoration:none;">Terms &amp; Conditions</a>
+      </div>
+    </div>
+  </footer>
+
+  <a href="https://wa.me/919829133317" target="_blank" rel="noopener" aria-label="Chat on WhatsApp" class="whatsapp-float"><i class="fab fa-whatsapp"></i></a>
+  <script src="/js/main.js"></script>
+  <script src="/js/chat-tab.js" defer></script>
+  <script src="/js/track.js" defer></script>
+
+  <script>
+  (function () {
+    var API = location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://jaspalsingh.onrender.com';
+    var CAT_LABEL = { 'test-series': 'Test Series', interview: 'Interview Guidance', course: 'Course' };
+    var CAT_ICON  = { 'test-series': 'fa-clipboard-list', interview: 'fa-user-tie', course: 'fa-book' };
+    var BADGE_TAG_COLORS = {
+      'New': '#C81240', 'Bestseller': '#B45309', 'Highest Enrolled': '#166534',
+      'Limited Seats': '#9A3412', 'Closing Soon': '#6D28D9',
+    };
+    var ACCENT_GRADIENTS = {
+      blue: 'linear-gradient(145deg,#0369A1,#0284C7)', teal: 'linear-gradient(145deg,#0F766E,#0D9488)',
+      purple: 'linear-gradient(145deg,#6D28D9,#7C3AED)', indigo: 'linear-gradient(145deg,#4338CA,#6366F1)',
+      orange: 'linear-gradient(145deg,#C2410C,#EA580C)', green: 'linear-gradient(145deg,#15803D,#16A34A)',
+    };
+
+    function esc(s) { return (s == null ? '' : String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function inr(n) { return '₹' + Number(n || 0).toLocaleString('en-IN'); }
+
+    /* Cloudflare's _redirects rewrites /programs/<slug>/ to this file with a
+       200 (the browser URL bar keeps showing /programs/<slug>/, there is no
+       query string) - so the slug has to come from the path first. The
+       ?slug= query param is only a fallback for direct links to this page
+       (e.g. /programs/view/?slug=x used as a fallback href elsewhere). */
+    var pathMatch = location.pathname.match(/^\/programs\/([^\/]+)\/?$/);
+    var slug = (pathMatch && pathMatch[1] !== 'view') ? pathMatch[1] : new URLSearchParams(location.search).get('slug');
+    if (!slug) { showNotFound(); }
+    else {
+      fetch(API + '/api/programs/' + encodeURIComponent(slug))
+        .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+        .then(function (d) { render(d.program); })
+        .catch(showNotFound);
+    }
+
+    function showNotFound() {
+      document.getElementById('pvLoading').style.display = 'none';
+      document.getElementById('pvNotFound').style.display = 'block';
+    }
+
+    function render(p) {
+      document.getElementById('pvLoading').style.display = 'none';
+      document.getElementById('pvContent').style.display = 'block';
+
+      var cat = p.category || 'test-series';
+      var catLabel = CAT_LABEL[cat] || cat;
+      var tags = Array.isArray(p.tags) ? p.tags : (p.tags ? JSON.parse(p.tags) : []);
+      var badgeTags = tags.filter(function (t) { return BADGE_TAG_COLORS[t]; });
+      var descTags  = tags.filter(function (t) { return !BADGE_TAG_COLORS[t]; });
+      var gradient  = ACCENT_GRADIENTS[p.accent] || ACCENT_GRADIENTS.blue;
+
+      document.getElementById('pvTitle').textContent = p.title + ' | Dr. Jaspal Singh';
+      document.getElementById('pvDesc').setAttribute('content', p.short_desc || (p.title + ' - enroll now with Dr. Jaspal Singh.'));
+      document.getElementById('pvBreadcrumb').textContent = p.title;
+      document.getElementById('pvTypeTag').innerHTML = '<i class="fas ' + (CAT_ICON[cat] || 'fa-book') + '"></i> ' + esc(catLabel);
+      document.getElementById('pvBadges').innerHTML = badgeTags.map(function (t) {
+        return '<span style="display:inline-block;margin-left:8px;font-size:9px;font-weight:800;color:' + BADGE_TAG_COLORS[t] + ';background:' + BADGE_TAG_COLORS[t] + '1a;border-radius:8px;padding:3px 9px;vertical-align:middle;">' + esc(t) + '</span>';
+      }).join('');
+      document.getElementById('pvHeroTitle').textContent = p.title;
+      document.getElementById('pvHeroDesc').textContent = p.short_desc || ('A ' + catLabel.toLowerCase() + ' programme by Dr. Jaspal Singh. Message us on WhatsApp for the full syllabus, schedule and centre details.');
+
+      var metaHtml = '';
+      if (p.exam)  metaHtml += '<div class="hm-item"><span class="hm-label">Exam</span><span class="hm-val">' + esc(p.exam) + '</span></div>';
+      if (p.level) metaHtml += '<div class="hm-item"><span class="hm-label">Level</span><span class="hm-val">' + esc(p.level) + '</span></div>';
+      metaHtml += '<div class="hm-item"><span class="hm-label">Status</span><span class="hm-val" style="color:' + (p.status === 'enrolling' ? 'var(--green)' : 'var(--magenta)') + ';">' + (p.status === 'enrolling' ? 'Enrolling Now' : p.status === 'coming_soon' ? 'Coming Soon' : 'Closed') + '</span></div>';
+      document.getElementById('pvMetaRow').innerHTML = metaHtml;
+
+      var highlightsHtml = '';
+      if (p.total_tests) highlightsHtml += '<div class="ph-item"><i class="fas fa-file-alt"></i><span class="ph-num">' + p.total_tests + '</span><span class="ph-label">Tests</span></div>';
+      if (p.omr_enabled) highlightsHtml += '<div class="ph-item"><i class="fas fa-house"></i><span class="ph-num" style="font-size:13px;">Home-Based</span><span class="ph-label">OMR Format</span></div>';
+      document.getElementById('pvHighlights').innerHTML = highlightsHtml;
+
+      var thumbEl = document.getElementById('pvThumb');
+      if (p.thumbnail_url) {
+        thumbEl.style.backgroundImage = 'url("' + p.thumbnail_url + '")';
+        thumbEl.style.backgroundSize = 'cover';
+        thumbEl.style.backgroundPosition = 'center';
+        document.getElementById('pvThumbIcon').style.display = 'none';
+      } else {
+        thumbEl.style.background = gradient;
+        document.getElementById('pvThumbIcon').className = 'fas ' + (p.icon_class || CAT_ICON[cat] || 'fa-book') + ' enroll-thumb-icon';
+      }
+      document.getElementById('pvEnrollName').textContent = p.title;
+      document.getElementById('pvEnrollRows').innerHTML =
+        (p.exam ? '<div class="enroll-row"><span class="er-key">Exam</span><span class="er-val">' + esc(p.exam) + '</span></div>' : '') +
+        (p.level ? '<div class="enroll-row"><span class="er-key">Level</span><span class="er-val">' + esc(p.level) + '</span></div>' : '') +
+        '<div class="enroll-row"><span class="er-key">Enrollment</span><span class="er-val green">' + (p.status === 'enrolling' ? 'Open' : 'Closed') + '</span></div>';
+
+      var enrollBtn = document.getElementById('pvEnrollBtn');
+      if (p.price != null) {
+        var save = (p.mrp && p.mrp > p.price) ? Math.round((1 - p.price / p.mrp) * 100) : 0;
+        document.getElementById('pvPriceMrp').innerHTML = p.mrp ? 'Regular price: MRP <span>' + inr(p.mrp) + '</span>' : '';
+        document.getElementById('pvPriceOffer').textContent = inr(p.price) + (save ? ' (' + save + '% off)' : '');
+        enrollBtn.href = '/checkout/?program=' + encodeURIComponent(p.slug);
+        enrollBtn.textContent = 'Enroll Now';
+      } else {
+        document.getElementById('pvPriceMrp').textContent = '';
+        document.getElementById('pvPriceOffer').textContent = 'Launching Soon';
+        enrollBtn.href = 'https://wa.me/919829133317?text=' + encodeURIComponent('I want to know when ' + p.title + ' opens for enrollment');
+        enrollBtn.textContent = 'Notify Me on WhatsApp';
+      }
+      document.getElementById('pvWaBtn').href = 'https://wa.me/919829133317?text=' + encodeURIComponent('I want more details about ' + p.title);
+
+      var includedHtml = descTags.map(function (t) {
+        return '<div class="included-item"><div class="ii-icon"><i class="fas fa-check"></i></div><div class="ii-body"><span class="ii-title">' + esc(t) + '</span></div></div>';
+      }).join('');
+      if (!includedHtml) {
+        includedHtml = '<div class="included-item"><div class="ii-icon"><i class="fas fa-comments"></i></div><div class="ii-body"><span class="ii-title">Full details on WhatsApp</span><span class="ii-desc">Message us for the complete syllabus, test schedule and centre details for this programme.</span></div></div>';
+      }
+      document.getElementById('pvIncludedList').innerHTML = includedHtml;
+    }
+  })();
+  </script>
+</body>
+</html>

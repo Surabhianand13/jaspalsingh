@@ -1842,10 +1842,15 @@
         '<label class="admin-field" style="flex-direction:row;align-items:center;gap:10px;"><input type="checkbox" id="pm_launch_enabled" style="width:auto;"'+(lc?' checked':'')+'> <span>Enable self-serve Tally intake (no code needed to go live)</span></label>' +
         '<div class="admin-form-hint" style="margin:-4px 0 10px;">Point this program\'s Tally form webhook at: <code>/api/tally-generic/'+e(p.slug||'&lt;slug&gt;')+'</code></div>' +
         fld('Series name shown on admit card & emails','pm_lc_series',(lc&&lc.seriesName)||'') +
+        fld('Tally form URL (the learner fills this in after paying) *','pm_lc_tallyurl',(lc&&lc.tallyFormUrl)||'') +
         sel('Mode','pm_lc_mode',['home','offline'],(lc&&lc.mode)||'home') +
         fld('Roll number prefix (e.g. GEN)','pm_lc_prefix',(lc&&lc.rollPrefix)||'') +
         fld('WhatsApp group link (optional)','pm_lc_wa',(lc&&lc.waGroupUrl)||'') +
         fld('Last test date text shown on admit card (optional)','pm_lc_lasttest',(lc&&lc.lastTestDate)||'') +
+        '<div class="admin-form-hint" style="margin:10px 0 -2px;">If Mode is "offline", fill in the test centre - every learner\'s admit card will show this address, regardless of what they type on the Tally form:</div>' +
+        fld('Centre name (e.g. Jaipur)','pm_lc_centre_name',(lc&&lc.centre&&lc.centre.name)||'') +
+        fld('Centre address','pm_lc_centre_address',(lc&&lc.centre&&lc.centre.address)||'') +
+        fld('Centre Google Maps link','pm_lc_centre_maps',(lc&&lc.centre&&lc.centre.mapsLink)||'') +
       '</div>' +
       '<button class="btn" id="pm_save" style="margin-top:8px;">'+(isEdit?'Save Changes':'Create Program')+'</button>';
     document.getElementById('programModal').style.display='flex';
@@ -1863,12 +1868,24 @@
         omr_categories: val('pm_omr_categories') ? val('pm_omr_categories').split(',').map(function(c){return c.trim();}).filter(Boolean) : null,
         launch_config: launchEnabled ? {
           seriesName: val('pm_lc_series') || val('pm_title'),
+          tallyFormUrl: val('pm_lc_tallyurl'),
           mode: val('pm_lc_mode'),
           rollPrefix: val('pm_lc_prefix') || 'GEN',
           waGroupUrl: val('pm_lc_wa') || null,
           lastTestDate: val('pm_lc_lasttest') || null,
+          centre: val('pm_lc_centre_name') ? {
+            name: val('pm_lc_centre_name'),
+            address: val('pm_lc_centre_address') || 'To be announced - contact us on WhatsApp for details',
+            mapsLink: val('pm_lc_centre_maps') || 'https://wa.me/919829133317',
+          } : null,
         } : null,
       };
+      if (launchEnabled && !payload.launch_config.tallyFormUrl) {
+        showToast('Tally form URL is required when self-serve Tally intake is enabled', 'error'); return;
+      }
+      if (launchEnabled && payload.launch_config.mode === 'offline' && !payload.launch_config.centre) {
+        showToast('Centre name is required for an offline program', 'error'); return;
+      }
       var req = isEdit ? adminFetch('PUT','/api/programs/'+p.id,payload) : adminFetch('POST','/api/programs',payload);
       req.then(function(){ showToast(isEdit?'Saved':'Created','success'); document.getElementById('programModal').style.display='none'; loadPrograms(); })
          .catch(function(e){ showToast(e.message,'error'); });

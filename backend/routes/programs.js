@@ -125,4 +125,23 @@ router.delete('/:id', protect, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/* ── PUBLIC: single visible program by slug ──────────────────
+   Registered last so it never shadows /admin/all or the numeric-id
+   admin routes above. Used by frontend/programs/view/index.html - the
+   generic detail page for any program that doesn't have its own
+   hand-built static page. ── */
+router.get('/:slug', async (req, res, next) => {
+  try {
+    const result = await query(
+      `SELECT slug, title, short_name, category, exam, level, status, price, mrp,
+              thumbnail_url, accent, icon_class, tags, short_desc, detail_url, sort_order,
+              omr_enabled, total_tests, omr_categories
+       FROM programs WHERE slug = $1 AND is_visible = TRUE`,
+      [req.params.slug]
+    );
+    if (!result.rows.length) return res.status(404).json({ error: 'Program not found.' });
+    res.json({ program: result.rows[0] });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;

@@ -7,6 +7,7 @@
 
 const { transporter: gmailTransporter, isConfigured: gmailReady } = require('../config/mailer');
 const { send: resendSend, PRIORITY } = require('./resendQueue');
+const { query } = require('../config/db');
 
 const FROM   = 'Dr. Jaspal Singh <team@jaspalsingh.in>';
 const SITE   = 'https://jaspalsingh.in';
@@ -162,11 +163,27 @@ async function sendWelcomePaymentEmail(enrollment) {
   const firstName = esc((enrollment.student_name || 'there').split(' ')[0]);
 
   const slug = enrollment.program_slug || '';
+
+  /* Hybrid-launched programs (created entirely from the admin dashboard,
+     no bespoke code) carry their own Tally form/WhatsApp group in
+     programs.launch_config - check that FIRST, before any of the slug-
+     substring guessing below. Without this, a slug that happens to
+     contain "degree"/"diploma"/"omr" would silently misroute to an
+     unrelated existing program's Tally form and webhook. */
+  let launchConfig = null;
+  try {
+    const lc = await query(`SELECT launch_config FROM programs WHERE slug = $1`, [slug]);
+    if (lc.rows.length && lc.rows[0].launch_config) launchConfig = lc.rows[0].launch_config;
+  } catch (err) {
+    console.error('[sendWelcomePaymentEmail] launch_config lookup failed:', err.message);
+  }
+
   const isComboOffline = slug === SLUG_COMBO_OFFLINE;
   const isComboOmr     = slug === SLUG_COMBO_OMR;
   const isEse          = !!ESE_TALLY_FORM_URLS[slug];
 
-  const tallyBase = isEse ? ESE_TALLY_FORM_URLS[slug]
+  const tallyBase = (launchConfig && launchConfig.tallyFormUrl) ? launchConfig.tallyFormUrl
+    : isEse ? ESE_TALLY_FORM_URLS[slug]
     : isComboOffline ? TALLY_FORM_URL_COMBO_OFFLINE
     : isComboOmr                                                    ? TALLY_FORM_URL_COMBO_OMR
     : slug.includes('omr') && slug.includes('degree')                ? TALLY_FORM_URL_OMR_DEGREE
@@ -178,7 +195,9 @@ async function sendWelcomePaymentEmail(enrollment) {
   /* Combo enrollees are in both cohorts, so they get both batch group
      links; everyone else gets the single group matching their program. */
   let waGroups;
-  if (isComboOffline) {
+  if (launchConfig && launchConfig.tallyFormUrl) {
+    waGroups = launchConfig.waGroupUrl ? [{ label: null, link: launchConfig.waGroupUrl }] : [];
+  } else if (isComboOffline) {
     waGroups = [
       { label: 'Degree Batch',  link: WA_GROUP_DEGREE },
       { label: 'Diploma Batch', link: WA_GROUP_DIPLOMA },

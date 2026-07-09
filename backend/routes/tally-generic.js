@@ -36,12 +36,13 @@ async function generateGenericRollNumber(prefix) {
   return roll;
 }
 
+/* Hybrid-launched offline programs are almost always a single batch in a
+   single city, so launch_config.centre is one object, not a map - the
+   admin fills in one name/address/maps link and every offline enrollee
+   for this program gets it, regardless of what (if anything) they typed
+   into a "centre" field on the Tally form. */
 function resolveGenericCentre(centreRaw, launchConfig) {
-  const centres = launchConfig.centres || {};
-  const v = (centreRaw || '').toLowerCase();
-  for (const info of Object.values(centres)) {
-    if (info.name && v.includes(info.name.toLowerCase())) return info;
-  }
+  if (launchConfig.centre && launchConfig.centre.name) return launchConfig.centre;
   return { name: centreRaw || 'TBD', address: 'To be announced - contact us on WhatsApp for details', mapsLink: 'https://wa.me/919829133317' };
 }
 
