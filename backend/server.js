@@ -732,6 +732,32 @@ async function migrate() {
   await query(`ALTER TABLE programs ADD COLUMN IF NOT EXISTS who_for JSONB`);   // string[]
   await query(`ALTER TABLE programs ADD COLUMN IF NOT EXISTS faqs JSONB`);      // { question, answer }[]
 
+  /* ── Retire the site-wide JASPALSIR coupon, baking its Rs 1,000
+     discount straight into each program's base price so the price shown
+     everywhere is the real checkout price with no code needed. Coupons
+     stay available for genuinely special cases (FIRST, JASPAL200, DOST/
+     partner codes) - just not as a de-facto mandatory blanket code. ── */
+  await query(`UPDATE coupons SET is_active = FALSE WHERE code = 'JASPALSIR'`);
+  const directPrices = [
+    ['rssb-jen-degree-test-series', 2999],
+    ['rssb-jen-diploma-test-series', 2799],
+    ['rssb-je-jaspalsirki-testseries-degree-diploma-combo', 3499],
+    ['rssb-je-jaspalsirki-testseries-degree-diploma-combo-omr', 1499],
+    ['rssb-je-omr-degree-test-series', 999],
+    ['rssb-jen-omr-diploma-test-series', 999],
+    ['ese-2027-prelims-jaspalsirki-testseries-paper1', 1999],
+    ['ese-2027-prelims-jaspalsirki-testseries-paper2-civil', 1999],
+    ['ese-2027-prelims-jaspalsirki-testseries-combined', 3499],
+    ['ese-2027-prelims-jaspalsirki-testseries-paper1-omr', 1499],
+    ['ese-2027-prelims-jaspalsirki-testseries-paper2-civil-omr', 1499],
+    ['ese-2027-prelims-jaspalsirki-testseries-combined-omr', 1999],
+    ['rssb-je-2026-jaspasir-ki-testseries-degree-jaipur-main-batch-26-july', 1599],
+    ['rssb-je-2026-jaspasir-ki-testseries-diploma-jaipur-main-batch-26-july', 1199],
+  ];
+  for (const [slug, price] of directPrices) {
+    await query(`UPDATE programs SET price = $1, updated_at = NOW() WHERE slug = $2`, [price, slug]);
+  }
+
   /* ── Seed second admin user from env var (never hardcode passwords) ── */
   {
     const bcrypt = require('bcryptjs');
