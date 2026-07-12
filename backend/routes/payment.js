@@ -111,7 +111,6 @@ async function onEnrollmentPaid(enrollment) {
    briefly unreachable. ── */
 const FALLBACK_COUPONS = {
   'FIRST':     { type: 'flat_price',        discount_amount: 1,    label: 'First-time offer' },
-  'JASPALSIR': { type: 'fixed_discount',     discount_amount: 1000, label: 'Get Rs 1,000 off' },
   'JASPAL200': { type: 'fixed_discount',     discount_amount: 1200, exclusive: true, label: 'Special Rs 1,200 off' },
 };
 
