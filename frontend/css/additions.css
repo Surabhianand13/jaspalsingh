@@ -1525,6 +1525,21 @@ a.ticker-item:hover i { color: #fff; }
   line-height: 1;
 }
 
+/* ── Compact offer-ends line under the CTA (replaces the old early-bird chip) ── */
+.op-card-timer {
+  margin: -6px 16px 14px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--body-color);
+}
+.op-card-timer .op-countdown {
+  font-weight: 800;
+  color: #C81240;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.4px;
+}
+
 /* ── Launching Soon footer (aligns with early bird chip on other cards) ── */
 .op-launching-soon {
   margin: 0 12px 12px;
