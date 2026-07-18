@@ -30,7 +30,7 @@ const { query } = require('../config/db');
 const { protectLearner } = require('../middleware/learnerAuth');
 const { handleUploadError } = require('../middleware/upload');
 const { getActiveEnrollment } = require('../utils/enrollmentAccess');
-const { canonicalize } = require('../utils/programSlugAliases');
+const { canonicalize, slugsFor } = require('../utils/programSlugAliases');
 
 /* Some enrollments are keyed to a legacy checkout slug (see
    programSlugAliases.js) while program_schedule/programs are always
@@ -91,12 +91,20 @@ router.get('/:program_slug', protectLearner, async (req, res, next) => {
       return res.status(403).json({ error: 'No active enrollment for this program. If you were refunded, this program is no longer accessible.' });
     }
 
+    // Admin may have created the schedule/programs row under a legacy slug
+    // (e.g. a leftover pre-2026-07-08 programs row with the old checkout
+    // slug still exists) even though the learner-facing slug is canonical -
+    // match on every known alias, not just the exact canonical value, or
+    // real uploaded schedules silently show as empty. See
+    // utils/programSlugAliases.js.
+    const candidateSlugs = slugsFor(req.params.program_slug);
+
     // Combo programs (RSSB Degree/Diploma, ESE Civil/General Studies) bundle
     // two tracks under one program_slug - each numbered 1..N independently.
     // If the program has categories and none was requested, return the
     // category list only (frontend shows a track picker) rather than a
     // schedule that would otherwise mix both tracks' "Test 1" together.
-    const progRes = await query(`SELECT omr_categories FROM programs WHERE slug = $1`, [req.params.program_slug]);
+    const progRes = await query(`SELECT omr_categories FROM programs WHERE slug = ANY($1::text[]) AND omr_categories IS NOT NULL LIMIT 1`, [candidateSlugs]);
     const categories = (progRes.rows[0] && progRes.rows[0].omr_categories) || [];
     const selectedCategory = req.query.category || null;
 
@@ -114,9 +122,9 @@ router.get('/:program_slug', protectLearner, async (req, res, next) => {
               su.id AS upload_id, su.file_url AS my_upload_url, su.uploaded_at AS my_upload_at
        FROM program_schedule ps
        LEFT JOIN schedule_uploads su ON su.schedule_id = ps.id AND su.enrollment_id = $2
-       WHERE ps.program_slug = $1 AND ps.category IS NOT DISTINCT FROM $3
+       WHERE ps.program_slug = ANY($1::text[]) AND ps.category IS NOT DISTINCT FROM $3
        ORDER BY ps.sort_order ASC, ps.test_number ASC`,
-      [req.params.program_slug, enrollment.id, selectedCategory]
+      [candidateSlugs, enrollment.id, selectedCategory]
     );
 
     const tests = result.rows.map(row => {
@@ -158,8 +166,8 @@ router.post('/:program_slug/tests/:scheduleId/submit-omr', protectLearner, uploa
     }
 
     const scheduleRes = await query(
-      `SELECT * FROM program_schedule WHERE id = $1 AND program_slug = $2`,
-      [req.params.scheduleId, req.params.program_slug]
+      `SELECT * FROM program_schedule WHERE id = $1 AND program_slug = ANY($2::text[])`,
+      [req.params.scheduleId, slugsFor(req.params.program_slug)]
     );
     if (!scheduleRes.rows.length) {
       return res.status(404).json({ error: 'Test not found.' });
