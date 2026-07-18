@@ -302,42 +302,61 @@ async function runDetection(submission, test) {
 }
 
 /* POST /api/omr-check/tests/:testId/submissions  -  uploadOmrPhoto.single('photo') */
+/* Shared by admin's uploadSubmission and the learner self-serve submit-omr
+   route, so both go through the exact same validate → insert → detect
+   pipeline instead of two copies drifting apart. Throws { status, message }
+   on validation failure (caller decides how to respond); on success returns
+   the finalized submission row. Always destroys the uploaded Cloudinary
+   asset on any failure so orphaned photos don't accumulate. */
+async function createSubmission({ testId, file, student_name, student_email, student_phone, roll_number, enrollment_id, submitted_by_learner }) {
+  const testRes = await query(`
+    SELECT ot.*, t.canonical_width, t.canonical_height, t.corner_points,
+           t.question_blocks, t.roll_number_grid, t.option_count
+    FROM omr_tests ot JOIN omr_templates t ON t.id = ot.template_id
+    WHERE ot.id = $1
+  `, [testId]);
+
+  if (!testRes.rows.length) {
+    await destroyCloudinaryAsset(file.filename);
+    throw { status: 404, message: 'Test not found.' };
+  }
+  const test = testRes.rows[0];
+
+  if (!student_name || !student_name.trim()) {
+    await destroyCloudinaryAsset(file.filename);
+    throw { status: 400, message: 'student_name is required.' };
+  }
+
+  const insertRes = await query(
+    `INSERT INTO omr_submissions
+       (test_id, student_name, student_email, student_phone, roll_number, photo_url, status, enrollment_id, submitted_by_learner)
+     VALUES ($1,$2,$3,$4,$5,$6,'processing',$7,$8)
+     RETURNING *`,
+    [test.id, student_name.trim(), student_email || null, student_phone || null, roll_number || null, file.path,
+     enrollment_id || null, !!submitted_by_learner]
+  );
+  const submission = insertRes.rows[0];
+
+  await runDetection(submission, test);
+
+  const finalRes = await query('SELECT * FROM omr_submissions WHERE id = $1', [submission.id]);
+  return finalRes.rows[0];
+}
+
 const uploadSubmission = async (req, res, next) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No photo uploaded.' });
-
-    const testRes = await query(`
-      SELECT ot.*, t.canonical_width, t.canonical_height, t.corner_points,
-             t.question_blocks, t.roll_number_grid, t.option_count
-      FROM omr_tests ot JOIN omr_templates t ON t.id = ot.template_id
-      WHERE ot.id = $1
-    `, [req.params.testId]);
-
-    if (!testRes.rows.length) {
-      await destroyCloudinaryAsset(req.file.filename);
-      return res.status(404).json({ error: 'Test not found.' });
-    }
-    const test = testRes.rows[0];
-
     const { student_name, student_email, student_phone, roll_number } = req.body;
-    if (!student_name || !student_name.trim()) {
-      await destroyCloudinaryAsset(req.file.filename);
-      return res.status(400).json({ error: 'student_name is required.' });
-    }
-
-    const insertRes = await query(
-      `INSERT INTO omr_submissions (test_id, student_name, student_email, student_phone, roll_number, photo_url, status)
-       VALUES ($1,$2,$3,$4,$5,$6,'processing')
-       RETURNING *`,
-      [test.id, student_name.trim(), student_email || null, student_phone || null, roll_number || null, req.file.path]
-    );
-    const submission = insertRes.rows[0];
-
-    await runDetection(submission, test);
-
-    const finalRes = await query('SELECT * FROM omr_submissions WHERE id = $1', [submission.id]);
-    res.status(201).json({ submission: finalRes.rows[0] });
-  } catch (err) { next(err); }
+    const submission = await createSubmission({
+      testId: req.params.testId, file: req.file,
+      student_name, student_email, student_phone, roll_number,
+      enrollment_id: null, submitted_by_learner: false,
+    });
+    res.status(201).json({ submission });
+  } catch (err) {
+    if (err && err.status) return res.status(err.status).json({ error: err.message });
+    next(err);
+  }
 };
 
 const listSubmissions = async (req, res, next) => {
@@ -490,4 +509,5 @@ module.exports = {
   listTemplates, getTemplate, createTemplate, uploadReferenceImage, saveCalibration, calibrationPreview, deleteTemplate,
   listTests, getTest, createTest, updateTest, archiveTest,
   uploadSubmission, listSubmissions, getSubmission, reviewSubmission, rerunDetection, finalizeSubmission, deleteSubmission,
+  createSubmission,
 };

@@ -194,6 +194,7 @@ router.get('/my-enrollments', protectLearner, async (req, res) => {
       `SELECT order_id, program_slug, program_name, amount, status, paid_at, coupon_code
        FROM enrollments
        WHERE status = 'paid'
+         AND refund_status != 'initiated'
          AND (learner_id = $1 OR student_email = $2 OR student_phone = $3)
        ORDER BY paid_at DESC`,
       [learner.id, learner.email, learner.phone]

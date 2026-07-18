@@ -1864,22 +1864,111 @@
     };
   }
 
-  /* ── PROGRAM SCHEDULE (bulk upload) ──
+  /* ── PROGRAM SCHEDULE (bulk upload + per-test assets) ──
      Paste one test per line as "Test Number | Date | Syllabus | Questions"
-     (Questions optional) - replaces the whole schedule for that program.
+     (Questions optional) - upserts by test number (see backend comment on
+     POST .../schedule/bulk), so uploaded assets on an existing test number
+     survive a re-paste.
      Used by frontend/programs/view/index.html's generic detail page; the
      13 hand-built program pages have their own hardcoded schedule tables
-     and don't read from this. */
+     and don't read from this.
+
+     Each row also carries the self-serve learner-facing assets (question
+     paper / blank OMR / solution PDFs, uploaded straight to R2), the
+     release/upload-deadline dates that gate them, and - for OMR-course
+     tests only - a link to the omr_tests row that grades it. This is the
+     admin side of the learner Profile > Purchased Programs > Schedule tab. */
+  var ASSET_KINDS = [
+    { kind: 'paper',      label: 'Question Paper', col: 'question_paper_url' },
+    { kind: 'blank-omr',  label: 'Blank OMR',      col: 'blank_omr_url' },
+    { kind: 'solution',   label: 'Solution',       col: 'solution_url' },
+  ];
+
+  function uploadScheduleAsset(rowId, kind, slug){
+    var input = document.createElement('input');
+    input.type = 'file'; input.accept = 'application/pdf';
+    input.onchange = function(){
+      if (!input.files[0]) return;
+      var fd = new FormData(); fd.append('file', input.files[0]);
+      showToast('Uploading…', 'success');
+      adminFetch('POST', '/api/programs/schedule/'+rowId+'/assets/'+kind, fd)
+        .then(function(){ showToast('Uploaded', 'success'); loadScheduleRows(slug); })
+        .catch(function(e){ showToast(e.message, 'error'); });
+    };
+    input.click();
+  }
+
+  function openGatingPanel(row, slug, omrTests){
+    var panel = document.getElementById('sch_gating_'+row.id);
+    if (!panel) return;
+    var omrOptions = '<option value="">- select OMR test -</option>' + omrTests.map(function(t){
+      return '<option value="'+t.id+'"'+(row.omr_test_id===t.id?' selected':'')+'>'+e(t.name)+'</option>';
+    }).join('');
+    panel.innerHTML =
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-top:8px;padding:10px;background:rgba(0,0,0,.03);border-radius:8px;">' +
+        '<label style="font-size:11.5px;">Paper release<br><input type="datetime-local" class="admin-input" id="gt_release_'+row.id+'" value="'+(row.paper_release_at?row.paper_release_at.slice(0,16):'')+'"></label>' +
+        '<label style="font-size:11.5px;">Upload deadline / solution unlock<br><input type="datetime-local" class="admin-input" id="gt_deadline_'+row.id+'" value="'+(row.omr_upload_deadline?row.omr_upload_deadline.slice(0,16):'')+'"></label>' +
+        '<label style="font-size:11.5px;"><input type="checkbox" id="gt_requires_'+row.id+'" '+(row.requires_omr_upload?'checked':'')+'> Requires self-serve OMR upload</label>' +
+        '<label style="font-size:11.5px;">Graded by (OMR test)<br><select class="admin-input" id="gt_omrtest_'+row.id+'">'+omrOptions+'</select></label>' +
+        '<button class="btn btn-sm" id="gt_save_'+row.id+'">Save</button>' +
+      '</div>' +
+      '<label style="font-size:11.5px;display:block;margin-top:6px;">Answer Key (offline tests only - OMR tests use the answer key on their linked OMR test)<br>' +
+        '<textarea class="admin-input" id="gt_answerkey_'+row.id+'" rows="2" style="width:100%;font-family:monospace;font-size:12px;" placeholder=\'{"1":"A","2":"C",...}\'>'+(row.answer_key?JSON.stringify(row.answer_key):'')+'</textarea></label>';
+
+    document.getElementById('gt_save_'+row.id).onclick = function(){
+      var requiresUpload = document.getElementById('gt_requires_'+row.id).checked;
+      var omrTestId = document.getElementById('gt_omrtest_'+row.id).value || null;
+      var deadline = document.getElementById('gt_deadline_'+row.id).value || null;
+      if (requiresUpload && !omrTestId) { showToast('Select which OMR test grades this row', 'error'); return; }
+      if (requiresUpload && !deadline) { showToast('Upload deadline is required when self-serve upload is on', 'error'); return; }
+      var answerKeyRaw = document.getElementById('gt_answerkey_'+row.id).value.trim();
+      var answerKey = null;
+      if (answerKeyRaw) {
+        try { answerKey = JSON.parse(answerKeyRaw); }
+        catch(e2){ showToast('Answer Key must be valid JSON', 'error'); return; }
+      }
+      adminFetch('PUT', '/api/programs/schedule/'+row.id+'/gating', {
+        paper_release_at: document.getElementById('gt_release_'+row.id).value || null,
+        omr_upload_deadline: deadline,
+        requires_omr_upload: requiresUpload,
+        omr_test_id: omrTestId,
+        answer_key: answerKey,
+      }).then(function(){ showToast('Saved', 'success'); loadScheduleRows(slug); })
+        .catch(function(e){ showToast(e.message, 'error'); });
+    };
+  }
+
   function loadScheduleRows(slug){
     var listEl = document.getElementById('sch_list');
-    adminFetch('GET', '/api/programs/'+encodeURIComponent(slug)+'/schedule/admin').then(function(d){
-      var rows = d.schedule || [];
+    Promise.all([
+      adminFetch('GET', '/api/programs/'+encodeURIComponent(slug)+'/schedule/admin'),
+      adminFetch('GET', '/api/omr-check/tests'),
+    ]).then(function(results){
+      var rows = results[0].schedule || [];
+      var omrTests = results[1].tests || [];
       if (!rows.length) { listEl.innerHTML = '<p class="admin-empty">No schedule uploaded yet.</p>'; return; }
-      listEl.innerHTML = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Test</th><th>Date</th><th>Syllabus</th><th>Qs</th><th></th></tr></thead><tbody>' +
+      listEl.innerHTML = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Test</th><th>Date</th><th>Syllabus</th><th>Qs</th><th>Assets</th><th></th></tr></thead><tbody>' +
         rows.map(function(r){
+          var assetBtns = ASSET_KINDS.map(function(a){
+            var has = !!r[a.col];
+            return '<button class="btn btn-sm '+(has?'':'btn-ghost')+'" data-asset-upload="'+r.id+'" data-asset-kind="'+a.kind+'" title="'+a.label+'">'+(has?'✓ ':'')+a.label+'</button>';
+          }).join(' ');
           return '<tr><td>'+r.test_number+'</td><td>'+e(r.test_date||'-')+'</td><td>'+e(r.syllabus||'-')+'</td><td>'+(r.questions||'-')+'</td>' +
-            '<td><button class="btn btn-sm btn-ghost" data-sch-del="'+r.id+'">Delete</button></td></tr>';
+            '<td>'+assetBtns+'</td>' +
+            '<td><button class="btn btn-sm btn-ghost" data-sch-configure="'+r.id+'">Configure</button> <button class="btn btn-sm btn-ghost" data-sch-del="'+r.id+'">Delete</button></td></tr>' +
+            '<tr><td colspan="6"><div id="sch_gating_'+r.id+'"></div></td></tr>';
         }).join('') + '</tbody></table></div>';
+
+      listEl.querySelectorAll('[data-asset-upload]').forEach(function(b){
+        b.addEventListener('click', function(){ uploadScheduleAsset(b.getAttribute('data-asset-upload'), b.getAttribute('data-asset-kind'), slug); });
+      });
+      listEl.querySelectorAll('[data-sch-configure]').forEach(function(b){
+        b.addEventListener('click', function(){
+          var rowId = parseInt(b.getAttribute('data-sch-configure'), 10);
+          var row = rows.filter(function(r){ return r.id === rowId; })[0];
+          openGatingPanel(row, slug, omrTests);
+        });
+      });
       listEl.querySelectorAll('[data-sch-del]').forEach(function(b){
         b.addEventListener('click', function(){
           adminFetch('DELETE', '/api/programs/'+encodeURIComponent(slug)+'/schedule/'+b.getAttribute('data-sch-del'))
@@ -1891,10 +1980,10 @@
   function openScheduleModal(slug, title){
     document.getElementById('scheduleModalTitle').textContent = 'Schedule - ' + title;
     document.getElementById('scheduleModalBody').innerHTML =
-      '<div class="admin-form-hint" style="margin-bottom:8px;">Paste one test per line: <code>Test Number | Date | Syllabus | Questions</code> (Questions is optional). This replaces the entire schedule below when saved.</div>' +
+      '<div class="admin-form-hint" style="margin-bottom:8px;">Paste one test per line: <code>Test Number | Date | Syllabus | Questions</code> (Questions is optional). Re-pasting the same test number updates that row (assets/settings are kept); a test number no longer in the paste is removed.</div>' +
       '<textarea class="admin-input" id="sch_paste" rows="8" style="width:100%;font-family:monospace;font-size:12.5px;" placeholder="1 | 26 July 2026 | Rajasthan GK + Building Technology | 120\n2 | 2 August 2026 | Surveying + Fluid Mechanics | 120"></textarea>' +
       '<button class="btn" id="sch_save" style="margin-top:10px;">Save Schedule</button>' +
-      '<div style="margin-top:20px;border-top:1px dashed rgba(26,26,46,.15);padding-top:14px;"><strong style="font-size:13px;">Current schedule</strong><div id="sch_list" style="margin-top:10px;"><p class="admin-empty">Loading…</p></div></div>';
+      '<div style="margin-top:20px;border-top:1px dashed rgba(26,26,46,.15);padding-top:14px;"><strong style="font-size:13px;">Current schedule</strong><div class="admin-form-hint">Once a row exists, upload its Question Paper / Blank OMR / Solution and click Configure to set release/deadline dates.</div><div id="sch_list" style="margin-top:10px;"><p class="admin-empty">Loading…</p></div></div>';
     document.getElementById('scheduleModal').style.display = 'flex';
     document.getElementById('sch_save').onclick = function(){
       var lines = document.getElementById('sch_paste').value.split('\n').map(function(l){return l.trim();}).filter(Boolean);
@@ -1954,8 +2043,30 @@
         fld('Centre address','pm_lc_centre_address',(lc&&lc.centre&&lc.centre.address)||'') +
         fld('Centre Google Maps link','pm_lc_centre_maps',(lc&&lc.centre&&lc.centre.mapsLink)||'') +
       '</div>' +
+      (isEdit ?
+        '<div style="border-top:1px dashed rgba(26,26,46,.15);margin:14px 0;padding-top:14px;">' +
+          '<span style="font-size:13px;font-weight:600;">Workbook (shared across every test in this program)</span><br>' +
+          (p.workbook_url ? '<a href="'+e(p.workbook_url)+'" target="_blank" rel="noopener" style="font-size:12px;">Current workbook &rarr;</a> ' : '<span class="admin-form-hint">No workbook uploaded yet.</span> ') +
+          '<button class="btn btn-sm btn-ghost" id="pm_workbook_upload" type="button" style="margin-left:6px;">'+(p.workbook_url?'Replace':'Upload')+'</button>' +
+        '</div>'
+      : '') +
       '<button class="btn" id="pm_save" style="margin-top:8px;">'+(isEdit?'Save Changes':'Create Program')+'</button>';
     document.getElementById('programModal').style.display='flex';
+    if (isEdit) {
+      document.getElementById('pm_workbook_upload').onclick = function(){
+        var input = document.createElement('input');
+        input.type = 'file'; input.accept = 'application/pdf';
+        input.onchange = function(){
+          if (!input.files[0]) return;
+          var fd = new FormData(); fd.append('file', input.files[0]);
+          showToast('Uploading…', 'success');
+          adminFetch('POST', '/api/programs/'+p.id+'/workbook', fd)
+            .then(function(d){ showToast('Uploaded', 'success'); p.workbook_url = d.program.workbook_url; openProgramModal(p); })
+            .catch(function(e){ showToast(e.message, 'error'); });
+        };
+        input.click();
+      };
+    }
     document.getElementById('pm_save').onclick = function(){
       var launchEnabled = checked('pm_launch_enabled');
       var payload = {
