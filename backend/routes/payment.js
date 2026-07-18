@@ -258,11 +258,20 @@ router.post('/validate-referral', optionalLearner, async (req, res) => {
 /* ── POST /api/payment/create-order ─────────────────────── */
 router.post('/create-order', createOrderLimiter, optionalLearner, async (req, res) => {
   try {
-    const { program_slug, name, email, phone, coupon_code, referral_code, turnstile_token } = req.body;
+    const { program_slug, name, email: rawEmail, phone: rawPhone, coupon_code, referral_code, turnstile_token } = req.body;
 
-    if (!program_slug || !name || !email || !phone) {
+    if (!program_slug || !name || !rawEmail || !rawPhone) {
       return res.status(400).json({ error: 'name, email, phone and program_slug are required.' });
     }
+
+    // Normalize exactly like learner accounts are stored (learnersController.js
+    // lowercases email, strips phone to bare last-10-digits) - otherwise a
+    // checkout email/phone typed in a different case/format than the
+    // learner's account never matches the exact-equality lookups in
+    // enrollmentAccess.js/my-enrollments, and the purchase silently never
+    // shows up as "enrolled" for that learner even though it's paid.
+    const email = rawEmail.toLowerCase().trim();
+    const phone = rawPhone.replace(/\D/g, '').slice(-10);
 
     const humanCheck = await verifyTurnstile(turnstile_token, req.ip);
     if (!humanCheck) {
@@ -310,7 +319,7 @@ router.post('/create-order', createOrderLimiter, optionalLearner, async (req, re
         program_name:  program.shortName,
         student_name:  name,
         student_email: email,
-        student_phone: phone.replace(/\D/g, '').slice(-10),
+        student_phone: phone,
       },
     });
 
@@ -555,15 +564,23 @@ router.get('/my-referral-code', protectLearner, async (req, res) => {
     if (!learnerRes.rows.length) return res.status(404).json({ error: 'Learner not found.' });
     const { email, phone } = learnerRes.rows[0];
 
-    // Backfill linkage in case this learner has paid enrollments not yet tied to their account
+    // Backfill linkage in case this learner has paid enrollments not yet tied
+    // to their account. Case/format-insensitive for the same reason as
+    // enrollment-account.js's my-enrollments backfill - checkout email/phone
+    // are stored as typed, not normalized like the learner account.
     await query(
       `UPDATE enrollments SET learner_id = $1
-       WHERE learner_id IS NULL AND status = 'paid' AND (student_email = $2 OR student_phone = $3)`,
+       WHERE learner_id IS NULL AND status = 'paid'
+         AND (LOWER(TRIM(student_email)) = LOWER(TRIM($2))
+              OR RIGHT(REGEXP_REPLACE(student_phone, '\\D', '', 'g'), 10) = $3)`,
       [req.learner.id, email, phone]
     );
 
     const enrollmentRes = await query(
-      `SELECT * FROM enrollments WHERE status = 'paid' AND (learner_id = $1 OR student_email = $2 OR student_phone = $3)
+      `SELECT * FROM enrollments WHERE status = 'paid'
+       AND (learner_id = $1
+            OR LOWER(TRIM(student_email)) = LOWER(TRIM($2))
+            OR RIGHT(REGEXP_REPLACE(student_phone, '\\D', '', 'g'), 10) = $3)
        ORDER BY paid_at DESC LIMIT 1`,
       [req.learner.id, email, phone]
     );
