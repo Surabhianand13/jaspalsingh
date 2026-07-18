@@ -30,6 +30,17 @@ const { query } = require('../config/db');
 const { protectLearner } = require('../middleware/learnerAuth');
 const { handleUploadError } = require('../middleware/upload');
 const { getActiveEnrollment } = require('../utils/enrollmentAccess');
+const { canonicalize } = require('../utils/programSlugAliases');
+
+/* Some enrollments are keyed to a legacy checkout slug (see
+   programSlugAliases.js) while program_schedule/programs are always
+   keyed by the canonical slug - normalize the URL param once here so
+   every route below queries the right rows regardless of which slug
+   variant the frontend happened to pass. */
+router.param('program_slug', (req, res, next, slug) => {
+  req.params.program_slug = canonicalize(slug);
+  next();
+});
 
 const upload = multer({
   storage: multer.memoryStorage(),

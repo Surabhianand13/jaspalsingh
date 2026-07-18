@@ -15,22 +15,26 @@
    ============================================================ */
 
 const { query } = require('../config/db');
+const { slugsFor } = require('./programSlugAliases');
 
 /**
  * Returns the learner's active (paid, non-refunded) enrollment row
- * for a program, or null if they have none.
+ * for a program, or null if they have none. Checks the canonical slug
+ * and any legacy checkout slugs known to map to it (see
+ * programSlugAliases.js) - some enrollments were stored under an older
+ * slug and never backfilled.
  */
 async function getActiveEnrollment(learnerId, learnerEmail, learnerPhone, programSlug) {
   const result = await query(
     `SELECT id, order_id, program_slug, paid_at
      FROM enrollments
-     WHERE program_slug = $4
+     WHERE program_slug = ANY($4::text[])
        AND status = 'paid'
        AND refund_status != 'initiated'
        AND (learner_id = $1 OR student_email = $2 OR student_phone = $3)
      ORDER BY paid_at DESC
      LIMIT 1`,
-    [learnerId, learnerEmail, learnerPhone, programSlug]
+    [learnerId, learnerEmail, learnerPhone, slugsFor(programSlug)]
   );
   return result.rows[0] || null;
 }
