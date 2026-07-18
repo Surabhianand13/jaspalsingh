@@ -15,6 +15,7 @@ const { isObviousTestSubmission } = require('../utils/spamFilter');
 const { verifyTurnstile } = require('../utils/turnstile');
 
 const REFERRAL_DISCOUNT = 100;
+const REFERRAL_MIN_PRICE = 1599; // referral codes only apply to programs priced at or above this
 
 /* Dedicated limiter for order creation - each hit creates a real Razorpay
    order + a pending DB row, so it needs tighter throttling than the
@@ -111,7 +112,6 @@ async function onEnrollmentPaid(enrollment) {
    briefly unreachable. ── */
 const FALLBACK_COUPONS = {
   'FIRST':     { type: 'flat_price',        discount_amount: 1,    label: 'First-time offer' },
-  'JASPALSIR': { type: 'fixed_discount',     discount_amount: 1000, label: 'Get Rs 1,000 off' },
   'JASPAL200': { type: 'fixed_discount',     discount_amount: 1200, exclusive: true, label: 'Special Rs 1,200 off' },
 };
 
@@ -244,6 +244,10 @@ router.post('/validate-referral', optionalLearner, async (req, res) => {
   const program = await getProgramData(program_slug);
   if (!program) return res.status(400).json({ error: 'Invalid program.' });
 
+  if (program.price < REFERRAL_MIN_PRICE) {
+    return res.status(400).json({ valid: false, error: `Referral codes can only be used on programs priced Rs ${REFERRAL_MIN_PRICE} or above.` });
+  }
+
   const lookup = await lookupReferral(referral_code, phone || '', email || '', req.learner?.id);
   if (!lookup) return res.status(400).json({ valid: false, error: 'Invalid referral code.' });
   if (lookup.selfReferral) return res.status(400).json({ valid: false, error: 'You cannot use your own referral code.' });
@@ -285,7 +289,7 @@ router.post('/create-order', createOrderLimiter, optionalLearner, async (req, re
     }
 
     let referredBy = null;
-    if (referral_code && !couponExclusive) {
+    if (referral_code && !couponExclusive && finalPrice >= REFERRAL_MIN_PRICE) {
       const lookup = await lookupReferral(referral_code, phone, email, req.learner?.id);
       if (lookup && !lookup.selfReferral) {
         finalPrice = Math.max(1, finalPrice - REFERRAL_DISCOUNT);
