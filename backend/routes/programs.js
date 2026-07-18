@@ -193,6 +193,29 @@ router.get('/:slug/schedule/admin', protect, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/* ADMIN: add a single test row without touching the rest of the schedule -
+   for quickly adding one test outside the bulk-paste workflow. Bulk-upload
+   treats its rows array as the complete set (deletes anything missing), so
+   it can't safely be reused for a single add. */
+router.post('/:slug/schedule', protect, async (req, res, next) => {
+  try {
+    const { test_number, test_date, syllabus, questions } = req.body;
+    if (!test_number) return res.status(400).json({ error: 'test_number is required.' });
+    const dup = await query(
+      `SELECT id FROM program_schedule WHERE program_slug = $1 AND test_number = $2`,
+      [req.params.slug, parseInt(test_number, 10)]
+    );
+    if (dup.rows.length) return res.status(409).json({ error: 'A test with this number already exists - edit it via bulk paste or delete it first.' });
+    const maxSort = await query(`SELECT COALESCE(MAX(sort_order), -1) AS m FROM program_schedule WHERE program_slug = $1`, [req.params.slug]);
+    const result = await query(
+      `INSERT INTO program_schedule (program_slug, test_number, test_date, syllabus, questions, sort_order)
+       VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+      [req.params.slug, parseInt(test_number, 10), test_date || null, syllabus || null, questions ? parseInt(questions, 10) : null, maxSort.rows[0].m + 1]
+    );
+    res.status(201).json({ schedule: result.rows[0] });
+  } catch (err) { next(err); }
+});
+
 /* ADMIN: bulk upload - typically pasted in all at once from a spreadsheet.
    Upserts by (program_slug, test_number) instead of delete-and-reinsert:
    rows that already have uploaded assets/gating dates (paper URL, OMR
@@ -284,32 +307,39 @@ router.post('/schedule/:id/assets/:kind', protect, scheduleAssetUpload.single('f
   } catch (err) { next(err); }
 });
 
-/* ADMIN: set a schedule row's release/deadline dates, whether it needs a
-   self-serve OMR upload, which omr_tests row grades it (OMR rows only),
-   and the learner-facing Answer Key (offline rows only - OMR rows already
-   carry their answer_key on the linked omr_tests row for detection). */
+/* ADMIN: set a schedule row's release/deadline dates and whether it needs
+   a self-serve answer-sheet upload. No auto-grading - the deadline just
+   opens/closes the upload window and gates when Solution unlocks. */
 router.put('/schedule/:id/gating', protect, async (req, res, next) => {
   try {
-    const { paper_release_at, omr_upload_deadline, requires_omr_upload, omr_test_id, answer_key } = req.body;
-    if (requires_omr_upload && !omr_test_id) {
-      return res.status(400).json({ error: 'omr_test_id is required when requires_omr_upload is true.' });
-    }
+    const { paper_release_at, omr_upload_deadline, requires_omr_upload } = req.body;
     if (requires_omr_upload && !omr_upload_deadline) {
-      return res.status(400).json({ error: 'omr_upload_deadline is required when requires_omr_upload is true - uploads must always be time-boxed.' });
+      return res.status(400).json({ error: 'Upload deadline is required when self-serve upload is on - uploads must always be time-boxed.' });
     }
     const result = await query(
       `UPDATE program_schedule SET
          paper_release_at    = $1,
          omr_upload_deadline = $2,
-         requires_omr_upload = $3,
-         omr_test_id         = $4,
-         answer_key          = $5
-       WHERE id = $6 RETURNING *`,
-      [paper_release_at || null, omr_upload_deadline || null, !!requires_omr_upload, omr_test_id || null,
-       answer_key ? JSON.stringify(answer_key) : null, req.params.id]
+         requires_omr_upload = $3
+       WHERE id = $4 RETURNING *`,
+      [paper_release_at || null, omr_upload_deadline || null, !!requires_omr_upload, req.params.id]
     );
     if (!result.rows.length) return res.status(404).json({ error: 'Schedule row not found.' });
     res.json({ schedule: result.rows[0] });
+  } catch (err) { next(err); }
+});
+
+/* ADMIN: list learner answer-sheet uploads for one schedule row - there's
+   no auto-grading, so this is how admin actually reviews submissions
+   before computing ranks and posting them on WhatsApp. */
+router.get('/schedule/:id/uploads', protect, async (req, res, next) => {
+  try {
+    const result = await query(
+      `SELECT id, learner_name, learner_email, learner_phone, file_url, uploaded_at
+       FROM schedule_uploads WHERE schedule_id = $1 ORDER BY uploaded_at DESC`,
+      [req.params.id]
+    );
+    res.json({ uploads: result.rows });
   } catch (err) { next(err); }
 });
 

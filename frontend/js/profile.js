@@ -313,8 +313,7 @@
     bodyEl.innerHTML = '<button id="scheduleBackBtn" style="background:none;border:none;color:#0F766E;font-weight:700;cursor:pointer;margin-bottom:14px;">&larr; Back to schedule</button>' +
       '<div style="font-weight:700;color:#1A1A2E;margin-bottom:14px;">Test ' + test.test_number + (test.test_date ? ' &middot; ' + esc(test.test_date) : '') + '</div>' +
       '<div id="scheduleCardsGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"></div>' +
-      '<div id="scheduleOmrUploadArea" style="margin-top:16px;"></div>' +
-      '<div id="scheduleResponseArea" style="margin-top:16px;"></div>';
+      '<div id="scheduleOmrUploadArea" style="margin-top:16px;"></div>';
 
     document.getElementById('scheduleBackBtn').addEventListener('click', renderScheduleList);
 
@@ -323,67 +322,42 @@
     if (test.requires_omr_upload) {
       grid.appendChild(scheduleCard('Blank OMR', 'fa-clipboard-list', !!test.blank_omr_url, function () { window.open(test.blank_omr_url, '_blank'); }));
     }
-    grid.appendChild(scheduleCard('Answer Key', 'fa-key', !!test.answer_key, function () { showAnswerKey(test.answer_key); }));
     grid.appendChild(scheduleCard('Solution', 'fa-lightbulb', !!test.solution_url, function () { window.open(test.solution_url, '_blank'); }));
 
     if (test.requires_omr_upload) {
       renderOmrUploadArea(test);
     }
-    renderResponseArea(test);
-  }
-
-  function showAnswerKey(answerKey) {
-    var win = window.open('', '_blank');
-    win.document.write('<pre style="font-family:monospace;padding:20px;">' + esc(JSON.stringify(answerKey, null, 2)) + '</pre>');
   }
 
   function renderOmrUploadArea(test) {
     var area = document.getElementById('scheduleOmrUploadArea');
-    if (test.response_sheet) {
-      area.innerHTML = '<p class="profile-empty">You\'ve already submitted your OMR for this test.</p>';
-      return;
-    }
+    var alreadySubmittedNote = test.my_upload
+      ? '<p class="profile-empty">You submitted on ' + esc(new Date(test.my_upload.uploaded_at).toLocaleString('en-IN')) + '. ' + (test.upload_open ? 'You can re-upload to replace it until the deadline.' : '') + '</p>'
+      : '';
     if (!test.upload_open) {
-      area.innerHTML = '<p class="profile-empty"><i class="fas fa-lock"></i> OMR upload window is closed for this test.</p>';
+      area.innerHTML = alreadySubmittedNote || '<p class="profile-empty"><i class="fas fa-lock"></i> Upload window is closed for this test.</p>';
       return;
     }
-    area.innerHTML =
-      '<label style="font-weight:700;font-size:13px;color:#1A1A2E;display:block;margin-bottom:8px;">Upload your filled OMR</label>' +
-      '<input type="file" id="scheduleOmrFile" accept="image/*" style="display:block;margin-bottom:10px;">' +
-      '<button id="scheduleOmrSubmit" style="background:#C81240;color:#fff;border:none;border-radius:20px;padding:9px 20px;font-size:12.5px;font-weight:700;cursor:pointer;">Submit OMR</button>' +
+    area.innerHTML = alreadySubmittedNote +
+      '<label style="font-weight:700;font-size:13px;color:#1A1A2E;display:block;margin-bottom:8px;">' + (test.my_upload ? 'Re-upload your answer sheet' : 'Upload your answer sheet (photo or PDF)') + '</label>' +
+      '<input type="file" id="scheduleOmrFile" accept="image/*,application/pdf" style="display:block;margin-bottom:10px;">' +
+      '<button id="scheduleOmrSubmit" style="background:#C81240;color:#fff;border:none;border-radius:20px;padding:9px 20px;font-size:12.5px;font-weight:700;cursor:pointer;">Submit</button>' +
       '<div id="scheduleOmrMsg" style="margin-top:8px;font-size:12.5px;"></div>';
 
     document.getElementById('scheduleOmrSubmit').addEventListener('click', function () {
       var fileInput = document.getElementById('scheduleOmrFile');
       var msgEl = document.getElementById('scheduleOmrMsg');
-      if (!fileInput.files[0]) { msgEl.textContent = 'Choose a photo of your filled OMR first.'; msgEl.style.color = '#C81240'; return; }
+      if (!fileInput.files[0]) { msgEl.textContent = 'Choose a photo or PDF of your filled answer sheet first.'; msgEl.style.color = '#C81240'; return; }
       var fd = new FormData();
       fd.append('photo', fileInput.files[0]);
       msgEl.textContent = 'Uploading…'; msgEl.style.color = '#6b6b8a';
       authFetch('/api/schedule/' + encodeURIComponent(scheduleState.slug) + '/tests/' + test.id + '/submit-omr', { method: 'POST', body: fd })
         .then(function () {
-          msgEl.textContent = 'Submitted! We\'ll process your OMR shortly.'; msgEl.style.color = '#0F766E';
+          msgEl.textContent = 'Submitted!'; msgEl.style.color = '#0F766E';
           document.getElementById('scheduleOmrSubmit').disabled = true;
         })
         .catch(function (err) { msgEl.textContent = err.message || 'Upload failed.'; msgEl.style.color = '#C81240'; });
     });
-  }
-
-  function renderResponseArea(test) {
-    var area = document.getElementById('scheduleResponseArea');
-    if (!test.response_sheet) { area.innerHTML = ''; return; }
-    var rs = test.response_sheet;
-    var statusLabel = rs.status === 'finalized' ? 'Finalized' : (rs.status === 'failed' ? 'Detection failed - contact support' : 'Processing');
-    area.innerHTML = '<div style="border-top:1px dashed #eee;padding-top:14px;">' +
-      '<div style="font-weight:700;color:#1A1A2E;margin-bottom:6px;">Response Sheet</div>' +
-      '<div style="font-size:12.5px;color:#6b6b8a;">Status: ' + esc(statusLabel) + '</div>' +
-      (rs.status === 'finalized' ?
-        '<div style="font-size:12.5px;color:#6b6b8a;margin-top:4px;">Score: ' + (rs.score != null ? rs.score : '-') +
-        ' &middot; Correct: ' + (rs.correct_count != null ? rs.correct_count : '-') +
-        ' &middot; Wrong: ' + (rs.wrong_count != null ? rs.wrong_count : '-') +
-        ' &middot; Blank: ' + (rs.blank_count != null ? rs.blank_count : '-') + '</div>'
-        : '') +
-    '</div>';
   }
 
   /* ── Save profile ────────────────────────────────────────── */
