@@ -1950,7 +1950,7 @@
         '<label style="font-size:11.5px;">Upload deadline / solution unlock (IST)<br><input type="datetime-local" class="admin-input" id="gt_deadline_'+row.id+'" value="'+isoToIstInput(row.omr_upload_deadline)+'"></label>' +
         '<label style="font-size:11.5px;display:flex;align-items:center;gap:6px;"><input type="checkbox" id="gt_requires_'+row.id+'" '+(row.requires_omr_upload?'checked':'')+'> Learners upload their answer sheet (photo/PDF) for this test</label>' +
         pillBtn('id="gt_save_'+row.id+'"', 'Save', 'solid') +
-        (row.requires_omr_upload ? pillBtn('id="gt_uploads_'+row.id+'"', 'View uploads', 'outline') : '') +
+        (row.requires_omr_upload ? pillBtn('id="gt_uploads_'+row.id+'"', 'View uploads', 'outline') + pillBtn('id="gt_downloadall_'+row.id+'"', 'Download All', 'outline') : '') +
       '</div>' +
       '<div id="gt_uploads_list_'+row.id+'"></div>';
 
@@ -1980,6 +1980,26 @@
                 '<td><a href="'+e(u.file_url)+'" target="_blank" rel="noopener">Download</a></td></tr>';
             }).join('') + '</tbody></table></div>';
         }).catch(function(e){ listEl.innerHTML = '<p class="admin-empty">'+e.message+'</p>'; });
+      };
+    }
+    var downloadAllBtn = document.getElementById('gt_downloadall_'+row.id);
+    if (downloadAllBtn) {
+      downloadAllBtn.onclick = function(){
+        var originalLabel = downloadAllBtn.textContent;
+        downloadAllBtn.textContent = 'Zipping…';
+        fetch(API_BASE + '/api/programs/schedule/'+row.id+'/uploads/download-all', {
+          headers: { 'Authorization': 'Bearer ' + getToken() }
+        }).then(function(res){
+          if (!res.ok) return res.json().then(function(d){ throw new Error(d.error || 'Download failed'); });
+          return res.blob();
+        }).then(function(blob){
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement('a');
+          a.href = url; a.download = 'test-'+row.id+'-uploads.zip';
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }).catch(function(e){ showToast(e.message, 'error'); })
+          .finally(function(){ downloadAllBtn.textContent = originalLabel; });
       };
     }
   }

@@ -11,7 +11,8 @@
 const express = require('express');
 const router  = express.Router();
 const multer  = require('multer');
-const { PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const archiver = require('archiver');
+const { PutObjectCommand, DeleteObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
 const { r2, BUCKET } = require('../config/r2');
 const { query } = require('../config/db');
 const { protect } = require('../middleware/auth');
@@ -346,6 +347,36 @@ router.get('/schedule/:id/uploads', protect, async (req, res, next) => {
       [req.params.id]
     );
     res.json({ uploads: result.rows });
+  } catch (err) { next(err); }
+});
+
+/* ADMIN: zip every learner's answer-sheet upload for one test into a
+   single download, so admin doesn't have to open each submission one by
+   one before computing ranks. Streams straight from R2, no temp files. */
+router.get('/schedule/:id/uploads/download-all', protect, async (req, res, next) => {
+  try {
+    const result = await query(
+      `SELECT learner_name, file_key FROM schedule_uploads WHERE schedule_id = $1 ORDER BY uploaded_at ASC`,
+      [req.params.id]
+    );
+    if (!result.rows.length) return res.status(404).json({ error: 'No uploads for this test yet.' });
+
+    res.attachment(`schedule-${req.params.id}-uploads.zip`);
+    const archive = archiver('zip', { zlib: { level: 9 } });
+    archive.on('error', (err) => next(err));
+    archive.pipe(res);
+
+    const usedNames = new Set();
+    for (const row of result.rows) {
+      const obj = await r2.send(new GetObjectCommand({ Bucket: BUCKET, Key: row.file_key }));
+      const ext = row.file_key.includes('.') ? row.file_key.slice(row.file_key.lastIndexOf('.')) : '';
+      const base = (row.learner_name || 'learner').replace(/[^a-zA-Z0-9 _-]/g, '').trim() || 'learner';
+      let name = base + ext, counter = 1;
+      while (usedNames.has(name)) { counter += 1; name = base + '-' + counter + ext; }
+      usedNames.add(name);
+      archive.append(obj.Body, { name });
+    }
+    await archive.finalize();
   } catch (err) { next(err); }
 });
 
