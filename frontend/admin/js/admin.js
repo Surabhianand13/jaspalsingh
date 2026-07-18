@@ -1884,6 +1884,19 @@
     { kind: 'solution',   label: 'Solution',       col: 'solution_url' },
   ];
 
+  /* Rounded pill buttons matching the site's brand style (e.g. the
+     "Submit Referral Claim" button on Profile), used throughout the
+     schedule modal instead of the plain bordered .btn/.btn-ghost boxes. */
+  var PILL_VARIANTS = {
+    solid:   'background:#0F766E;color:#fff;',
+    dark:    'background:#1A1A2E;color:#fff;',
+    outline: 'background:#f4f4f7;color:#444;',
+    danger:  'background:transparent;color:#C81240;border:1px solid #C81240;',
+  };
+  function pillBtn(attrs, label, variant){
+    return '<button '+attrs+' style="display:inline-block;border-radius:20px;padding:7px 16px;font-size:11.5px;font-weight:700;border:none;cursor:pointer;white-space:nowrap;'+(PILL_VARIANTS[variant]||PILL_VARIANTS.outline)+'">'+label+'</button>';
+  }
+
   function uploadScheduleAsset(rowId, kind, slug){
     var input = document.createElement('input');
     input.type = 'file'; input.accept = 'application/pdf';
@@ -1909,8 +1922,8 @@
         '<label style="font-size:11.5px;">Paper release<br><input type="datetime-local" class="admin-input" id="gt_release_'+row.id+'" value="'+(row.paper_release_at?row.paper_release_at.slice(0,16):'')+'"></label>' +
         '<label style="font-size:11.5px;">Upload deadline / solution unlock<br><input type="datetime-local" class="admin-input" id="gt_deadline_'+row.id+'" value="'+(row.omr_upload_deadline?row.omr_upload_deadline.slice(0,16):'')+'"></label>' +
         '<label style="font-size:11.5px;display:flex;align-items:center;gap:6px;"><input type="checkbox" id="gt_requires_'+row.id+'" '+(row.requires_omr_upload?'checked':'')+'> Learners upload their answer sheet (photo/PDF) for this test</label>' +
-        '<button class="btn btn-sm" id="gt_save_'+row.id+'">Save</button>' +
-        (row.requires_omr_upload ? '<button class="btn btn-sm btn-ghost" id="gt_uploads_'+row.id+'">View uploads</button>' : '') +
+        pillBtn('id="gt_save_'+row.id+'"', 'Save', 'solid') +
+        (row.requires_omr_upload ? pillBtn('id="gt_uploads_'+row.id+'"', 'View uploads', 'outline') : '') +
       '</div>' +
       '<div id="gt_uploads_list_'+row.id+'"></div>';
 
@@ -1951,15 +1964,16 @@
       if (!rows.length) { listEl.innerHTML = '<p class="admin-empty">No schedule yet - paste rows above, or use "Add one test".</p>'; return; }
       listEl.innerHTML = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Test</th><th>Date</th><th>Syllabus</th><th>Qs</th><th>Assets</th><th></th></tr></thead><tbody>' +
         rows.map(function(r){
-          var assetBtns = '<div style="display:flex;flex-direction:column;gap:4px;">' + ASSET_KINDS.map(function(a){
+          var assetBtns = '<div style="display:flex;flex-wrap:wrap;gap:6px;max-width:220px;">' + ASSET_KINDS.map(function(a){
             var has = !!r[a.col];
-            return '<button class="btn btn-sm" data-asset-upload="'+r.id+'" data-asset-kind="'+a.kind+'" ' +
-              'style="justify-content:flex-start;'+(has?'background:#0F766E;border-color:#0F766E;color:#fff;':'background:transparent;border:1px solid #ccc;color:#555;')+'">' +
-              (has?'✓ ':'+ ')+a.label+'</button>';
+            return pillBtn('data-asset-upload="'+r.id+'" data-asset-kind="'+a.kind+'"', (has?'&#10003; ':'+ ')+a.label, has?'solid':'outline');
           }).join('') + '</div>';
           return '<tr><td>'+r.test_number+'</td><td>'+e(r.test_date||'-')+'</td><td>'+e(r.syllabus||'-')+'</td><td>'+(r.questions||'-')+'</td>' +
             '<td>'+assetBtns+'</td>' +
-            '<td style="white-space:nowrap;"><button class="btn btn-sm" data-sch-configure="'+r.id+'">Configure</button><br><button class="btn btn-sm btn-ghost" style="margin-top:4px;" data-sch-del="'+r.id+'">Delete</button></td></tr>' +
+            '<td style="white-space:nowrap;"><div style="display:flex;gap:6px;">'+
+              pillBtn('data-sch-configure="'+r.id+'"', 'Configure', 'dark') +
+              pillBtn('data-sch-del="'+r.id+'"', 'Delete', 'danger') +
+            '</div></td></tr>' +
             '<tr><td colspan="6"><div id="sch_gating_'+r.id+'"></div></td></tr>';
         }).join('') + '</tbody></table></div>';
 
@@ -1989,11 +2003,11 @@
         '<label style="font-size:11.5px;">Date<br><input class="admin-input" id="sch_add_date" placeholder="26 July 2026" style="width:140px;"></label>' +
         '<label style="font-size:11.5px;">Syllabus<br><input class="admin-input" id="sch_add_syllabus" style="width:220px;"></label>' +
         '<label style="font-size:11.5px;">Qs<br><input type="number" class="admin-input" id="sch_add_questions" style="width:70px;"></label>' +
-        '<button class="btn btn-sm" id="sch_add_btn">Add one test</button>' +
+        pillBtn('id="sch_add_btn"', 'Add one test', 'solid') +
       '</div>' +
       '<div class="admin-form-hint" style="margin-bottom:8px;">Or paste several at once, one per line: <code>Test Number | Date | Syllabus | Questions</code> (Questions is optional). Re-pasting the same test number updates that row (assets/settings are kept); a test number no longer in the paste is removed.</div>' +
       '<textarea class="admin-input" id="sch_paste" rows="6" style="width:100%;font-family:monospace;font-size:12.5px;" placeholder="1 | 26 July 2026 | Rajasthan GK + Building Technology | 120\n2 | 2 August 2026 | Surveying + Fluid Mechanics | 120"></textarea>' +
-      '<button class="btn" id="sch_save" style="margin-top:10px;">Save Pasted Schedule</button>' +
+      '<div style="margin-top:10px;">'+pillBtn('id="sch_save"', 'Save Pasted Schedule', 'dark')+'</div>' +
       '<div style="margin-top:20px;border-top:1px dashed rgba(26,26,46,.15);padding-top:14px;"><strong style="font-size:13px;">Current schedule</strong><div class="admin-form-hint">Once a row exists, upload its Question Paper / Blank OMR / Solution and click Configure to set release/deadline dates.</div><div id="sch_list" style="margin-top:10px;"><p class="admin-empty">Loading…</p></div></div>';
     document.getElementById('scheduleModal').style.display = 'flex';
 
