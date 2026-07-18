@@ -739,19 +739,27 @@ async function migrate() {
   await query(`CREATE INDEX IF NOT EXISTS idx_program_schedule_slug ON program_schedule(program_slug)`);
 
   /* ── Self-serve test schedule assets (2026-07-18): learner-facing
-     paper/solution/OMR download+upload, replacing manual email
+     paper/solution/answer-sheet download+upload, replacing manual email
      distribution. Reuses this existing program_schedule table (already
      the public pre-purchase display of test dates) rather than a new
      parallel table, so admin only enters a test's date/number once.
-     omr_test_id links to the omr_tests row (template/answer-key/
-     marking-scheme) only when requires_omr_upload is true - offline
-     rows never get one. No unique constraint on (program_slug,
-     test_number): existing production rows aren't guaranteed clean,
-     and a failed CREATE UNIQUE INDEX at boot would crash migrate() for
-     everyone. The bulk-schedule endpoint instead upserts by matching
-     in application code (SELECT existing id, then UPDATE or INSERT),
-     so re-pasting a schedule doesn't wipe uploaded assets off rows
-     that already have a matching test_number. ── */
+     No unique constraint on (program_slug, test_number): existing
+     production rows aren't guaranteed clean, and a failed CREATE UNIQUE
+     INDEX at boot would crash migrate() for everyone. The bulk-schedule
+     endpoint instead upserts by matching in application code (SELECT
+     existing id, then UPDATE or INSERT), so re-pasting a schedule
+     doesn't wipe uploaded assets off rows that already have a matching
+     test_number.
+
+     omr_test_id and answer_key were an earlier design that ran the
+     learner's uploaded sheet through the existing bubble-detection
+     pipeline (omr_tests/omr_submissions) for auto-scoring. Per explicit
+     product direction (2026-07-18) there is no answer mapping at all -
+     learners just upload a photo/PDF of their filled sheet by the
+     deadline, and ranks are computed manually and posted on WhatsApp.
+     These two columns are kept (harmless, unused) rather than dropped
+     to avoid unnecessary schema churn; the actual upload now goes to
+     the schedule_uploads table below instead of omr_submissions. ── */
   await query(`ALTER TABLE program_schedule ADD COLUMN IF NOT EXISTS question_paper_url VARCHAR(1000)`);
   await query(`ALTER TABLE program_schedule ADD COLUMN IF NOT EXISTS question_paper_key VARCHAR(500)`);
   await query(`ALTER TABLE program_schedule ADD COLUMN IF NOT EXISTS blank_omr_url VARCHAR(1000)`);
@@ -762,12 +770,27 @@ async function migrate() {
   await query(`ALTER TABLE program_schedule ADD COLUMN IF NOT EXISTS omr_upload_deadline TIMESTAMPTZ`);
   await query(`ALTER TABLE program_schedule ADD COLUMN IF NOT EXISTS requires_omr_upload BOOLEAN NOT NULL DEFAULT FALSE`);
   await query(`ALTER TABLE program_schedule ADD COLUMN IF NOT EXISTS omr_test_id INTEGER REFERENCES omr_tests(id) ON DELETE SET NULL`);
-  /* Learner-facing Answer Key display. OMR rows already have a detection
-     answer_key on the linked omr_tests row - this column exists so offline
-     rows (no omr_tests row at all, since there's no bubble sheet to detect)
-     can still show an Answer Key card. Learner-facing queries read
-     COALESCE(program_schedule.answer_key, omr_tests.answer_key). */
   await query(`ALTER TABLE program_schedule ADD COLUMN IF NOT EXISTS answer_key JSONB`);
+
+  /* Simple, ungraded answer-sheet upload - one per learner per test.
+     Re-uploading before the deadline replaces the previous file (the
+     route handles deleting the old R2 object); no scoring, no detection,
+     admin reviews these manually. */
+  await query(`
+    CREATE TABLE IF NOT EXISTS schedule_uploads (
+      id             SERIAL PRIMARY KEY,
+      schedule_id    INTEGER NOT NULL REFERENCES program_schedule(id) ON DELETE CASCADE,
+      enrollment_id  INTEGER REFERENCES enrollments(id) ON DELETE SET NULL,
+      learner_name   VARCHAR(255),
+      learner_email  VARCHAR(255),
+      learner_phone  VARCHAR(20),
+      file_url       VARCHAR(1000) NOT NULL,
+      file_key       VARCHAR(500) NOT NULL,
+      uploaded_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+  await query(`CREATE INDEX IF NOT EXISTS idx_schedule_uploads_schedule ON schedule_uploads(schedule_id)`);
+  await query(`CREATE UNIQUE INDEX IF NOT EXISTS schedule_uploads_schedule_enrollment_uidx ON schedule_uploads(schedule_id, enrollment_id) WHERE enrollment_id IS NOT NULL`);
 
   /* ── Program page content: "Who Is This For" bullets + FAQ ──
      Admin-editable free text for the generic /programs/view/ detail page,
