@@ -1812,7 +1812,8 @@
     });
     document.querySelectorAll('[data-prog-schedule]').forEach(function(b){
       b.addEventListener('click', function(){
-        openScheduleModal(b.getAttribute('data-prog-schedule'), b.getAttribute('data-prog-title'));
+        var p = ps.filter(function(x){ return x.slug === b.getAttribute('data-prog-schedule'); })[0] || {};
+        openScheduleModal(b.getAttribute('data-prog-schedule'), b.getAttribute('data-prog-title'), p.omr_categories || []);
       });
     });
     document.querySelectorAll('[data-prog-content]').forEach(function(b){
@@ -1884,6 +1885,18 @@
     { kind: 'solution',   label: 'Solution',       col: 'solution_url' },
   ];
 
+  /* Combo programs (RSSB Degree/Diploma, ESE Civil/General Studies) bundle
+     two tracks under one program_slug - see server.js's category comment
+     on program_schedule. Human-readable labels for known slugs, falling
+     back to a title-cased version of the raw value for anything else. */
+  var CATEGORY_LABELS = {
+    'degree': 'Degree', 'diploma': 'Diploma',
+    'civil': 'Civil (Paper 2)', 'general-studies': 'General Studies (Paper 1)',
+  };
+  function categoryLabel(cat){
+    return CATEGORY_LABELS[cat] || cat.replace(/-/g, ' ').replace(/\b\w/g, function(c){ return c.toUpperCase(); });
+  }
+
   /* Rounded pill buttons matching the site's brand style (e.g. the
      "Submit Referral Claim" button on Profile), used throughout the
      schedule modal instead of the plain bordered .btn/.btn-ghost boxes. */
@@ -1897,7 +1910,7 @@
     return '<button '+attrs+' style="display:inline-block;border-radius:20px;padding:7px 16px;font-size:11.5px;font-weight:700;border:none;cursor:pointer;white-space:nowrap;'+(PILL_VARIANTS[variant]||PILL_VARIANTS.outline)+'">'+label+'</button>';
   }
 
-  function uploadScheduleAsset(rowId, kind, slug){
+  function uploadScheduleAsset(rowId, kind, slug, category){
     var input = document.createElement('input');
     input.type = 'file'; input.accept = 'application/pdf';
     input.onchange = function(){
@@ -1905,7 +1918,7 @@
       var fd = new FormData(); fd.append('file', input.files[0]);
       showToast('Uploading…', 'success');
       adminFetch('POST', '/api/programs/schedule/'+rowId+'/assets/'+kind, fd)
-        .then(function(){ showToast('Uploaded', 'success'); loadScheduleRows(slug); })
+        .then(function(){ showToast('Uploaded', 'success'); loadScheduleRows(slug, category); })
         .catch(function(e){ showToast(e.message, 'error'); });
     };
     input.click();
@@ -1914,7 +1927,7 @@
   /* No auto-grading: the deadline just opens/closes the upload window and
      gates when Solution unlocks. Admin reviews uploads manually via
      "View uploads" and posts ranks separately (e.g. on WhatsApp). */
-  function openGatingPanel(row, slug){
+  function openGatingPanel(row, slug, category){
     var panel = document.getElementById('sch_gating_'+row.id);
     if (!panel) return;
     panel.innerHTML =
@@ -1935,7 +1948,7 @@
         paper_release_at: document.getElementById('gt_release_'+row.id).value || null,
         omr_upload_deadline: deadline,
         requires_omr_upload: requiresUpload,
-      }).then(function(){ showToast('Saved', 'success'); loadScheduleRows(slug); })
+      }).then(function(){ showToast('Saved', 'success'); loadScheduleRows(slug, category); })
         .catch(function(e){ showToast(e.message, 'error'); });
     };
     var uploadsBtn = document.getElementById('gt_uploads_'+row.id);
@@ -1957,10 +1970,10 @@
     }
   }
 
-  function loadScheduleRows(slug){
+  function loadScheduleRows(slug, category){
     var listEl = document.getElementById('sch_list');
     adminFetch('GET', '/api/programs/'+encodeURIComponent(slug)+'/schedule/admin').then(function(d){
-      var rows = d.schedule || [];
+      var rows = (d.schedule || []).filter(function(r){ return (r.category||null) === (category||null); });
       if (!rows.length) { listEl.innerHTML = '<p class="admin-empty">No schedule yet - paste rows above, or use "Add one test".</p>'; return; }
       listEl.innerHTML = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Test</th><th>Date</th><th>Syllabus</th><th>Qs</th><th>Assets</th><th></th></tr></thead><tbody>' +
         rows.map(function(r){
@@ -1978,26 +1991,32 @@
         }).join('') + '</tbody></table></div>';
 
       listEl.querySelectorAll('[data-asset-upload]').forEach(function(b){
-        b.addEventListener('click', function(){ uploadScheduleAsset(b.getAttribute('data-asset-upload'), b.getAttribute('data-asset-kind'), slug); });
+        b.addEventListener('click', function(){ uploadScheduleAsset(b.getAttribute('data-asset-upload'), b.getAttribute('data-asset-kind'), slug, category); });
       });
       listEl.querySelectorAll('[data-sch-configure]').forEach(function(b){
         b.addEventListener('click', function(){
           var rowId = parseInt(b.getAttribute('data-sch-configure'), 10);
           var row = rows.filter(function(r){ return r.id === rowId; })[0];
-          openGatingPanel(row, slug);
+          openGatingPanel(row, slug, category);
         });
       });
       listEl.querySelectorAll('[data-sch-del]').forEach(function(b){
         b.addEventListener('click', function(){
           adminFetch('DELETE', '/api/programs/'+encodeURIComponent(slug)+'/schedule/'+b.getAttribute('data-sch-del'))
-            .then(function(){ showToast('Deleted','success'); loadScheduleRows(slug); }).catch(function(e){ showToast(e.message,'error'); });
+            .then(function(){ showToast('Deleted','success'); loadScheduleRows(slug, category); }).catch(function(e){ showToast(e.message,'error'); });
         });
       });
     }).catch(function(err){ listEl.innerHTML = '<p class="admin-empty">'+e(err.message)+'</p>'; });
   }
-  function openScheduleModal(slug, title){
-    document.getElementById('scheduleModalTitle').textContent = 'Schedule - ' + title;
+  function renderScheduleForms(slug, category){
     document.getElementById('scheduleModalBody').innerHTML =
+      (categoriesForModal.length ?
+        '<div style="display:flex;gap:6px;margin-bottom:14px;">' +
+          categoriesForModal.map(function(c){
+            return pillBtn('data-sch-cat="'+e(c)+'"', categoryLabel(c), c===category?'dark':'outline');
+          }).join('') +
+        '</div>'
+      : '') +
       '<div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px;padding:10px;background:rgba(15,118,110,.06);border-radius:8px;">' +
         '<label style="font-size:11.5px;">Test no.<br><input type="number" class="admin-input" id="sch_add_num" style="width:80px;"></label>' +
         '<label style="font-size:11.5px;">Date<br><input class="admin-input" id="sch_add_date" placeholder="26 July 2026" style="width:140px;"></label>' +
@@ -2005,11 +2024,14 @@
         '<label style="font-size:11.5px;">Qs<br><input type="number" class="admin-input" id="sch_add_questions" style="width:70px;"></label>' +
         pillBtn('id="sch_add_btn"', 'Add one test', 'solid') +
       '</div>' +
-      '<div class="admin-form-hint" style="margin-bottom:8px;">Or paste several at once, one per line: <code>Test Number | Date | Syllabus | Questions</code> (Questions is optional). Re-pasting the same test number updates that row (assets/settings are kept); a test number no longer in the paste is removed.</div>' +
+      '<div class="admin-form-hint" style="margin-bottom:8px;">Or paste several at once, one per line: <code>Test Number | Date | Syllabus | Questions</code> (Questions is optional). Re-pasting the same test number updates that row (assets/settings are kept); a test number no longer in the paste is removed.'+(category?' Applies to the <strong>'+categoryLabel(category)+'</strong> track selected above.':'')+'</div>' +
       '<textarea class="admin-input" id="sch_paste" rows="6" style="width:100%;font-family:monospace;font-size:12.5px;" placeholder="1 | 26 July 2026 | Rajasthan GK + Building Technology | 120\n2 | 2 August 2026 | Surveying + Fluid Mechanics | 120"></textarea>' +
       '<div style="margin-top:10px;">'+pillBtn('id="sch_save"', 'Save Pasted Schedule', 'dark')+'</div>' +
-      '<div style="margin-top:20px;border-top:1px dashed rgba(26,26,46,.15);padding-top:14px;"><strong style="font-size:13px;">Current schedule</strong><div class="admin-form-hint">Once a row exists, upload its Question Paper / Blank OMR / Solution and click Configure to set release/deadline dates.</div><div id="sch_list" style="margin-top:10px;"><p class="admin-empty">Loading…</p></div></div>';
-    document.getElementById('scheduleModal').style.display = 'flex';
+      '<div style="margin-top:20px;border-top:1px dashed rgba(26,26,46,.15);padding-top:14px;"><strong style="font-size:13px;">Current schedule'+(category?' - '+categoryLabel(category):'')+'</strong><div class="admin-form-hint">Once a row exists, upload its Question Paper / Blank OMR / Solution and click Configure to set release/deadline dates.</div><div id="sch_list" style="margin-top:10px;"><p class="admin-empty">Loading…</p></div></div>';
+
+    document.querySelectorAll('[data-sch-cat]').forEach(function(b){
+      b.addEventListener('click', function(){ renderScheduleForms(slug, b.getAttribute('data-sch-cat')); });
+    });
 
     document.getElementById('sch_add_btn').onclick = function(){
       var num = document.getElementById('sch_add_num').value;
@@ -2019,10 +2041,11 @@
         test_date: document.getElementById('sch_add_date').value,
         syllabus: document.getElementById('sch_add_syllabus').value,
         questions: document.getElementById('sch_add_questions').value,
+        category: category || null,
       }).then(function(){
         showToast('Added', 'success');
         ['sch_add_num','sch_add_date','sch_add_syllabus','sch_add_questions'].forEach(function(id){ document.getElementById(id).value = ''; });
-        loadScheduleRows(slug);
+        loadScheduleRows(slug, category);
       }).catch(function(e){ showToast(e.message, 'error'); });
     };
 
@@ -2035,11 +2058,19 @@
         if (!parts[0] || isNaN(parseInt(parts[0],10))) { showToast('Line '+(i+1)+': first column must be a test number','error'); return; }
         rows.push({ test_number: parseInt(parts[0],10), test_date: parts[1]||'', syllabus: parts[2]||'', questions: parts[3]||'' });
       }
-      adminFetch('POST', '/api/programs/'+encodeURIComponent(slug)+'/schedule/bulk', { rows: rows })
-        .then(function(d){ showToast(d.message||'Saved','success'); document.getElementById('sch_paste').value=''; loadScheduleRows(slug); })
+      adminFetch('POST', '/api/programs/'+encodeURIComponent(slug)+'/schedule/bulk', { rows: rows, category: category || null })
+        .then(function(d){ showToast(d.message||'Saved','success'); document.getElementById('sch_paste').value=''; loadScheduleRows(slug, category); })
         .catch(function(e){ showToast(e.message,'error'); });
     };
-    loadScheduleRows(slug);
+    loadScheduleRows(slug, category);
+  }
+
+  var categoriesForModal = [];
+  function openScheduleModal(slug, title, categories){
+    categoriesForModal = categories || [];
+    document.getElementById('scheduleModalTitle').textContent = 'Schedule - ' + title;
+    document.getElementById('scheduleModal').style.display = 'flex';
+    renderScheduleForms(slug, categoriesForModal[0] || null);
   }
 
   function openProgramModal(p){

@@ -80,6 +80,22 @@ router.get('/:program_slug', protectLearner, async (req, res, next) => {
       return res.status(403).json({ error: 'No active enrollment for this program. If you were refunded, this program is no longer accessible.' });
     }
 
+    // Combo programs (RSSB Degree/Diploma, ESE Civil/General Studies) bundle
+    // two tracks under one program_slug - each numbered 1..N independently.
+    // If the program has categories and none was requested, return the
+    // category list only (frontend shows a track picker) rather than a
+    // schedule that would otherwise mix both tracks' "Test 1" together.
+    const progRes = await query(`SELECT omr_categories FROM programs WHERE slug = $1`, [req.params.program_slug]);
+    const categories = (progRes.rows[0] && progRes.rows[0].omr_categories) || [];
+    const selectedCategory = req.query.category || null;
+
+    if (categories.length && !selectedCategory) {
+      return res.json({ categories, tests: [] });
+    }
+    if (categories.length && !categories.includes(selectedCategory)) {
+      return res.status(400).json({ error: 'Unknown track.' });
+    }
+
     const result = await query(
       `SELECT ps.id, ps.test_number, ps.test_date, ps.syllabus, ps.questions,
               ps.question_paper_url, ps.blank_omr_url, ps.solution_url,
@@ -87,9 +103,9 @@ router.get('/:program_slug', protectLearner, async (req, res, next) => {
               su.id AS upload_id, su.file_url AS my_upload_url, su.uploaded_at AS my_upload_at
        FROM program_schedule ps
        LEFT JOIN schedule_uploads su ON su.schedule_id = ps.id AND su.enrollment_id = $2
-       WHERE ps.program_slug = $1
+       WHERE ps.program_slug = $1 AND ps.category IS NOT DISTINCT FROM $3
        ORDER BY ps.sort_order ASC, ps.test_number ASC`,
-      [req.params.program_slug, enrollment.id]
+      [req.params.program_slug, enrollment.id, selectedCategory]
     );
 
     const tests = result.rows.map(row => {
@@ -109,7 +125,7 @@ router.get('/:program_slug', protectLearner, async (req, res, next) => {
       };
     });
 
-    res.json({ tests });
+    res.json({ categories, tests });
   } catch (err) { next(err); }
 });
 

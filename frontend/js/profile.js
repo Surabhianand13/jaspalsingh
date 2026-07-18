@@ -236,7 +236,18 @@
      active (paid, non-refunded) enrollment - see backend
      utils/enrollmentAccess.js. A refunded learner gets a 403 here, same
      as if they'd never purchased. */
-  var scheduleState = { slug: null, name: null, tests: [] };
+  var scheduleState = { slug: null, name: null, tests: [], categories: [], category: null };
+
+  /* Combo programs (RSSB Degree/Diploma, ESE Civil/General Studies) bundle
+     two tracks under one program_slug - matches backend/routes/learner-
+     schedule.js and the same labels in frontend/admin/js/admin.js. */
+  var CATEGORY_LABELS = {
+    'degree': 'Degree', 'diploma': 'Diploma',
+    'civil': 'Civil (Paper 2)', 'general-studies': 'General Studies (Paper 1)',
+  };
+  function categoryLabel(cat) {
+    return CATEGORY_LABELS[cat] || cat.replace(/-/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+  }
 
   function ensureScheduleModal() {
     if (document.getElementById('scheduleModalOverlay')) return;
@@ -260,36 +271,62 @@
 
   function openScheduleModal(slug, name) {
     ensureScheduleModal();
-    scheduleState.slug = slug; scheduleState.name = name;
+    scheduleState.slug = slug; scheduleState.name = name; scheduleState.category = null;
     document.getElementById('scheduleModalHeading').textContent = name;
     document.getElementById('scheduleModalOverlay').style.display = 'flex';
+    loadScheduleForCategory(null);
+  }
+
+  function loadScheduleForCategory(category) {
     var bodyEl = document.getElementById('scheduleModalBody');
     bodyEl.innerHTML = '<p class="profile-empty">Loading schedule…</p>';
-
-    authFetch('/api/schedule/' + encodeURIComponent(slug)).then(function (data) {
+    var path = '/api/schedule/' + encodeURIComponent(scheduleState.slug) + (category ? '?category=' + encodeURIComponent(category) : '');
+    authFetch(path).then(function (data) {
+      scheduleState.categories = data.categories || [];
       scheduleState.tests = data.tests || [];
-      renderScheduleList();
+      scheduleState.category = category;
+      if (scheduleState.categories.length && !category) {
+        renderTrackPicker();
+      } else {
+        renderScheduleList();
+      }
     }).catch(function (err) {
       bodyEl.innerHTML = '<p class="profile-empty">' + esc(err.message || 'Could not load schedule.') + '</p>';
+    });
+  }
+
+  function renderTrackPicker() {
+    var bodyEl = document.getElementById('scheduleModalBody');
+    bodyEl.innerHTML = '<p style="font-size:13px;color:#6b6b8a;margin-bottom:14px;">Which track are you enrolled in?</p>' +
+      '<div style="display:flex;flex-direction:column;gap:10px;">' +
+        scheduleState.categories.map(function (c) {
+          return '<button data-track="' + esc(c) + '" style="background:#0F766E;color:#fff;border:none;border-radius:10px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;">' + esc(categoryLabel(c)) + '</button>';
+        }).join('') +
+      '</div>';
+    bodyEl.querySelectorAll('[data-track]').forEach(function (btn) {
+      btn.addEventListener('click', function () { loadScheduleForCategory(btn.getAttribute('data-track')); });
     });
   }
 
   function renderScheduleList() {
     var bodyEl = document.getElementById('scheduleModalBody');
     var tests = scheduleState.tests;
-    if (!tests.length) {
-      bodyEl.innerHTML = '<p class="profile-empty">No tests scheduled yet - check back soon.</p>';
-      return;
-    }
-    bodyEl.innerHTML = tests.map(function (t) {
-      return '<div style="display:flex;align-items:center;justify-content:space-between;border:1px solid #eee;border-radius:10px;padding:12px 16px;margin-bottom:10px;">' +
-        '<div>' +
-          '<div style="font-weight:700;color:#1A1A2E;">' + esc(t.test_date || ('Test ' + t.test_number)) + '</div>' +
-          '<div style="font-size:12.5px;color:#6b6b8a;">Test no: ' + t.test_number + (t.syllabus ? ' &middot; ' + esc(t.syllabus) : '') + '</div>' +
-        '</div>' +
-        '<button class="btn" data-schedule-view="' + t.id + '" style="background:#0F766E;color:#fff;border:none;border-radius:20px;padding:8px 18px;font-size:12.5px;font-weight:700;cursor:pointer;">Next &rarr;</button>' +
-      '</div>';
-    }).join('');
+    var trackSwitcher = scheduleState.categories.length
+      ? '<button id="scheduleTrackSwitch" style="background:none;border:none;color:#0F766E;font-weight:700;cursor:pointer;margin-bottom:10px;font-size:12.5px;">' + esc(categoryLabel(scheduleState.category)) + ' &middot; change track</button>'
+      : '';
+    bodyEl.innerHTML = trackSwitcher + (!tests.length
+      ? '<p class="profile-empty">No tests scheduled yet - check back soon.</p>'
+      : tests.map(function (t) {
+        return '<div style="display:flex;align-items:center;justify-content:space-between;border:1px solid #eee;border-radius:10px;padding:12px 16px;margin-bottom:10px;">' +
+          '<div>' +
+            '<div style="font-weight:700;color:#1A1A2E;">' + esc(t.test_date || ('Test ' + t.test_number)) + '</div>' +
+            '<div style="font-size:12.5px;color:#6b6b8a;">Test no: ' + t.test_number + (t.syllabus ? ' &middot; ' + esc(t.syllabus) : '') + '</div>' +
+          '</div>' +
+          '<button class="btn" data-schedule-view="' + t.id + '" style="background:#0F766E;color:#fff;border:none;border-radius:20px;padding:8px 18px;font-size:12.5px;font-weight:700;cursor:pointer;">Next &rarr;</button>' +
+        '</div>';
+      }).join(''));
+    var trackSwitchBtn = document.getElementById('scheduleTrackSwitch');
+    if (trackSwitchBtn) trackSwitchBtn.addEventListener('click', function () { loadScheduleForCategory(null); });
     bodyEl.querySelectorAll('[data-schedule-view]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var test = tests.filter(function (t) { return String(t.id) === btn.getAttribute('data-schedule-view'); })[0];
