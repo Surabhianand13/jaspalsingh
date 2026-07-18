@@ -196,44 +196,50 @@ router.get('/:slug/schedule/admin', protect, async (req, res, next) => {
 /* ADMIN: add a single test row without touching the rest of the schedule -
    for quickly adding one test outside the bulk-paste workflow. Bulk-upload
    treats its rows array as the complete set (deletes anything missing), so
-   it can't safely be reused for a single add. */
+   it can't safely be reused for a single add.
+
+   category scopes combo programs (RSSB Degree/Diploma, ESE Civil/General
+   Studies) so both tracks can each have their own "Test 1" - null for an
+   ordinary single-track program. */
 router.post('/:slug/schedule', protect, async (req, res, next) => {
   try {
-    const { test_number, test_date, syllabus, questions } = req.body;
+    const { test_number, test_date, syllabus, questions, category } = req.body;
     if (!test_number) return res.status(400).json({ error: 'test_number is required.' });
     const dup = await query(
-      `SELECT id FROM program_schedule WHERE program_slug = $1 AND test_number = $2`,
-      [req.params.slug, parseInt(test_number, 10)]
+      `SELECT id FROM program_schedule WHERE program_slug = $1 AND test_number = $2 AND category IS NOT DISTINCT FROM $3`,
+      [req.params.slug, parseInt(test_number, 10), category || null]
     );
-    if (dup.rows.length) return res.status(409).json({ error: 'A test with this number already exists - edit it via bulk paste or delete it first.' });
-    const maxSort = await query(`SELECT COALESCE(MAX(sort_order), -1) AS m FROM program_schedule WHERE program_slug = $1`, [req.params.slug]);
+    if (dup.rows.length) return res.status(409).json({ error: 'A test with this number already exists in this track - edit it via bulk paste or delete it first.' });
+    const maxSort = await query(`SELECT COALESCE(MAX(sort_order), -1) AS m FROM program_schedule WHERE program_slug = $1 AND category IS NOT DISTINCT FROM $2`, [req.params.slug, category || null]);
     const result = await query(
-      `INSERT INTO program_schedule (program_slug, test_number, test_date, syllabus, questions, sort_order)
-       VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
-      [req.params.slug, parseInt(test_number, 10), test_date || null, syllabus || null, questions ? parseInt(questions, 10) : null, maxSort.rows[0].m + 1]
+      `INSERT INTO program_schedule (program_slug, test_number, test_date, syllabus, questions, sort_order, category)
+       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+      [req.params.slug, parseInt(test_number, 10), test_date || null, syllabus || null, questions ? parseInt(questions, 10) : null, maxSort.rows[0].m + 1, category || null]
     );
     res.status(201).json({ schedule: result.rows[0] });
   } catch (err) { next(err); }
 });
 
 /* ADMIN: bulk upload - typically pasted in all at once from a spreadsheet.
-   Upserts by (program_slug, test_number) instead of delete-and-reinsert:
-   rows that already have uploaded assets/gating dates (paper URL, OMR
-   deadline etc.) keep them when the admin re-pastes the same test number,
-   since those can't be re-supplied through a bulk paste of number/date/
-   syllabus/questions. Rows whose test_number is no longer present are
-   removed, same end result as before for pure schedule edits. */
+   Upserts by (program_slug, category, test_number) instead of delete-and-
+   reinsert: rows that already have uploaded assets/gating dates (paper
+   URL, OMR deadline etc.) keep them when the admin re-pastes the same
+   test number, since those can't be re-supplied through a bulk paste of
+   number/date/syllabus/questions. Rows whose test_number is no longer
+   present are removed - but only within the same category, so pasting
+   one track's schedule never touches the other track's rows. */
 router.post('/:slug/schedule/bulk', protect, async (req, res, next) => {
   try {
     const rows = Array.isArray(req.body.rows) ? req.body.rows : [];
+    const category = req.body.category || null;
     if (!rows.length) return res.status(400).json({ error: 'rows array is required.' });
     for (const r of rows) {
       if (!r.test_number) return res.status(400).json({ error: 'Every row needs a test_number.' });
     }
 
     const existing = await query(
-      `SELECT id, test_number FROM program_schedule WHERE program_slug = $1`,
-      [req.params.slug]
+      `SELECT id, test_number FROM program_schedule WHERE program_slug = $1 AND category IS NOT DISTINCT FROM $2`,
+      [req.params.slug, category]
     );
     const existingByNumber = new Map(existing.rows.map(r => [r.test_number, r.id]));
     const keptNumbers = new Set();
@@ -252,9 +258,9 @@ router.post('/:slug/schedule/bulk', protect, async (req, res, next) => {
         );
       } else {
         await query(
-          `INSERT INTO program_schedule (program_slug, test_number, test_date, syllabus, questions, sort_order)
-           VALUES ($1,$2,$3,$4,$5,$6)`,
-          [req.params.slug, testNumber, ...values]
+          `INSERT INTO program_schedule (program_slug, test_number, test_date, syllabus, questions, sort_order, category)
+           VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+          [req.params.slug, testNumber, ...values, category]
         );
       }
     }

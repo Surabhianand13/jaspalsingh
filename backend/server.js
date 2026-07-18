@@ -792,6 +792,21 @@ async function migrate() {
   await query(`CREATE INDEX IF NOT EXISTS idx_schedule_uploads_schedule ON schedule_uploads(schedule_id)`);
   await query(`CREATE UNIQUE INDEX IF NOT EXISTS schedule_uploads_schedule_enrollment_uidx ON schedule_uploads(schedule_id, enrollment_id) WHERE enrollment_id IS NOT NULL`);
 
+  /* ── Schedule track/category (2026-07-18) ── Combo programs (RSSB JE
+     Degree+Diploma, ESE Combined Paper1+Paper2) bundle two independent
+     test tracks under one program_slug, each numbered 1..N - without a
+     category column, both tracks' "Test 1" would collide on the same
+     upsert key. Learner picks a track ("Degree"/"Diploma" or "Civil"/
+     "General Studies") before seeing that track's schedule; admin picks
+     the same track before pasting/adding rows for it. NULL category =
+     ordinary single-track program, unaffected. */
+  await query(`ALTER TABLE program_schedule ADD COLUMN IF NOT EXISTS category VARCHAR(50)`);
+  await query(`
+    UPDATE programs SET omr_categories = '["general-studies","civil"]'
+    WHERE slug IN ('ese-2027-prelims-jaspalsirki-testseries-combined', 'ese-2027-prelims-jaspalsirki-testseries-combined-omr')
+      AND omr_categories IS NULL
+  `);
+
   /* ── Program page content: "Who Is This For" bullets + FAQ ──
      Admin-editable free text for the generic /programs/view/ detail page,
      matching the equivalent hand-written sections on the 13 bespoke pages. */
