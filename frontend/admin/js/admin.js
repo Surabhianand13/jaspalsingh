@@ -1906,8 +1906,8 @@
     outline: 'background:#f4f4f7;color:#444;',
     danger:  'background:transparent;color:#C81240;border:1px solid #C81240;',
   };
-  function pillBtn(attrs, label, variant){
-    return '<button '+attrs+' style="display:inline-block;border-radius:20px;padding:7px 16px;font-size:11.5px;font-weight:700;border:none;cursor:pointer;white-space:nowrap;'+(PILL_VARIANTS[variant]||PILL_VARIANTS.outline)+'">'+label+'</button>';
+  function pillBtn(attrs, label, variant, extraStyle){
+    return '<button '+attrs+' style="display:inline-block;border-radius:20px;padding:7px 16px;font-size:11.5px;font-weight:700;border:none;cursor:pointer;white-space:nowrap;'+(PILL_VARIANTS[variant]||PILL_VARIANTS.outline)+(extraStyle||'')+'">'+label+'</button>';
   }
 
   function uploadScheduleAsset(rowId, kind, slug, category){
@@ -1975,15 +1975,15 @@
     adminFetch('GET', '/api/programs/'+encodeURIComponent(slug)+'/schedule/admin').then(function(d){
       var rows = (d.schedule || []).filter(function(r){ return (r.category||null) === (category||null); });
       if (!rows.length) { listEl.innerHTML = '<p class="admin-empty">No schedule yet - paste rows above, or use "Add one test".</p>'; return; }
-      listEl.innerHTML = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Test</th><th>Date</th><th>Syllabus</th><th>Qs</th><th>Assets</th><th></th></tr></thead><tbody>' +
+      listEl.innerHTML = '<div class="admin-table-wrap" style="overflow-x:auto;"><table class="admin-table" style="min-width:640px;"><thead><tr><th>Test</th><th>Date</th><th style="min-width:160px;">Syllabus</th><th>Qs</th><th style="min-width:150px;">Assets</th><th style="min-width:100px;"></th></tr></thead><tbody>' +
         rows.map(function(r){
-          var assetBtns = '<div style="display:flex;flex-wrap:wrap;gap:6px;max-width:220px;">' + ASSET_KINDS.map(function(a){
+          var assetBtns = '<div style="display:flex;flex-direction:column;gap:5px;">' + ASSET_KINDS.map(function(a){
             var has = !!r[a.col];
-            return pillBtn('data-asset-upload="'+r.id+'" data-asset-kind="'+a.kind+'"', (has?'&#10003; ':'+ ')+a.label, has?'solid':'outline');
+            return pillBtn('data-asset-upload="'+r.id+'" data-asset-kind="'+a.kind+'"', (has?'&#10003; ':'+ ')+a.label, has?'solid':'outline', 'text-align:left;');
           }).join('') + '</div>';
           return '<tr><td>'+r.test_number+'</td><td>'+e(r.test_date||'-')+'</td><td>'+e(r.syllabus||'-')+'</td><td>'+(r.questions||'-')+'</td>' +
             '<td>'+assetBtns+'</td>' +
-            '<td style="white-space:nowrap;"><div style="display:flex;gap:6px;">'+
+            '<td><div style="display:flex;flex-direction:column;gap:5px;">'+
               pillBtn('data-sch-configure="'+r.id+'"', 'Configure', 'dark') +
               pillBtn('data-sch-del="'+r.id+'"', 'Delete', 'danger') +
             '</div></td></tr>' +
