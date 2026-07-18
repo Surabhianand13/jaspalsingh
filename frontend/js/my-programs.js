@@ -70,8 +70,9 @@
               (paid_at ? '<span class="enrolled-date">Joined ' + paid_at + '</span>' : '') +
               '<span class="enrolled-amount">&#8377;' + Number(e.amount).toLocaleString('en-IN') + ' paid</span>' +
             '</div>' +
-            '<a href="/programs/' + esc(slug) + '/" class="enrolled-link">View Program &rarr;</a> ' +
-            '<a href="#" class="enrolled-link" data-schedule-open="' + esc(slug) + '" data-schedule-name="' + esc(e.program_name) + '">Schedule &rarr;</a>' +
+            '<button class="btn" data-schedule-open="' + esc(slug) + '" data-schedule-name="' + esc(e.program_name) + '" style="margin-top:10px;background:#0F766E;color:#fff;border:none;border-radius:20px;padding:10px 22px;font-size:13px;font-weight:700;cursor:pointer;">' +
+              '<i class="fas fa-calendar-alt"></i> View Schedule' +
+            '</button>' +
           '</div>' +
         '</div>';
       });
