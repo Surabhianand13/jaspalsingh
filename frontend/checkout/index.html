@@ -263,8 +263,11 @@
 
           <!-- Password - only for guests (creates account on purchase) -->
           <div class="form-group" id="grp-password" style="display:none;">
-            <label class="form-label" for="inp-password">Create Password * <span style="font-size:11px;font-weight:400;color:#9999b0;">(sets up your free account)</span></label>
+            <label class="form-label" for="inp-password" id="lbl-password">Create Password * <span style="font-size:11px;font-weight:400;color:#9999b0;">(sets up your free account)</span></label>
             <input class="form-input" type="password" id="inp-password" name="password" placeholder="Min 6 characters" autocomplete="new-password" />
+            <div id="accountExistsNote" style="display:none;margin-top:8px;padding:10px 12px;background:#FFF7ED;border:1px solid #FDBA74;border-radius:8px;font-size:12.5px;color:#7C2D12;">
+              An account already exists with this email. Please enter your <strong>existing account password</strong> above to continue, or <a href="/reset-password/" target="_blank" style="color:#C81240;font-weight:600;">reset your password</a> and come back to finish payment.
+            </div>
           </div>
 
           <!-- Honeypot - hidden from real users, bots that fill every field trip it -->
@@ -707,8 +710,31 @@
           if (regRes.ok && regData.token) {
             localStorage.setItem('jaspal_learner_token', regData.token);
             localStorage.setItem('jaspal_learner', JSON.stringify(regData.learner));
-          } else if (regRes.status !== 409) {
-            // 409 = email already exists - still proceed to payment
+          } else if (regRes.status === 409) {
+            // An account already exists under this email. Try logging in
+            // with the password they just typed (in case it happens to be
+            // correct), but never silently fall through to a guest payment
+            // here - that's exactly how paid orders ended up unlinked from
+            // the learner's real account (support tickets: paid but "no
+            // enrolled programs" on their dashboard).
+            document.getElementById('payBtnText').textContent = 'Logging you in...';
+            const loginRes  = await fetch(API + '/api/learners/login', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email, password }),
+            });
+            const loginData = await loginRes.json();
+            if (loginRes.ok && loginData.token) {
+              localStorage.setItem('jaspal_learner_token', loginData.token);
+              localStorage.setItem('jaspal_learner', JSON.stringify(loginData.learner));
+            } else {
+              showAccountExistsPrompt();
+              showError('An account already exists with this email. Enter your existing password above to continue.');
+              btn.disabled = false;
+              document.getElementById('payBtnText').textContent = 'Pay ₹' + finalPrice.toLocaleString('en-IN');
+              resetTurnstile();
+              return;
+            }
+          } else {
             showError(regData.error || 'Account creation failed. Please try again.');
             btn.disabled = false;
             document.getElementById('payBtnText').textContent = 'Pay ₹' + finalPrice.toLocaleString('en-IN');
@@ -809,6 +835,15 @@
       const el = document.getElementById('formError');
       el.textContent = msg;
       el.style.display = 'block';
+    }
+
+    function showAccountExistsPrompt() {
+      document.getElementById('lbl-password').innerHTML =
+        'Account Password * <span style="font-size:11px;font-weight:400;color:#9999b0;">(you already have an account)</span>';
+      document.getElementById('inp-password').placeholder = 'Enter your existing password';
+      document.getElementById('inp-password').value = '';
+      document.getElementById('accountExistsNote').style.display = 'block';
+      document.getElementById('inp-password').focus();
     }
 
     // Turnstile tokens are single-use - reset the widget so a retry gets a fresh one.
