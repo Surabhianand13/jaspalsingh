@@ -1910,6 +1910,20 @@
     return '<button '+attrs+' style="display:inline-block;border-radius:20px;padding:7px 16px;font-size:11.5px;font-weight:700;border:none;cursor:pointer;white-space:nowrap;'+(PILL_VARIANTS[variant]||PILL_VARIANTS.outline)+(extraStyle||'')+'">'+label+'</button>';
   }
 
+  /* datetime-local inputs carry no timezone - the business runs on IST
+     (UTC+5:30), so every gating date typed here must be sent with an
+     explicit +05:30 offset, or Postgres's UTC session default silently
+     shifts it 5.5 hours later than intended. isoToIstInput does the
+     reverse for pre-filling the input when a row is reopened. */
+  function istInputToIso(localStr){
+    return localStr ? localStr + ':00+05:30' : null;
+  }
+  function isoToIstInput(iso){
+    if (!iso) return '';
+    var ist = new Date(new Date(iso).getTime() + 5.5 * 60 * 60 * 1000);
+    return ist.toISOString().slice(0, 16);
+  }
+
   function uploadScheduleAsset(rowId, kind, slug, category){
     var input = document.createElement('input');
     input.type = 'file'; input.accept = 'application/pdf';
@@ -1932,8 +1946,8 @@
     if (!panel) return;
     panel.innerHTML =
       '<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;margin:8px 0;padding:12px;background:rgba(0,0,0,.03);border-radius:8px;">' +
-        '<label style="font-size:11.5px;">Paper release<br><input type="datetime-local" class="admin-input" id="gt_release_'+row.id+'" value="'+(row.paper_release_at?row.paper_release_at.slice(0,16):'')+'"></label>' +
-        '<label style="font-size:11.5px;">Upload deadline / solution unlock<br><input type="datetime-local" class="admin-input" id="gt_deadline_'+row.id+'" value="'+(row.omr_upload_deadline?row.omr_upload_deadline.slice(0,16):'')+'"></label>' +
+        '<label style="font-size:11.5px;">Paper release (IST)<br><input type="datetime-local" class="admin-input" id="gt_release_'+row.id+'" value="'+isoToIstInput(row.paper_release_at)+'"></label>' +
+        '<label style="font-size:11.5px;">Upload deadline / solution unlock (IST)<br><input type="datetime-local" class="admin-input" id="gt_deadline_'+row.id+'" value="'+isoToIstInput(row.omr_upload_deadline)+'"></label>' +
         '<label style="font-size:11.5px;display:flex;align-items:center;gap:6px;"><input type="checkbox" id="gt_requires_'+row.id+'" '+(row.requires_omr_upload?'checked':'')+'> Learners upload their answer sheet (photo/PDF) for this test</label>' +
         pillBtn('id="gt_save_'+row.id+'"', 'Save', 'solid') +
         (row.requires_omr_upload ? pillBtn('id="gt_uploads_'+row.id+'"', 'View uploads', 'outline') : '') +
@@ -1942,11 +1956,11 @@
 
     document.getElementById('gt_save_'+row.id).onclick = function(){
       var requiresUpload = document.getElementById('gt_requires_'+row.id).checked;
-      var deadline = document.getElementById('gt_deadline_'+row.id).value || null;
-      if (requiresUpload && !deadline) { showToast('Upload deadline is required when self-serve upload is on', 'error'); return; }
+      var deadlineLocal = document.getElementById('gt_deadline_'+row.id).value || null;
+      if (requiresUpload && !deadlineLocal) { showToast('Upload deadline is required when self-serve upload is on', 'error'); return; }
       adminFetch('PUT', '/api/programs/schedule/'+row.id+'/gating', {
-        paper_release_at: document.getElementById('gt_release_'+row.id).value || null,
-        omr_upload_deadline: deadline,
+        paper_release_at: istInputToIso(document.getElementById('gt_release_'+row.id).value || null),
+        omr_upload_deadline: istInputToIso(deadlineLocal),
         requires_omr_upload: requiresUpload,
       }).then(function(){ showToast('Saved', 'success'); loadScheduleRows(slug, category); })
         .catch(function(e){ showToast(e.message, 'error'); });

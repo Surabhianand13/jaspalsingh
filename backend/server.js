@@ -772,6 +772,23 @@ async function migrate() {
   await query(`ALTER TABLE program_schedule ADD COLUMN IF NOT EXISTS omr_test_id INTEGER REFERENCES omr_tests(id) ON DELETE SET NULL`);
   await query(`ALTER TABLE program_schedule ADD COLUMN IF NOT EXISTS answer_key JSONB`);
 
+  /* ONE-TIME (2026-07-18): the admin gating panel sent datetime-local values
+     with no timezone offset, so Postgres's UTC session default silently
+     stored every IST time the admin typed as if it were UTC - shifting
+     every already-saved paper_release_at/omr_upload_deadline 5.5 hours
+     later than intended (India is UTC+5:30). The frontend now sends an
+     explicit +05:30 offset (see admin.js istInputToIso), but rows saved
+     before that fix need correcting once. Guarded by a marker table so
+     server restarts never re-apply the shift. */
+  await query(`CREATE TABLE IF NOT EXISTS _migrations_applied (name TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`);
+  const tzFixApplied = await query(`SELECT 1 FROM _migrations_applied WHERE name = 'schedule_gating_ist_offset_fix_20260718'`);
+  if (!tzFixApplied.rows.length) {
+    await query(`UPDATE program_schedule SET paper_release_at = paper_release_at - INTERVAL '5 hours 30 minutes' WHERE paper_release_at IS NOT NULL`);
+    await query(`UPDATE program_schedule SET omr_upload_deadline = omr_upload_deadline - INTERVAL '5 hours 30 minutes' WHERE omr_upload_deadline IS NOT NULL`);
+    await query(`INSERT INTO _migrations_applied (name) VALUES ('schedule_gating_ist_offset_fix_20260718')`);
+    console.log('[migration] Corrected IST offset shift on existing schedule gating dates.');
+  }
+
   /* Simple, ungraded answer-sheet upload - one per learner per test.
      Re-uploading before the deadline replaces the previous file (the
      route handles deleting the old R2 object); no scoring, no detection,
