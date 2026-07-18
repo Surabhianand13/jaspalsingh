@@ -10,8 +10,16 @@
 
 const express = require('express');
 const router  = express.Router();
+const multer  = require('multer');
+const { PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const { r2, BUCKET } = require('../config/r2');
 const { query } = require('../config/db');
 const { protect } = require('../middleware/auth');
+const { handleUploadError } = require('../middleware/upload');
+
+/* Shared by the workbook upload route and the schedule-asset upload route
+   below - both are admin PDF uploads to R2. */
+const scheduleAssetUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
 
 /* ── PUBLIC: visible programs ────────────────────────────── */
 router.get('/', async (req, res, next) => {
@@ -125,6 +133,36 @@ router.delete('/:id', protect, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/* ── ADMIN: upload the program-level workbook (one file, shared
+   across every test in the program - not tied to a schedule row) ── */
+router.post('/:id/workbook', protect, scheduleAssetUpload.single('file'), handleUploadError, async (req, res, next) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
+
+    const existing = await query(`SELECT workbook_key FROM programs WHERE id = $1`, [req.params.id]);
+    if (!existing.rows.length) return res.status(404).json({ error: 'Program not found.' });
+
+    const key = `workbooks/${req.params.id}-${Date.now()}-${req.file.originalname.replace(/\s+/g, '-')}`;
+    await r2.send(new PutObjectCommand({
+      Bucket: BUCKET, Key: key, Body: req.file.buffer, ContentType: 'application/pdf',
+    }));
+    const publicUrl = `${process.env.R2_PUBLIC_URL}/${key}`;
+
+    const result = await query(
+      `UPDATE programs SET workbook_url = $1, workbook_key = $2, updated_at = NOW() WHERE id = $3 RETURNING *`,
+      [publicUrl, key, req.params.id]
+    );
+
+    const oldKey = existing.rows[0].workbook_key;
+    if (oldKey && oldKey !== key) {
+      try { await r2.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: oldKey })); }
+      catch (err) { console.warn(`⚠️  Could not delete old R2 workbook "${oldKey}":`, err.message); }
+    }
+
+    res.json({ program: result.rows[0] });
+  } catch (err) { next(err); }
+});
+
 /* ── Test schedule (admin-uploaded, shown on the generic detail page) ──
    Registered before the /:slug catch-all below so /:slug/schedule always
    resolves here first. ── */
@@ -142,12 +180,12 @@ router.get('/:slug/schedule', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-/* ADMIN: same data, no visibility gate (schedule isn't tied to is_visible) */
+/* ADMIN: same data, no visibility gate (schedule isn't tied to is_visible).
+   Includes asset URLs/gating fields, unlike the public version above. */
 router.get('/:slug/schedule/admin', protect, async (req, res, next) => {
   try {
     const result = await query(
-      `SELECT id, test_number, test_date, syllabus, questions, sort_order
-       FROM program_schedule WHERE program_slug = $1
+      `SELECT * FROM program_schedule WHERE program_slug = $1
        ORDER BY sort_order ASC, test_number ASC`,
       [req.params.slug]
     );
@@ -155,9 +193,13 @@ router.get('/:slug/schedule/admin', protect, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-/* ADMIN: bulk upload - replaces the entire schedule for this program with
-   the uploaded rows. Simpler and safer than per-row upsert for something
-   that's typically pasted in all at once from a spreadsheet. */
+/* ADMIN: bulk upload - typically pasted in all at once from a spreadsheet.
+   Upserts by (program_slug, test_number) instead of delete-and-reinsert:
+   rows that already have uploaded assets/gating dates (paper URL, OMR
+   deadline etc.) keep them when the admin re-pastes the same test number,
+   since those can't be re-supplied through a bulk paste of number/date/
+   syllabus/questions. Rows whose test_number is no longer present are
+   removed, same end result as before for pure schedule edits. */
 router.post('/:slug/schedule/bulk', protect, async (req, res, next) => {
   try {
     const rows = Array.isArray(req.body.rows) ? req.body.rows : [];
@@ -166,16 +208,108 @@ router.post('/:slug/schedule/bulk', protect, async (req, res, next) => {
       if (!r.test_number) return res.status(400).json({ error: 'Every row needs a test_number.' });
     }
 
-    await query(`DELETE FROM program_schedule WHERE program_slug = $1`, [req.params.slug]);
+    const existing = await query(
+      `SELECT id, test_number FROM program_schedule WHERE program_slug = $1`,
+      [req.params.slug]
+    );
+    const existingByNumber = new Map(existing.rows.map(r => [r.test_number, r.id]));
+    const keptNumbers = new Set();
+
     let i = 0;
     for (const r of rows) {
-      await query(
-        `INSERT INTO program_schedule (program_slug, test_number, test_date, syllabus, questions, sort_order)
-         VALUES ($1,$2,$3,$4,$5,$6)`,
-        [req.params.slug, parseInt(r.test_number, 10), r.test_date || null, r.syllabus || null, r.questions ? parseInt(r.questions, 10) : null, i++]
-      );
+      const testNumber = parseInt(r.test_number, 10);
+      keptNumbers.add(testNumber);
+      const values = [r.test_date || null, r.syllabus || null, r.questions ? parseInt(r.questions, 10) : null, i++];
+
+      if (existingByNumber.has(testNumber)) {
+        await query(
+          `UPDATE program_schedule SET test_date = $1, syllabus = $2, questions = $3, sort_order = $4
+           WHERE id = $5`,
+          [...values, existingByNumber.get(testNumber)]
+        );
+      } else {
+        await query(
+          `INSERT INTO program_schedule (program_slug, test_number, test_date, syllabus, questions, sort_order)
+           VALUES ($1,$2,$3,$4,$5,$6)`,
+          [req.params.slug, testNumber, ...values]
+        );
+      }
     }
+
+    const toDelete = existing.rows.filter(r => !keptNumbers.has(r.test_number)).map(r => r.id);
+    if (toDelete.length) {
+      await query(`DELETE FROM program_schedule WHERE id = ANY($1::int[])`, [toDelete]);
+    }
+
     res.json({ message: `Saved ${rows.length} schedule rows.` });
+  } catch (err) { next(err); }
+});
+
+/* ADMIN: upload a test asset (question paper / blank OMR / solution) for
+   one schedule row. Stored in R2 (not Cloudinary) since these are
+   downloaded repeatedly by every enrolled learner - R2 has no egress
+   fees, which matters at that read volume. Mirrors routes/free-resources.js. */
+const SCHEDULE_ASSET_COLUMNS = {
+  paper:       { url: 'question_paper_url', key: 'question_paper_key' },
+  'blank-omr': { url: 'blank_omr_url',      key: 'blank_omr_key' },
+  solution:    { url: 'solution_url',       key: 'solution_key' },
+};
+router.post('/schedule/:id/assets/:kind', protect, scheduleAssetUpload.single('file'), handleUploadError, async (req, res, next) => {
+  try {
+    const cols = SCHEDULE_ASSET_COLUMNS[req.params.kind];
+    if (!cols) return res.status(400).json({ error: 'Unknown asset kind. Use paper, blank-omr, or solution.' });
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
+
+    const existing = await query(`SELECT ${cols.key} AS old_key FROM program_schedule WHERE id = $1`, [req.params.id]);
+    if (!existing.rows.length) return res.status(404).json({ error: 'Schedule row not found.' });
+
+    const key = `test-assets/${req.params.id}/${req.params.kind}-${Date.now()}-${req.file.originalname.replace(/\s+/g, '-')}`;
+    await r2.send(new PutObjectCommand({
+      Bucket: BUCKET, Key: key, Body: req.file.buffer, ContentType: 'application/pdf',
+    }));
+    const publicUrl = `${process.env.R2_PUBLIC_URL}/${key}`;
+
+    const result = await query(
+      `UPDATE program_schedule SET ${cols.url} = $1, ${cols.key} = $2 WHERE id = $3 RETURNING *`,
+      [publicUrl, key, req.params.id]
+    );
+
+    const oldKey = existing.rows[0].old_key;
+    if (oldKey && oldKey !== key) {
+      try { await r2.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: oldKey })); }
+      catch (err) { console.warn(`⚠️  Could not delete old R2 asset "${oldKey}":`, err.message); }
+    }
+
+    res.json({ schedule: result.rows[0] });
+  } catch (err) { next(err); }
+});
+
+/* ADMIN: set a schedule row's release/deadline dates, whether it needs a
+   self-serve OMR upload, which omr_tests row grades it (OMR rows only),
+   and the learner-facing Answer Key (offline rows only - OMR rows already
+   carry their answer_key on the linked omr_tests row for detection). */
+router.put('/schedule/:id/gating', protect, async (req, res, next) => {
+  try {
+    const { paper_release_at, omr_upload_deadline, requires_omr_upload, omr_test_id, answer_key } = req.body;
+    if (requires_omr_upload && !omr_test_id) {
+      return res.status(400).json({ error: 'omr_test_id is required when requires_omr_upload is true.' });
+    }
+    if (requires_omr_upload && !omr_upload_deadline) {
+      return res.status(400).json({ error: 'omr_upload_deadline is required when requires_omr_upload is true - uploads must always be time-boxed.' });
+    }
+    const result = await query(
+      `UPDATE program_schedule SET
+         paper_release_at    = $1,
+         omr_upload_deadline = $2,
+         requires_omr_upload = $3,
+         omr_test_id         = $4,
+         answer_key          = $5
+       WHERE id = $6 RETURNING *`,
+      [paper_release_at || null, omr_upload_deadline || null, !!requires_omr_upload, omr_test_id || null,
+       answer_key ? JSON.stringify(answer_key) : null, req.params.id]
+    );
+    if (!result.rows.length) return res.status(404).json({ error: 'Schedule row not found.' });
+    res.json({ schedule: result.rows[0] });
   } catch (err) { next(err); }
 });
 

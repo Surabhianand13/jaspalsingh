@@ -126,6 +126,7 @@ app.use('/api/banners',       require('./routes/banners'));
 /* Tally webhook routes are registered above (before express.json()) so
    verifyTallySignature can see the raw body - do not re-register here. */
 app.use('/api/omr-check',        require('./routes/omr-check'));
+app.use('/api/schedule',         require('./routes/learner-schedule'));
 app.use('/api/free-resources',   require('./routes/free-resources'));
 app.use('/api/coupons',          require('./routes/coupons'));
 app.use('/api/homepage-content', require('./routes/homepage-content'));
@@ -551,6 +552,17 @@ async function migrate() {
   await query(`CREATE INDEX IF NOT EXISTS idx_omr_submissions_test ON omr_submissions(test_id)`);
   await query(`CREATE INDEX IF NOT EXISTS idx_omr_submissions_status ON omr_submissions(status)`);
 
+  /* Learner self-serve OMR submissions need to be tied back to the
+     enrollment that unlocked them (admin uploads never set this). */
+  await query(`ALTER TABLE omr_submissions ADD COLUMN IF NOT EXISTS enrollment_id INTEGER REFERENCES enrollments(id) ON DELETE SET NULL`);
+  await query(`ALTER TABLE omr_submissions ADD COLUMN IF NOT EXISTS submitted_by_learner BOOLEAN NOT NULL DEFAULT FALSE`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_omr_submissions_enrollment ON omr_submissions(enrollment_id)`);
+
+  /* Workbook is a program-level resource (same file across every test
+     in that program), not per-test. */
+  await query(`ALTER TABLE programs ADD COLUMN IF NOT EXISTS workbook_url VARCHAR(1000)`);
+  await query(`ALTER TABLE programs ADD COLUMN IF NOT EXISTS workbook_key VARCHAR(500)`);
+
   /* ═══════════════════════════════════════════════════════════
      Admin self-serve platform (2026-07-08): coupons, generic OMR
      sending, programs-as-pricing-source-of-truth, and homepage
@@ -725,6 +737,37 @@ async function migrate() {
     )
   `);
   await query(`CREATE INDEX IF NOT EXISTS idx_program_schedule_slug ON program_schedule(program_slug)`);
+
+  /* ── Self-serve test schedule assets (2026-07-18): learner-facing
+     paper/solution/OMR download+upload, replacing manual email
+     distribution. Reuses this existing program_schedule table (already
+     the public pre-purchase display of test dates) rather than a new
+     parallel table, so admin only enters a test's date/number once.
+     omr_test_id links to the omr_tests row (template/answer-key/
+     marking-scheme) only when requires_omr_upload is true - offline
+     rows never get one. No unique constraint on (program_slug,
+     test_number): existing production rows aren't guaranteed clean,
+     and a failed CREATE UNIQUE INDEX at boot would crash migrate() for
+     everyone. The bulk-schedule endpoint instead upserts by matching
+     in application code (SELECT existing id, then UPDATE or INSERT),
+     so re-pasting a schedule doesn't wipe uploaded assets off rows
+     that already have a matching test_number. ── */
+  await query(`ALTER TABLE program_schedule ADD COLUMN IF NOT EXISTS question_paper_url VARCHAR(1000)`);
+  await query(`ALTER TABLE program_schedule ADD COLUMN IF NOT EXISTS question_paper_key VARCHAR(500)`);
+  await query(`ALTER TABLE program_schedule ADD COLUMN IF NOT EXISTS blank_omr_url VARCHAR(1000)`);
+  await query(`ALTER TABLE program_schedule ADD COLUMN IF NOT EXISTS blank_omr_key VARCHAR(500)`);
+  await query(`ALTER TABLE program_schedule ADD COLUMN IF NOT EXISTS solution_url VARCHAR(1000)`);
+  await query(`ALTER TABLE program_schedule ADD COLUMN IF NOT EXISTS solution_key VARCHAR(500)`);
+  await query(`ALTER TABLE program_schedule ADD COLUMN IF NOT EXISTS paper_release_at TIMESTAMPTZ`);
+  await query(`ALTER TABLE program_schedule ADD COLUMN IF NOT EXISTS omr_upload_deadline TIMESTAMPTZ`);
+  await query(`ALTER TABLE program_schedule ADD COLUMN IF NOT EXISTS requires_omr_upload BOOLEAN NOT NULL DEFAULT FALSE`);
+  await query(`ALTER TABLE program_schedule ADD COLUMN IF NOT EXISTS omr_test_id INTEGER REFERENCES omr_tests(id) ON DELETE SET NULL`);
+  /* Learner-facing Answer Key display. OMR rows already have a detection
+     answer_key on the linked omr_tests row - this column exists so offline
+     rows (no omr_tests row at all, since there's no bubble sheet to detect)
+     can still show an Answer Key card. Learner-facing queries read
+     COALESCE(program_schedule.answer_key, omr_tests.answer_key). */
+  await query(`ALTER TABLE program_schedule ADD COLUMN IF NOT EXISTS answer_key JSONB`);
 
   /* ── Program page content: "Who Is This For" bullets + FAQ ──
      Admin-editable free text for the generic /programs/view/ detail page,
