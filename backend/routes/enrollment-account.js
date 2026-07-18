@@ -9,6 +9,7 @@ const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
 const { query } = require('../config/db');
 const { protectLearner } = require('../middleware/learnerAuth');
+const { canonicalize } = require('../utils/programSlugAliases');
 
 /* ── Program slug → clean display label (admin UI only) ──
    The stored program_name text is identical for Offline Degree and
@@ -200,7 +201,13 @@ router.get('/my-enrollments', protectLearner, async (req, res) => {
       [learner.id, learner.email, learner.phone]
     );
 
-    res.json({ enrollments: result.rows });
+    // Some rows are keyed to a legacy checkout slug that predates the
+    // current programs/program_schedule slug convention - canonical_slug
+    // is what every new link (Schedule, View Program) should be built
+    // from, so the frontend never has to special-case old enrollments.
+    const enrollments = result.rows.map(row => ({ ...row, canonical_slug: canonicalize(row.program_slug) }));
+
+    res.json({ enrollments });
   } catch (err) {
     console.error('[my-enrollments]', err);
     res.status(500).json({ error: 'Server error.' });
