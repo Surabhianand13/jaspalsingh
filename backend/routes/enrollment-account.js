@@ -183,11 +183,18 @@ router.get('/my-enrollments', protectLearner, async (req, res) => {
     const lr = await query('SELECT id, email, phone FROM learners WHERE id = $1', [decoded.id]);
     const learner = lr.rows[0] || { id: decoded.id, email: decoded.email, phone: null };
 
-    // Backfill: link any unlinked paid orders for this learner now
+    // Backfill: link any unlinked paid orders for this learner now.
+    // Matches are case/format-insensitive (LOWER on email, last-10-digits
+    // on phone) because enrollments.student_email/student_phone are stored
+    // exactly as typed at checkout, while learners.email/phone are always
+    // normalized at signup - an exact `=` here would silently miss a real
+    // purchase over something as small as checkout casing differing from
+    // account casing.
     await query(
       `UPDATE enrollments SET learner_id = $1
        WHERE learner_id IS NULL AND status = 'paid'
-         AND (student_email = $2 OR student_phone = $3)`,
+         AND (LOWER(TRIM(student_email)) = LOWER(TRIM($2))
+              OR RIGHT(REGEXP_REPLACE(student_phone, '\\D', '', 'g'), 10) = $3)`,
       [learner.id, learner.email, learner.phone]
     );
 
@@ -196,7 +203,9 @@ router.get('/my-enrollments', protectLearner, async (req, res) => {
        FROM enrollments
        WHERE status = 'paid'
          AND refund_status != 'initiated'
-         AND (learner_id = $1 OR student_email = $2 OR student_phone = $3)
+         AND (learner_id = $1
+              OR LOWER(TRIM(student_email)) = LOWER(TRIM($2))
+              OR RIGHT(REGEXP_REPLACE(student_phone, '\\D', '', 'g'), 10) = $3)
        ORDER BY paid_at DESC`,
       [learner.id, learner.email, learner.phone]
     );
