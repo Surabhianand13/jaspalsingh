@@ -73,6 +73,9 @@
             '<button class="btn" data-schedule-open="' + esc(slug) + '" data-schedule-name="' + esc(e.program_name) + '" style="margin-top:10px;background:#0F766E;color:#fff;border:none;border-radius:20px;padding:10px 22px;font-size:13px;font-weight:700;cursor:pointer;">' +
               '<i class="fas fa-calendar-alt"></i> View Schedule' +
             '</button>' +
+            // TEMPORARY (2026-07-18) - diagnosing a slug mismatch report,
+            // remove once confirmed fixed.
+            '<div style="margin-top:8px;font-size:10px;color:#bbb;font-family:monospace;">slug: ' + esc(e.program_slug) + ' &rarr; ' + esc(e.canonical_slug || '(same)') + '</div>' +
           '</div>' +
         '</div>';
       });
