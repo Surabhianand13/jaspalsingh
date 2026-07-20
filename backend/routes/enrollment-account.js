@@ -9,7 +9,7 @@ const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
 const { query } = require('../config/db');
 const { protectLearner } = require('../middleware/learnerAuth');
-const { canonicalize } = require('../utils/programSlugAliases');
+const { canonicalize, slugsFor } = require('../utils/programSlugAliases');
 
 /* ── Program slug → clean display label (admin UI only) ──
    The stored program_name text is identical for Offline Degree and
@@ -659,47 +659,50 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
       return res.json({ message: `Admit card sent to ${enr.student_email}`, roll_number: rollNumber });
     }
 
-    const isDegreeCourse = program_type === 'degree' ? true
-      : program_type === 'diploma' ? false
-      : slug.includes('degree');
+    // Generic path - any test-series program that isn't the RSSB combo or an
+    // ESE program (handled above with their own tailored templates). Pulls
+    // the program's real title from the live `programs` table and its last
+    // test date from `program_schedule` (both alias-tolerant) instead of
+    // hardcoded per-exam text, so any current or future test-series program
+    // works here without a code change every time a new one launches.
+    const canonicalSlug = canonicalize(slug);
+    const program = await getProgramData(canonicalSlug);
+    const seriesName = (program && program.name) || enr.program_name || slug;
 
-    let centreForCard, seriesName, schedule, lastTestDate, rollNumber, mode, htmlBody;
+    const lastTestRes = await query(
+      `SELECT MAX(test_date) AS last_date FROM program_schedule WHERE program_slug = ANY($1::text[])`,
+      [slugsFor(canonicalSlug)]
+    );
+    const lastTestDateRaw = lastTestRes.rows[0] && lastTestRes.rows[0].last_date;
+    const lastTestDate = lastTestDateRaw
+      ? new Date(lastTestDateRaw).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
+      : null;
+
+    let centreForCard, rollNumber, mode, htmlBody;
+    const { buildGenericAdmitCardHtml, getCentreKey, CENTRES } = require('./tally-webhook');
 
     if (isOmr) {
-      const {
-        generateOmrRollNumber, getOmrSeriesName, getOmrLastTestDate, buildOmrConfirmationHtml,
-      } = require('./tally-omr-shared');
-
-      mode         = 'home';
+      mode          = 'home';
       centreForCard = 'Online (Home Based)';
-      seriesName   = getOmrSeriesName(isDegreeCourse);
-      lastTestDate = getOmrLastTestDate(isDegreeCourse);
-      rollNumber   = generateOmrRollNumber(isDegreeCourse);
-      htmlBody     = buildOmrConfirmationHtml({ name: name || enr.student_name, isDegreeCourse });
+      htmlBody      = buildGenericAdmitCardHtml({ name: name || enr.student_name, seriesName, mode });
     } else {
-      const { buildAdmitCardHtml, getCentreKey, CENTRES, SCHEDULE_DEGREE, SCHEDULE_DIPLOMA } = require('./tally-webhook');
-
       const centreKey  = getCentreKey(centre);
       const centreInfo = CENTRES[centreKey] || { name: centre, address: 'TBD', mapsLink: '#' };
-      schedule         = isDegreeCourse ? SCHEDULE_DEGREE : SCHEDULE_DIPLOMA;
 
-      mode         = 'offline';
+      mode          = 'offline';
       centreForCard = centreInfo.name;
-      seriesName   = isDegreeCourse
-        ? 'RSSB JE 2026 - Degree (Civil) - Offline Test Series'
-        : 'RSSB JE 2026 - Diploma (Civil) - Offline Test Series';
-      lastTestDate = isDegreeCourse ? '10 January 2027 (Test-28)' : '29 November 2026 (Test-22)';
-      const prefix = (centreKey || centre || 'JSP').slice(0, 3).toUpperCase();
-      const examCode = isDegreeCourse ? 'DEG' : 'DIP';
-      rollNumber = null;
-      for (let i = 0; i < 10; i++) {
-        const candidate = `${prefix}-${examCode}-${Math.floor(10000 + Math.random() * 90000)}`;
-        const exists = await query('SELECT 1 FROM enrollments WHERE roll_number = $1', [candidate]);
-        if (!exists.rows.length) { rollNumber = candidate; break; }
-      }
-      if (!rollNumber) rollNumber = `${prefix}-${examCode}-${Math.floor(10000 + Math.random() * 90000)}`;
-      htmlBody     = buildAdmitCardHtml({ name: name || enr.student_name, seriesName, centreInfo, schedule, isDegreeCourse });
+      htmlBody      = buildGenericAdmitCardHtml({ name: name || enr.student_name, seriesName, centreInfo, mode });
     }
+
+    const prefix   = (isOmr ? 'OMR' : (getCentreKey(centre) || centre || 'JSP')).slice(0, 3).toUpperCase();
+    const examCode = ((program && program.shortName) || slug).replace(/[^a-zA-Z]/g, '').slice(0, 3).toUpperCase() || 'GEN';
+    rollNumber = null;
+    for (let i = 0; i < 10; i++) {
+      const candidate = `${prefix}-${examCode}-${Math.floor(10000 + Math.random() * 90000)}`;
+      const exists = await query('SELECT 1 FROM enrollments WHERE roll_number = $1', [candidate]);
+      if (!exists.rows.length) { rollNumber = candidate; break; }
+    }
+    if (!rollNumber) rollNumber = `${prefix}-${examCode}-${Math.floor(10000 + Math.random() * 90000)}`;
 
     const pdfBuffer = await generateAdmitCard({
       name:         name || enr.student_name,
