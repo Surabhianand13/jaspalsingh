@@ -381,8 +381,9 @@ router.get('/schedule/:id/uploads/download-all', protect, async (req, res, next)
       let name = base + ext, counter = 1;
       while (usedNames.has(name)) { counter += 1; name = base + '-' + counter + ext; }
       usedNames.add(name);
-      const nodeStream = require('stream').Readable.fromWeb(obj.Body);
-      archive.append(nodeStream, { name });
+      const chunks = [];
+      for await (const chunk of obj.Body) { chunks.push(chunk); }
+      archive.append(Buffer.concat(chunks), { name });
     }
     await archive.finalize();
   } catch (err) { next(err); }

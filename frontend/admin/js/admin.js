@@ -1991,7 +1991,7 @@
         fetch(API_BASE + '/api/programs/schedule/'+row.id+'/uploads/download-all', {
           headers: { 'Authorization': 'Bearer ' + getToken() }
         }).then(function(res){
-          if (!res.ok) return res.json().then(function(d){ throw new Error(d.error || 'Download failed'); });
+          if (!res.ok) return res.text().then(function(t){ var d; try{ d=JSON.parse(t); }catch(x){} throw new Error((d&&d.error)||'Server error '+res.status); });
           return res.blob();
         }).then(function(blob){
           var url = URL.createObjectURL(blob);
