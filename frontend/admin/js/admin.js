@@ -1987,11 +1987,10 @@
       downloadAllBtn.onclick = function(){
         var originalLabel = downloadAllBtn.textContent;
         downloadAllBtn.textContent = 'Zipping…';
-        downloadAllBtn.disabled = true;
         fetch(API_BASE + '/api/programs/schedule/'+row.id+'/uploads/download-all', {
           headers: { 'Authorization': 'Bearer ' + getToken() }
         }).then(function(res){
-          if (!res.ok) return res.text().then(function(t){ var d; try{ d=JSON.parse(t); }catch(x){} throw new Error((d&&d.error)||'Server error '+res.status); });
+          if (!res.ok) return res.json().then(function(d){ throw new Error(d.error || 'Download failed'); });
           return res.blob();
         }).then(function(blob){
           var url = URL.createObjectURL(blob);
@@ -1999,9 +1998,8 @@
           a.href = url; a.download = 'test-'+row.id+'-uploads.zip';
           document.body.appendChild(a); a.click(); document.body.removeChild(a);
           URL.revokeObjectURL(url);
-          showToast('Downloaded successfully.', 'success');
-        }).catch(function(e){ showToast(e.message || 'Download failed', 'error'); })
-          .finally(function(){ downloadAllBtn.textContent = originalLabel; downloadAllBtn.disabled = false; });
+        }).catch(function(e){ showToast(e.message, 'error'); })
+          .finally(function(){ downloadAllBtn.textContent = originalLabel; });
       };
     }
   }
@@ -2630,9 +2628,8 @@
       : '<div><label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Test Centre *</label>' +
           '<select id="ac_centre" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;">' +
             '<option value="">Select centre...</option>' +
-            '<option value="jaipur">Jaipur</option><option value="kota">Kota</option>' +
-            '<option value="bikaner">Bikaner</option><option value="sikar">Sikar</option>' +
-            '<option value="jodhpur">Jodhpur</option><option value="alwar">Alwar</option><option value="ajmer">Ajmer</option>' +
+            '<option value="jaipur">Jaipur</option><option value="bikaner">Bikaner</option>' +
+            '<option value="delhi">Delhi</option>' +
           '</select></div>';
     modal.innerHTML =
       '<div style="background:#fff;border-radius:14px;padding:28px 32px;max-width:480px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);">' +
