@@ -352,12 +352,11 @@ router.get('/schedule/:id/uploads', protect, async (req, res, next) => {
 
 /* ADMIN: zip every learner's answer-sheet upload for one test into a
    single download, so admin doesn't have to open each submission one by
-   one before computing ranks. Streams straight from R2, no temp files. */
+   one before computing ranks. */
 router.get('/schedule/:id/uploads/download-all', protect, async (req, res, next) => {
   try {
     const result = await query(
-      `SELECT su.learner_name, su.learner_email, su.file_key,
-              sr.test_number
+      `SELECT su.learner_name, su.learner_email, su.file_key, sr.test_number
        FROM schedule_uploads su
        JOIN program_schedule sr ON sr.id = su.schedule_id
        WHERE su.schedule_id = $1 ORDER BY su.uploaded_at ASC`,
@@ -365,28 +364,41 @@ router.get('/schedule/:id/uploads/download-all', protect, async (req, res, next)
     );
     if (!result.rows.length) return res.status(404).json({ error: 'No uploads for this test yet.' });
 
-    res.attachment(`test-${req.params.id}-uploads.zip`);
-    const archive = archiver('zip', { zlib: { level: 9 } });
-    archive.on('error', (err) => next(err));
-    archive.pipe(res);
-
-    const usedNames = new Set();
+    /* Fetch all files into memory BEFORE sending any headers so errors
+       can still be returned as JSON. */
+    const files = [];
     for (const row of result.rows) {
       const obj = await r2.send(new GetObjectCommand({ Bucket: BUCKET, Key: row.file_key }));
+      const chunks = [];
+      for await (const chunk of obj.Body) chunks.push(chunk);
+      const buf = Buffer.concat(chunks);
       const ext = row.file_key.includes('.') ? row.file_key.slice(row.file_key.lastIndexOf('.')) : '';
       const testNo = row.test_number ? 'Test' + row.test_number + '_' : '';
       const email = (row.learner_email || '').replace(/[^a-zA-Z0-9@._-]/g, '').slice(0, 40);
-      const name_part = (row.learner_name || 'learner').replace(/[^a-zA-Z0-9 _-]/g, '').trim() || 'learner';
-      let base = testNo + name_part + (email ? '_' + email : '');
-      let name = base + ext, counter = 1;
-      while (usedNames.has(name)) { counter += 1; name = base + '-' + counter + ext; }
-      usedNames.add(name);
-      const chunks = [];
-      for await (const chunk of obj.Body) { chunks.push(chunk); }
-      archive.append(Buffer.concat(chunks), { name });
+      const namePart = (row.learner_name || 'learner').replace(/[^a-zA-Z0-9 _-]/g, '').trim() || 'learner';
+      files.push({ buf, base: testNo + namePart + (email ? '_' + email : ''), ext });
     }
+
+    /* Deduplicate filenames */
+    const usedNames = new Set();
+    for (const f of files) {
+      let name = f.base + f.ext, counter = 1;
+      while (usedNames.has(name)) { counter++; name = f.base + '-' + counter + f.ext; }
+      usedNames.add(name);
+      f.finalName = name;
+    }
+
+    /* All buffers ready - now stream the zip */
+    res.attachment(`test-${req.params.id}-uploads.zip`);
+    const archive = archiver('zip', { zlib: { level: 6 } });
+    archive.on('error', err => console.error('archiver error:', err));
+    archive.pipe(res);
+    for (const f of files) archive.append(f.buf, { name: f.finalName });
     await archive.finalize();
-  } catch (err) { next(err); }
+  } catch (err) {
+    if (res.headersSent) { console.error('download-all error after headers sent:', err); return; }
+    next(err);
+  }
 });
 
 /* ADMIN: delete a single row (for touch-ups without re-uploading everything) */
