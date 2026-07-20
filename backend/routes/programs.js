@@ -11,7 +11,7 @@
 const express = require('express');
 const router  = express.Router();
 const multer  = require('multer');
-const archiver = require('archiver');
+const AdmZip = require('adm-zip');
 const { PutObjectCommand, DeleteObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
 const { r2, BUCKET } = require('../config/r2');
 const { query } = require('../config/db');
@@ -388,13 +388,14 @@ router.get('/schedule/:id/uploads/download-all', protect, async (req, res, next)
       f.finalName = name;
     }
 
-    /* All buffers ready - now stream the zip */
-    res.attachment(`test-${req.params.id}-uploads.zip`);
-    const archive = archiver('zip', { zlib: { level: 6 } });
-    archive.on('error', err => console.error('archiver error:', err));
-    archive.pipe(res);
-    for (const f of files) archive.append(f.buf, { name: f.finalName });
-    await archive.finalize();
+    /* All buffers ready - build zip in memory and send */
+    const zip = new AdmZip();
+    for (const f of files) zip.addFile(f.finalName, f.buf);
+    const zipBuf = zip.toBuffer();
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="test-${req.params.id}-uploads.zip"`);
+    res.setHeader('Content-Length', zipBuf.length);
+    res.send(zipBuf);
   } catch (err) {
     console.error('[download-all] error:', err.name, '-', err.message);
     if (res.headersSent) return;
