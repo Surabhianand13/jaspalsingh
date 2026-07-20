@@ -1986,22 +1986,51 @@
     if (downloadAllBtn) {
       downloadAllBtn.onclick = function(){
         var originalLabel = downloadAllBtn.textContent;
-        downloadAllBtn.textContent = 'Zipping…';
-        fetch(API_BASE + '/api/programs/schedule/'+row.id+'/uploads/download-all', {
-          headers: { 'Authorization': 'Bearer ' + getToken() }
-        }).then(function(res){
-          if (!res.ok) return res.json().then(function(d){ throw new Error(d.error || 'Download failed'); });
-          return res.blob();
-        }).then(function(blob){
-          var url = URL.createObjectURL(blob);
-          var a = document.createElement('a');
-          a.href = url; a.download = 'test-'+row.id+'-uploads.zip';
-          document.body.appendChild(a); a.click(); document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        }).catch(function(e){ showToast(e.message, 'error'); })
-          .finally(function(){ downloadAllBtn.textContent = originalLabel; });
+        downloadAllBtn.textContent = 'Fetching…';
+        downloadAllBtn.disabled = true;
+        /* Step 1 - get the upload list */
+        adminFetch('GET', '/api/programs/schedule/'+row.id+'/uploads').then(function(d){
+          var uploads = d.uploads || [];
+          if (!uploads.length) { showToast('No uploads to download.', 'error'); return; }
+          /* Step 2 - load JSZip on demand */
+          return loadJSZip().then(function(JSZip){
+            var zip = new JSZip();
+            var fetches = uploads.map(function(u, i){
+              var ext = (u.file_url || '').split('?')[0].split('.').pop() || 'pdf';
+              var filename = (i+1) + '_' + (u.learner_name || 'learner').replace(/[^a-zA-Z0-9]/g,'_') + '.' + ext;
+              downloadAllBtn.textContent = 'Downloading ' + (i+1) + '/' + uploads.length + '…';
+              return fetch(u.file_url).then(function(r){
+                if (!r.ok) throw new Error('Failed to fetch file for ' + (u.learner_name||'learner'));
+                return r.arrayBuffer();
+              }).then(function(buf){ zip.file(filename, buf); });
+            });
+            return Promise.all(fetches).then(function(){
+              downloadAllBtn.textContent = 'Zipping…';
+              return zip.generateAsync({ type: 'blob' });
+            }).then(function(blob){
+              var url = URL.createObjectURL(blob);
+              var a = document.createElement('a');
+              a.href = url; a.download = 'test-'+row.id+'-uploads.zip';
+              document.body.appendChild(a); a.click(); document.body.removeChild(a);
+              URL.revokeObjectURL(url);
+              showToast('Downloaded ' + uploads.length + ' files.', 'success');
+            });
+          });
+        }).catch(function(e){ showToast(e.message || 'Download failed', 'error'); })
+          .finally(function(){ downloadAllBtn.textContent = originalLabel; downloadAllBtn.disabled = false; });
       };
     }
+
+  function loadJSZip(){
+    if (window.JSZip) return Promise.resolve(window.JSZip);
+    return new Promise(function(resolve, reject){
+      var s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+      s.onload = function(){ resolve(window.JSZip); };
+      s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  }
   }
 
   function loadScheduleRows(slug, category){
