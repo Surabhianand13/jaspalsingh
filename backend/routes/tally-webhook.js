@@ -15,12 +15,11 @@ const FROM   = 'Dr. Jaspal Singh <team@jaspalsingh.in>';
 
 /* ── Centre data ─────────────────────────────────────────── */
 
+/* Kota/Sikar/Jodhpur/Alwar/Ajmer removed (2026-07-19) - those standalone
+   centres are no longer active, replaced by a tie-up with libraries across
+   Rajasthan. Only Jaipur, Bikaner and Delhi (shared with ESE, see
+   config/eseTestSeries.js) currently have real centres. */
 const CENTRES = {
-  kota: {
-    name: 'Kota',
-    address: 'Achievers Point, D-24, Main Road, Near Sarvottam Library, Shrinathpuram, Kota, Rajasthan - 324010',
-    mapsLink: 'https://maps.app.goo.gl/fW4XGF3S7r5LYGMv5',
-  },
   bikaner: {
     name: 'Bikaner',
     address: 'Holy Mission Public Sec. School, 2-E-24, Sector-2, Opposite Reliance Smart - Baba Bhawan, Pawanpuri, Bikaner - 334003',
@@ -28,28 +27,13 @@ const CENTRES = {
   },
   jaipur: {
     name: 'Jaipur',
-    address: '311, Apex Mall, Lalkothi, Jaipur - 302015',
-    mapsLink: 'https://maps.app.goo.gl/MzosW13pcH9pQ2Zn7',
+    address: '33, White House, Opp. Zone Tech, Tonk Road, Madhuvan Colony, Mansingh Pura, Jaipur, Rajasthan 302015',
+    mapsLink: 'https://maps.app.goo.gl/UiYpXv447AWrfyMX8',
   },
-  sikar: {
-    name: 'Sikar',
-    address: 'Dev Library, Near Shree Balaji Hospital, Piprali Road, Sikar, Rajasthan',
-    mapsLink: 'https://maps.app.goo.gl/sWNomYeyfFjDc8xK6?g_st=iw',
-  },
-  jodhpur: {
-    name: 'Jodhpur',
-    address: '2nd Floor, 19-B, UIT Road, Near Bhaskar Circle, Ratanada, Jodhpur, Rajasthan - 342001',
-    mapsLink: 'https://share.google/fPw3qqIjy1A1jTsin',
-  },
-  alwar: {
-    name: 'Alwar',
-    address: 'To be announced - contact us on WhatsApp for details',
-    mapsLink: 'https://wa.me/919829133317',
-  },
-  ajmer: {
-    name: 'Ajmer',
-    address: 'To be announced - contact us on WhatsApp for details',
-    mapsLink: 'https://wa.me/919829133317',
+  delhi: {
+    name: 'Delhi',
+    address: 'P R Library, F-462, 1st Floor, Smart Point Building, Old MB Road, Lado Sarai, South Delhi 110030',
+    mapsLink: 'https://maps.app.goo.gl/bv3wtG4rp7f6TuSk6',
   },
 };
 
@@ -216,13 +200,9 @@ function parseTallyFields(fields) {
 
 function getCentreKey(centreValue) {
   const v = (centreValue || '').toLowerCase();
-  if (v.includes('kota'))    return 'kota';
   if (v.includes('bikaner')) return 'bikaner';
   if (v.includes('jaipur'))  return 'jaipur';
-  if (v.includes('sikar'))   return 'sikar';
-  if (v.includes('jodhpur')) return 'jodhpur';
-  if (v.includes('alwar'))   return 'alwar';
-  if (v.includes('ajmer'))   return 'ajmer';
+  if (v.includes('delhi'))   return 'delhi';
   return null;
 }
 
