@@ -356,12 +356,16 @@ router.get('/schedule/:id/uploads', protect, async (req, res, next) => {
 router.get('/schedule/:id/uploads/download-all', protect, async (req, res, next) => {
   try {
     const result = await query(
-      `SELECT learner_name, file_key FROM schedule_uploads WHERE schedule_id = $1 ORDER BY uploaded_at ASC`,
+      `SELECT su.learner_name, su.learner_email, su.file_key,
+              sr.test_number
+       FROM schedule_uploads su
+       JOIN program_schedule sr ON sr.id = su.schedule_id
+       WHERE su.schedule_id = $1 ORDER BY su.uploaded_at ASC`,
       [req.params.id]
     );
     if (!result.rows.length) return res.status(404).json({ error: 'No uploads for this test yet.' });
 
-    res.attachment(`schedule-${req.params.id}-uploads.zip`);
+    res.attachment(`test-${req.params.id}-uploads.zip`);
     const archive = archiver('zip', { zlib: { level: 9 } });
     archive.on('error', (err) => next(err));
     archive.pipe(res);
@@ -370,11 +374,15 @@ router.get('/schedule/:id/uploads/download-all', protect, async (req, res, next)
     for (const row of result.rows) {
       const obj = await r2.send(new GetObjectCommand({ Bucket: BUCKET, Key: row.file_key }));
       const ext = row.file_key.includes('.') ? row.file_key.slice(row.file_key.lastIndexOf('.')) : '';
-      const base = (row.learner_name || 'learner').replace(/[^a-zA-Z0-9 _-]/g, '').trim() || 'learner';
+      const testNo = row.test_number ? 'Test' + row.test_number + '_' : '';
+      const email = (row.learner_email || '').replace(/[^a-zA-Z0-9@._-]/g, '').slice(0, 40);
+      const name_part = (row.learner_name || 'learner').replace(/[^a-zA-Z0-9 _-]/g, '').trim() || 'learner';
+      let base = testNo + name_part + (email ? '_' + email : '');
       let name = base + ext, counter = 1;
       while (usedNames.has(name)) { counter += 1; name = base + '-' + counter + ext; }
       usedNames.add(name);
-      archive.append(obj.Body, { name });
+      const nodeStream = require('stream').Readable.fromWeb(obj.Body);
+      archive.append(nodeStream, { name });
     }
     await archive.finalize();
   } catch (err) { next(err); }
