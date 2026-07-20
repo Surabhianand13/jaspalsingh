@@ -605,6 +605,86 @@ function buildAdmitCardHtml({ name, seriesName, centreInfo, schedule, isDegreeCo
 </html>`;
 }
 
+/* Generic admit-card confirmation email for any test-series program that
+   isn't the RSSB combo or an ESE program (those have their own tailored
+   templates above with exam-specific instructions). seriesName comes from
+   the live `programs` table rather than being hardcoded per exam, and it
+   points learners to the in-app Schedule tab instead of embedding a
+   hardcoded test table - that's the real, admin-editable source of truth
+   now (program_schedule table) - so any current or future test-series
+   program works here without a code change. */
+function buildGenericAdmitCardHtml({ name, seriesName, centreInfo, mode }) {
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8" /></head>
+<body style="font-family:Arial,sans-serif;color:#0f172a;max-width:620px;margin:0 auto;padding:20px;">
+
+  <div style="background:#0f172a;border-radius:12px;padding:28px 32px;margin-bottom:24px;text-align:center;">
+    <h1 style="color:#fff;margin:0;font-size:22px;">Dr. Jaspal Singh</h1>
+    <p style="color:#94a3b8;margin:6px 0 0;font-size:13px;">jaspalsingh.in</p>
+  </div>
+
+  <p style="font-size:16px;">Dear <strong>${name || 'Student'}</strong>,</p>
+  <p>Congratulations! Your registration for the <strong>${seriesName}</strong> has been confirmed.</p>
+  <p>Please find your <strong>Admit Card attached</strong> to this email as a PDF. Carry it (printed or on your phone) to every test.</p>
+
+  ${mode === 'home' ? `
+  <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:20px 24px;margin:20px 0;">
+    <h2 style="font-size:15px;margin:0 0 12px;color:#c81240;">Mode</h2>
+    <p style="margin:4px 0;">This is a <strong>Home-Based (Online) Test Series</strong> - download the question paper and OMR sheet, and upload your filled answer sheet, directly from your dashboard.</p>
+  </div>
+  ` : `
+  <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:20px 24px;margin:20px 0;">
+    <h2 style="font-size:15px;margin:0 0 12px;color:#c81240;">Your Exam Centre</h2>
+    <p style="margin:4px 0;"><strong>Centre:</strong> ${centreInfo.name}</p>
+    <p style="margin:4px 0;"><strong>Address:</strong> ${centreInfo.address}</p>
+    ${centreInfo.mapsLink && centreInfo.mapsLink !== '#' ? `
+    <p style="margin:8px 0 0;">
+      <a href="${centreInfo.mapsLink}" style="background:#c81240;color:#fff;text-decoration:none;padding:8px 18px;border-radius:6px;font-size:13px;font-weight:bold;">
+        View on Google Maps
+      </a>
+    </p>` : ''}
+  </div>
+  `}
+
+  <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:20px 24px;margin:20px 0;">
+    <h2 style="font-size:15px;margin:0 0 12px;color:#c81240;">Test Schedule &amp; Papers</h2>
+    <p style="margin:4px 0;">Your full test schedule, question papers and solutions are available anytime on your dashboard:</p>
+    <p style="margin:10px 0 0;">
+      <a href="https://jaspalsingh.in/my-programs/" style="background:#0F766E;color:#fff;text-decoration:none;padding:8px 18px;border-radius:6px;font-size:13px;font-weight:bold;">
+        View My Schedule
+      </a>
+    </p>
+  </div>
+
+  <div style="background:#fefce8;border:1px solid #fde68a;border-radius:10px;padding:20px 24px;margin:20px 0;">
+    <h2 style="font-size:15px;margin:0 0 12px;color:#92400e;">Do's and Don'ts</h2>
+    <p style="font-size:13px;font-weight:bold;margin:10px 0 6px;color:#15803d;">DOs:</p>
+    <ul style="margin:0 0 12px;padding-left:20px;font-size:13px;line-height:1.7;">
+      <li>Carry this Admit Card (printed or on phone) to every test</li>
+      ${mode !== 'home' ? '<li>Reach the centre at least <strong>15 minutes before</strong> the test start time</li>' : ''}
+      <li>Bring a valid Govt Photo ID (Aadhar, Voter ID, Driving Licence, Passport)</li>
+      <li>Use only a <strong>blue or black ballpoint pen</strong></li>
+    </ul>
+    <p style="font-size:13px;font-weight:bold;margin:10px 0 6px;color:#dc2626;">DON'Ts:</p>
+    <ul style="margin:0;padding-left:20px;font-size:13px;line-height:1.7;">
+      ${mode !== 'home' ? '<li>Do NOT bring mobile phones, smartwatches, or electronic devices inside the exam hall</li><li>Do NOT arrive late - latecomers may not be allowed entry</li>' : ''}
+      <li>Do NOT use pencil, gel pens, or whitener on the OMR sheet</li>
+    </ul>
+  </div>
+
+  <p style="font-size:14px;">For any queries, feel free to reach out on WhatsApp or call us directly.</p>
+  <p style="font-size:14px;margin-top:20px;">
+    Best wishes for your preparation!<br/>
+    <strong>Dr. Jaspal Singh</strong><br/>
+    <a href="https://jaspalsingh.in" style="color:#c81240;">jaspalsingh.in</a>
+  </p>
+  <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0;" />
+  <p style="font-size:11px;color:#94a3b8;text-align:center;">This is an automated confirmation email. Please do not reply to this email.</p>
+</body>
+</html>`;
+}
+
 /* ── Schedule rows as plain text for email ───────────────── */
 
 
@@ -1230,6 +1310,7 @@ module.exports.generateAdmitCard        = generateAdmitCard;
 module.exports.generateComboAdmitCard   = generateComboAdmitCard;
 module.exports.buildAdmitCardHtml       = buildAdmitCardHtml;
 module.exports.buildComboAdmitCardHtml  = buildComboAdmitCardHtml;
+module.exports.buildGenericAdmitCardHtml = buildGenericAdmitCardHtml;
 module.exports.fetchImageBuffer         = fetchImageBuffer;
 module.exports.fetchImageBufferTrusted  = fetchImageBufferTrusted;
 module.exports.getCentreKey             = getCentreKey;
