@@ -396,8 +396,9 @@ router.get('/schedule/:id/uploads/download-all', protect, async (req, res, next)
     for (const f of files) archive.append(f.buf, { name: f.finalName });
     await archive.finalize();
   } catch (err) {
-    if (res.headersSent) { console.error('download-all error after headers sent:', err); return; }
-    next(err);
+    console.error('[download-all] error:', err.name, '-', err.message);
+    if (res.headersSent) return;
+    res.status(500).json({ error: '[download-all] ' + err.message });
   }
 });
 
