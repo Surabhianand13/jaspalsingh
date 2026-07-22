@@ -2031,6 +2031,24 @@
 
     var current = 'ese';
 
+    // Jaipur main-batch cards (26 July) pinned to the front of the RSSB JE
+    // tab - listed Degree first, Diploma second. Dynamically-added cards
+    // (from the admin-managed /api/programs sync above) don't carry a
+    // data-slug attribute, only the static ones do, so slugFromCard()
+    // falls back to parsing it out of the CTA href either way.
+    var PINNED_RSSB_SLUGS = [
+      'rssb-je-2026-jaspasir-ki-testseries-degree-jaipur-main-batch-26-july',
+      'rssb-je-2026-jaspasir-ki-testseries-diploma-jaipur-main-batch-26-july'
+    ];
+
+    function slugFromCard(card) {
+      if (card.getAttribute('data-slug')) return card.getAttribute('data-slug');
+      var cta = card.querySelector('.op-card-cta');
+      var href = cta ? cta.getAttribute('href') : '';
+      var m = (href || '').match(/[?&]slug=([^&]+)/) || (href || '').match(/\/programs\/([^\/]+)\/?$/);
+      return m ? decodeURIComponent(m[1]) : '';
+    }
+
     function bucketFor(examText) {
       var t = (examText || '').toLowerCase();
       if (t.indexOf('rssb') !== -1 || t.indexOf('rpsc') !== -1) return 'rssb';
@@ -2047,6 +2065,12 @@
         if (bucket === 'other') hasOther = true;
         card.style.display = (bucket === current) ? '' : 'none';
       });
+
+      for (var i = PINNED_RSSB_SLUGS.length - 1; i >= 0; i--) {
+        carousel.querySelectorAll('.op-card').forEach(function (card) {
+          if (slugFromCard(card) === PINNED_RSSB_SLUGS[i]) carousel.prepend(card);
+        });
+      }
 
       if (hasOther && !tabsWrap.querySelector('[data-cat-tab="other"]')) {
         var otherTab = document.createElement('button');
