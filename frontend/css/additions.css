@@ -122,6 +122,33 @@
   color: #fff;
 }
 
+/* Exam-level category tabs above the program carousel - filters .op-card
+   by which exam it belongs to (see the JS bucketing in index.html), so
+   ESE and RSSB JE/RPSC AE learners each only see their own programs. */
+.progs-cat-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.progs-cat-tab {
+  border: 2px solid rgba(26,26,46,0.12);
+  background: var(--white);
+  color: var(--heading-color);
+  padding: 9px 20px;
+  border-radius: 50px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.progs-cat-tab:hover { border-color: var(--magenta); }
+.progs-cat-tab.active {
+  background: var(--magenta);
+  border-color: var(--magenta);
+  color: #fff;
+}
+
 /* Carousel wrapper — hides overflow */
 .progs-carousel-wrap {
   position: relative;
