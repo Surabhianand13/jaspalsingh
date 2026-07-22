@@ -682,6 +682,11 @@
           </div>
         </div>
 
+        <div class="progs-cat-tabs" role="tablist" aria-label="Filter programs by exam">
+          <button class="progs-cat-tab active" data-cat-tab="ese" role="tab" aria-selected="true">ESE 2027</button>
+          <button class="progs-cat-tab" data-cat-tab="rssb" role="tab" aria-selected="false">RSSB JE / RPSC AE</button>
+        </div>
+
         <div class="progs-carousel-wrap">
           <div class="progs-carousel" id="progsCarousel">
 
@@ -2003,8 +2008,73 @@
         list.forEach(function (p) {
           if (!existing[p.slug]) carousel.appendChild(buildCard(p));
         });
+        if (window.__progCatFilter) window.__progCatFilter();
       })
-      .catch(function () { /* homepage carousel stays exactly as-is if this fails */ });
+      .catch(function () {
+        /* homepage carousel stays exactly as-is if this fails */
+        if (window.__progCatFilter) window.__progCatFilter();
+      });
+  })();
+  </script>
+
+  <!-- ── Category tabs (ESE 2027 / RSSB JE + RPSC AE) for the embedded
+       program carousel above - buckets every .op-card by its existing
+       .op-thumb-exam text, so it works for both the static cards here
+       and any admin-added cards the sync script above appends. Exposes
+       window.__progCatFilter so that script can re-filter once its
+       async fetch actually finishes adding/removing cards. ── -->
+  <script>
+  (function () {
+    var carousel = document.getElementById('progsCarousel');
+    var tabsWrap = document.querySelector('.progs-cat-tabs');
+    if (!carousel || !tabsWrap) return;
+
+    var current = 'ese';
+
+    function bucketFor(examText) {
+      var t = (examText || '').toLowerCase();
+      if (t.indexOf('rssb') !== -1 || t.indexOf('rpsc') !== -1) return 'rssb';
+      if (t.indexOf('ese') !== -1) return 'ese';
+      return 'other';
+    }
+
+    function applyFilter() {
+      var hasOther = false;
+      carousel.querySelectorAll('.op-card').forEach(function (card) {
+        var examEl = card.querySelector('.op-thumb-exam');
+        var bucket = bucketFor(examEl ? examEl.textContent : '');
+        card.setAttribute('data-bucket', bucket);
+        if (bucket === 'other') hasOther = true;
+        card.style.display = (bucket === current) ? '' : 'none';
+      });
+
+      if (hasOther && !tabsWrap.querySelector('[data-cat-tab="other"]')) {
+        var otherTab = document.createElement('button');
+        otherTab.className = 'progs-cat-tab';
+        otherTab.setAttribute('data-cat-tab', 'other');
+        otherTab.setAttribute('role', 'tab');
+        otherTab.setAttribute('aria-selected', 'false');
+        otherTab.textContent = 'More Programs';
+        otherTab.addEventListener('click', function () { selectTab(otherTab); });
+        tabsWrap.appendChild(otherTab);
+      }
+    }
+
+    function selectTab(btn) {
+      tabsWrap.querySelectorAll('.progs-cat-tab').forEach(function (b) {
+        b.classList.toggle('active', b === btn);
+        b.setAttribute('aria-selected', b === btn ? 'true' : 'false');
+      });
+      current = btn.getAttribute('data-cat-tab');
+      applyFilter();
+    }
+
+    tabsWrap.querySelectorAll('.progs-cat-tab').forEach(function (btn) {
+      btn.addEventListener('click', function () { selectTab(btn); });
+    });
+
+    window.__progCatFilter = applyFilter;
+    applyFilter();
   })();
   </script>
 </body>
