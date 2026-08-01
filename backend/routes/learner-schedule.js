@@ -116,7 +116,7 @@ router.get('/:program_slug', protectLearner, async (req, res, next) => {
     }
 
     const result = await query(
-      `SELECT ps.id, ps.test_number, ps.test_date, ps.syllabus, ps.questions,
+      `SELECT ps.id, ps.test_number, ps.test_date, ps.syllabus, ps.questions, ps.marks, ps.duration_minutes,
               ps.question_paper_url, ps.blank_omr_url, ps.solution_url,
               ps.paper_release_at, ps.omr_upload_deadline, ps.requires_omr_upload,
               su.id AS upload_id, su.file_url AS my_upload_url, su.uploaded_at AS my_upload_at
@@ -135,6 +135,8 @@ router.get('/:program_slug', protectLearner, async (req, res, next) => {
         test_date: row.test_date,
         syllabus: row.syllabus,
         questions: row.questions,
+        marks: row.marks,
+        duration_minutes: row.duration_minutes,
         requires_omr_upload: row.requires_omr_upload,
         ...flags,
         question_paper_url: flags.paper_available ? row.question_paper_url : null,

@@ -769,6 +769,8 @@ async function migrate() {
   await query(`ALTER TABLE program_schedule ADD COLUMN IF NOT EXISTS paper_release_at TIMESTAMPTZ`);
   await query(`ALTER TABLE program_schedule ADD COLUMN IF NOT EXISTS omr_upload_deadline TIMESTAMPTZ`);
   await query(`ALTER TABLE program_schedule ADD COLUMN IF NOT EXISTS requires_omr_upload BOOLEAN NOT NULL DEFAULT FALSE`);
+  await query(`ALTER TABLE program_schedule ADD COLUMN IF NOT EXISTS marks INTEGER`);
+  await query(`ALTER TABLE program_schedule ADD COLUMN IF NOT EXISTS duration_minutes INTEGER`);
   await query(`ALTER TABLE program_schedule ADD COLUMN IF NOT EXISTS omr_test_id INTEGER REFERENCES omr_tests(id) ON DELETE SET NULL`);
   await query(`ALTER TABLE program_schedule ADD COLUMN IF NOT EXISTS answer_key JSONB`);
 
