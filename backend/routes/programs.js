@@ -172,7 +172,7 @@ router.post('/:id/workbook', protect, scheduleAssetUpload.single('file'), handle
 router.get('/:slug/schedule', async (req, res, next) => {
   try {
     const result = await query(
-      `SELECT id, test_number, test_date, syllabus, questions, sort_order
+      `SELECT id, test_number, test_date, syllabus, questions, marks, duration_minutes, sort_order
        FROM program_schedule WHERE program_slug = $1
        ORDER BY sort_order ASC, test_number ASC`,
       [req.params.slug]
@@ -204,7 +204,7 @@ router.get('/:slug/schedule/admin', protect, async (req, res, next) => {
    ordinary single-track program. */
 router.post('/:slug/schedule', protect, async (req, res, next) => {
   try {
-    const { test_number, test_date, syllabus, questions, category } = req.body;
+    const { test_number, test_date, syllabus, questions, marks, duration_minutes, category } = req.body;
     if (!test_number) return res.status(400).json({ error: 'test_number is required.' });
     const dup = await query(
       `SELECT id FROM program_schedule WHERE program_slug = $1 AND test_number = $2 AND category IS NOT DISTINCT FROM $3`,
@@ -213,9 +213,9 @@ router.post('/:slug/schedule', protect, async (req, res, next) => {
     if (dup.rows.length) return res.status(409).json({ error: 'A test with this number already exists in this track - edit it via bulk paste or delete it first.' });
     const maxSort = await query(`SELECT COALESCE(MAX(sort_order), -1) AS m FROM program_schedule WHERE program_slug = $1 AND category IS NOT DISTINCT FROM $2`, [req.params.slug, category || null]);
     const result = await query(
-      `INSERT INTO program_schedule (program_slug, test_number, test_date, syllabus, questions, sort_order, category)
-       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-      [req.params.slug, parseInt(test_number, 10), test_date || null, syllabus || null, questions ? parseInt(questions, 10) : null, maxSort.rows[0].m + 1, category || null]
+      `INSERT INTO program_schedule (program_slug, test_number, test_date, syllabus, questions, marks, duration_minutes, sort_order, category)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+      [req.params.slug, parseInt(test_number, 10), test_date || null, syllabus || null, questions ? parseInt(questions, 10) : null, marks ? parseInt(marks, 10) : null, duration_minutes ? parseInt(duration_minutes, 10) : null, maxSort.rows[0].m + 1, category || null]
     );
     res.status(201).json({ schedule: result.rows[0] });
   } catch (err) { next(err); }
@@ -249,18 +249,25 @@ router.post('/:slug/schedule/bulk', protect, async (req, res, next) => {
     for (const r of rows) {
       const testNumber = parseInt(r.test_number, 10);
       keptNumbers.add(testNumber);
-      const values = [r.test_date || null, r.syllabus || null, r.questions ? parseInt(r.questions, 10) : null, i++];
+      const values = [
+        r.test_date || null,
+        r.syllabus || null,
+        r.questions ? parseInt(r.questions, 10) : null,
+        r.marks ? parseInt(r.marks, 10) : null,
+        r.duration_minutes ? parseInt(r.duration_minutes, 10) : null,
+        i++,
+      ];
 
       if (existingByNumber.has(testNumber)) {
         await query(
-          `UPDATE program_schedule SET test_date = $1, syllabus = $2, questions = $3, sort_order = $4
-           WHERE id = $5`,
+          `UPDATE program_schedule SET test_date = $1, syllabus = $2, questions = $3, marks = $4, duration_minutes = $5, sort_order = $6
+           WHERE id = $7`,
           [...values, existingByNumber.get(testNumber)]
         );
       } else {
         await query(
-          `INSERT INTO program_schedule (program_slug, test_number, test_date, syllabus, questions, sort_order, category)
-           VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+          `INSERT INTO program_schedule (program_slug, test_number, test_date, syllabus, questions, marks, duration_minutes, sort_order, category)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
           [req.params.slug, testNumber, ...values, category]
         );
       }
