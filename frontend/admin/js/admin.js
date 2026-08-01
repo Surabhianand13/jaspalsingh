@@ -2009,19 +2009,20 @@
     adminFetch('GET', '/api/programs/'+encodeURIComponent(slug)+'/schedule/admin').then(function(d){
       var rows = (d.schedule || []).filter(function(r){ return (r.category||null) === (category||null); });
       if (!rows.length) { listEl.innerHTML = '<p class="admin-empty">No schedule yet - paste rows above, or use "Add one test".</p>'; return; }
-      listEl.innerHTML = '<div class="admin-table-wrap" style="overflow-x:auto;"><table class="admin-table" style="min-width:640px;"><thead><tr><th>Test</th><th>Date</th><th style="min-width:160px;">Syllabus</th><th>Qs</th><th style="min-width:150px;">Assets</th><th style="min-width:100px;"></th></tr></thead><tbody>' +
+      listEl.innerHTML = '<div class="admin-table-wrap" style="overflow-x:auto;"><table class="admin-table" style="min-width:760px;"><thead><tr><th>Test</th><th>Date</th><th style="min-width:160px;">Syllabus</th><th>Qs</th><th>Marks</th><th>Duration</th><th style="min-width:150px;">Assets</th><th style="min-width:100px;"></th></tr></thead><tbody>' +
         rows.map(function(r){
           var assetBtns = '<div style="display:flex;flex-direction:column;gap:5px;">' + ASSET_KINDS.map(function(a){
             var has = !!r[a.col];
             return pillBtn('data-asset-upload="'+r.id+'" data-asset-kind="'+a.kind+'"', (has?'&#10003; ':'+ ')+a.label, has?'solid':'outline', 'text-align:left;');
           }).join('') + '</div>';
           return '<tr><td>'+r.test_number+'</td><td>'+e(r.test_date||'-')+'</td><td>'+e(r.syllabus||'-')+'</td><td>'+(r.questions||'-')+'</td>' +
+            '<td>'+(r.marks||'-')+'</td><td>'+(r.duration_minutes?r.duration_minutes+' min':'-')+'</td>' +
             '<td>'+assetBtns+'</td>' +
             '<td><div style="display:flex;flex-direction:column;gap:5px;">'+
               pillBtn('data-sch-configure="'+r.id+'"', 'Configure', 'dark') +
               pillBtn('data-sch-del="'+r.id+'"', 'Delete', 'danger') +
             '</div></td></tr>' +
-            '<tr><td colspan="6"><div id="sch_gating_'+r.id+'"></div></td></tr>';
+            '<tr><td colspan="8"><div id="sch_gating_'+r.id+'"></div></td></tr>';
         }).join('') + '</tbody></table></div>';
 
       listEl.querySelectorAll('[data-asset-upload]').forEach(function(b){
@@ -2056,10 +2057,12 @@
         '<label style="font-size:11.5px;">Date<br><input class="admin-input" id="sch_add_date" placeholder="26 July 2026" style="width:140px;"></label>' +
         '<label style="font-size:11.5px;">Syllabus<br><input class="admin-input" id="sch_add_syllabus" style="width:220px;"></label>' +
         '<label style="font-size:11.5px;">Qs<br><input type="number" class="admin-input" id="sch_add_questions" style="width:70px;"></label>' +
+        '<label style="font-size:11.5px;">Marks<br><input type="number" class="admin-input" id="sch_add_marks" style="width:70px;"></label>' +
+        '<label style="font-size:11.5px;">Duration (mins)<br><input type="number" class="admin-input" id="sch_add_duration" style="width:90px;"></label>' +
         pillBtn('id="sch_add_btn"', 'Add one test', 'solid') +
       '</div>' +
-      '<div class="admin-form-hint" style="margin-bottom:8px;">Or paste several at once, one per line: <code>Test Number | Date | Syllabus | Questions</code> (Questions is optional). Re-pasting the same test number updates that row (assets/settings are kept); a test number no longer in the paste is removed.'+(category?' Applies to the <strong>'+categoryLabel(category)+'</strong> track selected above.':'')+'</div>' +
-      '<textarea class="admin-input" id="sch_paste" rows="6" style="width:100%;font-family:monospace;font-size:12.5px;" placeholder="1 | 26 July 2026 | Rajasthan GK + Building Technology | 120\n2 | 2 August 2026 | Surveying + Fluid Mechanics | 120"></textarea>' +
+      '<div class="admin-form-hint" style="margin-bottom:8px;">Or paste several at once, one per line: <code>Test Number | Date | Syllabus | Questions | Marks | Duration (mins)</code> (Questions, Marks and Duration are optional). Re-pasting the same test number updates that row (assets/settings are kept); a test number no longer in the paste is removed.'+(category?' Applies to the <strong>'+categoryLabel(category)+'</strong> track selected above.':'')+'</div>' +
+      '<textarea class="admin-input" id="sch_paste" rows="6" style="width:100%;font-family:monospace;font-size:12.5px;" placeholder="1 | 26 July 2026 | Rajasthan GK + Building Technology | 120 | 100 | 120\n2 | 2 August 2026 | Surveying + Fluid Mechanics | 120 | 100 | 120"></textarea>' +
       '<div style="margin-top:10px;">'+pillBtn('id="sch_save"', 'Save Pasted Schedule', 'dark')+'</div>' +
       '<div style="margin-top:20px;border-top:1px dashed rgba(26,26,46,.15);padding-top:14px;"><strong style="font-size:13px;">Current schedule'+(category?' - '+categoryLabel(category):'')+'</strong><div class="admin-form-hint">Once a row exists, upload its Question Paper / Blank OMR / Solution and click Configure to set release/deadline dates.</div><div id="sch_list" style="margin-top:10px;"><p class="admin-empty">Loading…</p></div></div>';
 
@@ -2075,10 +2078,12 @@
         test_date: document.getElementById('sch_add_date').value,
         syllabus: document.getElementById('sch_add_syllabus').value,
         questions: document.getElementById('sch_add_questions').value,
+        marks: document.getElementById('sch_add_marks').value,
+        duration_minutes: document.getElementById('sch_add_duration').value,
         category: category || null,
       }).then(function(){
         showToast('Added', 'success');
-        ['sch_add_num','sch_add_date','sch_add_syllabus','sch_add_questions'].forEach(function(id){ document.getElementById(id).value = ''; });
+        ['sch_add_num','sch_add_date','sch_add_syllabus','sch_add_questions','sch_add_marks','sch_add_duration'].forEach(function(id){ document.getElementById(id).value = ''; });
         loadScheduleRows(slug, category);
       }).catch(function(e){ showToast(e.message, 'error'); });
     };
@@ -2090,7 +2095,7 @@
       for (var i = 0; i < lines.length; i++) {
         var parts = lines[i].split('|').map(function(p){return p.trim();});
         if (!parts[0] || isNaN(parseInt(parts[0],10))) { showToast('Line '+(i+1)+': first column must be a test number','error'); return; }
-        rows.push({ test_number: parseInt(parts[0],10), test_date: parts[1]||'', syllabus: parts[2]||'', questions: parts[3]||'' });
+        rows.push({ test_number: parseInt(parts[0],10), test_date: parts[1]||'', syllabus: parts[2]||'', questions: parts[3]||'', marks: parts[4]||'', duration_minutes: parts[5]||'' });
       }
       adminFetch('POST', '/api/programs/'+encodeURIComponent(slug)+'/schedule/bulk', { rows: rows, category: category || null })
         .then(function(d){ showToast(d.message||'Saved','success'); document.getElementById('sch_paste').value=''; loadScheduleRows(slug, category); })
