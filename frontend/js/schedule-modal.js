@@ -123,7 +123,8 @@
         return '<div style="display:flex;align-items:center;justify-content:space-between;border:1px solid #eee;border-radius:10px;padding:12px 16px;margin-bottom:10px;">' +
           '<div>' +
             '<div style="font-weight:700;color:#1A1A2E;">' + esc(t.test_date || ('Test ' + t.test_number)) + '</div>' +
-            '<div style="font-size:12.5px;color:#6b6b8a;">Test no: ' + t.test_number + (t.syllabus ? ' &middot; ' + esc(t.syllabus) : '') + '</div>' +
+            '<div style="font-size:12.5px;color:#6b6b8a;">Test no: ' + t.test_number + (t.syllabus ? ' &middot; ' + esc(t.syllabus) : '') +
+              (t.questions ? ' &middot; ' + t.questions + ' Qs' : '') + (t.marks ? ' &middot; ' + t.marks + ' marks' : '') + (t.duration_minutes ? ' &middot; ' + t.duration_minutes + ' min' : '') + '</div>' +
           '</div>' +
           '<button class="btn" data-schedule-view="' + t.id + '" style="background:#0F766E;color:#fff;border:none;border-radius:20px;padding:8px 18px;font-size:12.5px;font-weight:700;cursor:pointer;">Next &rarr;</button>' +
         '</div>';
@@ -151,7 +152,8 @@
   function renderScheduleDetail(test) {
     var bodyEl = document.getElementById('scheduleModalBody');
     bodyEl.innerHTML = '<button id="scheduleBackBtn" style="background:none;border:none;color:#0F766E;font-weight:700;cursor:pointer;margin-bottom:14px;">&larr; Back to schedule</button>' +
-      '<div style="font-weight:700;color:#1A1A2E;margin-bottom:14px;">Test ' + test.test_number + (test.test_date ? ' &middot; ' + esc(test.test_date) : '') + '</div>' +
+      '<div style="font-weight:700;color:#1A1A2E;margin-bottom:2px;">Test ' + test.test_number + (test.test_date ? ' &middot; ' + esc(test.test_date) : '') + '</div>' +
+      '<div style="font-size:12.5px;color:#6b6b8a;margin-bottom:14px;">' + [test.questions ? test.questions + ' questions' : '', test.marks ? test.marks + ' marks' : '', test.duration_minutes ? test.duration_minutes + ' minutes' : ''].filter(Boolean).join(' &middot; ') + '</div>' +
       '<div id="scheduleCardsGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"></div>' +
       '<div id="scheduleOmrUploadArea" style="margin-top:16px;"></div>';
 
