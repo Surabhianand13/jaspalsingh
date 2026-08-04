@@ -57,4 +57,40 @@
     <priority>0.7</priority>
   </url>
 
+  <!-- Program pages - was previously missing from this sitemap entirely,
+       relying only on internal links for discovery. Update this list
+       whenever a program is added or removed from /api/programs. -->
+  <url><loc>https://jaspalsingh.in/programs/ese-2027-prelims-jaspalsirki-testseries-paper1/</loc><lastmod>2026-08-04</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://jaspalsingh.in/programs/ese-2027-prelims-jaspalsirki-testseries-paper1-omr/</loc><lastmod>2026-08-04</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://jaspalsingh.in/programs/ese-2027-prelims-jaspalsirki-testseries-paper2-civil/</loc><lastmod>2026-08-04</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://jaspalsingh.in/programs/ese-2027-prelims-jaspalsirki-testseries-paper2-civil-omr/</loc><lastmod>2026-08-04</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://jaspalsingh.in/programs/ese-2027-prelims-jaspalsirki-testseries-combined/</loc><lastmod>2026-08-04</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://jaspalsingh.in/programs/ese-2027-prelims-jaspalsirki-testseries-combined-omr/</loc><lastmod>2026-08-04</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://jaspalsingh.in/programs/rssb-jen-diploma-test-series/</loc><lastmod>2026-08-04</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://jaspalsingh.in/programs/rssb-jen-degree-test-series/</loc><lastmod>2026-08-04</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://jaspalsingh.in/programs/rssb-je-omr-degree-test-series/</loc><lastmod>2026-08-04</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://jaspalsingh.in/programs/rssb-jen-omr-diploma-test-series/</loc><lastmod>2026-08-04</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://jaspalsingh.in/programs/rssb-je-jaspalsirki-testseries-degree-diploma-combo/</loc><lastmod>2026-08-04</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://jaspalsingh.in/programs/rssb-je-jaspalsirki-testseries-degree-diploma-combo-omr/</loc><lastmod>2026-08-04</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://jaspalsingh.in/programs/view/?slug=rssb-je-2026-jaspasir-ki-testseries-degree-jaipur-main-batch-26-july</loc><lastmod>2026-08-04</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://jaspalsingh.in/programs/view/?slug=rssb-je-2026-jaspasir-ki-testseries-diploma-jaipur-main-batch-26-july</loc><lastmod>2026-08-04</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+
+  <!-- Blog posts - unlisted from nav/footer but should still be indexable.
+       Update this list whenever a post is published (or better: replace this
+       whole sitemap with a backend-generated one that queries blog_posts +
+       programs directly, so this stops needing manual upkeep). -->
+  <url><loc>https://jaspalsingh.in/blog-post/?slug=best-ese-prelims-2027-coaching-and-test-series</loc><lastmod>2026-08-04</lastmod><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://jaspalsingh.in/blog-post/?slug=rssb-je-civil-engineering-exam-strategy-2026-vacancy-cutoff-syllabus-and-pyq-weightage-analysis</loc><lastmod>2026-07-01</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://jaspalsingh.in/blog-post/?slug=rssb-je-exam-pattern-and-syllabus-2026-complete-subject-wise-breakdown-for-civil-engineers</loc><lastmod>2026-07-01</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://jaspalsingh.in/blog-post/?slug=rssb-je-2026-notification-out-vacancy-eligibility-and-important-dates-for-civil-engineering-aspirants</loc><lastmod>2026-07-01</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://jaspalsingh.in/blog-post/?slug=why-i-left-a-government-job-to-teach-a-personal-note-from-dr-jaspal-singh</loc><lastmod>2026-05-30</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://jaspalsingh.in/blog-post/?slug=from-rejection-to-ese-air-12-how-priya-rebuilt-her-preparation-after-failing-mains</loc><lastmod>2026-05-30</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://jaspalsingh.in/blog-post/?slug=i-failed-gate-twice-the-third-attempt-changed-everything-rahuls-story</loc><lastmod>2026-05-30</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://jaspalsingh.in/blog-post/?slug=how-to-crack-ese-ies-interview-what-the-upsc-board-actually-tests-and-how-to-prepare</loc><lastmod>2026-05-30</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://jaspalsingh.in/blog-post/?slug=the-6-month-gate-ce-study-plan-that-actually-works-week-by-week-breakdown</loc><lastmod>2026-05-30</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://jaspalsingh.in/blog-post/?slug=how-to-master-soil-mechanics-for-gate-ce-a-subject-wise-framework-from-a-15-year-perspective</loc><lastmod>2026-05-30</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://jaspalsingh.in/blog-post/?slug=strength-of-materials-som-for-gate-ce-the-5-concepts-that-appear-every-single-year</loc><lastmod>2026-05-30</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://jaspalsingh.in/blog-post/?slug=gate-2026-civil-engineering-official-notification-released-exam-pattern-and-key-dates</loc><lastmod>2026-05-30</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://jaspalsingh.in/blog-post/?slug=ese-2025-final-result-declared-check-your-score-marks-and-what-comes-next</loc><lastmod>2026-05-30</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+
 </urlset>
