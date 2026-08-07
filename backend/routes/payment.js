@@ -120,12 +120,18 @@ async function getCoupon(code) {
   if (!upper) return null;
   try {
     const result = await query(`SELECT * FROM coupons WHERE code = $1 AND is_active = TRUE`, [upper]);
-    if (result.rows.length) return result.rows[0];
+    // A successful query with zero rows means the coupon is disabled or
+    // doesn't exist - that's a real answer, not a reason to fall back to
+    // the hardcoded catalogue (falling through here previously made
+    // FIRST/JASPAL200 impossible to disable from the admin dashboard,
+    // since the DB correctly returning "not active" was silently treated
+    // the same as "DB unreachable").
+    return result.rows[0] || null;
   } catch (err) {
     console.error('[getCoupon] DB error, falling back to hardcoded coupon:', err.message);
+    const fb = FALLBACK_COUPONS[upper];
+    return fb ? { code: upper, program_prices: null, program_slugs: null, max_uses: null, exclusive: false, expires_at: null, ...fb } : null;
   }
-  const fb = FALLBACK_COUPONS[upper];
-  return fb ? { code: upper, program_prices: null, program_slugs: null, max_uses: null, exclusive: false, expires_at: null, ...fb } : null;
 }
 
 /* ── Has this coupon hit its usage limit (if any)? ── */
