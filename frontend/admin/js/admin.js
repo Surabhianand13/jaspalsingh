@@ -2019,14 +2019,22 @@
             '<td>'+(r.marks||'-')+'</td><td>'+(r.duration_minutes?r.duration_minutes+' min':'-')+'</td>' +
             '<td>'+assetBtns+'</td>' +
             '<td><div style="display:flex;flex-direction:column;gap:5px;">'+
+              pillBtn('data-sch-edit="'+r.id+'"', 'Edit', 'outline') +
               pillBtn('data-sch-configure="'+r.id+'"', 'Configure', 'dark') +
               pillBtn('data-sch-del="'+r.id+'"', 'Delete', 'danger') +
             '</div></td></tr>' +
-            '<tr><td colspan="8"><div id="sch_gating_'+r.id+'"></div></td></tr>';
+            '<tr><td colspan="8"><div id="sch_edit_'+r.id+'"></div><div id="sch_gating_'+r.id+'"></div></td></tr>';
         }).join('') + '</tbody></table></div>';
 
       listEl.querySelectorAll('[data-asset-upload]').forEach(function(b){
         b.addEventListener('click', function(){ uploadScheduleAsset(b.getAttribute('data-asset-upload'), b.getAttribute('data-asset-kind'), slug, category); });
+      });
+      listEl.querySelectorAll('[data-sch-edit]').forEach(function(b){
+        b.addEventListener('click', function(){
+          var rowId = parseInt(b.getAttribute('data-sch-edit'), 10);
+          var row = rows.filter(function(r){ return r.id === rowId; })[0];
+          openEditPanel(row, slug, category);
+        });
       });
       listEl.querySelectorAll('[data-sch-configure]').forEach(function(b){
         b.addEventListener('click', function(){
@@ -2042,6 +2050,41 @@
         });
       });
     }).catch(function(err){ listEl.innerHTML = '<p class="admin-empty">'+e(err.message)+'</p>'; });
+  }
+
+  /* Inline single-row edit - lets one test's date/syllabus/questions/
+     marks/duration/test_number be corrected without touching any other
+     row, so a one-field fix never requires re-pasting the whole schedule. */
+  function openEditPanel(row, slug, category){
+    var panel = document.getElementById('sch_edit_'+row.id);
+    if (!panel) return;
+    if (panel.innerHTML) { panel.innerHTML = ''; return; } // toggle closed if already open
+    panel.innerHTML =
+      '<div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin:8px 0;padding:12px;background:rgba(15,118,110,.06);border-radius:8px;">' +
+        '<label style="font-size:11.5px;">Test no.<br><input type="number" class="admin-input" id="edit_num_'+row.id+'" value="'+e(row.test_number)+'" style="width:80px;"></label>' +
+        '<label style="font-size:11.5px;">Date<br><input class="admin-input" id="edit_date_'+row.id+'" value="'+e(row.test_date||'')+'" style="width:140px;"></label>' +
+        '<label style="font-size:11.5px;">Syllabus<br><input class="admin-input" id="edit_syllabus_'+row.id+'" value="'+e(row.syllabus||'')+'" style="width:220px;"></label>' +
+        '<label style="font-size:11.5px;">Qs<br><input type="number" class="admin-input" id="edit_questions_'+row.id+'" value="'+e(row.questions||'')+'" style="width:70px;"></label>' +
+        '<label style="font-size:11.5px;">Marks<br><input type="number" class="admin-input" id="edit_marks_'+row.id+'" value="'+e(row.marks||'')+'" style="width:70px;"></label>' +
+        '<label style="font-size:11.5px;">Duration (mins)<br><input type="number" class="admin-input" id="edit_duration_'+row.id+'" value="'+e(row.duration_minutes||'')+'" style="width:90px;"></label>' +
+        pillBtn('id="edit_save_'+row.id+'"', 'Save', 'solid') +
+        pillBtn('id="edit_cancel_'+row.id+'"', 'Cancel', 'outline') +
+      '</div>';
+
+    document.getElementById('edit_cancel_'+row.id).onclick = function(){ panel.innerHTML = ''; };
+    document.getElementById('edit_save_'+row.id).onclick = function(){
+      var num = document.getElementById('edit_num_'+row.id).value;
+      if (!num) { showToast('Test number is required', 'error'); return; }
+      adminFetch('PUT', '/api/programs/schedule/'+row.id, {
+        test_number: num,
+        test_date: document.getElementById('edit_date_'+row.id).value,
+        syllabus: document.getElementById('edit_syllabus_'+row.id).value,
+        questions: document.getElementById('edit_questions_'+row.id).value,
+        marks: document.getElementById('edit_marks_'+row.id).value,
+        duration_minutes: document.getElementById('edit_duration_'+row.id).value,
+      }).then(function(){ showToast('Saved', 'success'); loadScheduleRows(slug, category); })
+        .catch(function(e){ showToast(e.message, 'error'); });
+    };
   }
   function renderScheduleForms(slug, category){
     document.getElementById('scheduleModalBody').innerHTML =
@@ -2061,7 +2104,7 @@
         '<label style="font-size:11.5px;">Duration (mins)<br><input type="number" class="admin-input" id="sch_add_duration" style="width:90px;"></label>' +
         pillBtn('id="sch_add_btn"', 'Add one test', 'solid') +
       '</div>' +
-      '<div class="admin-form-hint" style="margin-bottom:8px;">Or paste several at once, one per line: <code>Test Number | Date | Syllabus | Questions | Marks | Duration (mins)</code> (Questions, Marks and Duration are optional). Re-pasting the same test number updates that row (assets/settings are kept); a test number no longer in the paste is removed.'+(category?' Applies to the <strong>'+categoryLabel(category)+'</strong> track selected above.':'')+'</div>' +
+      '<div class="admin-form-hint" style="margin-bottom:8px;">Or paste several at once, one per line: <code>Test Number | Date | Syllabus | Questions | Marks | Duration (mins)</code> (Questions, Marks and Duration are optional). Re-pasting the same test number updates that row (assets/settings are kept) and a new test number is added - tests not included in the paste are left untouched, so pasting just a few corrected future tests never affects the rest of the schedule. Use <strong>Edit</strong> on a single row for a quick fix, or <strong>Delete</strong> to remove a test.'+(category?' Applies to the <strong>'+categoryLabel(category)+'</strong> track selected above.':'')+'</div>' +
       '<textarea class="admin-input" id="sch_paste" rows="6" style="width:100%;font-family:monospace;font-size:12.5px;" placeholder="1 | 26 July 2026 | Rajasthan GK + Building Technology | 120 | 100 | 120\n2 | 2 August 2026 | Surveying + Fluid Mechanics | 120 | 100 | 120"></textarea>' +
       '<div style="margin-top:10px;">'+pillBtn('id="sch_save"', 'Save Pasted Schedule', 'dark')+'</div>' +
       '<div style="margin-top:20px;border-top:1px dashed rgba(26,26,46,.15);padding-top:14px;"><strong style="font-size:13px;">Current schedule'+(category?' - '+categoryLabel(category):'')+'</strong><div class="admin-form-hint">Once a row exists, upload its Question Paper / Blank OMR / Solution and click Configure to set release/deadline dates.</div><div id="sch_list" style="margin-top:10px;"><p class="admin-empty">Loading…</p></div></div>';
