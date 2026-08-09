@@ -123,6 +123,7 @@ app.use('/api/enrollment',   require('./routes/enrollment-account'));
 app.use('/api/events',       require('./routes/events'));
 app.use('/api/programs',      require('./routes/programs'));
 app.use('/api/banners',       require('./routes/banners'));
+app.use('/api/cbt',           require('./routes/cbt'));
 /* Tally webhook routes are registered above (before express.json()) so
    verifyTallySignature can see the raw body - do not re-register here. */
 app.use('/api/omr-check',        require('./routes/omr-check'));
@@ -769,8 +770,27 @@ async function migrate() {
   await query(`ALTER TABLE program_schedule ADD COLUMN IF NOT EXISTS paper_release_at TIMESTAMPTZ`);
   await query(`ALTER TABLE program_schedule ADD COLUMN IF NOT EXISTS omr_upload_deadline TIMESTAMPTZ`);
   await query(`ALTER TABLE program_schedule ADD COLUMN IF NOT EXISTS requires_omr_upload BOOLEAN NOT NULL DEFAULT FALSE`);
+  await query(`ALTER TABLE program_schedule ADD COLUMN IF NOT EXISTS marks INTEGER`);
+  await query(`ALTER TABLE program_schedule ADD COLUMN IF NOT EXISTS duration_minutes INTEGER`);
   await query(`ALTER TABLE program_schedule ADD COLUMN IF NOT EXISTS omr_test_id INTEGER REFERENCES omr_tests(id) ON DELETE SET NULL`);
   await query(`ALTER TABLE program_schedule ADD COLUMN IF NOT EXISTS answer_key JSONB`);
+
+  /* ONE-TIME (2026-07-18): the admin gating panel sent datetime-local values
+     with no timezone offset, so Postgres's UTC session default silently
+     stored every IST time the admin typed as if it were UTC - shifting
+     every already-saved paper_release_at/omr_upload_deadline 5.5 hours
+     later than intended (India is UTC+5:30). The frontend now sends an
+     explicit +05:30 offset (see admin.js istInputToIso), but rows saved
+     before that fix need correcting once. Guarded by a marker table so
+     server restarts never re-apply the shift. */
+  await query(`CREATE TABLE IF NOT EXISTS _migrations_applied (name TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`);
+  const tzFixApplied = await query(`SELECT 1 FROM _migrations_applied WHERE name = 'schedule_gating_ist_offset_fix_20260718'`);
+  if (!tzFixApplied.rows.length) {
+    await query(`UPDATE program_schedule SET paper_release_at = paper_release_at - INTERVAL '5 hours 30 minutes' WHERE paper_release_at IS NOT NULL`);
+    await query(`UPDATE program_schedule SET omr_upload_deadline = omr_upload_deadline - INTERVAL '5 hours 30 minutes' WHERE omr_upload_deadline IS NOT NULL`);
+    await query(`INSERT INTO _migrations_applied (name) VALUES ('schedule_gating_ist_offset_fix_20260718')`);
+    console.log('[migration] Corrected IST offset shift on existing schedule gating dates.');
+  }
 
   /* Simple, ungraded answer-sheet upload - one per learner per test.
      Re-uploading before the deadline replaces the previous file (the
@@ -791,6 +811,35 @@ async function migrate() {
   `);
   await query(`CREATE INDEX IF NOT EXISTS idx_schedule_uploads_schedule ON schedule_uploads(schedule_id)`);
   await query(`CREATE UNIQUE INDEX IF NOT EXISTS schedule_uploads_schedule_enrollment_uidx ON schedule_uploads(schedule_id, enrollment_id) WHERE enrollment_id IS NOT NULL`);
+
+  /* Offline CBT pilot (2026-08-09) - results synced in from air-gapped
+     exam machines (see /offline-cbt) once a staff member connects that
+     machine to a hotspot and hits Sync. external_id is the id the exam
+     app generates client-side (mobile + test_id + submit timestamp), so
+     re-syncing the same machine twice (e.g. after a dropped connection)
+     never creates a duplicate row. Auto-scored client-side since it's
+     all MCQ - score is stored here for admin review, never shown to the
+     learner on the exam machine itself. */
+  await query(`
+    CREATE TABLE IF NOT EXISTS cbt_results (
+      id             SERIAL PRIMARY KEY,
+      external_id    VARCHAR(255) UNIQUE NOT NULL,
+      mobile         VARCHAR(20) NOT NULL,
+      name           VARCHAR(255),
+      roll_number    VARCHAR(100),
+      program        VARCHAR(255),
+      test_id        VARCHAR(100) NOT NULL,
+      test_title     VARCHAR(255),
+      answers        JSONB,
+      score          INTEGER,
+      total          INTEGER,
+      auto_submitted BOOLEAN NOT NULL DEFAULT FALSE,
+      started_at     TIMESTAMPTZ,
+      submitted_at   TIMESTAMPTZ,
+      synced_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+  await query(`CREATE INDEX IF NOT EXISTS idx_cbt_results_test ON cbt_results(test_id)`);
 
   /* ── Schedule track/category (2026-07-18) ── Combo programs (RSSB JE
      Degree+Diploma, ESE Combined Paper1+Paper2) bundle two independent

@@ -1,0 +1,45 @@
+OFFLINE CBT - STAFF GUIDE
+Dr. Jaspal Singh - jaspalsingh.in
+
+BEFORE THE EXAM DAY
+--------------------
+1. Open data.js in a text editor and replace ROSTER (the learner list
+   for this slot) and EXAM (the real question bank) - it currently has
+   sample/placeholder data only.
+2. Change STAFF_PIN in app.js away from the default (1947).
+3. Copy the whole "offline-cbt" folder onto a USB drive.
+
+SETTING UP EACH COMPUTER
+--------------------------
+1. Copy the "offline-cbt" folder from the USB onto that computer
+   (Desktop is fine).
+2. Double-click "launch-exam.bat" inside that folder.
+   - This opens the exam fullscreen, with no address bar and no way
+     to switch to another window or tab - learners can't browse
+     anywhere else or accidentally close it.
+3. To close it (between learners, or at end of day for syncing):
+   press Alt+F4. This is a Windows shortcut, not a browser one, so
+   it always works even in the locked-down kiosk view. Then just
+   double-click launch-exam.bat again for the next learner.
+
+DURING THE EXAM
+-----------------
+- Learner enters their mobile number, confirms their name, starts
+  the test, answers questions, and submits.
+- The score is calculated and saved on that computer, but is NOT
+  shown to the learner - they just see "results announced separately."
+
+SYNCING RESULTS (no need to close the app for this)
+-------------------------------------------------------
+1. Connect the computer to the staff hotspot.
+2. On the exam screen, click the bottom-right corner of the screen
+   5 times quickly. It will ask for the staff PIN.
+3. Enter the PIN - this opens the Sync panel, showing how many
+   results on this machine are still pending.
+4. Click "Sync Now." Safe to click more than once - already-synced
+   results are never sent twice.
+5. Close the panel and disconnect from the hotspot to free it up for
+   the next machine.
+
+If a sync fails partway (hotspot drops etc.), nothing is lost -
+just reconnect and click Sync Now again.

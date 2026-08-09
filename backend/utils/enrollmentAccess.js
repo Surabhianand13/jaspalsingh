@@ -31,7 +31,9 @@ async function getActiveEnrollment(learnerId, learnerEmail, learnerPhone, progra
      WHERE program_slug = ANY($4::text[])
        AND status = 'paid'
        AND refund_status != 'initiated'
-       AND (learner_id = $1 OR student_email = $2 OR student_phone = $3)
+       AND (learner_id = $1
+            OR LOWER(TRIM(student_email)) = LOWER(TRIM($2))
+            OR RIGHT(REGEXP_REPLACE(student_phone, '\\D', '', 'g'), 10) = $3)
      ORDER BY paid_at DESC
      LIMIT 1`,
     [learnerId, learnerEmail, learnerPhone, slugsFor(programSlug)]

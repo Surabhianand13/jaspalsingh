@@ -7,10 +7,11 @@
    ============================================================ */
 
 /* ── Offline test centres ──
-   Addresses/maps links to be finalized - update these once confirmed. */
+   Jaipur/Delhi confirmed (2026-07-19, shared with tally-webhook.js's RSSB
+   centres). Bhopal/Hyderabad addresses still to be finalized. */
 const ESE_CENTRES = {
-  jaipur:    { name: 'Jaipur',    address: 'To be announced - contact us on WhatsApp for details', mapsLink: 'https://wa.me/919829133317' },
-  delhi:     { name: 'Delhi',     address: 'To be announced - contact us on WhatsApp for details', mapsLink: 'https://wa.me/919829133317' },
+  jaipur:    { name: 'Jaipur',    address: '33, White House, Opp. Zone Tech, Tonk Road, Madhuvan Colony, Mansingh Pura, Jaipur, Rajasthan 302015', mapsLink: 'https://maps.app.goo.gl/UiYpXv447AWrfyMX8' },
+  delhi:     { name: 'Delhi',     address: 'P R Library, F-462, 1st Floor, Smart Point Building, Old MB Road, Lado Sarai, South Delhi 110030', mapsLink: 'https://maps.app.goo.gl/bv3wtG4rp7f6TuSk6' },
   bhopal:    { name: 'Bhopal',    address: 'To be announced - contact us on WhatsApp for details', mapsLink: 'https://wa.me/919829133317' },
   hyderabad: { name: 'Hyderabad', address: 'To be announced - contact us on WhatsApp for details', mapsLink: 'https://wa.me/919829133317' },
 };

@@ -1910,6 +1910,20 @@
     return '<button '+attrs+' style="display:inline-block;border-radius:20px;padding:7px 16px;font-size:11.5px;font-weight:700;border:none;cursor:pointer;white-space:nowrap;'+(PILL_VARIANTS[variant]||PILL_VARIANTS.outline)+(extraStyle||'')+'">'+label+'</button>';
   }
 
+  /* datetime-local inputs carry no timezone - the business runs on IST
+     (UTC+5:30), so every gating date typed here must be sent with an
+     explicit +05:30 offset, or Postgres's UTC session default silently
+     shifts it 5.5 hours later than intended. isoToIstInput does the
+     reverse for pre-filling the input when a row is reopened. */
+  function istInputToIso(localStr){
+    return localStr ? localStr + ':00+05:30' : null;
+  }
+  function isoToIstInput(iso){
+    if (!iso) return '';
+    var ist = new Date(new Date(iso).getTime() + 5.5 * 60 * 60 * 1000);
+    return ist.toISOString().slice(0, 16);
+  }
+
   function uploadScheduleAsset(rowId, kind, slug, category){
     var input = document.createElement('input');
     input.type = 'file'; input.accept = 'application/pdf';
@@ -1932,21 +1946,21 @@
     if (!panel) return;
     panel.innerHTML =
       '<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;margin:8px 0;padding:12px;background:rgba(0,0,0,.03);border-radius:8px;">' +
-        '<label style="font-size:11.5px;">Paper release<br><input type="datetime-local" class="admin-input" id="gt_release_'+row.id+'" value="'+(row.paper_release_at?row.paper_release_at.slice(0,16):'')+'"></label>' +
-        '<label style="font-size:11.5px;">Upload deadline / solution unlock<br><input type="datetime-local" class="admin-input" id="gt_deadline_'+row.id+'" value="'+(row.omr_upload_deadline?row.omr_upload_deadline.slice(0,16):'')+'"></label>' +
+        '<label style="font-size:11.5px;">Paper release (IST)<br><input type="datetime-local" class="admin-input" id="gt_release_'+row.id+'" value="'+isoToIstInput(row.paper_release_at)+'"></label>' +
+        '<label style="font-size:11.5px;">Upload deadline / solution unlock (IST)<br><input type="datetime-local" class="admin-input" id="gt_deadline_'+row.id+'" value="'+isoToIstInput(row.omr_upload_deadline)+'"></label>' +
         '<label style="font-size:11.5px;display:flex;align-items:center;gap:6px;"><input type="checkbox" id="gt_requires_'+row.id+'" '+(row.requires_omr_upload?'checked':'')+'> Learners upload their answer sheet (photo/PDF) for this test</label>' +
         pillBtn('id="gt_save_'+row.id+'"', 'Save', 'solid') +
-        (row.requires_omr_upload ? pillBtn('id="gt_uploads_'+row.id+'"', 'View uploads', 'outline') : '') +
+        (row.requires_omr_upload ? pillBtn('id="gt_uploads_'+row.id+'"', 'View uploads', 'outline') + pillBtn('id="gt_downloadall_'+row.id+'"', 'Download All', 'outline') : '') +
       '</div>' +
       '<div id="gt_uploads_list_'+row.id+'"></div>';
 
     document.getElementById('gt_save_'+row.id).onclick = function(){
       var requiresUpload = document.getElementById('gt_requires_'+row.id).checked;
-      var deadline = document.getElementById('gt_deadline_'+row.id).value || null;
-      if (requiresUpload && !deadline) { showToast('Upload deadline is required when self-serve upload is on', 'error'); return; }
+      var deadlineLocal = document.getElementById('gt_deadline_'+row.id).value || null;
+      if (requiresUpload && !deadlineLocal) { showToast('Upload deadline is required when self-serve upload is on', 'error'); return; }
       adminFetch('PUT', '/api/programs/schedule/'+row.id+'/gating', {
-        paper_release_at: document.getElementById('gt_release_'+row.id).value || null,
-        omr_upload_deadline: deadline,
+        paper_release_at: istInputToIso(document.getElementById('gt_release_'+row.id).value || null),
+        omr_upload_deadline: istInputToIso(deadlineLocal),
         requires_omr_upload: requiresUpload,
       }).then(function(){ showToast('Saved', 'success'); loadScheduleRows(slug, category); })
         .catch(function(e){ showToast(e.message, 'error'); });
@@ -1968,6 +1982,26 @@
         }).catch(function(e){ listEl.innerHTML = '<p class="admin-empty">'+e.message+'</p>'; });
       };
     }
+    var downloadAllBtn = document.getElementById('gt_downloadall_'+row.id);
+    if (downloadAllBtn) {
+      downloadAllBtn.onclick = function(){
+        var originalLabel = downloadAllBtn.textContent;
+        downloadAllBtn.textContent = 'Zipping…';
+        fetch(API_BASE + '/api/programs/schedule/'+row.id+'/uploads/download-all', {
+          headers: { 'Authorization': 'Bearer ' + getToken() }
+        }).then(function(res){
+          if (!res.ok) return res.json().then(function(d){ throw new Error(d.error || 'Download failed'); });
+          return res.blob();
+        }).then(function(blob){
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement('a');
+          a.href = url; a.download = 'test-'+row.id+'-uploads.zip';
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }).catch(function(e){ showToast(e.message, 'error'); })
+          .finally(function(){ downloadAllBtn.textContent = originalLabel; });
+      };
+    }
   }
 
   function loadScheduleRows(slug, category){
@@ -1975,23 +2009,32 @@
     adminFetch('GET', '/api/programs/'+encodeURIComponent(slug)+'/schedule/admin').then(function(d){
       var rows = (d.schedule || []).filter(function(r){ return (r.category||null) === (category||null); });
       if (!rows.length) { listEl.innerHTML = '<p class="admin-empty">No schedule yet - paste rows above, or use "Add one test".</p>'; return; }
-      listEl.innerHTML = '<div class="admin-table-wrap" style="overflow-x:auto;"><table class="admin-table" style="min-width:640px;"><thead><tr><th>Test</th><th>Date</th><th style="min-width:160px;">Syllabus</th><th>Qs</th><th style="min-width:150px;">Assets</th><th style="min-width:100px;"></th></tr></thead><tbody>' +
+      listEl.innerHTML = '<div class="admin-table-wrap" style="overflow-x:auto;"><table class="admin-table" style="min-width:760px;"><thead><tr><th>Test</th><th>Date</th><th style="min-width:160px;">Syllabus</th><th>Qs</th><th>Marks</th><th>Duration</th><th style="min-width:150px;">Assets</th><th style="min-width:100px;"></th></tr></thead><tbody>' +
         rows.map(function(r){
           var assetBtns = '<div style="display:flex;flex-direction:column;gap:5px;">' + ASSET_KINDS.map(function(a){
             var has = !!r[a.col];
             return pillBtn('data-asset-upload="'+r.id+'" data-asset-kind="'+a.kind+'"', (has?'&#10003; ':'+ ')+a.label, has?'solid':'outline', 'text-align:left;');
           }).join('') + '</div>';
           return '<tr><td>'+r.test_number+'</td><td>'+e(r.test_date||'-')+'</td><td>'+e(r.syllabus||'-')+'</td><td>'+(r.questions||'-')+'</td>' +
+            '<td>'+(r.marks||'-')+'</td><td>'+(r.duration_minutes?r.duration_minutes+' min':'-')+'</td>' +
             '<td>'+assetBtns+'</td>' +
             '<td><div style="display:flex;flex-direction:column;gap:5px;">'+
+              pillBtn('data-sch-edit="'+r.id+'"', 'Edit', 'outline') +
               pillBtn('data-sch-configure="'+r.id+'"', 'Configure', 'dark') +
               pillBtn('data-sch-del="'+r.id+'"', 'Delete', 'danger') +
             '</div></td></tr>' +
-            '<tr><td colspan="6"><div id="sch_gating_'+r.id+'"></div></td></tr>';
+            '<tr><td colspan="8"><div id="sch_edit_'+r.id+'"></div><div id="sch_gating_'+r.id+'"></div></td></tr>';
         }).join('') + '</tbody></table></div>';
 
       listEl.querySelectorAll('[data-asset-upload]').forEach(function(b){
         b.addEventListener('click', function(){ uploadScheduleAsset(b.getAttribute('data-asset-upload'), b.getAttribute('data-asset-kind'), slug, category); });
+      });
+      listEl.querySelectorAll('[data-sch-edit]').forEach(function(b){
+        b.addEventListener('click', function(){
+          var rowId = parseInt(b.getAttribute('data-sch-edit'), 10);
+          var row = rows.filter(function(r){ return r.id === rowId; })[0];
+          openEditPanel(row, slug, category);
+        });
       });
       listEl.querySelectorAll('[data-sch-configure]').forEach(function(b){
         b.addEventListener('click', function(){
@@ -2008,6 +2051,41 @@
       });
     }).catch(function(err){ listEl.innerHTML = '<p class="admin-empty">'+e(err.message)+'</p>'; });
   }
+
+  /* Inline single-row edit - lets one test's date/syllabus/questions/
+     marks/duration/test_number be corrected without touching any other
+     row, so a one-field fix never requires re-pasting the whole schedule. */
+  function openEditPanel(row, slug, category){
+    var panel = document.getElementById('sch_edit_'+row.id);
+    if (!panel) return;
+    if (panel.innerHTML) { panel.innerHTML = ''; return; } // toggle closed if already open
+    panel.innerHTML =
+      '<div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin:8px 0;padding:12px;background:rgba(15,118,110,.06);border-radius:8px;">' +
+        '<label style="font-size:11.5px;">Test no.<br><input type="number" class="admin-input" id="edit_num_'+row.id+'" value="'+e(row.test_number)+'" style="width:80px;"></label>' +
+        '<label style="font-size:11.5px;">Date<br><input class="admin-input" id="edit_date_'+row.id+'" value="'+e(row.test_date||'')+'" style="width:140px;"></label>' +
+        '<label style="font-size:11.5px;">Syllabus<br><input class="admin-input" id="edit_syllabus_'+row.id+'" value="'+e(row.syllabus||'')+'" style="width:220px;"></label>' +
+        '<label style="font-size:11.5px;">Qs<br><input type="number" class="admin-input" id="edit_questions_'+row.id+'" value="'+e(row.questions||'')+'" style="width:70px;"></label>' +
+        '<label style="font-size:11.5px;">Marks<br><input type="number" class="admin-input" id="edit_marks_'+row.id+'" value="'+e(row.marks||'')+'" style="width:70px;"></label>' +
+        '<label style="font-size:11.5px;">Duration (mins)<br><input type="number" class="admin-input" id="edit_duration_'+row.id+'" value="'+e(row.duration_minutes||'')+'" style="width:90px;"></label>' +
+        pillBtn('id="edit_save_'+row.id+'"', 'Save', 'solid') +
+        pillBtn('id="edit_cancel_'+row.id+'"', 'Cancel', 'outline') +
+      '</div>';
+
+    document.getElementById('edit_cancel_'+row.id).onclick = function(){ panel.innerHTML = ''; };
+    document.getElementById('edit_save_'+row.id).onclick = function(){
+      var num = document.getElementById('edit_num_'+row.id).value;
+      if (!num) { showToast('Test number is required', 'error'); return; }
+      adminFetch('PUT', '/api/programs/schedule/'+row.id, {
+        test_number: num,
+        test_date: document.getElementById('edit_date_'+row.id).value,
+        syllabus: document.getElementById('edit_syllabus_'+row.id).value,
+        questions: document.getElementById('edit_questions_'+row.id).value,
+        marks: document.getElementById('edit_marks_'+row.id).value,
+        duration_minutes: document.getElementById('edit_duration_'+row.id).value,
+      }).then(function(){ showToast('Saved', 'success'); loadScheduleRows(slug, category); })
+        .catch(function(e){ showToast(e.message, 'error'); });
+    };
+  }
   function renderScheduleForms(slug, category){
     document.getElementById('scheduleModalBody').innerHTML =
       (categoriesForModal.length ?
@@ -2022,10 +2100,12 @@
         '<label style="font-size:11.5px;">Date<br><input class="admin-input" id="sch_add_date" placeholder="26 July 2026" style="width:140px;"></label>' +
         '<label style="font-size:11.5px;">Syllabus<br><input class="admin-input" id="sch_add_syllabus" style="width:220px;"></label>' +
         '<label style="font-size:11.5px;">Qs<br><input type="number" class="admin-input" id="sch_add_questions" style="width:70px;"></label>' +
+        '<label style="font-size:11.5px;">Marks<br><input type="number" class="admin-input" id="sch_add_marks" style="width:70px;"></label>' +
+        '<label style="font-size:11.5px;">Duration (mins)<br><input type="number" class="admin-input" id="sch_add_duration" style="width:90px;"></label>' +
         pillBtn('id="sch_add_btn"', 'Add one test', 'solid') +
       '</div>' +
-      '<div class="admin-form-hint" style="margin-bottom:8px;">Or paste several at once, one per line: <code>Test Number | Date | Syllabus | Questions</code> (Questions is optional). Re-pasting the same test number updates that row (assets/settings are kept); a test number no longer in the paste is removed.'+(category?' Applies to the <strong>'+categoryLabel(category)+'</strong> track selected above.':'')+'</div>' +
-      '<textarea class="admin-input" id="sch_paste" rows="6" style="width:100%;font-family:monospace;font-size:12.5px;" placeholder="1 | 26 July 2026 | Rajasthan GK + Building Technology | 120\n2 | 2 August 2026 | Surveying + Fluid Mechanics | 120"></textarea>' +
+      '<div class="admin-form-hint" style="margin-bottom:8px;">Or paste several at once, one per line: <code>Test Number | Date | Syllabus | Questions | Marks | Duration (mins)</code> (Questions, Marks and Duration are optional). Re-pasting the same test number updates that row (assets/settings are kept) and a new test number is added - tests not included in the paste are left untouched, so pasting just a few corrected future tests never affects the rest of the schedule. Use <strong>Edit</strong> on a single row for a quick fix, or <strong>Delete</strong> to remove a test.'+(category?' Applies to the <strong>'+categoryLabel(category)+'</strong> track selected above.':'')+'</div>' +
+      '<textarea class="admin-input" id="sch_paste" rows="6" style="width:100%;font-family:monospace;font-size:12.5px;" placeholder="1 | 26 July 2026 | Rajasthan GK + Building Technology | 120 | 100 | 120\n2 | 2 August 2026 | Surveying + Fluid Mechanics | 120 | 100 | 120"></textarea>' +
       '<div style="margin-top:10px;">'+pillBtn('id="sch_save"', 'Save Pasted Schedule', 'dark')+'</div>' +
       '<div style="margin-top:20px;border-top:1px dashed rgba(26,26,46,.15);padding-top:14px;"><strong style="font-size:13px;">Current schedule'+(category?' - '+categoryLabel(category):'')+'</strong><div class="admin-form-hint">Once a row exists, upload its Question Paper / Blank OMR / Solution and click Configure to set release/deadline dates.</div><div id="sch_list" style="margin-top:10px;"><p class="admin-empty">Loading…</p></div></div>';
 
@@ -2041,10 +2121,12 @@
         test_date: document.getElementById('sch_add_date').value,
         syllabus: document.getElementById('sch_add_syllabus').value,
         questions: document.getElementById('sch_add_questions').value,
+        marks: document.getElementById('sch_add_marks').value,
+        duration_minutes: document.getElementById('sch_add_duration').value,
         category: category || null,
       }).then(function(){
         showToast('Added', 'success');
-        ['sch_add_num','sch_add_date','sch_add_syllabus','sch_add_questions'].forEach(function(id){ document.getElementById(id).value = ''; });
+        ['sch_add_num','sch_add_date','sch_add_syllabus','sch_add_questions','sch_add_marks','sch_add_duration'].forEach(function(id){ document.getElementById(id).value = ''; });
         loadScheduleRows(slug, category);
       }).catch(function(e){ showToast(e.message, 'error'); });
     };
@@ -2056,7 +2138,7 @@
       for (var i = 0; i < lines.length; i++) {
         var parts = lines[i].split('|').map(function(p){return p.trim();});
         if (!parts[0] || isNaN(parseInt(parts[0],10))) { showToast('Line '+(i+1)+': first column must be a test number','error'); return; }
-        rows.push({ test_number: parseInt(parts[0],10), test_date: parts[1]||'', syllabus: parts[2]||'', questions: parts[3]||'' });
+        rows.push({ test_number: parseInt(parts[0],10), test_date: parts[1]||'', syllabus: parts[2]||'', questions: parts[3]||'', marks: parts[4]||'', duration_minutes: parts[5]||'' });
       }
       adminFetch('POST', '/api/programs/'+encodeURIComponent(slug)+'/schedule/bulk', { rows: rows, category: category || null })
         .then(function(d){ showToast(d.message||'Saved','success'); document.getElementById('sch_paste').value=''; loadScheduleRows(slug, category); })
@@ -2594,9 +2676,8 @@
       : '<div><label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Test Centre *</label>' +
           '<select id="ac_centre" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;">' +
             '<option value="">Select centre...</option>' +
-            '<option value="jaipur">Jaipur</option><option value="kota">Kota</option>' +
-            '<option value="bikaner">Bikaner</option><option value="sikar">Sikar</option>' +
-            '<option value="jodhpur">Jodhpur</option><option value="alwar">Alwar</option><option value="ajmer">Ajmer</option>' +
+            '<option value="jaipur">Jaipur</option><option value="bikaner">Bikaner</option>' +
+            '<option value="delhi">Delhi</option>' +
           '</select></div>';
     modal.innerHTML =
       '<div style="background:#fff;border-radius:14px;padding:28px 32px;max-width:480px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);">' +

@@ -267,7 +267,11 @@ const adminGetAll = async (req, res, next) => {
 
     if (search) {
       params.push('%' + search + '%');
-      conditions.push(`(l.name ILIKE $${params.length} OR l.email ILIKE $${params.length})`);
+      // Phone was missing here - searching a phone number (the natural
+      // thing to try, since it works on the Purchases search) silently
+      // found nothing even when the learner account existed, making a
+      // real account look like it didn't exist.
+      conditions.push(`(l.name ILIKE $${params.length} OR l.email ILIKE $${params.length} OR l.phone ILIKE $${params.length})`);
     }
     if (exam && exam !== 'all') {
       params.push(exam);

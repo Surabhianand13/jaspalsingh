@@ -11,7 +11,8 @@
 const express = require('express');
 const router  = express.Router();
 const multer  = require('multer');
-const { PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const AdmZip = require('adm-zip');
+const { PutObjectCommand, DeleteObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
 const { r2, BUCKET } = require('../config/r2');
 const { query } = require('../config/db');
 const { protect } = require('../middleware/auth');
@@ -171,7 +172,7 @@ router.post('/:id/workbook', protect, scheduleAssetUpload.single('file'), handle
 router.get('/:slug/schedule', async (req, res, next) => {
   try {
     const result = await query(
-      `SELECT id, test_number, test_date, syllabus, questions, sort_order
+      `SELECT id, test_number, test_date, syllabus, questions, marks, duration_minutes, sort_order
        FROM program_schedule WHERE program_slug = $1
        ORDER BY sort_order ASC, test_number ASC`,
       [req.params.slug]
@@ -203,7 +204,7 @@ router.get('/:slug/schedule/admin', protect, async (req, res, next) => {
    ordinary single-track program. */
 router.post('/:slug/schedule', protect, async (req, res, next) => {
   try {
-    const { test_number, test_date, syllabus, questions, category } = req.body;
+    const { test_number, test_date, syllabus, questions, marks, duration_minutes, category } = req.body;
     if (!test_number) return res.status(400).json({ error: 'test_number is required.' });
     const dup = await query(
       `SELECT id FROM program_schedule WHERE program_slug = $1 AND test_number = $2 AND category IS NOT DISTINCT FROM $3`,
@@ -212,22 +213,57 @@ router.post('/:slug/schedule', protect, async (req, res, next) => {
     if (dup.rows.length) return res.status(409).json({ error: 'A test with this number already exists in this track - edit it via bulk paste or delete it first.' });
     const maxSort = await query(`SELECT COALESCE(MAX(sort_order), -1) AS m FROM program_schedule WHERE program_slug = $1 AND category IS NOT DISTINCT FROM $2`, [req.params.slug, category || null]);
     const result = await query(
-      `INSERT INTO program_schedule (program_slug, test_number, test_date, syllabus, questions, sort_order, category)
-       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-      [req.params.slug, parseInt(test_number, 10), test_date || null, syllabus || null, questions ? parseInt(questions, 10) : null, maxSort.rows[0].m + 1, category || null]
+      `INSERT INTO program_schedule (program_slug, test_number, test_date, syllabus, questions, marks, duration_minutes, sort_order, category)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+      [req.params.slug, parseInt(test_number, 10), test_date || null, syllabus || null, questions ? parseInt(questions, 10) : null, marks ? parseInt(marks, 10) : null, duration_minutes ? parseInt(duration_minutes, 10) : null, maxSort.rows[0].m + 1, category || null]
     );
     res.status(201).json({ schedule: result.rows[0] });
   } catch (err) { next(err); }
 });
 
+/* ADMIN: edit a single test row in place - date/syllabus/questions/marks/
+   duration/test_number, without touching any other row. Lets a one-field
+   correction stay a one-row operation instead of needing a bulk re-paste
+   (which previously meant re-typing the whole schedule, or - if you only
+   pasted the one corrected row - silently deleting every other test in
+   the track, since bulk paste used to treat its rows as the complete set). */
+router.put('/schedule/:id', protect, async (req, res, next) => {
+  try {
+    const { test_number, test_date, syllabus, questions, marks, duration_minutes } = req.body;
+    if (!test_number) return res.status(400).json({ error: 'test_number is required.' });
+
+    const current = await query(`SELECT program_slug, category FROM program_schedule WHERE id = $1`, [req.params.id]);
+    if (!current.rows.length) return res.status(404).json({ error: 'Test not found.' });
+    const { program_slug, category } = current.rows[0];
+
+    const dup = await query(
+      `SELECT id FROM program_schedule WHERE program_slug = $1 AND test_number = $2 AND category IS NOT DISTINCT FROM $3 AND id != $4`,
+      [program_slug, parseInt(test_number, 10), category, req.params.id]
+    );
+    if (dup.rows.length) return res.status(409).json({ error: 'Another test in this track already uses that test number.' });
+
+    const result = await query(
+      `UPDATE program_schedule SET test_number = $1, test_date = $2, syllabus = $3, questions = $4, marks = $5, duration_minutes = $6
+       WHERE id = $7 RETURNING *`,
+      [
+        parseInt(test_number, 10), test_date || null, syllabus || null,
+        questions ? parseInt(questions, 10) : null, marks ? parseInt(marks, 10) : null,
+        duration_minutes ? parseInt(duration_minutes, 10) : null, req.params.id,
+      ]
+    );
+    res.json({ schedule: result.rows[0] });
+  } catch (err) { next(err); }
+});
+
 /* ADMIN: bulk upload - typically pasted in all at once from a spreadsheet.
-   Upserts by (program_slug, category, test_number) instead of delete-and-
-   reinsert: rows that already have uploaded assets/gating dates (paper
-   URL, OMR deadline etc.) keep them when the admin re-pastes the same
-   test number, since those can't be re-supplied through a bulk paste of
-   number/date/syllabus/questions. Rows whose test_number is no longer
-   present are removed - but only within the same category, so pasting
-   one track's schedule never touches the other track's rows. */
+   Upserts by (program_slug, category, test_number): a pasted row updates
+   the matching test number if it already exists (keeping any uploaded
+   assets/gating dates, which can't be re-supplied through the paste),
+   or inserts it if new. Deliberately never deletes a row just because
+   its test_number is missing from this particular paste - pasting a
+   handful of corrected future tests must never wipe out the rest of an
+   already-configured schedule. To actually remove a test, delete its
+   row explicitly. */
 router.post('/:slug/schedule/bulk', protect, async (req, res, next) => {
   try {
     const rows = Array.isArray(req.body.rows) ? req.body.rows : [];
@@ -242,32 +278,37 @@ router.post('/:slug/schedule/bulk', protect, async (req, res, next) => {
       [req.params.slug, category]
     );
     const existingByNumber = new Map(existing.rows.map(r => [r.test_number, r.id]));
-    const keptNumbers = new Set();
 
-    let i = 0;
+    // sort_order for genuinely new rows only - an existing row keeps its
+    // current position rather than jumping to wherever it landed in this
+    // particular paste, so pasting a handful of future tests to fix them
+    // doesn't reshuffle the whole list's display order.
+    const maxSort = await query(`SELECT COALESCE(MAX(sort_order), -1) AS m FROM program_schedule WHERE program_slug = $1 AND category IS NOT DISTINCT FROM $2`, [req.params.slug, category]);
+    let nextSort = maxSort.rows[0].m + 1;
+
     for (const r of rows) {
       const testNumber = parseInt(r.test_number, 10);
-      keptNumbers.add(testNumber);
-      const values = [r.test_date || null, r.syllabus || null, r.questions ? parseInt(r.questions, 10) : null, i++];
+      const values = [
+        r.test_date || null,
+        r.syllabus || null,
+        r.questions ? parseInt(r.questions, 10) : null,
+        r.marks ? parseInt(r.marks, 10) : null,
+        r.duration_minutes ? parseInt(r.duration_minutes, 10) : null,
+      ];
 
       if (existingByNumber.has(testNumber)) {
         await query(
-          `UPDATE program_schedule SET test_date = $1, syllabus = $2, questions = $3, sort_order = $4
-           WHERE id = $5`,
+          `UPDATE program_schedule SET test_date = $1, syllabus = $2, questions = $3, marks = $4, duration_minutes = $5
+           WHERE id = $6`,
           [...values, existingByNumber.get(testNumber)]
         );
       } else {
         await query(
-          `INSERT INTO program_schedule (program_slug, test_number, test_date, syllabus, questions, sort_order, category)
-           VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-          [req.params.slug, testNumber, ...values, category]
+          `INSERT INTO program_schedule (program_slug, test_number, test_date, syllabus, questions, marks, duration_minutes, sort_order, category)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+          [req.params.slug, testNumber, ...values, nextSort++, category]
         );
       }
-    }
-
-    const toDelete = existing.rows.filter(r => !keptNumbers.has(r.test_number)).map(r => r.id);
-    if (toDelete.length) {
-      await query(`DELETE FROM program_schedule WHERE id = ANY($1::int[])`, [toDelete]);
     }
 
     res.json({ message: `Saved ${rows.length} schedule rows.` });
@@ -347,6 +388,59 @@ router.get('/schedule/:id/uploads', protect, async (req, res, next) => {
     );
     res.json({ uploads: result.rows });
   } catch (err) { next(err); }
+});
+
+/* ADMIN: zip every learner's answer-sheet upload for one test into a
+   single download, so admin doesn't have to open each submission one by
+   one before computing ranks. */
+router.get('/schedule/:id/uploads/download-all', protect, async (req, res, next) => {
+  try {
+    const result = await query(
+      `SELECT su.learner_name, su.learner_email, su.file_key, sr.test_number
+       FROM schedule_uploads su
+       JOIN program_schedule sr ON sr.id = su.schedule_id
+       WHERE su.schedule_id = $1 ORDER BY su.uploaded_at ASC`,
+      [req.params.id]
+    );
+    if (!result.rows.length) return res.status(404).json({ error: 'No uploads for this test yet.' });
+
+    /* Fetch all files into memory BEFORE sending any headers so errors
+       can still be returned as JSON. */
+    const files = [];
+    for (const row of result.rows) {
+      const obj = await r2.send(new GetObjectCommand({ Bucket: BUCKET, Key: row.file_key }));
+      const chunks = [];
+      for await (const chunk of obj.Body) chunks.push(chunk);
+      const buf = Buffer.concat(chunks);
+      const ext = row.file_key.includes('.') ? row.file_key.slice(row.file_key.lastIndexOf('.')) : '';
+      const testNo = row.test_number ? 'Test' + row.test_number + '_' : '';
+      const email = (row.learner_email || '').replace(/[^a-zA-Z0-9@._-]/g, '').slice(0, 40);
+      const namePart = (row.learner_name || 'learner').replace(/[^a-zA-Z0-9 _-]/g, '').trim() || 'learner';
+      files.push({ buf, base: testNo + namePart + (email ? '_' + email : ''), ext });
+    }
+
+    /* Deduplicate filenames */
+    const usedNames = new Set();
+    for (const f of files) {
+      let name = f.base + f.ext, counter = 1;
+      while (usedNames.has(name)) { counter++; name = f.base + '-' + counter + f.ext; }
+      usedNames.add(name);
+      f.finalName = name;
+    }
+
+    /* All buffers ready - build zip in memory and send */
+    const zip = new AdmZip();
+    for (const f of files) zip.addFile(f.finalName, f.buf);
+    const zipBuf = zip.toBuffer();
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="test-${req.params.id}-uploads.zip"`);
+    res.setHeader('Content-Length', zipBuf.length);
+    res.send(zipBuf);
+  } catch (err) {
+    console.error('[download-all] error:', err.name, '-', err.message);
+    if (res.headersSent) return;
+    res.status(500).json({ error: '[download-all] ' + err.message });
+  }
 });
 
 /* ADMIN: delete a single row (for touch-ups without re-uploading everything) */
