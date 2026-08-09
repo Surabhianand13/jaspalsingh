@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Offline CBT - Dr. Jaspal Singh</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Login -->
+  <div class="screen active" id="loginScreen">
+    <div class="topbar"><span class="brand">Dr. Jaspal Singh</span><span class="meta">Offline Test Series</span></div>
+    <div class="center-wrap">
+      <form class="card" id="loginForm">
+        <h1>Enter your mobile number</h1>
+        <p class="sub">Use the mobile number you registered with</p>
+        <input type="tel" id="mobileInput" placeholder="10-digit mobile number" maxlength="10" pattern="[0-9]{10}" required autofocus>
+        <div class="error-msg" id="loginError"></div>
+        <button type="submit" class="btn btn-primary">Continue</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Confirm identity -->
+  <div class="screen" id="confirmScreen">
+    <div class="topbar"><span class="brand">Dr. Jaspal Singh</span><span class="meta">Offline Test Series</span></div>
+    <div class="center-wrap">
+      <div class="card">
+        <p class="sub" style="margin-bottom:6px;">Please confirm this is you</p>
+        <div class="confirm-name" id="confirmName"></div>
+        <div class="confirm-detail" id="confirmDetail"></div>
+        <div class="confirm-actions">
+          <button class="btn btn-outline" id="confirmNo">Not me</button>
+          <button class="btn btn-primary" id="confirmYes">Yes, this is me</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Start -->
+  <div class="screen" id="startScreen">
+    <div class="topbar"><span class="brand">Dr. Jaspal Singh</span><span class="meta">Offline Test Series</span></div>
+    <div class="center-wrap">
+      <div class="card">
+        <h1 id="startTitle"></h1>
+        <p class="sub" id="startMeta"></p>
+        <p style="font-size:12.5px;color:#9999b0;margin-bottom:20px;">Once started, the timer cannot be paused. Raise your hand if you need help.</p>
+        <button class="btn btn-primary" id="startBtn">Start Test</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Exam -->
+  <div class="screen" id="examScreen">
+    <div class="exam-header">
+      <div>
+        <div class="learner-name" id="learnerNameTag"></div>
+        <div class="learner-roll" id="learnerRollTag"></div>
+      </div>
+      <div class="timer" id="timerDisplay">00:00</div>
+      <button class="btn btn-dark" id="submitBtnHeader">Submit Test</button>
+    </div>
+    <div class="exam-body">
+      <div class="question-area">
+        <div class="q-count" id="qCount"></div>
+        <div class="q-text" id="qText"></div>
+        <div id="optionsWrap"></div>
+        <div class="nav-row">
+          <button class="btn btn-outline" id="prevBtn">&larr; Previous</button>
+          <button class="btn btn-dark" id="nextBtn">Next</button>
+        </div>
+      </div>
+      <div class="palette-panel">
+        <div class="palette-title" id="answeredCount"></div>
+        <div class="palette-grid" id="paletteGrid"></div>
+        <div class="legend"><span class="dot" style="background:#0F766E;"></span>Answered</div>
+        <div class="legend"><span class="dot" style="background:#fff;border:1.5px solid #e2e2ea;"></span>Not answered</div>
+        <div class="legend"><span class="dot" style="background:#fff;border:2px solid #C81240;"></span>Current</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Submitted -->
+  <div class="screen" id="submittedScreen">
+    <div class="topbar"><span class="brand">Dr. Jaspal Singh</span><span class="meta">Offline Test Series</span></div>
+    <div class="center-wrap">
+      <div class="card">
+        <div class="submitted-icon">&#10003;</div>
+        <h1>Test submitted</h1>
+        <p class="sub">Your responses have been saved on this computer. Results will be announced separately - you may leave now. Thank you!</p>
+        <button class="btn btn-dark btn-full" id="nextLearnerBtn">Done (next learner)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Submit confirm modal -->
+  <div class="staff-panel" id="submitConfirm">
+    <div class="staff-card">
+      <h2>Submit test?</h2>
+      <p class="sub" style="margin:8px 0 0;">You won't be able to change your answers after this. Make sure you've attempted everything you want to.</p>
+      <div class="staff-actions">
+        <button class="btn btn-outline" id="submitCancelBtn" style="flex:1;">Go back</button>
+        <button class="btn btn-primary" id="submitYesBtn" style="flex:1;">Submit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Staff sync panel (hidden trigger: click bottom-right corner 5x) -->
+  <div class="staff-panel" id="staffPanel">
+    <div class="staff-card">
+      <h2>Staff - Sync Results</h2>
+      <p class="sub" id="staffCount" style="margin:6px 0 0;"></p>
+      <div class="staff-status" id="staffStatus">Checking connection…</div>
+      <div id="staffList"></div>
+      <div class="staff-actions">
+        <button class="btn btn-outline" id="recheckBtn">Re-check connection</button>
+        <button class="btn btn-primary" id="syncBtn">Sync Now</button>
+      </div>
+      <p class="staff-hint">Connect this machine to the hotspot first, then Sync Now. Safe to click multiple times - already-synced results won't be duplicated.</p>
+      <div class="staff-actions">
+        <button class="btn btn-outline" id="staffCloseBtn" style="width:100%;">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="hidden-trigger" id="hiddenTrigger" title=""></div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

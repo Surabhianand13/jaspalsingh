@@ -1,0 +1,117 @@
+/* Offline CBT exam app - matches jaspalsingh.in brand (navy/red) */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  background: #f4f4f7;
+  color: #1A1A2E;
+  height: 100vh;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.screen { display: none; height: 100vh; flex-direction: column; }
+.screen.active { display: flex; }
+
+/* Top bar */
+.topbar {
+  background: #1A1A2E; color: #fff; padding: 14px 24px;
+  display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+}
+.topbar .brand { font-weight: 700; font-size: 16px; }
+.topbar .meta { font-size: 12.5px; color: #b5b5c8; }
+
+/* Centered card layout (login / start / submitted) */
+.center-wrap { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.card {
+  background: #fff; border-radius: 14px; padding: 36px 40px; max-width: 440px; width: 100%;
+  box-shadow: 0 4px 24px rgba(0,0,0,.08); text-align: center;
+}
+.card h1 { font-size: 20px; margin-bottom: 6px; }
+.card p.sub { color: #6b6b8a; font-size: 13.5px; margin-bottom: 24px; }
+.card input[type="text"], .card input[type="tel"] {
+  width: 100%; padding: 13px 16px; border: 1.5px solid #e2e2ea; border-radius: 9px;
+  font-size: 15px; margin-bottom: 14px; text-align: center; letter-spacing: 1px;
+}
+.card input:focus { outline: none; border-color: #0F766E; }
+.btn {
+  display: inline-block; border: none; border-radius: 24px; padding: 13px 28px;
+  font-size: 14.5px; font-weight: 700; cursor: pointer; transition: opacity .15s;
+}
+.btn:active { opacity: .8; }
+.btn-primary { background: #C81240; color: #fff; width: 100%; }
+.btn-dark { background: #1A1A2E; color: #fff; }
+.btn-outline { background: #fff; color: #1A1A2E; border: 1.5px solid #d8d8e2; }
+.btn-full { width: 100%; }
+.error-msg { color: #C81240; font-size: 13px; margin-top: -4px; margin-bottom: 12px; display: none; }
+
+.confirm-name { font-size: 22px; font-weight: 700; margin: 10px 0 2px; }
+.confirm-detail { font-size: 13.5px; color: #6b6b8a; margin-bottom: 4px; }
+.confirm-actions { display: flex; gap: 10px; margin-top: 22px; }
+.confirm-actions .btn { flex: 1; }
+
+/* Exam screen */
+.exam-header {
+  background: #fff; border-bottom: 1px solid #e2e2ea; padding: 12px 24px;
+  display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+}
+.exam-header .learner-name { font-weight: 700; font-size: 14px; }
+.exam-header .learner-roll { font-size: 12px; color: #6b6b8a; }
+.timer {
+  font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums;
+  background: #fef2f2; color: #C81240; padding: 6px 18px; border-radius: 20px;
+}
+.timer.warn { background: #C81240; color: #fff; }
+
+.exam-body { flex: 1; display: flex; overflow: hidden; }
+.question-area { flex: 1; padding: 28px 40px; overflow-y: auto; }
+.q-count { font-size: 12.5px; color: #6b6b8a; font-weight: 700; margin-bottom: 10px; }
+.q-text { font-size: 17px; line-height: 1.6; margin-bottom: 26px; }
+.option {
+  display: flex; align-items: center; gap: 12px; padding: 14px 18px; border: 1.5px solid #e2e2ea;
+  border-radius: 10px; margin-bottom: 12px; cursor: pointer; font-size: 14.5px; transition: all .12s;
+}
+.option:hover { border-color: #0F766E; }
+.option.selected { border-color: #C81240; background: #fef2f2; }
+.option .letter {
+  width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid #d8d8e2; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #6b6b8a;
+}
+.option.selected .letter { background: #C81240; border-color: #C81240; color: #fff; }
+
+.nav-row { display: flex; justify-content: space-between; margin-top: 30px; }
+
+.palette-panel { width: 240px; background: #fff; border-left: 1px solid #e2e2ea; padding: 20px; overflow-y: auto; flex-shrink: 0; }
+.palette-title { font-size: 12px; font-weight: 700; color: #6b6b8a; margin-bottom: 12px; }
+.palette-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 20px; }
+.palette-cell {
+  aspect-ratio: 1; border-radius: 6px; display: flex; align-items: center; justify-content: center;
+  font-size: 12.5px; font-weight: 700; cursor: pointer; border: 1.5px solid #e2e2ea; color: #6b6b8a; background: #fff;
+}
+.palette-cell.answered { background: #0F766E; color: #fff; border-color: #0F766E; }
+.palette-cell.current { border-color: #C81240; border-width: 2px; }
+.legend { font-size: 11.5px; color: #6b6b8a; display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.legend .dot { width: 10px; height: 10px; border-radius: 3px; }
+
+/* Submitted */
+.submitted-icon { width: 60px; height: 60px; border-radius: 50%; background: #ecfdf5; color: #0F766E;
+  display: flex; align-items: center; justify-content: center; font-size: 28px; margin: 0 auto 18px; }
+
+/* Staff sync panel */
+.staff-panel {
+  position: fixed; inset: 0; background: rgba(0,0,0,.5); display: none;
+  align-items: center; justify-content: center; z-index: 999; padding: 20px;
+}
+.staff-panel.open { display: flex; }
+.staff-card { background: #fff; border-radius: 14px; padding: 28px; max-width: 480px; width: 100%; max-height: 80vh; overflow-y: auto; }
+.staff-card h2 { font-size: 17px; margin-bottom: 4px; }
+.staff-status { font-size: 12.5px; padding: 8px 12px; border-radius: 8px; margin: 14px 0; font-weight: 600; }
+.staff-status.online { background: #ecfdf5; color: #0F766E; }
+.staff-status.offline { background: #fef2f2; color: #C81240; }
+.pending-row { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid #f0f0f4; font-size: 13px; }
+.pending-row .tag { font-size: 10.5px; padding: 2px 8px; border-radius: 10px; font-weight: 700; }
+.tag.pending { background: #fef3c7; color: #92400e; }
+.tag.synced { background: #ecfdf5; color: #0F766E; }
+.staff-actions { display: flex; gap: 10px; margin-top: 18px; }
+.staff-hint { font-size: 12px; color: #9999b0; text-align: center; margin-top: 10px; }
+
+.hidden-trigger { position: fixed; bottom: 0; right: 0; width: 34px; height: 34px; z-index: 10; cursor: default; }
