@@ -839,6 +839,172 @@ async function migrate() {
     await query(`UPDATE programs SET price = $1, updated_at = NOW() WHERE slug = $2`, [price, slug]);
   }
 
+  /* ── New program launches (2026-08-09): RVUNL JE 2026 (Electrical/
+     Mechanical/Civil), BPSC Assistant Public Sanitary & Waste Management
+     Officer 2025 (Offline + Home-Based OMR), UP Polytechnic Lecturer -
+     Civil (Home-Based OMR). Same upsert-every-boot pattern as
+     programBackfill above so re-deploys stay idempotent and any
+     admin edit already made in the DB always wins via COALESCE. ── */
+  const newProgramLaunches = [
+    {
+      slug: 'rvunl-je-2026-jaspalsirki-testseries-electrical',
+      title: 'RVUNL JE 2026 - Jaspal Sir Ki Test Series - Electrical',
+      category: 'test-series', exam: 'RVUNL JE 2026', level: 'Electrical', status: 'enrolling',
+      price: 2999, mrp: 5999, accent: 'blue', icon_class: 'fa-bolt',
+      thumbnail_url: '/assets/images/thumb-rvunl-je-2026.jpg',
+      short_name: 'RVUNL JE 2026 Electrical Test Series', sort_order: 18,
+      omr_enabled: false, total_tests: 10, omr_categories: null,
+      tags: ['New', 'Bestseller'],
+      short_desc: '10 Full-Length CBT Mock Tests for RVUNL JE-I Electrical (RVUN/RVPN/JVVN/AVVN/JdVVN), offline centers across Rajasthan + Delhi.',
+      who_for: [
+        'Engineering graduates targeting JE-I (Electrical) across RVUN, RVPN, JVVN, AVVN & JdVVN',
+        'Candidates who want real CBT-interface practice before exam day',
+        'Aspirants who prefer offline test centers across Rajasthan + Delhi',
+        'Anyone who wants full-syllabus, exam-pattern-aligned mock coverage',
+      ],
+      faqs: [
+        { question: 'Is this test series for the RVUNL Common Recruitment Exercise 2026?', answer: 'Yes. This series is built for the Junior Engineer-I (Electrical) post under the RVUNL/RVPN/JVVN/AVVN/JdVVN Common Recruitment Exercise, Advertisement No. RVUN/Rectt.-2026-27/02.' },
+        { question: 'Where are the offline CBT test centers?', answer: 'Centers are available across major cities in Rajasthan plus Delhi. Exact center allotment is shared before each test.' },
+        { question: 'How many tests are included and what format do they follow?', answer: '10 Full Length Tests (FLT) on a CBT-style interface, covering the complete JE-I Electrical syllabus.' },
+      ],
+    },
+    {
+      slug: 'rvunl-je-2026-jaspalsirki-testseries-mechanical',
+      title: 'RVUNL JE 2026 - Jaspal Sir Ki Test Series - Mechanical',
+      category: 'test-series', exam: 'RVUNL JE 2026', level: 'Mechanical', status: 'enrolling',
+      price: 2999, mrp: 5999, accent: 'orange', icon_class: 'fa-cogs',
+      thumbnail_url: '/assets/images/thumb-rvunl-je-2026.jpg',
+      short_name: 'RVUNL JE 2026 Mechanical Test Series', sort_order: 19,
+      omr_enabled: false, total_tests: 10, omr_categories: null,
+      tags: ['New', 'Bestseller'],
+      short_desc: '10 Full-Length CBT Mock Tests for RVUNL JE-I Mechanical (RVUN/RVPN/JVVN/AVVN/JdVVN), offline centers across Rajasthan + Delhi.',
+      who_for: [
+        'Engineering graduates targeting JE-I (Mechanical) across RVUN, RVPN, JVVN, AVVN & JdVVN',
+        'Candidates who want real CBT-interface practice before exam day',
+        'Aspirants who prefer offline test centers across Rajasthan + Delhi',
+        'Anyone who wants full-syllabus, exam-pattern-aligned mock coverage',
+      ],
+      faqs: [
+        { question: 'Is this test series for the RVUNL Common Recruitment Exercise 2026?', answer: 'Yes. This series is built for the Junior Engineer-I (Mechanical) post under the RVUNL/RVPN/JVVN/AVVN/JdVVN Common Recruitment Exercise, Advertisement No. RVUN/Rectt.-2026-27/02.' },
+        { question: 'Where are the offline CBT test centers?', answer: 'Centers are available across major cities in Rajasthan plus Delhi. Exact center allotment is shared before each test.' },
+        { question: 'How many tests are included and what format do they follow?', answer: '10 Full Length Tests (FLT) on a CBT-style interface, covering the complete JE-I Mechanical syllabus.' },
+      ],
+    },
+    {
+      slug: 'rvunl-je-2026-jaspalsirki-testseries-civil',
+      title: 'RVUNL JE 2026 - Jaspal Sir Ki Test Series - Civil',
+      category: 'test-series', exam: 'RVUNL JE 2026', level: 'Civil', status: 'enrolling',
+      price: 2999, mrp: 5999, accent: 'teal', icon_class: 'fa-drafting-compass',
+      thumbnail_url: '/assets/images/thumb-rvunl-je-2026.jpg',
+      short_name: 'RVUNL JE 2026 Civil Test Series', sort_order: 20,
+      omr_enabled: false, total_tests: 10, omr_categories: null,
+      tags: ['New'],
+      short_desc: '10 Full-Length CBT Mock Tests for RVUNL JE-I Civil (RVUN/RVPN/JVVN/AVVN/JdVVN), offline centers across Rajasthan + Delhi.',
+      who_for: [
+        'Engineering graduates targeting JE-I (Civil) across RVUN, RVPN, JVVN, AVVN & JdVVN',
+        'Candidates who want real CBT-interface practice before exam day',
+        'Aspirants who prefer offline test centers across Rajasthan + Delhi',
+        'Anyone who wants full-syllabus, exam-pattern-aligned mock coverage',
+      ],
+      faqs: [
+        { question: 'Is this test series for the RVUNL Common Recruitment Exercise 2026?', answer: 'Yes. This series is built for the Junior Engineer-I (Civil) post under the RVUNL/RVPN/JVVN/AVVN/JdVVN Common Recruitment Exercise, Advertisement No. RVUN/Rectt.-2026-27/02.' },
+        { question: 'Where are the offline CBT test centers?', answer: 'Centers are available across major cities in Rajasthan plus Delhi. Exact center allotment is shared before each test.' },
+        { question: 'How many tests are included and what format do they follow?', answer: '10 Full Length Tests (FLT) on a CBT-style interface, covering the complete JE-I Civil syllabus.' },
+      ],
+    },
+    {
+      slug: 'bpsc-sanitary-officer-2025-jaspalsirki-testseries-offline',
+      title: 'BPSC Assistant Public Sanitary & Waste Management Officer 2025 - Jaspal Sir Ki Test Series (Offline)',
+      category: 'test-series', exam: 'BPSC Sanitary Officer 2025', level: 'Offline', status: 'enrolling',
+      price: 2499, mrp: 5999, accent: 'green', icon_class: 'fa-recycle',
+      thumbnail_url: '/assets/images/thumb-bpsc-sanitary-officer-2025.jpg',
+      short_name: 'BPSC Sanitary Officer 2025 Test Series (Offline)', sort_order: 21,
+      omr_enabled: false, total_tests: 20, omr_categories: null,
+      tags: ['New'],
+      short_desc: '20 offline tests covering General Studies + Solid & Liquid Waste Management for BPSC Advt. 108/2025, centers in Patna & Delhi.',
+      who_for: [
+        'Graduates in Chemistry/Environmental Science/Civil/Environmental/Public Health Engg./Bio Technology/Planning/Architecture applying under BPSC Advt. 108/2025',
+        'Candidates who want dedicated Solid & Liquid Waste Management practice, not just General Studies',
+        'Aspirants who prefer offline test centers in Patna or Delhi',
+        'Anyone who wants a structured subject-wise + full-length test progression',
+      ],
+      faqs: [
+        { question: 'Which post is this test series for?', answer: 'Assistant Public Sanitary & Waste Management Officer under BPSC Advertisement No. 108/2025, Nagar Vikas evam Awas Vibhag, Bihar.' },
+        { question: 'What is the paper pattern?', answer: 'Two compulsory objective papers: Paper I General Studies (125 questions / 100 marks / 2 hours) and Paper II Solid & Liquid Waste Management (125 questions / 100 marks / 2 hours).' },
+        { question: 'When does this batch start?', answer: 'Tentatively September 2026. Exact dates are shared with enrolled learners in advance.' },
+        { question: 'Is there a home-based option if I cannot travel to Patna or Delhi?', answer: 'Yes, the same test series is also available as a Home-Based OMR test series - see the OMR variant on this page.' },
+      ],
+    },
+    {
+      slug: 'bpsc-sanitary-officer-2025-jaspalsirki-testseries-omr',
+      title: 'BPSC Assistant Public Sanitary & Waste Management Officer 2025 - Jaspal Sir Ki Test Series (Home-Based OMR)',
+      category: 'test-series', exam: 'BPSC Sanitary Officer 2025', level: 'Home-Based OMR', status: 'enrolling',
+      price: 1499, mrp: 3999, accent: 'indigo', icon_class: 'fa-recycle',
+      thumbnail_url: '/assets/images/thumb-bpsc-sanitary-officer-2025.jpg',
+      short_name: 'BPSC Sanitary Officer 2025 Test Series (OMR)', sort_order: 22,
+      omr_enabled: true, total_tests: 20, omr_categories: null,
+      tags: ['New'],
+      short_desc: '20 home-based OMR tests covering General Studies + Solid & Liquid Waste Management for BPSC Advt. 108/2025 - attempt from anywhere.',
+      who_for: [
+        'Graduates in Chemistry/Environmental Science/Civil/Environmental/Public Health Engg./Bio Technology/Planning/Architecture applying under BPSC Advt. 108/2025',
+        'Candidates outside Patna/Delhi who still want a proctored-style OMR practice routine',
+        'Aspirants who want to build OMR-sheet speed and accuracy at home',
+        'Anyone who wants a structured subject-wise + full-length test progression',
+      ],
+      faqs: [
+        { question: 'How does the home-based OMR test series work?', answer: 'You receive the question paper and a blank OMR sheet on each test date, attempt it at home within the time limit, and upload your filled sheet before the deadline.' },
+        { question: 'What is the paper pattern?', answer: 'Two compulsory objective papers: Paper I General Studies (125 questions / 100 marks / 2 hours) and Paper II Solid & Liquid Waste Management (125 questions / 100 marks / 2 hours).' },
+        { question: 'When does this batch start?', answer: 'Tentatively September 2026. Exact dates are shared with enrolled learners in advance.' },
+      ],
+    },
+    {
+      slug: 'up-polytechnic-lecturer-jaspalsirki-testseries-civil-omr',
+      title: 'UP Polytechnic Lecturer - Jaspal Sir Ki Test Series - Civil (Home-Based OMR)',
+      category: 'test-series', exam: 'UP Polytechnic Lecturer', level: 'Civil (Home-Based OMR)', status: 'enrolling',
+      price: 599, mrp: 1499, accent: 'purple', icon_class: 'fa-chalkboard-teacher',
+      thumbnail_url: '/assets/images/thumb-up-polytechnic-lecturer.jpg',
+      short_name: 'UP Polytechnic Lecturer Civil OMR Test Series', sort_order: 23,
+      omr_enabled: true, total_tests: 12, omr_categories: null,
+      tags: ['New'],
+      short_desc: '12 home-based OMR tests (Hindi + Civil Paper I, GS + Civil Paper II) for the UP Technical Education (Teaching) Service Exam - Civil branch.',
+      who_for: [
+        'Candidates applying for Lecturer (Civil Engineering), Govt. Polytechnics under UPPSC Advt. A-11/E-1/2025',
+        'Aspirants who want the exact UPPSC two-paper pattern practiced at home',
+        'Anyone who wants a fixed, date-wise test calendar to plan around',
+        'Candidates who want both Hindi/GS and core Civil subject practice in one series',
+      ],
+      faqs: [
+        { question: 'Which exam is this for?', answer: 'The UP Technical Education (Teaching) Service Examination-2025 (UPPSC Advt. No. A-11/E-1/2025), Lecturer post, Civil Engineering branch.' },
+        { question: 'What is the test schedule?', answer: '12 tests across 6 dates - 16 Aug, 20 Aug, 23 Aug, 27 Aug, 30 Aug & 3 Sep 2026 - two tests (Paper I and Paper II) on each date.' },
+        { question: 'What is the paper pattern?', answer: 'Paper I: Hindi (25 questions / 75 marks) + Civil-I (100 questions / 300 marks), 2.5 hours. Paper II: General Studies (25 questions / 75 marks) + Civil-II (100 questions / 300 marks), 2.5 hours.' },
+        { question: 'Is this a home-based test series?', answer: 'Yes. You get the question paper and blank OMR sheet on each test date and upload your filled sheet before the deadline - no need to travel to a center.' },
+      ],
+    },
+  ];
+  for (const p of newProgramLaunches) {
+    await query(
+      `INSERT INTO programs (slug, title, category, exam, level, status, price, mrp, accent, icon_class, thumbnail_url, short_name, sort_order, omr_enabled, total_tests, omr_categories, tags, short_desc, who_for, faqs, detail_url, is_visible)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,TRUE)
+       ON CONFLICT (slug) DO UPDATE SET
+         icon_class     = COALESCE(programs.icon_class, EXCLUDED.icon_class),
+         thumbnail_url  = COALESCE(programs.thumbnail_url, EXCLUDED.thumbnail_url),
+         short_name     = COALESCE(programs.short_name, EXCLUDED.short_name),
+         omr_enabled    = programs.omr_enabled OR EXCLUDED.omr_enabled,
+         total_tests    = COALESCE(programs.total_tests, EXCLUDED.total_tests),
+         omr_categories = COALESCE(programs.omr_categories, EXCLUDED.omr_categories),
+         tags           = CASE WHEN programs.tags = '[]'::jsonb OR programs.tags IS NULL THEN EXCLUDED.tags ELSE programs.tags END,
+         short_desc     = COALESCE(programs.short_desc, EXCLUDED.short_desc),
+         who_for        = COALESCE(programs.who_for, EXCLUDED.who_for),
+         faqs           = COALESCE(programs.faqs, EXCLUDED.faqs)`,
+      [p.slug, p.title, p.category, p.exam, p.level, p.status, p.price, p.mrp, p.accent, p.icon_class,
+       p.thumbnail_url, p.short_name, p.sort_order, p.omr_enabled, p.total_tests,
+       p.omr_categories ? JSON.stringify(p.omr_categories) : null,
+       JSON.stringify(p.tags), p.short_desc, JSON.stringify(p.who_for), JSON.stringify(p.faqs),
+       '/programs/' + p.slug + '/']
+    );
+  }
+  console.log('✅ Seeded/updated 6 new program launches: RVUNL JE 2026 (Electrical/Mechanical/Civil), BPSC Sanitary Officer 2025 (Offline/OMR), UP Polytechnic Lecturer Civil OMR');
+
   /* ── Seed second admin user from env var (never hardcode passwords) ── */
   {
     const bcrypt = require('bcryptjs');

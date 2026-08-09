@@ -971,6 +971,122 @@
   .carousel-track-outer { border-radius: 10px; }
 }
 
+/* ── Slide 9: RPSC AE Interview Guidance — built as a live HTML/CSS
+   composition (not a flat pre-shot JPG like banner-1..8) so it reuses the
+   site's real instructor photo instead of a fabricated one. ── */
+.cs-banner-html {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  background: linear-gradient(120deg, #0B1E3D 0%, #142A52 55%, #1B3568 100%);
+  padding: 28px 40px;
+  position: relative;
+  overflow: hidden;
+  text-decoration: none;
+  cursor: pointer;
+}
+.cs-banner-html::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 15% 20%, rgba(244, 196, 48, .14), transparent 40%),
+    radial-gradient(circle at 88% 85%, rgba(200, 18, 64, .18), transparent 45%);
+  pointer-events: none;
+}
+.cs-banner-html-text { position: relative; z-index: 1; max-width: 64%; }
+.cs-banner-ribbon {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(90deg, #C81240, #9B1230);
+  color: #fff;
+  font-weight: 800;
+  font-size: 13px;
+  padding: 5px 14px;
+  border-radius: 4px;
+  letter-spacing: .3px;
+  margin-bottom: 10px;
+}
+.cs-banner-title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 800;
+  font-size: clamp(20px, 3.1vw, 40px);
+  color: #fff;
+  line-height: 1.15;
+  margin: 0 0 8px;
+}
+.cs-banner-title span { color: #F4C430; }
+.cs-banner-sub {
+  display: inline-block;
+  background: linear-gradient(90deg, #C81240, #9B1230);
+  color: #fff;
+  font-weight: 700;
+  font-size: clamp(11px, 1.3vw, 15px);
+  padding: 4px 12px;
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+.cs-banner-feats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 14px;
+}
+.cs-banner-feats li {
+  color: #E4E9F5;
+  font-size: clamp(10px, 1.1vw, 13px);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.cs-banner-feats i { color: #F4C430; font-size: 12px; }
+.cs-banner-cta-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.cs-banner-price-mrp { color: #9AA5C0; text-decoration: line-through; font-size: clamp(12px, 1.2vw, 16px); }
+.cs-banner-price-offer { color: #F4C430; font-weight: 800; font-size: clamp(17px, 2vw, 26px); }
+.cs-banner-btn {
+  background: linear-gradient(90deg, #F4C430, #E8AC0E);
+  color: #14213D;
+  font-weight: 800;
+  font-size: clamp(12px, 1.2vw, 15px);
+  padding: 9px 22px;
+  border-radius: 50px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.cs-banner-photo-wrap {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  width: clamp(90px, 14vw, 168px);
+  height: clamp(120px, 18.5vw, 224px);
+  border-radius: 16px;
+  overflow: hidden;
+  border: 3px solid #F4C430;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .35);
+}
+.cs-banner-photo-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 22%;
+  display: block;
+}
+@media (max-width: 640px) {
+  .cs-banner-html { flex-direction: column-reverse; padding: 16px 18px 20px; text-align: center; gap: 12px; justify-content: center; }
+  .cs-banner-html-text { max-width: 100%; }
+  .cs-banner-feats { justify-content: center; }
+  .cs-banner-cta-row { justify-content: center; }
+  .cs-banner-photo-wrap { width: 96px; height: 128px; }
+}
+
 /* ── Arrow buttons — dark on light slides ── */
 .carousel-arrow {
   position: absolute;
