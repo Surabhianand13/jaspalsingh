@@ -20,7 +20,7 @@
    change anything - low value, but still not something to publish
    anywhere public. Change this before real use, and set the matching
    value in Render's environment variables. */
-var SYNC_KEY = 'change-me-before-real-use';
+var SYNC_KEY = '4wEFQ-cBzykiTJ8OPAEJ-6ii4pbQKJDg';
 
 var ROSTER = [
   { mobile: '9660942983', name: 'Vinod Rathore',   roll_number: 'JAI-DEG-10234', program: 'RSSB JE 2026 - Diploma (Jaipur)' },
