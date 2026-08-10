@@ -1111,6 +1111,43 @@ async function migrate() {
     );
   }
 
+  /* ── BPSC Bihar Sanitary Officer 2026 (Offline + Home-Based OMR): real
+     Tally forms wired 2026-08-11. Offline uses a single fixed centre
+     (Patna) per the same "single centre" decision as RVUNL - Patna is
+     the exam's home state, so it's the default primary city; the OMR
+     variant is home-based and needs no centre at all. Only sets
+     launch_config the first time so a later admin-panel edit wins. ── */
+  await query(
+    `UPDATE programs SET launch_config = $1
+     WHERE slug = 'bpsc-sanitary-officer-2026-jaspalsirki-testseries-offline' AND launch_config IS NULL`,
+    [JSON.stringify({
+      seriesName: 'BPSC Bihar Sanitary Officer 2026 (Offline)',
+      tallyFormUrl: 'https://tally.so/r/7R0qy9',
+      mode: 'offline',
+      rollPrefix: 'BPSCOF',
+      waGroupUrl: null,
+      lastTestDate: 'Tentative start September 2026 - see full schedule on the program page',
+      centre: {
+        name: 'Patna',
+        address: 'Exact venue shared via WhatsApp before your first test date',
+        mapsLink: 'https://wa.me/919829133317',
+      },
+    })]
+  );
+  await query(
+    `UPDATE programs SET launch_config = $1
+     WHERE slug = 'bpsc-sanitary-officer-2026-jaspalsirki-testseries-omr' AND launch_config IS NULL`,
+    [JSON.stringify({
+      seriesName: 'BPSC Bihar Sanitary Officer 2026 (Home-Based OMR)',
+      tallyFormUrl: 'https://tally.so/r/RGexql',
+      mode: 'home',
+      rollPrefix: 'BPSCOM',
+      waGroupUrl: null,
+      lastTestDate: 'Tentative start September 2026 - see full schedule on the program page',
+      centre: null,
+    })]
+  );
+
   /* ── Seed second admin user from env var (never hardcode passwords) ── */
   {
     const bcrypt = require('bcryptjs');
