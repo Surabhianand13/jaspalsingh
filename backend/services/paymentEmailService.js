@@ -47,8 +47,8 @@ const NO_FULFILLMENT_SLUGS = new Set([
   'rvunl-je-2026-jaspalsirki-testseries-electrical',
   'rvunl-je-2026-jaspalsirki-testseries-mechanical',
   'rvunl-je-2026-jaspalsirki-testseries-civil',
-  'bpsc-sanitary-officer-2025-jaspalsirki-testseries-offline',
-  'bpsc-sanitary-officer-2025-jaspalsirki-testseries-omr',
+  'bpsc-sanitary-officer-2026-jaspalsirki-testseries-offline',
+  'bpsc-sanitary-officer-2026-jaspalsirki-testseries-omr',
   'up-polytechnic-lecturer-jaspalsirki-testseries-civil-omr',
 ]);
 

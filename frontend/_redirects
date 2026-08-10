@@ -14,6 +14,10 @@
 /programs/rpsc-ae-interview /programs/rpsc-ae-interview/ 301
 /programs/rssb-jen-crash-course /programs/rssb-jen-crash-course/ 301
 /programs/gate-ese-foundation /programs/gate-ese-foundation/ 301
+/programs/bpsc-sanitary-officer-2025-jaspalsirki-testseries-offline /programs/bpsc-sanitary-officer-2026-jaspalsirki-testseries-offline/ 301
+/programs/bpsc-sanitary-officer-2025-jaspalsirki-testseries-offline/ /programs/bpsc-sanitary-officer-2026-jaspalsirki-testseries-offline/ 301
+/programs/bpsc-sanitary-officer-2025-jaspalsirki-testseries-omr /programs/bpsc-sanitary-officer-2026-jaspalsirki-testseries-omr/ 301
+/programs/bpsc-sanitary-officer-2025-jaspalsirki-testseries-omr/ /programs/bpsc-sanitary-officer-2026-jaspalsirki-testseries-omr/ 301
 
 # Dynamic fallback: any program slug without its own static page renders
 # the API-driven detail template. Existing static dirs take precedence;
