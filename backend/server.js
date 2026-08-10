@@ -1079,6 +1079,38 @@ async function migrate() {
     })]
   );
 
+  /* ── RVUNL JE 2026 (Electrical/Mechanical/Civil): real Tally forms wired
+     2026-08-10 - single fixed centre (Jaipur) per program, per explicit
+     product decision (not learner-selectable across Jaipur/Bikaner/Kota -
+     the generic webhook only supports one centre per program; the "which
+     of the 3 active cities" question was deliberately deferred, not an
+     oversight). Only sets launch_config the first time so a later
+     admin-panel edit always wins. ── */
+  const rvunlCentre = {
+    name: 'Jaipur',
+    address: 'Exact venue shared via WhatsApp before your first test date',
+    mapsLink: 'https://wa.me/919829133317',
+  };
+  const rvunlLaunches = [
+    ['rvunl-je-2026-jaspalsirki-testseries-electrical', 'RVUNL JE 2026 - Jaspal Sir Ki Test Series - Electrical', 'https://tally.so/r/5B0brE', 'RVNLEE'],
+    ['rvunl-je-2026-jaspalsirki-testseries-mechanical', 'RVUNL JE 2026 - Jaspal Sir Ki Test Series - Mechanical', 'https://tally.so/r/yPAMrB', 'RVNLME'],
+    ['rvunl-je-2026-jaspalsirki-testseries-civil', 'RVUNL JE 2026 - Jaspal Sir Ki Test Series - Civil', 'https://tally.so/r/dWGEoq', 'RVNLCE'],
+  ];
+  for (const [slug, seriesName, tallyFormUrl, rollPrefix] of rvunlLaunches) {
+    await query(
+      `UPDATE programs SET launch_config = $1 WHERE slug = $2 AND launch_config IS NULL`,
+      [JSON.stringify({
+        seriesName,
+        tallyFormUrl,
+        mode: 'offline',
+        rollPrefix,
+        waGroupUrl: null,
+        lastTestDate: 'Released weekly - see full schedule on the program page',
+        centre: rvunlCentre,
+      }), slug]
+    );
+  }
+
   /* ── Seed second admin user from env var (never hardcode passwords) ── */
   {
     const bcrypt = require('bcryptjs');
