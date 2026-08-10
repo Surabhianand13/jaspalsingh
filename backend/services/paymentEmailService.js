@@ -34,6 +34,24 @@ const WA_GROUP_RPSC_AE     = '';
 const SLUG_COMBO_OFFLINE = 'rssb-je-jaspalsirki-testseries-degree-diploma-combo';
 const SLUG_COMBO_OMR     = 'rssb-je-jaspalsirki-testseries-degree-diploma-combo-omr';
 
+/* Programs launched 2026-08-09 with no Tally form / launch_config yet -
+   none of their slugs contain "degree"/"diploma", so the substring
+   fallback chain below would otherwise silently misroute them to the
+   RSSB Diploma Tally form/webhook (wrong admit card, wasted one-time
+   submission). Until each of these either gets a real launch_config
+   (admin dashboard, needs a Tally.so form to be created first) or a
+   bespoke tally-*.js route, they get a manual-follow-up email instead
+   of a broken "Fill Details Form" link. Remove a slug from this set
+   once its launch_config/bespoke route is wired up. */
+const NO_FULFILLMENT_SLUGS = new Set([
+  'rvunl-je-2026-jaspalsirki-testseries-electrical',
+  'rvunl-je-2026-jaspalsirki-testseries-mechanical',
+  'rvunl-je-2026-jaspalsirki-testseries-civil',
+  'bpsc-sanitary-officer-2025-jaspalsirki-testseries-offline',
+  'bpsc-sanitary-officer-2025-jaspalsirki-testseries-omr',
+  'up-polytechnic-lecturer-jaspalsirki-testseries-civil-omr',
+]);
+
 /* ── ESE 2027 Prelims - 6 programs, matched by exact slug (config-driven) ── */
 const {
   ESE_PROGRAMS,
@@ -182,6 +200,9 @@ async function sendWelcomePaymentEmail(enrollment) {
   const isComboOmr     = slug === SLUG_COMBO_OMR;
   const isEse          = !!ESE_TALLY_FORM_URLS[slug];
 
+  const hasTallyForm = !!(launchConfig && launchConfig.tallyFormUrl);
+  const needsManualFulfillment = !hasTallyForm && NO_FULFILLMENT_SLUGS.has(slug);
+
   const tallyBase = (launchConfig && launchConfig.tallyFormUrl) ? launchConfig.tallyFormUrl
     : isEse ? ESE_TALLY_FORM_URLS[slug]
     : isComboOffline ? TALLY_FORM_URL_COMBO_OFFLINE
@@ -221,12 +242,26 @@ async function sendWelcomePaymentEmail(enrollment) {
 
   const normPhone = (enrollment.student_phone || '').replace(/\D/g, '').slice(-10);
 
-  const body = `
-    <h2 style="margin:0 0 8px;font-size:22px;color:#1A1A2E;font-weight:800;">Welcome aboard, ${firstName}!</h2>
-    <p style="margin:0 0 20px;font-size:15px;color:#374151;line-height:1.75;">
-      You are now enrolled in <strong>${esc(enrollment.program_name)}</strong>. We are excited to have you.
-    </p>
-
+  /* Programs in NO_FULFILLMENT_SLUGS have no working Tally form yet, so
+     the usual "fill this form to get your Admit Card" CTA (which would
+     silently point at an unrelated program's form) is replaced with a
+     plain "we'll contact you directly" notice instead. */
+  const actionBlock = needsManualFulfillment ? `
+    <!-- MANUAL FOLLOW-UP (no Tally form configured yet for this program) -->
+    <div style="background:#fff8f0;border:1px solid #fed7aa;border-radius:12px;padding:20px 24px;margin-bottom:28px;">
+      <div style="font-size:13px;font-weight:800;color:#c2410c;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">
+        What Happens Next
+      </div>
+      <p style="margin:0 0 14px;font-size:14px;color:#374151;line-height:1.7;">
+        Your seat is confirmed. Our team will personally reach out to you on WhatsApp or email within 24 hours to collect your test centre preference, photo and other details, and share your Admit Card.
+      </p>
+      <p style="margin:0 0 14px;font-size:13px;color:#6b7280;">
+        If you don't hear from us within 24 hours, message us directly - quote your Order ID below.
+      </p>
+      <a href="https://wa.me/919829133317?text=${encodeURIComponent('Hi, I just enrolled in ' + enrollment.program_name + '. Order ID: ' + enrollment.order_id)}" style="display:inline-block;background:#25D366;color:#fff;border-radius:10px;padding:14px 28px;font-size:15px;font-weight:700;text-decoration:none;">
+        Message Us on WhatsApp →
+      </a>
+    </div>` : `
     <!-- ONE CHANCE WARNING -->
     <div style="background:#fef2f2;border:2px solid #fca5a5;border-radius:12px;padding:18px 22px;margin-bottom:22px;">
       <div style="font-size:13px;font-weight:800;color:#991b1b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">
@@ -280,7 +315,15 @@ async function sendWelcomePaymentEmail(enrollment) {
       <p style="margin:14px 0 0;font-size:12px;color:#9ca3af;">
         This link is unique to your enrollment. Do not share it.
       </p>
-    </div>
+    </div>`;
+
+  const body = `
+    <h2 style="margin:0 0 8px;font-size:22px;color:#1A1A2E;font-weight:800;">Welcome aboard, ${firstName}!</h2>
+    <p style="margin:0 0 20px;font-size:15px;color:#374151;line-height:1.75;">
+      You are now enrolled in <strong>${esc(enrollment.program_name)}</strong>. We are excited to have you.
+    </p>
+
+    ${actionBlock}
 
     ${waGroups.length ? `
     <!-- WHATSAPP GROUP(S) -->
@@ -319,7 +362,9 @@ async function sendWelcomePaymentEmail(enrollment) {
   return resendSend({
     from:    FROM,
     to:      enrollment.student_email,
-    subject: `Action required - fill your details to get your Admit Card | ${enrollment.program_name}`,
+    subject: needsManualFulfillment
+      ? `Welcome aboard! We'll be in touch shortly | ${enrollment.program_name}`
+      : `Action required - fill your details to get your Admit Card | ${enrollment.program_name}`,
     html:    baseHtml(body),
   }, PRIORITY.ACTION_REQUIRED);
 }
