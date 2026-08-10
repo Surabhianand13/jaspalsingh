@@ -44,11 +44,11 @@ const SLUG_COMBO_OMR     = 'rssb-je-jaspalsirki-testseries-degree-diploma-combo-
    of a broken "Fill Details Form" link. Remove a slug from this set
    once its launch_config/bespoke route is wired up. */
 const NO_FULFILLMENT_SLUGS = new Set([
-  'bpsc-sanitary-officer-2026-jaspalsirki-testseries-offline',
-  'bpsc-sanitary-officer-2026-jaspalsirki-testseries-omr',
-  // 'up-polytechnic-lecturer-jaspalsirki-testseries-civil-omr' and the 3
-  // RVUNL slugs removed 2026-08-10/11, real Tally forms wired via
-  // launch_config in server.js.
+  // Empty as of 2026-08-11 - all 6 programs launched 2026-08-09 (RVUNL x3,
+  // BPSC x2, UP Polytechnic) now have real launch_config/Tally forms
+  // wired in server.js. Add a slug back here if a future program launches
+  // without a Tally form yet, so it gets the manual-follow-up email
+  // instead of a broken "Fill Details Form" link.
 ]);
 
 /* ── ESE 2027 Prelims - 6 programs, matched by exact slug (config-driven) ── */
