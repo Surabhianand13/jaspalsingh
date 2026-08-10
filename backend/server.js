@@ -912,11 +912,11 @@ async function migrate() {
       short_name: 'RVUNL JE 2026 Electrical Test Series', sort_order: 18,
       omr_enabled: false, total_tests: 10, omr_categories: null,
       tags: ['New', 'Bestseller'],
-      short_desc: '10 Full-Length CBT Mock Tests for RVUNL JE-I Electrical (RVUN/RVPN/JVVN/AVVN/JdVVN), offline centers across Rajasthan + Delhi.',
+      short_desc: '10 Full-Length CBT Mock Tests for RVUNL JE-I Electrical (RVUN/RVPN/JVVN/AVVN/JdVVN), offline centers in Jaipur, Bikaner & Kota.',
       who_for: [
         'Engineering graduates targeting JE-I (Electrical) across RVUN, RVPN, JVVN, AVVN & JdVVN',
         'Candidates who want real CBT-interface practice before exam day',
-        'Aspirants who prefer offline test centers across Rajasthan + Delhi',
+        'Aspirants who prefer offline test centers in Jaipur, Bikaner & Kota',
         'Anyone who wants full-syllabus, exam-pattern-aligned mock coverage',
       ],
       faqs: [
@@ -934,11 +934,11 @@ async function migrate() {
       short_name: 'RVUNL JE 2026 Mechanical Test Series', sort_order: 19,
       omr_enabled: false, total_tests: 10, omr_categories: null,
       tags: ['New', 'Bestseller'],
-      short_desc: '10 Full-Length CBT Mock Tests for RVUNL JE-I Mechanical (RVUN/RVPN/JVVN/AVVN/JdVVN), offline centers across Rajasthan + Delhi.',
+      short_desc: '10 Full-Length CBT Mock Tests for RVUNL JE-I Mechanical (RVUN/RVPN/JVVN/AVVN/JdVVN), offline centers in Jaipur, Bikaner & Kota.',
       who_for: [
         'Engineering graduates targeting JE-I (Mechanical) across RVUN, RVPN, JVVN, AVVN & JdVVN',
         'Candidates who want real CBT-interface practice before exam day',
-        'Aspirants who prefer offline test centers across Rajasthan + Delhi',
+        'Aspirants who prefer offline test centers in Jaipur, Bikaner & Kota',
         'Anyone who wants full-syllabus, exam-pattern-aligned mock coverage',
       ],
       faqs: [
@@ -956,11 +956,11 @@ async function migrate() {
       short_name: 'RVUNL JE 2026 Civil Test Series', sort_order: 20,
       omr_enabled: false, total_tests: 10, omr_categories: null,
       tags: ['New'],
-      short_desc: '10 Full-Length CBT Mock Tests for RVUNL JE-I Civil (RVUN/RVPN/JVVN/AVVN/JdVVN), offline centers across Rajasthan + Delhi.',
+      short_desc: '10 Full-Length CBT Mock Tests for RVUNL JE-I Civil (RVUN/RVPN/JVVN/AVVN/JdVVN), offline centers in Jaipur, Bikaner & Kota.',
       who_for: [
         'Engineering graduates targeting JE-I (Civil) across RVUN, RVPN, JVVN, AVVN & JdVVN',
         'Candidates who want real CBT-interface practice before exam day',
-        'Aspirants who prefer offline test centers across Rajasthan + Delhi',
+        'Aspirants who prefer offline test centers in Jaipur, Bikaner & Kota',
         'Anyone who wants full-syllabus, exam-pattern-aligned mock coverage',
       ],
       faqs: [
