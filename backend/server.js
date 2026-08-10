@@ -888,10 +888,18 @@ async function migrate() {
     await query(`UPDATE programs SET price = $1, updated_at = NOW() WHERE slug = $2`, [price, slug]);
   }
 
+  /* ── Rename BPSC Sanitary Officer slug from 2025 to 2026 (corrected
+     exam year, 2026-08-10) - renames the existing rows in place rather
+     than leaving orphaned 2025-slug rows behind after the newProgramLaunches
+     upsert below starts inserting under the new slug. Safe to run every
+     boot: no-ops once the rename has already happened. ── */
+  await query(`UPDATE programs SET slug = 'bpsc-sanitary-officer-2026-jaspalsirki-testseries-offline', detail_url = '/programs/bpsc-sanitary-officer-2026-jaspalsirki-testseries-offline/' WHERE slug = 'bpsc-sanitary-officer-2025-jaspalsirki-testseries-offline'`);
+  await query(`UPDATE programs SET slug = 'bpsc-sanitary-officer-2026-jaspalsirki-testseries-omr', detail_url = '/programs/bpsc-sanitary-officer-2026-jaspalsirki-testseries-omr/' WHERE slug = 'bpsc-sanitary-officer-2025-jaspalsirki-testseries-omr'`);
+
   /* ── New program launches (2026-08-09): RVUNL JE 2026 (Electrical/
      Mechanical/Civil), BPSC Assistant Public Sanitary & Waste Management
-     Officer 2025 (Offline + Home-Based OMR), UP Polytechnic Lecturer -
-     Civil (Home-Based OMR). Same upsert-every-boot pattern as
+     Officer 2026 (Bihar, Offline + Home-Based OMR), UP Polytechnic
+     Lecturer - Civil (Home-Based OMR). Same upsert-every-boot pattern as
      programBackfill above so re-deploys stay idempotent and any
      admin edit already made in the DB always wins via COALESCE. ── */
   const newProgramLaunches = [
@@ -962,12 +970,12 @@ async function migrate() {
       ],
     },
     {
-      slug: 'bpsc-sanitary-officer-2025-jaspalsirki-testseries-offline',
-      title: 'BPSC Assistant Public Sanitary & Waste Management Officer 2025 - Jaspal Sir Ki Test Series (Offline)',
-      category: 'test-series', exam: 'BPSC Sanitary Officer 2025', level: 'Offline', status: 'enrolling',
+      slug: 'bpsc-sanitary-officer-2026-jaspalsirki-testseries-offline',
+      title: 'BPSC Bihar Assistant Public Sanitary & Waste Management Officer 2026 - Jaspal Sir Ki Test Series (Offline)',
+      category: 'test-series', exam: 'BPSC Bihar Sanitary Officer 2026', level: 'Offline', status: 'enrolling',
       price: 2499, mrp: 5999, accent: 'green', icon_class: 'fa-recycle',
-      thumbnail_url: '/assets/images/thumb-bpsc-sanitary-officer-2025.jpg',
-      short_name: 'BPSC Sanitary Officer 2025 Test Series (Offline)', sort_order: 21,
+      thumbnail_url: '/assets/images/thumb-bpsc-sanitary-officer-2026.jpg',
+      short_name: 'BPSC Bihar Sanitary Officer 2026 Test Series (Offline)', sort_order: 21,
       omr_enabled: false, total_tests: 20, omr_categories: null,
       tags: ['New'],
       short_desc: '20 offline tests covering General Studies + Solid & Liquid Waste Management for BPSC Advt. 108/2025, centers in Patna & Delhi.',
@@ -979,18 +987,18 @@ async function migrate() {
       ],
       faqs: [
         { question: 'Which post is this test series for?', answer: 'Assistant Public Sanitary & Waste Management Officer under BPSC Advertisement No. 108/2025, Nagar Vikas evam Awas Vibhag, Bihar.' },
-        { question: 'What is the paper pattern?', answer: 'Two compulsory objective papers: Paper I General Studies (125 questions / 100 marks / 2 hours) and Paper II Solid & Liquid Waste Management (125 questions / 100 marks / 2 hours).' },
+        { question: 'What is the paper pattern?', answer: 'Two compulsory objective papers held on the same day: Paper I General Studies (125 questions / 100 marks / 2 hours) and Paper II Solid & Liquid Waste Management (125 questions / 100 marks / 2 hours).' },
         { question: 'When does this batch start?', answer: 'Tentatively September 2026. Exact dates are shared with enrolled learners in advance.' },
         { question: 'Is there a home-based option if I cannot travel to Patna or Delhi?', answer: 'Yes, the same test series is also available as a Home-Based OMR test series - see the OMR variant on this page.' },
       ],
     },
     {
-      slug: 'bpsc-sanitary-officer-2025-jaspalsirki-testseries-omr',
-      title: 'BPSC Assistant Public Sanitary & Waste Management Officer 2025 - Jaspal Sir Ki Test Series (Home-Based OMR)',
-      category: 'test-series', exam: 'BPSC Sanitary Officer 2025', level: 'Home-Based OMR', status: 'enrolling',
+      slug: 'bpsc-sanitary-officer-2026-jaspalsirki-testseries-omr',
+      title: 'BPSC Bihar Assistant Public Sanitary & Waste Management Officer 2026 - Jaspal Sir Ki Test Series (Home-Based OMR)',
+      category: 'test-series', exam: 'BPSC Bihar Sanitary Officer 2026', level: 'Home-Based OMR', status: 'enrolling',
       price: 1499, mrp: 3999, accent: 'indigo', icon_class: 'fa-recycle',
-      thumbnail_url: '/assets/images/thumb-bpsc-sanitary-officer-2025.jpg',
-      short_name: 'BPSC Sanitary Officer 2025 Test Series (OMR)', sort_order: 22,
+      thumbnail_url: '/assets/images/thumb-bpsc-sanitary-officer-2026.jpg',
+      short_name: 'BPSC Bihar Sanitary Officer 2026 Test Series (OMR)', sort_order: 22,
       omr_enabled: true, total_tests: 20, omr_categories: null,
       tags: ['New'],
       short_desc: '20 home-based OMR tests covering General Studies + Solid & Liquid Waste Management for BPSC Advt. 108/2025 - attempt from anywhere.',
@@ -1002,7 +1010,7 @@ async function migrate() {
       ],
       faqs: [
         { question: 'How does the home-based OMR test series work?', answer: 'You receive the question paper and a blank OMR sheet on each test date, attempt it at home within the time limit, and upload your filled sheet before the deadline.' },
-        { question: 'What is the paper pattern?', answer: 'Two compulsory objective papers: Paper I General Studies (125 questions / 100 marks / 2 hours) and Paper II Solid & Liquid Waste Management (125 questions / 100 marks / 2 hours).' },
+        { question: 'What is the paper pattern?', answer: 'Two compulsory objective papers held on the same day: Paper I General Studies (125 questions / 100 marks / 2 hours) and Paper II Solid & Liquid Waste Management (125 questions / 100 marks / 2 hours).' },
         { question: 'When does this batch start?', answer: 'Tentatively September 2026. Exact dates are shared with enrolled learners in advance.' },
       ],
     },
@@ -1052,7 +1060,7 @@ async function migrate() {
        '/programs/' + p.slug + '/']
     );
   }
-  console.log('✅ Seeded/updated 6 new program launches: RVUNL JE 2026 (Electrical/Mechanical/Civil), BPSC Sanitary Officer 2025 (Offline/OMR), UP Polytechnic Lecturer Civil OMR');
+  console.log('✅ Seeded/updated 6 new program launches: RVUNL JE 2026 (Electrical/Mechanical/Civil), BPSC Bihar Sanitary Officer 2026 (Offline/OMR), UP Polytechnic Lecturer Civil OMR');
 
   /* ── Seed second admin user from env var (never hardcode passwords) ── */
   {
