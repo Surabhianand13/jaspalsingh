@@ -1062,6 +1062,23 @@ async function migrate() {
   }
   console.log('✅ Seeded/updated 6 new program launches: RVUNL JE 2026 (Electrical/Mechanical/Civil), BPSC Bihar Sanitary Officer 2026 (Offline/OMR), UP Polytechnic Lecturer Civil OMR');
 
+  /* ── UP Polytechnic Lecturer (Civil, Home-Based OMR): real Tally form
+     wired 2026-08-10 - only sets launch_config the first time so any
+     later admin-panel edit (rollPrefix, waGroupUrl, etc.) always wins. ── */
+  await query(
+    `UPDATE programs SET launch_config = $1
+     WHERE slug = 'up-polytechnic-lecturer-jaspalsirki-testseries-civil-omr' AND launch_config IS NULL`,
+    [JSON.stringify({
+      seriesName: 'UP Polytechnic Lecturer - Civil (Home-Based OMR)',
+      tallyFormUrl: 'https://tally.so/r/gDVyVl',
+      mode: 'home',
+      rollPrefix: 'UPPOLY',
+      waGroupUrl: null,
+      lastTestDate: 'Tests run 16, 20, 23, 27, 30 Aug & 3 Sep 2026 - see full schedule on the program page',
+      centre: null,
+    })]
+  );
+
   /* ── Seed second admin user from env var (never hardcode passwords) ── */
   {
     const bcrypt = require('bcryptjs');
