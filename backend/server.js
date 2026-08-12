@@ -1148,6 +1148,14 @@ async function migrate() {
     })]
   );
 
+  /* ── RPSC AE 2024 Interview Guidance: relaunched 2026-08-11 - was
+     is_visible = FALSE in production (hidden from the public /api/programs
+     listing, which meant the homepage/listing sync script was actively
+     deleting its hardcoded card on every page load even though the static
+     HTML said "Enrolling Now"). Checkout/pricing were already correct -
+     only visibility was wrong. ── */
+  await query(`UPDATE programs SET is_visible = TRUE WHERE slug = 'rpsc-ae-interview'`);
+
   /* ── Seed second admin user from env var (never hardcode passwords) ── */
   {
     const bcrypt = require('bcryptjs');
