@@ -17,6 +17,17 @@ const { verifyTurnstile } = require('../utils/turnstile');
 const REFERRAL_DISCOUNT = 100;
 const REFERRAL_MIN_PRICE = 1599; // referral codes only apply to programs priced at or above this
 
+/* ── Independence Day Freedom Sale (2026-08-15 IST only) ──────
+   Today: FREEDOM15 (site-wide 15% off) is the ONLY coupon that works,
+   and referral codes are switched off entirely - both restrictions are
+   gated by calendar date so they revert automatically tomorrow with no
+   follow-up action needed. Checked against IST (not server/UTC time)
+   since that's the timezone the sale was announced in. */
+function isFreedomSaleDay() {
+  const istNow = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+  return istNow.toISOString().slice(0, 10) === '2026-08-15';
+}
+
 /* Dedicated limiter for order creation - each hit creates a real Razorpay
    order + a pending DB row, so it needs tighter throttling than the
    blanket 500/15min apiLimiter (a genuine buyer retries at most a few
@@ -118,6 +129,9 @@ const FALLBACK_COUPONS = {
 async function getCoupon(code) {
   const upper = (code || '').toUpperCase();
   if (!upper) return null;
+  // Freedom Sale day: every other coupon is treated as invalid, no matter
+  // what's in the DB or FALLBACK_COUPONS - only FREEDOM15 itself is exempt.
+  if (isFreedomSaleDay() && upper !== 'FREEDOM15') return null;
   try {
     const result = await query(`SELECT * FROM coupons WHERE code = $1 AND is_active = TRUE`, [upper]);
     // A successful query with zero rows means the coupon is disabled or
@@ -159,6 +173,12 @@ async function applyCoupon(coupon, originalPrice, programSlug) {
     const fixedPrice = (c.program_prices || {})[programSlug];
     if (fixedPrice == null) return null; // not valid on this program
     return { finalPrice: fixedPrice, discount: originalPrice - fixedPrice, label: c.label, exclusive: !!c.exclusive, couponRow: c };
+  }
+
+  if (c.type === 'percent_discount') {
+    // discount_amount is a percentage (e.g. 15 = 15% off), not a rupee amount.
+    const finalPrice = Math.round(originalPrice * (1 - c.discount_amount / 100));
+    return { finalPrice, discount: originalPrice - finalPrice, label: c.label, exclusive: !!c.exclusive, couponRow: c };
   }
 
   const discountAmt = c.type === 'flat_price' ? (originalPrice - c.discount_amount) : c.discount_amount;
@@ -247,6 +267,10 @@ router.post('/validate-referral', optionalLearner, async (req, res) => {
   const { referral_code, program_slug, phone, email } = req.body;
   if (!referral_code || !program_slug) return res.status(400).json({ error: 'referral_code and program_slug required.' });
 
+  if (isFreedomSaleDay()) {
+    return res.status(400).json({ valid: false, error: 'Referral codes are paused today for the Independence Day Freedom Sale - use code FREEDOM15 instead.' });
+  }
+
   const program = await getProgramData(program_slug);
   if (!program) return res.status(400).json({ error: 'Invalid program.' });
 
@@ -304,7 +328,7 @@ router.post('/create-order', createOrderLimiter, optionalLearner, async (req, re
     }
 
     let referredBy = null;
-    if (referral_code && !couponExclusive && finalPrice >= REFERRAL_MIN_PRICE) {
+    if (referral_code && !couponExclusive && finalPrice >= REFERRAL_MIN_PRICE && !isFreedomSaleDay()) {
       const lookup = await lookupReferral(referral_code, phone, email, req.learner?.id);
       if (lookup && !lookup.selfReferral) {
         finalPrice = Math.max(1, finalPrice - REFERRAL_DISCOUNT);
