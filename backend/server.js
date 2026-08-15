@@ -1156,6 +1156,27 @@ async function migrate() {
      only visibility was wrong. ── */
   await query(`UPDATE programs SET is_visible = TRUE WHERE slug = 'rpsc-ae-interview'`);
 
+  /* ── Independence Day Freedom Sale (2026-08-15 only): FREEDOM15 gives a
+     genuine 15%-off-anything coupon, which needed a new coupon `type`
+     ('percent_discount') since the existing types are all fixed-rupee or
+     per-program price maps - see applyCoupon() in routes/payment.js.
+     program_slugs = NULL means no scope restriction (every program).
+     expires_at is 23:59:59 IST on 2026-08-15 (= 18:29:59 UTC same day) -
+     applyCoupon() already rejects any coupon past its expires_at, so this
+     switches itself off with no follow-up action needed tomorrow. The
+     "no other coupon, no referral, today" half of the rule lives in
+     payment.js (isFreedomSaleDay() gate), not here - this row only
+     defines what FREEDOM15 itself does. DO UPDATE (not DO NOTHING) since
+     this needs to stay correct across any redeploy today. ── */
+  await query(
+    `INSERT INTO coupons (code, type, discount_amount, program_prices, program_slugs, max_uses, exclusive, is_active, label, expires_at)
+     VALUES ('FREEDOM15', 'percent_discount', 15, NULL, NULL, NULL, TRUE, TRUE, 'Independence Day Sale - Flat 15% Off', '2026-08-15T18:29:59Z')
+     ON CONFLICT (code) DO UPDATE SET
+       type = EXCLUDED.type, discount_amount = EXCLUDED.discount_amount, program_prices = EXCLUDED.program_prices,
+       program_slugs = EXCLUDED.program_slugs, max_uses = EXCLUDED.max_uses, exclusive = EXCLUDED.exclusive,
+       is_active = TRUE, label = EXCLUDED.label, expires_at = EXCLUDED.expires_at, updated_at = NOW()`
+  );
+
   /* ── Seed second admin user from env var (never hardcode passwords) ── */
   {
     const bcrypt = require('bcryptjs');
