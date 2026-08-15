@@ -61,8 +61,8 @@ async function processGenericSubmission(fields, program) {
   }
 
   const lookupResult = token
-    ? await query(`SELECT id, student_email, student_phone, form_used, form_token FROM enrollments WHERE form_token = $1`, [token])
-    : await query(`SELECT id, student_email, student_phone, form_used, form_token FROM enrollments WHERE order_id = $1 AND status = 'paid'`, [orderId]);
+    ? await query(`SELECT id, student_email, student_phone, form_used, form_token, roll_number FROM enrollments WHERE form_token = $1`, [token])
+    : await query(`SELECT id, student_email, student_phone, form_used, form_token, roll_number FROM enrollments WHERE order_id = $1 AND status = 'paid'`, [orderId]);
 
   if (!lookupResult.rows.length) {
     console.warn('[tally-generic] Invalid token/order - token:', token, 'orderId:', orderId);
@@ -103,7 +103,11 @@ async function processGenericSubmission(fields, program) {
   const seriesName = launchConfig.seriesName || program.title;
 
   try {
-    const rollNumber  = await generateGenericRollNumber(launchConfig.rollPrefix);
+    // Reuse a roll number already on the row (e.g. from an admin priority
+    // backfill run before this learner got to the form) instead of
+    // generating a fresh one - otherwise the number shown in their profile
+    // before submission would silently change once they submit.
+    const rollNumber  = enrollment.roll_number || await generateGenericRollNumber(launchConfig.rollPrefix);
     const photoBuffer = photoUrl ? await fetchImageBuffer(photoUrl) : null;
 
     const pdfBuffer = await generateAdmitCard({
