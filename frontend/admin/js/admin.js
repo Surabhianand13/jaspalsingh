@@ -2515,6 +2515,7 @@
       return '<tr>' +
         '<td>'+e(x.student_name)+'<br><span style="color:#9999b0;font-size:12px;">'+e(x.student_phone)+(x.student_email?' · '+e(x.student_email):'')+'</span></td>' +
         '<td>'+e(x.program_label||x.program_name)+'</td>' +
+        '<td>'+(x.roll_number?'<span style="font-family:monospace;">'+e(x.roll_number)+'</span>':'<span style="color:#c7c7d6;">Pending</span>')+'</td>' +
         '<td>'+inr(x.amount)+'</td>' +
         '<td>'+(x.referred_by?e(x.referred_by):'<span style="color:#c7c7d6;">-</span>')+'</td>' +
         '<td>'+(x.coupon_code?e(x.coupon_code):'<span style="color:#c7c7d6;">-</span>')+'</td>' +
@@ -2526,7 +2527,7 @@
     }).join('');
 
     body.innerHTML = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr>' +
-      '<th>Learner</th><th>Program</th><th>Amount</th><th>Referral Code</th><th>Coupon</th><th>Order / Payment ID</th><th>Purchase Date</th><th>Refund</th><th>Action</th>' +
+      '<th>Learner</th><th>Program</th><th>Roll Number</th><th>Amount</th><th>Referral Code</th><th>Coupon</th><th>Order / Payment ID</th><th>Purchase Date</th><th>Refund</th><th>Action</th>' +
       '</tr></thead><tbody>'+html+'</tbody></table></div>';
 
     body.querySelectorAll('[data-refund]').forEach(function (btn) {
@@ -2604,13 +2605,14 @@
   function exportPaidLearnersCSV() {
     if (!allPaidLearners.length) { showToast('No paid learner data to export.', 'error'); return; }
 
-    var headers = ['Name', 'Email', 'Phone', 'Program', 'Amount', 'Purchase Date', 'Referral Code', 'Coupon Code', 'Order ID', 'Payment ID', 'Refund Status'];
+    var headers = ['Name', 'Email', 'Phone', 'Program', 'Roll Number', 'Amount', 'Purchase Date', 'Referral Code', 'Coupon Code', 'Order ID', 'Payment ID', 'Refund Status'];
     var rows = allPaidLearners.map(function (x) {
       return [
         csvEscape(x.student_name || ''),
         csvEscape(x.student_email || ''),
         csvEscape(x.student_phone || ''),
         csvEscape(x.program_label || x.program_name || ''),
+        csvEscape(x.roll_number || ''),
         x.amount || 0,
         csvEscape(fmtDate(x.paid_at)),
         csvEscape(x.referred_by || ''),

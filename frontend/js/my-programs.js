@@ -70,6 +70,11 @@
               (paid_at ? '<span class="enrolled-date">Joined ' + paid_at + '</span>' : '') +
               '<span class="enrolled-amount">&#8377;' + Number(e.amount).toLocaleString('en-IN') + ' paid</span>' +
             '</div>' +
+            '<div class="enrolled-roll" style="margin-top:6px;font-size:13px;">' +
+              (e.roll_number
+                ? '<i class="fas fa-id-card" style="color:#0F766E;"></i> Admit Card No: <strong style="font-family:monospace;">' + esc(e.roll_number) + '</strong>'
+                : '<span style="color:#9999b0;"><i class="fas fa-hourglass-half"></i> Admit card number: assigned shortly</span>') +
+            '</div>' +
             '<button class="btn" data-schedule-open="' + esc(slug) + '" data-schedule-name="' + esc(e.program_name) + '" style="margin-top:10px;background:#0F766E;color:#fff;border:none;border-radius:20px;padding:10px 22px;font-size:13px;font-weight:700;cursor:pointer;">' +
               '<i class="fas fa-calendar-alt"></i> View Schedule' +
             '</button>' +

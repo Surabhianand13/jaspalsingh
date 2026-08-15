@@ -199,7 +199,7 @@ router.get('/my-enrollments', protectLearner, async (req, res) => {
     );
 
     const result = await query(
-      `SELECT order_id, program_slug, program_name, amount, status, paid_at, coupon_code
+      `SELECT order_id, program_slug, program_name, amount, status, paid_at, coupon_code, roll_number
        FROM enrollments
        WHERE status = 'paid'
          AND refund_status != 'initiated'
@@ -281,7 +281,7 @@ router.get('/admin/paid-learners', protect, async (req, res, next) => {
 
     const rows = await query(
       `SELECT id, order_id, program_slug, program_name, amount, student_name, student_email,
-              student_phone, coupon_code, referred_by, cf_payment_id, paid_at,
+              student_phone, coupon_code, referred_by, cf_payment_id, paid_at, roll_number,
               refund_status, refund_reason, refund_amount, refund_initiated_at, refunded_by
        FROM enrollments ${where} ORDER BY paid_at DESC`, params);
     rows.rows.forEach(r => { r.program_label = programLabel(r.program_slug, r.program_name); });
