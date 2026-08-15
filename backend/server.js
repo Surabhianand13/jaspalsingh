@@ -1156,6 +1156,36 @@ async function migrate() {
      only visibility was wrong. ── */
   await query(`UPDATE programs SET is_visible = TRUE WHERE slug = 'rpsc-ae-interview'`);
 
+  /* ── UP Polytechnic roll-number backfill (2026-08-15): learners who
+     paid before/without submitting the post-payment Tally details form
+     have no roll_number yet and nothing to show in "My Programs" -
+     admin wants every paid learner to have one now, on priority,
+     rather than waiting on each person's own form submission. Scoped
+     to this one program (not a global backfill) because the live Tally
+     webhook (routes/tally-generic.js) now reuses roll_number if one is
+     already set instead of overwriting it - see the change there - so
+     a number assigned here stays stable even after the learner later
+     fills the form. Runs on every boot but only touches rows still
+     missing one, so it's a no-op once everyone has caught up. Format
+     matches generateGenericRollNumber() in routes/tally-generic.js;
+     the DB's partial unique index on roll_number (see ALTER TABLE
+     above) is the actual overlap guarantee. ── */
+  const rollBackfillRows = await query(
+    `SELECT id FROM enrollments
+     WHERE status = 'paid' AND refund_status != 'initiated' AND roll_number IS NULL
+       AND program_slug = 'up-polytechnic-lecturer-jaspalsirki-testseries-civil-omr'`
+  );
+  for (const row of rollBackfillRows.rows) {
+    let rollNumber = null;
+    for (let i = 0; i < 10; i++) {
+      const candidate = `UPPOLY-${Math.floor(10000 + Math.random() * 90000)}`;
+      const exists = await query('SELECT 1 FROM enrollments WHERE roll_number = $1', [candidate]);
+      if (!exists.rows.length) { rollNumber = candidate; break; }
+    }
+    if (!rollNumber) continue;
+    await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2 AND roll_number IS NULL', [rollNumber, row.id]);
+  }
+
   /* ── Independence Day Freedom Sale (2026-08-15 only): FREEDOM15 gives a
      genuine 15%-off-anything coupon, which needed a new coupon `type`
      ('percent_discount') since the existing types are all fixed-rupee or
