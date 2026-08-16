@@ -10,8 +10,7 @@
 
 ## Branch Workflow
 
-- **All changes go to `develop` branch first** - never commit directly to `main`
-- At the end of each session, open a PR from `develop` → `main`
+- **Work on a feature branch, then PR directly into `main`** - no more staging through `develop`
 - Once the PR is merged, Cloudflare and Render pick it up automatically within ~1-2 minutes
 - Always verify changes on **jaspalsingh.in** after merge, not localhost
 
