@@ -12,6 +12,7 @@ const sharp         = require('sharp');
 const { send: resendSend, PRIORITY } = require('../services/resendQueue');
 const { PutObjectCommand } = require('@aws-sdk/client-s3');
 const { r2, BUCKET } = require('../config/r2');
+const { generateRollNumber: sharedGenerateRollNumber } = require('../utils/rollNumber');
 
 /* ── Persist a generated admit-card PDF to R2, instead of emailing it -
    the admin approves/rejects via the Admit Cards queue (routes/admit-
@@ -29,14 +30,53 @@ async function persistPendingAdmitCard(enrollmentId, pdfBuffer, status = 'pendin
   const key = `admit-cards/${enrollmentId}-${Date.now()}.pdf`;
   await r2.send(new PutObjectCommand({ Bucket: BUCKET, Key: key, Body: pdfBuffer, ContentType: 'application/pdf' }));
   const pdfUrl = `${process.env.R2_PUBLIC_URL}/${key}`;
+  // Guard only blocks a 'pending' write (learner-submitted webhook flow)
+  // from downgrading a card the admin already approved - an explicit
+  // 'approved' write (admin resend-admit-card in enrollment-account.js,
+  // fixing a mistake on an already-approved card) must always go through,
+  // or the corrected PDF gets emailed but the profile download link never
+  // updates to point at it.
   await query(
     `UPDATE enrollments SET admit_card_pdf_url = $1, admit_card_pdf_key = $2, admit_card_status = $3, admit_card_submitted_at = NOW()
-     WHERE id = $4 AND admit_card_status != 'approved'`,
+     WHERE id = $4 AND ($3 = 'approved' OR admit_card_status != 'approved')`,
     [pdfUrl, key, status, enrollmentId]
   );
 }
 
 const FROM   = 'Dr. Jaspal Singh <team@jaspalsingh.in>';
+
+/* ── Confirm a Tally submission was received, now that the admit card
+   itself isn't emailed anymore (see persistPendingAdmitCard above) - the
+   learner otherwise has no signal their submission went through at all.
+   Deliberately doesn't promise a review timeline beyond "shortly", since
+   the review is manual. Shared by every Tally webhook flow. ── */
+async function sendSubmissionReceivedEmail({ to, name, seriesName }) {
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/></head>
+<body style="margin:0;padding:0;background:#f4f5f8;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f5f8;padding:32px 16px;">
+<tr><td align="center"><table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+  <tr><td style="background:#0F1117;border-radius:14px 14px 0 0;padding:24px 36px;text-align:center;">
+    <div style="font-size:20px;font-weight:800;color:#fff;">Dr. <span style="color:#C81240;">Jaspal Singh</span></div>
+    <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:4px;letter-spacing:1.5px;text-transform:uppercase;">jaspalsingh.in</div>
+  </td></tr>
+  <tr><td style="background:#fff;padding:32px 36px;">
+    <h2 style="margin:0 0 8px;font-size:20px;color:#1A1A2E;font-weight:800;">Details received!</h2>
+    <p style="margin:0 0 12px;font-size:14px;color:#374151;line-height:1.7;">Hi ${name || 'there'}, we've received your details for <strong>${seriesName}</strong>. Our team will review them shortly and your admit card will be ready to download from your profile once approved.</p>
+    <a href="https://jaspalsingh.in/my-programs/" style="display:inline-block;background:#0F766E;color:#fff;text-decoration:none;padding:10px 22px;border-radius:20px;font-size:13px;font-weight:700;margin-top:8px;">Check My Programs &rarr;</a>
+  </td></tr>
+  <tr><td style="background:#f4f5f8;border-radius:0 0 14px 14px;padding:16px 36px;text-align:center;">
+    <p style="margin:0;font-size:12px;color:#9ca3af;">jaspalsingh.in | +91 98291 33317</p>
+  </td></tr>
+</table></td></tr></table>
+</body></html>`;
+  const result = await resendSend({
+    from: FROM,
+    to,
+    subject: `Details received - ${seriesName}`,
+    html,
+  }, PRIORITY.ADMIT_CARD);
+  if (result.error) console.error('[sendSubmissionReceivedEmail] Resend error:', result.error);
+}
 
 /* ── Centre data ─────────────────────────────────────────── */
 
@@ -141,17 +181,18 @@ DON'Ts:
 
 /* ── Roll number generator ───────────────────────────────── */
 
+/* Fallback only - onEnrollmentPaid (payment.js's assignRollNumber) already
+   assigns a roll number the instant the purchase completes, using the
+   shared generator with prefix 'DEG'/'DIP' (see utils/rollNumberPrefix.js).
+   This only fires if that earlier assignment didn't happen (a caught DB
+   error, or a pre-existing enrollment from before that system shipped) -
+   it now delegates to the same shared generator/format so a fallback-
+   minted roll number is never visibly different (or a duplicate risk)
+   compared to one minted at purchase time. `centre` is kept in the
+   signature only so every existing call site keeps working unchanged. */
 async function generateRollNumber(centre, targetExam) {
-  const prefix   = centre.slice(0, 3).toUpperCase();
   const examCode = targetExam.toLowerCase().includes('degree') ? 'DEG' : 'DIP';
-  let roll;
-  for (let i = 0; i < 10; i++) {
-    const num = Math.floor(10000 + Math.random() * 90000);
-    roll = `${prefix}-${examCode}-${num}`;
-    const exists = await query('SELECT 1 FROM enrollments WHERE roll_number = $1', [roll]);
-    if (!exists.rows.length) return roll;
-  }
-  return roll;
+  return sharedGenerateRollNumber(examCode);
 }
 
 /* ── Parse Tally webhook payload ─────────────────────────── */
@@ -790,7 +831,7 @@ async function processSubmission(fields, programType) {
   if (normEmail !== expectedEmail) {
     console.warn('[tally-webhook] Email mismatch - submitted:', normEmail, 'expected:', expectedEmail);
     await query(
-      `UPDATE enrollments SET admit_card_status = 'rejected', admit_card_rejection_reason = $1 WHERE id = $2 AND admit_card_status != 'approved'`,
+      `UPDATE enrollments SET admit_card_status = 'rejected', admit_card_rejection_reason = $1, admit_card_submitted_at = NOW() WHERE id = $2 AND admit_card_status != 'approved'`,
       [`Submitted email (${email}) does not match the email used at checkout.`, preCheck.id]
     );
     return;
@@ -801,7 +842,7 @@ async function processSubmission(fields, programType) {
   if (normPhone && expectedPhone && normPhone !== expectedPhone) {
     console.warn('[tally-webhook] Phone mismatch - submitted:', normPhone, 'expected:', expectedPhone);
     await query(
-      `UPDATE enrollments SET admit_card_status = 'rejected', admit_card_rejection_reason = $1 WHERE id = $2 AND admit_card_status != 'approved'`,
+      `UPDATE enrollments SET admit_card_status = 'rejected', admit_card_rejection_reason = $1, admit_card_submitted_at = NOW() WHERE id = $2 AND admit_card_status != 'approved'`,
       [`Submitted mobile number does not match the number used at checkout (expected +91 ${expectedPhone}).`, preCheck.id]
     );
     return;
@@ -867,6 +908,7 @@ async function processSubmission(fields, programType) {
     // profile once approved (see routes/admit-card-review.js).
     await persistPendingAdmitCard(enrollment.id, pdfBuffer);
     await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2 AND roll_number IS NULL', [rollNumber, enrollment.id]);
+    await sendSubmissionReceivedEmail({ to: email, name, seriesName }).catch(e => console.error('[tally-webhook] submission-received email failed:', e.message));
     console.log(`[tally-webhook] Admit card generated and pending review | ${email} | Roll: ${rollNumber}`);
   } catch (err) {
     console.error('[tally-webhook] Admit card generation failed:', err.message);
@@ -1190,7 +1232,7 @@ async function processComboSubmission(fields) {
   if (normEmail !== expectedEmail) {
     console.warn('[tally-combo] Email mismatch - submitted:', normEmail, 'expected:', expectedEmail);
     await query(
-      `UPDATE enrollments SET admit_card_status = 'rejected', admit_card_rejection_reason = $1 WHERE id = $2 AND admit_card_status != 'approved'`,
+      `UPDATE enrollments SET admit_card_status = 'rejected', admit_card_rejection_reason = $1, admit_card_submitted_at = NOW() WHERE id = $2 AND admit_card_status != 'approved'`,
       [`Submitted email (${email}) does not match the email used at checkout.`, preCheck.id]
     );
     return;
@@ -1200,7 +1242,7 @@ async function processComboSubmission(fields) {
   if (normPhone && expectedPhone && normPhone !== expectedPhone) {
     console.warn('[tally-combo] Phone mismatch - submitted:', normPhone, 'expected:', expectedPhone);
     await query(
-      `UPDATE enrollments SET admit_card_status = 'rejected', admit_card_rejection_reason = $1 WHERE id = $2 AND admit_card_status != 'approved'`,
+      `UPDATE enrollments SET admit_card_status = 'rejected', admit_card_rejection_reason = $1, admit_card_submitted_at = NOW() WHERE id = $2 AND admit_card_status != 'approved'`,
       [`Submitted mobile number does not match the number used at checkout (expected +91 ${expectedPhone}).`, preCheck.id]
     );
     return;
@@ -1252,6 +1294,7 @@ async function processComboSubmission(fields) {
     // profile once approved (see routes/admit-card-review.js).
     await persistPendingAdmitCard(enrollment.id, pdfBuffer);
     await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2 AND roll_number IS NULL', [`${rollNumberDegree}|${rollNumberDiploma}`, enrollment.id]);
+    await sendSubmissionReceivedEmail({ to: email, name, seriesName: 'RSSB JE 2026 - Degree + Diploma Combo' }).catch(e => console.error('[tally-combo] submission-received email failed:', e.message));
     console.log(`[tally-combo] Admit card generated and pending review | ${email} | Degree Roll: ${rollNumberDegree} | Diploma Roll: ${rollNumberDiploma}`);
   } catch (err) {
     console.error('[tally-combo] Admit card generation failed:', err.message);
@@ -1290,3 +1333,4 @@ module.exports.SCHEDULE_DIPLOMA         = SCHEDULE_DIPLOMA;
 module.exports.parseTallyFields         = parseTallyFields;
 module.exports.sendRejectionEmail       = sendRejectionEmail;
 module.exports.persistPendingAdmitCard  = persistPendingAdmitCard;
+module.exports.sendSubmissionReceivedEmail = sendSubmissionReceivedEmail;

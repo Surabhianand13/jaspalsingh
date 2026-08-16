@@ -15,7 +15,7 @@ const express = require('express');
 const router  = express.Router({ mergeParams: true });
 const { query } = require('../config/db');
 const {
-  parseTallyFields, generateAdmitCard, fetchImageBuffer, persistPendingAdmitCard,
+  parseTallyFields, generateAdmitCard, fetchImageBuffer, persistPendingAdmitCard, sendSubmissionReceivedEmail,
 } = require('./tally-webhook');
 
 const FROM = 'Dr. Jaspal Singh <team@jaspalsingh.in>';
@@ -65,7 +65,7 @@ async function processGenericSubmission(fields, program) {
   const expectedEmail = (preCheck.student_email || '').toLowerCase().trim();
   if (normEmail !== expectedEmail) {
     await query(
-      `UPDATE enrollments SET admit_card_status = 'rejected', admit_card_rejection_reason = $1 WHERE id = $2 AND admit_card_status != 'approved'`,
+      `UPDATE enrollments SET admit_card_status = 'rejected', admit_card_rejection_reason = $1, admit_card_submitted_at = NOW() WHERE id = $2 AND admit_card_status != 'approved'`,
       [`Submitted email (${email}) does not match the email used at checkout.`, preCheck.id]
     );
     return;
@@ -73,7 +73,7 @@ async function processGenericSubmission(fields, program) {
   const expectedPhone = (preCheck.student_phone || '').replace(/\D/g, '').slice(-10);
   if (normPhone && expectedPhone && normPhone !== expectedPhone) {
     await query(
-      `UPDATE enrollments SET admit_card_status = 'rejected', admit_card_rejection_reason = $1 WHERE id = $2 AND admit_card_status != 'approved'`,
+      `UPDATE enrollments SET admit_card_status = 'rejected', admit_card_rejection_reason = $1, admit_card_submitted_at = NOW() WHERE id = $2 AND admit_card_status != 'approved'`,
       [`Submitted mobile number does not match the number used at checkout (expected +91 ${expectedPhone}).`, preCheck.id]
     );
     return;
@@ -121,6 +121,7 @@ async function processGenericSubmission(fields, program) {
     // admin review instead (see routes/admit-card-review.js).
     await persistPendingAdmitCard(enrollment.id, pdfBuffer);
     await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2 AND roll_number IS NULL', [rollNumber, enrollment.id]);
+    await sendSubmissionReceivedEmail({ to: email, name, seriesName }).catch(e => console.error('[tally-generic] submission-received email failed:', e.message));
     console.log(`[tally-generic] Admit card generated and pending review | ${email} | Roll: ${rollNumber} | Program: ${program.slug}`);
   } catch (err) {
     console.error('[tally-generic] Admit card generation failed:', err.message);

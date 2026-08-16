@@ -9,9 +9,10 @@
 const { query }  = require('../config/db');
 const { send: resendSend, PRIORITY } = require('../services/resendQueue');
 const {
-  generateAdmitCard, fetchImageBuffer, persistPendingAdmitCard,
+  generateAdmitCard, fetchImageBuffer, persistPendingAdmitCard, sendSubmissionReceivedEmail,
 } = require('./tally-webhook');
 const { ESE_CENTRES, getEseCentreKey, ESE_PROGRAMS } = require('../config/eseTestSeries');
+const { generateRollNumber: sharedGenerateRollNumber } = require('../utils/rollNumber');
 
 const FROM = 'Dr. Jaspal Singh <team@jaspalsingh.in>';
 
@@ -69,16 +70,17 @@ function parseTallyFields(fields) {
 
 /* ── Roll number generator ── */
 
+/* Fallback only - onEnrollmentPaid (payment.js's assignRollNumber) already
+   assigns a roll number the instant the purchase completes, using the
+   shared generator with prefix = the program's examCode (see
+   utils/rollNumberPrefix.js). This only fires if that earlier assignment
+   didn't happen - it now delegates to the same shared generator/format so
+   a fallback-minted roll number is never visibly different (or a
+   duplicate risk) compared to one minted at purchase time. `centreOrMode`
+   is kept in the signature only so every existing call site keeps
+   working unchanged. */
 async function generateEseRollNumber(centreOrMode, examCode) {
-  const prefix = (centreOrMode || 'ESE').slice(0, 3).toUpperCase();
-  let roll;
-  for (let i = 0; i < 10; i++) {
-    const num = Math.floor(10000 + Math.random() * 90000);
-    roll = `${prefix}-${examCode}-${num}`;
-    const exists = await query('SELECT 1 FROM enrollments WHERE roll_number = $1', [roll]);
-    if (!exists.rows.length) return roll;
-  }
-  return roll;
+  return sharedGenerateRollNumber(examCode || 'ESE');
 }
 
 /* ── Admit card / confirmation email HTML (single paper) ── */
@@ -318,7 +320,7 @@ async function claimEnrollment({ email, phone, token, slug, tag }) {
   if (normEmail !== expectedEmail) {
     console.warn(`[${tag}] Email mismatch - submitted:`, normEmail, 'expected:', expectedEmail);
     await query(
-      `UPDATE enrollments SET admit_card_status = 'rejected', admit_card_rejection_reason = $1 WHERE id = $2 AND admit_card_status != 'approved'`,
+      `UPDATE enrollments SET admit_card_status = 'rejected', admit_card_rejection_reason = $1, admit_card_submitted_at = NOW() WHERE id = $2 AND admit_card_status != 'approved'`,
       [`Submitted email (${email}) does not match the email used at checkout.`, preCheck.id]
     );
     return null;
@@ -328,7 +330,7 @@ async function claimEnrollment({ email, phone, token, slug, tag }) {
   if (normPhone && expectedPhone && normPhone !== expectedPhone) {
     console.warn(`[${tag}] Phone mismatch - submitted:`, normPhone, 'expected:', expectedPhone);
     await query(
-      `UPDATE enrollments SET admit_card_status = 'rejected', admit_card_rejection_reason = $1 WHERE id = $2 AND admit_card_status != 'approved'`,
+      `UPDATE enrollments SET admit_card_status = 'rejected', admit_card_rejection_reason = $1, admit_card_submitted_at = NOW() WHERE id = $2 AND admit_card_status != 'approved'`,
       [`Submitted mobile number does not match the number used at checkout (expected +91 ${expectedPhone}).`, preCheck.id]
     );
     return null;
@@ -395,6 +397,7 @@ async function processEseSubmission(fields, programKey) {
     // admin review instead (see routes/admit-card-review.js).
     await persistPendingAdmitCard(enrollment.id, pdfBuffer);
     await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2 AND roll_number IS NULL', [rollNumber, enrollment.id]);
+    await sendSubmissionReceivedEmail({ to: email, name, seriesName: cfg.seriesName }).catch(e => console.error(`[tally-ese-${programKey}] submission-received email failed:`, e.message));
     console.log(`[tally-ese-${programKey}] Admit card generated and pending review | ${email} | Roll: ${rollNumber}`);
   } catch (err) {
     console.error(`[tally-ese-${programKey}] Admit card generation failed:`, err.message);
@@ -448,6 +451,7 @@ async function processEseCombinedSubmission(fields, programKey) {
     // admin review instead (see routes/admit-card-review.js).
     await persistPendingAdmitCard(enrollment.id, pdfBuffer);
     await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2 AND roll_number IS NULL', [rollNumber, enrollment.id]);
+    await sendSubmissionReceivedEmail({ to: email, name, seriesName: cfg.seriesName }).catch(e => console.error(`[tally-ese-${programKey}] submission-received email failed:`, e.message));
     console.log(`[tally-ese-${programKey}] Admit card generated and pending review | ${email} | Roll: ${rollNumber}`);
   } catch (err) {
     console.error(`[tally-ese-${programKey}] Admit card generation failed:`, err.message);

@@ -647,36 +647,61 @@ async function sendReferralPayoutDigestEmail(pendingCredits) {
    everything awaiting review in the Admit Cards queue (routes/admit-
    card-review.js), instead of the admin having to keep checking. ── */
 
-async function sendAdmitCardDigestEmail(pendingCards) {
-  const rows = pendingCards.map(c => `
+function admitCardRows(cards) {
+  return cards.map(c => `
     <tr>
       <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#1A1A2E;">${esc(c.student_name)}<br><span style="color:#64748b;font-size:12px;">${esc(c.student_phone)}</span></td>
       <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#1A1A2E;">${esc(c.program_name)}</td>
       <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#1A1A2E;font-family:monospace;">${esc(c.roll_number || '-')}</td>
     </tr>`).join('');
+}
 
-  const body = `
-    <div style="text-align:center;margin-bottom:24px;">
-      <div style="display:inline-block;background:#fef2f2;border:1px solid #fca5a5;border-radius:50px;padding:8px 22px;">
-        <span style="font-size:13px;font-weight:700;color:#991b1b;">Review Needed</span>
-      </div>
-    </div>
+async function sendAdmitCardDigestEmail(cards) {
+  const pending  = cards.filter(c => c.admit_card_status === 'pending');
+  const rejected = cards.filter(c => c.admit_card_status === 'rejected');
 
-    <h2 style="margin:0 0 8px;font-size:21px;color:#1A1A2E;font-weight:800;text-align:center;">
-      ${pendingCards.length} admit card${pendingCards.length === 1 ? '' : 's'} awaiting review
+  const pendingSection = pending.length ? `
+    <h2 style="margin:0 0 8px;font-size:19px;color:#1A1A2E;font-weight:800;text-align:center;">
+      ${pending.length} admit card${pending.length === 1 ? '' : 's'} awaiting review
     </h2>
-    <p style="margin:0 0 24px;font-size:14px;color:#6b7280;line-height:1.7;text-align:center;">
+    <p style="margin:0 0 18px;font-size:14px;color:#6b7280;line-height:1.7;text-align:center;">
       Open each PDF to check the photo/name/govt ID, then approve or reject.
     </p>
-
     <table cellpadding="0" cellspacing="0" style="width:100%;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;margin-bottom:28px;">
       <tr style="background:#f8fafc;">
         <td style="padding:10px 12px;font-size:11px;font-weight:800;color:#94a3b8;text-transform:uppercase;">Learner</td>
         <td style="padding:10px 12px;font-size:11px;font-weight:800;color:#94a3b8;text-transform:uppercase;">Program</td>
         <td style="padding:10px 12px;font-size:11px;font-weight:800;color:#94a3b8;text-transform:uppercase;">Roll Number</td>
       </tr>
-      ${rows}
-    </table>
+      ${admitCardRows(pending)}
+    </table>` : '';
+
+  const rejectedSection = rejected.length ? `
+    <h2 style="margin:0 0 8px;font-size:19px;color:#1A1A2E;font-weight:800;text-align:center;">
+      ${rejected.length} submission${rejected.length === 1 ? '' : 's'} rejected (email/phone mismatch)
+    </h2>
+    <p style="margin:0 0 18px;font-size:14px;color:#6b7280;line-height:1.7;text-align:center;">
+      The learner sees the reason on their own profile and can be told to re-submit or contact you on WhatsApp.
+    </p>
+    <table cellpadding="0" cellspacing="0" style="width:100%;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;margin-bottom:28px;">
+      <tr style="background:#f8fafc;">
+        <td style="padding:10px 12px;font-size:11px;font-weight:800;color:#94a3b8;text-transform:uppercase;">Learner</td>
+        <td style="padding:10px 12px;font-size:11px;font-weight:800;color:#94a3b8;text-transform:uppercase;">Program</td>
+        <td style="padding:10px 12px;font-size:11px;font-weight:800;color:#94a3b8;text-transform:uppercase;">Roll Number</td>
+      </tr>
+      ${admitCardRows(rejected)}
+    </table>` : '';
+
+  const total = cards.length;
+  const body = `
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="display:inline-block;background:#fef2f2;border:1px solid #fca5a5;border-radius:50px;padding:8px 22px;">
+        <span style="font-size:13px;font-weight:700;color:#991b1b;">Attention Needed</span>
+      </div>
+    </div>
+
+    ${pendingSection}
+    ${rejectedSection}
 
     <div style="text-align:center;">
       <a href="${SITE}/admin/dashboard/" style="display:inline-block;background:#C81240;color:#fff;border-radius:10px;padding:14px 32px;font-size:15px;font-weight:700;text-decoration:none;">
@@ -688,7 +713,7 @@ async function sendAdmitCardDigestEmail(pendingCards) {
   return resendSend({
     from:    FROM,
     to:      ADMIN_EMAIL,
-    subject: `${pendingCards.length} admit card${pendingCards.length === 1 ? '' : 's'} awaiting review`,
+    subject: `${total} admit card${total === 1 ? '' : 's'} need${total === 1 ? 's' : ''} attention`,
     html:    baseHtml(body),
   }, PRIORITY.ADMIN_NOTIFY);
 }

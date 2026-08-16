@@ -16,7 +16,14 @@ async function generateRollNumber(prefix) {
   for (let i = 0; i < 10; i++) {
     const num = Math.floor(10000 + Math.random() * 90000);
     roll = `${clean}-${num}`;
-    const exists = await query('SELECT 1 FROM enrollments WHERE roll_number = $1', [roll]);
+    // Combo (Degree+Diploma) enrollments store roll_number as a packed
+    // "DEG-X|DIP-Y" pair, not the bare value - an exact match alone would
+    // miss a collision with either half of an existing combo pair, letting
+    // two different students end up with the same printed number.
+    const exists = await query(
+      `SELECT 1 FROM enrollments WHERE roll_number = $1 OR roll_number LIKE $1 || '|%' OR roll_number LIKE '%|' || $1`,
+      [roll]
+    );
     if (!exists.rows.length) return roll;
   }
   return roll;

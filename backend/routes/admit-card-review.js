@@ -21,7 +21,11 @@ const { programLabel } = require('./enrollment-account');
 router.get('/admin', protect, async (req, res, next) => {
   try {
     const { status } = req.query;
-    const where = status ? `WHERE admit_card_status = $1` : `WHERE admit_card_status != 'none'`;
+    // A refund can land after a learner already submitted their Tally form -
+    // exclude those rows so a refunded enrollment never lingers in (or gets
+    // approved from) the review queue.
+    const statusCond = status ? `admit_card_status = $1` : `admit_card_status != 'none'`;
+    const where = `WHERE ${statusCond} AND status = 'paid' AND refund_status != 'initiated'`;
     const params = status ? [status] : [];
     const result = await query(
       `SELECT id, order_id, student_name, student_email, student_phone, program_slug, program_name,
@@ -42,10 +46,10 @@ router.patch('/admin/:id/approve', protect, async (req, res, next) => {
   try {
     const result = await query(
       `UPDATE enrollments SET admit_card_status = 'approved', admit_card_reviewed_at = NOW(), admit_card_reviewed_by = $1
-       WHERE id = $2 AND admit_card_status = 'pending' RETURNING id`,
+       WHERE id = $2 AND admit_card_status = 'pending' AND status = 'paid' AND refund_status != 'initiated' RETURNING id`,
       [req.admin.email, req.params.id]
     );
-    if (!result.rows.length) return res.status(404).json({ error: 'Card not found or not pending.' });
+    if (!result.rows.length) return res.status(404).json({ error: 'Card not found, not pending, or refunded.' });
     res.json({ success: true });
   } catch (err) { next(err); }
 });
@@ -73,7 +77,7 @@ router.post('/admin/bulk-approve', protect, async (req, res, next) => {
     if (!ids.length) return res.status(400).json({ error: 'ids array is required.' });
     const result = await query(
       `UPDATE enrollments SET admit_card_status = 'approved', admit_card_reviewed_at = NOW(), admit_card_reviewed_by = $1
-       WHERE id = ANY($2::int[]) AND admit_card_status = 'pending' RETURNING id`,
+       WHERE id = ANY($2::int[]) AND admit_card_status = 'pending' AND status = 'paid' AND refund_status != 'initiated' RETURNING id`,
       [req.admin.email, ids]
     );
     res.json({ approved: result.rows.length });
