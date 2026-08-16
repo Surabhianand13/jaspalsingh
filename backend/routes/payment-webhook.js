@@ -8,94 +8,13 @@ const express = require('express');
 const router  = express.Router();
 const crypto  = require('crypto');
 const { query } = require('../config/db');
-const { sendInvoiceEmail, sendWelcomePaymentEmail, sendAdminPaymentNotification } = require('../services/paymentEmailService');
-const { sendReferralCodeEmail } = require('../services/paymentEmailService');
 
-async function ensureReferralCode(enrollment) {
-  if (enrollment.referral_code) return enrollment.referral_code;
-  const phoneDigits = (enrollment.student_phone || '').replace(/\D/g, '').slice(-4) || '0000';
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const suffix = crypto.randomBytes(3).toString('hex').toUpperCase();
-    const code = `REF${phoneDigits}${suffix}`;
-    try {
-      const result = await query(
-        `UPDATE enrollments SET referral_code = $1 WHERE order_id = $2 AND referral_code IS NULL RETURNING referral_code`,
-        [code, enrollment.order_id]
-      );
-      if (result.rows.length) return result.rows[0].referral_code;
-      const existing = await query(`SELECT referral_code FROM enrollments WHERE order_id = $1`, [enrollment.order_id]);
-      return existing.rows[0]?.referral_code || null;
-    } catch (err) {
-      if (err.code !== '23505') throw err;
-    }
-  }
-  return null;
-}
-
-async function recordReferralCredit(enrollment) {
-  if (!enrollment.referred_by) return;
-  try {
-    const referrer = await query(
-      `SELECT order_id, student_phone, student_email, learner_id FROM enrollments WHERE referral_code = $1 AND status = 'paid'`,
-      [enrollment.referred_by]
-    );
-    if (!referrer.rows.length) return;
-    const ref = referrer.rows[0];
-    if (ref.order_id === enrollment.order_id) return;
-    const samePhone   = enrollment.student_phone && ref.student_phone && ref.student_phone.replace(/\D/g, '').slice(-10) === enrollment.student_phone.replace(/\D/g, '').slice(-10);
-    const sameEmail   = enrollment.student_email && ref.student_email && ref.student_email.toLowerCase() === enrollment.student_email.toLowerCase();
-    const sameLearner = enrollment.learner_id && ref.learner_id && Number(enrollment.learner_id) === Number(ref.learner_id);
-    if (samePhone || sameEmail || sameLearner) return;
-    await query(
-      `INSERT INTO referral_credits (referrer_order_id, referred_order_id, amount, status)
-       VALUES ($1, $2, $3, 'pending')
-       ON CONFLICT (referred_order_id) DO NOTHING`,
-      [ref.order_id, enrollment.order_id, 100]
-    );
-  } catch (err) {
-    console.error('[recordReferralCredit]', err.message);
-  }
-}
-
-async function cancelDuplicatePendingEnrollments(enrollment) {
-  try {
-    await query(
-      `UPDATE enrollments
-       SET status = 'cancelled'
-       WHERE student_phone = $1 AND program_slug = $2 AND order_id != $3 AND status = 'pending'`,
-      [enrollment.student_phone, enrollment.program_slug, enrollment.order_id]
-    );
-  } catch (err) {
-    console.error('[cancelDuplicatePendingEnrollments]', err.message);
-  }
-}
-
-async function onEnrollmentPaid(enrollment) {
-  await ensureReferralCode(enrollment);
-  await recordReferralCredit(enrollment);
-  await cancelDuplicatePendingEnrollments(enrollment);
-}
-
-async function sendAllPaymentEmails(enrollment, { sendInvoice = true } = {}) {
-  if (sendInvoice) {
-    sendInvoiceEmail(enrollment).catch(e => console.error('[invoice email]', e.message));
-  }
-  try {
-    const claimed = await query(
-      `UPDATE enrollments SET welcome_sent = TRUE WHERE order_id = $1 AND (welcome_sent IS NULL OR welcome_sent = FALSE) RETURNING order_id`,
-      [enrollment.order_id]
-    );
-    if (!claimed.rows.length) {
-      console.log(`[welcome email] already claimed for ${enrollment.order_id}, skipping`);
-    } else {
-      await sendWelcomePaymentEmail(enrollment);
-      console.log(`[welcome email] sent OK for ${enrollment.order_id}`);
-    }
-  } catch (e) {
-    console.error(`[welcome email] FAILED for ${enrollment.order_id}:`, e.message);
-  }
-  sendAdminPaymentNotification(enrollment).catch(e => console.error('[admin notify]', e.message));
-}
+// Shared with routes/payment.js (which also exports these for enrollment-account.js) -
+// this file used to keep its own duplicate copies, which meant a change wired into
+// only payment.js's onEnrollmentPaid silently never ran on this, the primary
+// payment-confirmation path (Razorpay webhooks fire here first; POST/GET /verify
+// are the self-heal fallback for when a webhook is delayed or missed).
+const { sendAllPaymentEmails, onEnrollmentPaid } = require('./payment');
 
 /* ── POST /api/payment/webhook ── */
 router.post('/', async (req, res) => {
