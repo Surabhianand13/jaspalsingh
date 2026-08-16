@@ -2009,7 +2009,14 @@
     adminFetch('GET', '/api/programs/'+encodeURIComponent(slug)+'/schedule/admin').then(function(d){
       var rows = (d.schedule || []).filter(function(r){ return (r.category||null) === (category||null); });
       if (!rows.length) { listEl.innerHTML = '<p class="admin-empty">No schedule yet - paste rows above, or use "Add one test".</p>'; return; }
-      listEl.innerHTML = '<div class="admin-table-wrap" style="overflow-x:auto;"><table class="admin-table" style="min-width:760px;"><thead><tr><th>Test</th><th>Date</th><th style="min-width:160px;">Syllabus</th><th>Qs</th><th>Marks</th><th>Duration</th><th style="min-width:150px;">Assets</th><th style="min-width:100px;"></th></tr></thead><tbody>' +
+      // Combo programs (Degree/Diploma, Paper 1/Paper 2) share test numbers
+      // and near-identical syllabus text across tracks - a badge repeated on
+      // every row (not just once above the table) is the only way to be
+      // sure which track's paper you're uploading/viewing after scrolling
+      // or switching tabs, since that's the easiest way to upload the right
+      // file into the wrong track without noticing.
+      var trackCol = category ? '<th style="min-width:80px;">Track</th>' : '';
+      listEl.innerHTML = '<div class="admin-table-wrap" style="overflow-x:auto;"><table class="admin-table" style="min-width:760px;"><thead><tr><th>Test</th>'+trackCol+'<th>Date</th><th style="min-width:160px;">Syllabus</th><th>Qs</th><th>Marks</th><th>Duration</th><th style="min-width:150px;">Assets</th><th style="min-width:100px;"></th></tr></thead><tbody>' +
         rows.map(function(r){
           var assetBtns = '<div style="display:flex;flex-direction:column;gap:5px;">' + ASSET_KINDS.map(function(a){
             var has = !!r[a.col];
@@ -2019,7 +2026,10 @@
               : '';
             return '<div style="display:flex;gap:5px;align-items:center;">'+uploadBtn+viewLink+'</div>';
           }).join('') + '</div>';
-          return '<tr><td>'+r.test_number+'</td><td>'+e(r.test_date||'-')+'</td><td>'+e(r.syllabus||'-')+'</td><td>'+(r.questions||'-')+'</td>' +
+          var trackCell = category
+            ? '<td><span style="display:inline-block;font-size:11px;font-weight:700;color:#4338CA;background:rgba(67,56,202,.08);padding:3px 10px;border-radius:20px;white-space:nowrap;">'+e(categoryLabel(category))+'</span></td>'
+            : '';
+          return '<tr><td>'+r.test_number+'</td>'+trackCell+'<td>'+e(r.test_date||'-')+'</td><td>'+e(r.syllabus||'-')+'</td><td>'+(r.questions||'-')+'</td>' +
             '<td>'+(r.marks||'-')+'</td><td>'+(r.duration_minutes?r.duration_minutes+' min':'-')+'</td>' +
             '<td>'+assetBtns+'</td>' +
             '<td><div style="display:flex;flex-direction:column;gap:5px;">'+
@@ -2027,7 +2037,7 @@
               pillBtn('data-sch-configure="'+r.id+'"', 'Configure', 'dark') +
               pillBtn('data-sch-del="'+r.id+'"', 'Delete', 'danger') +
             '</div></td></tr>' +
-            '<tr><td colspan="8"><div id="sch_edit_'+r.id+'"></div><div id="sch_gating_'+r.id+'"></div></td></tr>';
+            '<tr><td colspan="'+(category?9:8)+'"><div id="sch_edit_'+r.id+'"></div><div id="sch_gating_'+r.id+'"></div></td></tr>';
         }).join('') + '</tbody></table></div>';
 
       listEl.querySelectorAll('[data-asset-upload]').forEach(function(b){
