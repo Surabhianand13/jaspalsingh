@@ -2013,7 +2013,11 @@
         rows.map(function(r){
           var assetBtns = '<div style="display:flex;flex-direction:column;gap:5px;">' + ASSET_KINDS.map(function(a){
             var has = !!r[a.col];
-            return pillBtn('data-asset-upload="'+r.id+'" data-asset-kind="'+a.kind+'"', (has?'&#10003; ':'+ ')+a.label, has?'solid':'outline', 'text-align:left;');
+            var uploadBtn = pillBtn('data-asset-upload="'+r.id+'" data-asset-kind="'+a.kind+'"', (has?'&#10003; ':'+ ')+a.label, has?'solid':'outline', 'text-align:left;flex:1;');
+            var viewLink = has
+              ? '<a href="'+e(r[a.col])+'" target="_blank" rel="noopener" title="Open the uploaded file to check it\'s correct" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:20px;background:#f4f4f7;color:#444;flex-shrink:0;"><i class="fas fa-eye" style="font-size:11px;"></i></a>'
+              : '';
+            return '<div style="display:flex;gap:5px;align-items:center;">'+uploadBtn+viewLink+'</div>';
           }).join('') + '</div>';
           return '<tr><td>'+r.test_number+'</td><td>'+e(r.test_date||'-')+'</td><td>'+e(r.syllabus||'-')+'</td><td>'+(r.questions||'-')+'</td>' +
             '<td>'+(r.marks||'-')+'</td><td>'+(r.duration_minutes?r.duration_minutes+' min':'-')+'</td>' +
