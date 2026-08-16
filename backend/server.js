@@ -120,6 +120,7 @@ app.use('/api/upload',       require('./routes/upload'));
 app.use('/api/payment',      require('./routes/payment'));
 app.use('/api/leads',        require('./routes/leads'));
 app.use('/api/enrollment',   require('./routes/enrollment-account'));
+app.use('/api/admit-cards',  require('./routes/admit-card-review'));
 app.use('/api/events',       require('./routes/events'));
 app.use('/api/programs',      require('./routes/programs'));
 app.use('/api/banners',       require('./routes/banners'));
@@ -304,6 +305,24 @@ async function migrate() {
   await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS refunded_by VARCHAR(255)`);
   await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS roll_number VARCHAR(30)`);
   await query(`CREATE UNIQUE INDEX IF NOT EXISTS enrollments_roll_number_uidx ON enrollments (roll_number) WHERE roll_number IS NOT NULL`);
+
+  /* ── Admit-card approval queue (2026-08-16): the Tally webhook flows
+     used to generate the admit-card PDF and email it immediately, with
+     no human review. Now they persist it to R2 as 'pending' instead -
+     an admin reviews the actual PDF (photo/name/govt ID) and approves
+     or rejects it before the learner can download it from their own
+     profile. 'none' is the default so every enrollment that already
+     had a card emailed before this shipped keeps showing today's plain
+     display - never a "pending review" nag for someone who was already
+     sent their card months ago. ── */
+  await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS admit_card_status VARCHAR(20) NOT NULL DEFAULT 'none'`);
+  await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS admit_card_pdf_url VARCHAR(1000)`);
+  await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS admit_card_pdf_key VARCHAR(500)`);
+  await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS admit_card_submitted_at TIMESTAMPTZ`);
+  await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS admit_card_reviewed_at TIMESTAMPTZ`);
+  await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS admit_card_reviewed_by VARCHAR(255)`);
+  await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS admit_card_rejection_reason TEXT`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_enrollments_admit_card_pending ON enrollments(admit_card_status) WHERE admit_card_status = 'pending'`);
   await query(`CREATE TABLE IF NOT EXISTS free_resources (
     id          SERIAL PRIMARY KEY,
     title       TEXT NOT NULL,
@@ -1309,6 +1328,34 @@ async function checkReferralDigest() {
   }
 }
 
+/* ── Daily admit-card approvals digest (same 6 PM IST slot as the
+   referral payout digest - two independent gates on the same interval
+   tick). Mirrors checkReferralDigest above. ── */
+let admitCardDigestSentDate = null;
+
+async function checkAdmitCardDigest() {
+  try {
+    const istNow = new Date(Date.now() + 5.5 * 60 * 60 * 1000); // UTC -> IST
+    const todayIST = istNow.toISOString().slice(0, 10);
+    if (istNow.getUTCHours() !== 18 || admitCardDigestSentDate === todayIST) return;
+
+    const result = await query(
+      `SELECT student_name, student_phone, program_name, roll_number
+       FROM enrollments
+       WHERE admit_card_status = 'pending'
+       ORDER BY admit_card_submitted_at ASC`
+    );
+    admitCardDigestSentDate = todayIST; // mark sent even if zero rows, so we don't re-check all day
+    if (!result.rows.length) return;
+
+    const { sendAdmitCardDigestEmail } = require('./services/paymentEmailService');
+    await sendAdmitCardDigestEmail(result.rows);
+    console.log(`[admit-card-digest] Sent digest for ${result.rows.length} pending card(s)`);
+  } catch (err) {
+    console.error('[admit-card-digest] Error:', err.message);
+  }
+}
+
 migrate()
   .catch(err => console.warn('⚠️  Migration warning:', err.message))
   .finally(() => {
@@ -1318,6 +1365,8 @@ migrate()
       console.log(`   Health check: http://localhost:${PORT}/api/health\n`);
       setInterval(checkReferralDigest, 15 * 60 * 1000); // check every 15 min, fires once at 6 PM IST
       checkReferralDigest();
+      setInterval(checkAdmitCardDigest, 15 * 60 * 1000);
+      checkAdmitCardDigest();
     });
   });
 

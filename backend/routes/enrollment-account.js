@@ -199,7 +199,10 @@ router.get('/my-enrollments', protectLearner, async (req, res) => {
     );
 
     const result = await query(
-      `SELECT order_id, program_slug, program_name, amount, status, paid_at, coupon_code, roll_number
+      `SELECT order_id, program_slug, program_name, amount, status, paid_at, coupon_code, roll_number,
+              admit_card_status,
+              CASE WHEN admit_card_status = 'approved' THEN admit_card_pdf_url END AS admit_card_pdf_url,
+              CASE WHEN admit_card_status = 'rejected' THEN admit_card_rejection_reason END AS admit_card_rejection_reason
        FROM enrollments
        WHERE status = 'paid'
          AND refund_status != 'initiated'
@@ -537,7 +540,7 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
 
     if (isCombo) {
       const {
-        generateComboAdmitCard, buildComboAdmitCardHtml, generateRollNumber, getCentreKey, CENTRES,
+        generateComboAdmitCard, buildComboAdmitCardHtml, generateRollNumber, getCentreKey, CENTRES, persistPendingAdmitCard,
       } = require('./tally-webhook');
       const { send: resendSend, PRIORITY } = require('../services/resendQueue');
 
@@ -579,6 +582,7 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
 
       console.log(`[resend-admit-card] Sent combo to ${enr.student_email} | Degree Roll: ${rollNumberDegree} | Diploma Roll: ${rollNumberDiploma}`);
       await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2', [`${rollNumberDegree}|${rollNumberDiploma}`, enrollment_id]);
+      await persistPendingAdmitCard(enrollment_id, pdfBuffer, 'approved');
       return res.json({ message: `Admit card sent to ${enr.student_email}`, roll_number_degree: rollNumberDegree, roll_number_diploma: rollNumberDiploma });
     }
 
@@ -587,6 +591,7 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
       const {
         generateEseRollNumber, buildEseAdmitCardHtml, buildEseComboAdmitCardHtml,
       } = require('./tally-ese-shared');
+      const { persistPendingAdmitCard } = require('./tally-webhook');
       const { send: resendSend, PRIORITY } = require('../services/resendQueue');
       const cfg = ESE_PROGRAMS[eseKey];
 
@@ -626,6 +631,7 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
 
         console.log(`[resend-admit-card] Sent ESE combined to ${enr.student_email} | Roll: ${rollNumber}`);
         await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2', [rollNumber, enrollment_id]);
+        await persistPendingAdmitCard(enrollment_id, pdfBuffer, 'approved');
         return res.json({ message: `Admit card sent to ${enr.student_email}`, roll_number: rollNumber });
       }
 
@@ -660,6 +666,7 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
 
       console.log(`[resend-admit-card] Sent ESE to ${enr.student_email} | Roll: ${rollNumber}`);
       await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2', [rollNumber, enrollment_id]);
+      await persistPendingAdmitCard(enrollment_id, pdfBuffer, 'approved');
       return res.json({ message: `Admit card sent to ${enr.student_email}`, roll_number: rollNumber });
     }
 
@@ -683,7 +690,7 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
       : null;
 
     let centreForCard, rollNumber, mode, htmlBody;
-    const { buildGenericAdmitCardHtml, getCentreKey, CENTRES } = require('./tally-webhook');
+    const { buildGenericAdmitCardHtml, getCentreKey, CENTRES, persistPendingAdmitCard } = require('./tally-webhook');
 
     if (isOmr) {
       mode          = 'home';
@@ -741,6 +748,7 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
 
     console.log(`[resend-admit-card] Sent to ${enr.student_email} | Roll: ${rollNumber}`);
     await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2', [rollNumber, enrollment_id]);
+    await persistPendingAdmitCard(enrollment_id, pdfBuffer, 'approved');
     res.json({ message: `Admit card sent to ${enr.student_email}`, roll_number: rollNumber });
   } catch (err) { next(err); }
 });
@@ -1251,3 +1259,4 @@ router.post('/admin/send-omr-analysis', protect, async (req, res) => {
 });
 
 module.exports = router;
+module.exports.programLabel = programLabel;

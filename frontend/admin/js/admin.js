@@ -196,6 +196,7 @@
     'enrollments':  'Enrollments',
     'paidlearners': 'Paid Learners',
     'referralpayouts': 'Referral Payouts',
+    'admitcards':   'Admit Cards',
     'programleads': 'Interest / Leads',
     'banners':      'Banners & Promo Images',
     'analytics':    'Analytics',
@@ -247,6 +248,7 @@
       case 'enrollments':  loadEnrollments();  break;
       case 'paidlearners': loadPaidLearners(); break;
       case 'referralpayouts': loadReferralPayouts(); loadReferralCodesAdmin(); break;
+      case 'admitcards':   loadAdmitCardApprovals(); break;
       case 'programleads': loadProgramLeads(); break;
       case 'banners':      loadBanners();      break;
       case 'analytics':    loadBizAnalytics(); break;
@@ -2818,6 +2820,122 @@
     }).catch(function(err){ body.innerHTML = '<p class="admin-empty">'+e(err.message)+'</p>'; });
   }
 
+  /* ── ADMIT CARD APPROVALS ──
+     Tally webhook flows generate the PDF and persist it to R2 as
+     'pending' instead of emailing it (see persistPendingAdmitCard in
+     backend/routes/tally-webhook.js) - admin reviews the actual PDF
+     (photo/name/govt ID) via the eye-icon View link and approves or
+     rejects, individually or via the checkbox bulk-approve below.
+     Once approved, the learner can download the same PDF from their
+     own profile - no email is ever sent for the card itself. */
+  var admitCardChecked = {};
+  function loadAdmitCardApprovals(){
+    var body = document.getElementById('admitCardsBody');
+    var statusSel = document.getElementById('admitCardFilter');
+    var status = statusSel ? statusSel.value : 'pending';
+    admitCardChecked = {};
+    body.innerHTML = '<p class="admin-empty">Loading...</p>';
+    var qs = status ? ('?status=' + encodeURIComponent(status)) : '';
+    adminFetch('GET', '/api/admit-cards/admin' + qs).then(function(d){
+      var cards = d.cards || [];
+      if (!cards.length){ body.innerHTML = '<p class="admin-empty">No admit cards'+(status?(' ('+status+')'):'')+'.</p>'; return; }
+
+      var bulkBar = status === 'pending'
+        ? '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">' +
+            pillBtn('id="admitCardBulkApprove" disabled', 'Approve Selected', 'solid') +
+            '<span id="admitCardSelCount" style="font-size:12px;color:#6b6b8a;">0 selected</span>' +
+          '</div>'
+        : '';
+
+      var rows = cards.map(function(c){
+        var statusBadge = c.admit_card_status === 'pending'
+          ? '<span class="admin-badge admin-badge--orange">Pending</span>'
+          : c.admit_card_status === 'approved'
+            ? '<span class="admin-badge admin-badge--blue">Approved</span>'
+            : '<span class="admin-badge admin-badge--red" title="'+e(c.admit_card_rejection_reason||'')+'">Rejected</span>';
+        var viewLink = c.admit_card_pdf_url
+          ? '<a href="'+e(c.admit_card_pdf_url)+'" target="_blank" rel="noopener" title="Open the generated admit card to check it\'s correct" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:20px;background:#f4f4f7;color:#444;"><i class="fas fa-eye" style="font-size:11px;"></i></a>'
+          : '<span style="color:#c7c7d6;">-</span>';
+        var actions = c.admit_card_status === 'pending'
+          ? '<button class="btn btn-sm" data-card-approve="'+c.id+'">Approve</button> ' +
+            '<input type="text" class="admin-input" data-card-reason="'+c.id+'" placeholder="Rejection reason" style="width:140px;font-size:11px;padding:5px 8px;"> ' +
+            '<button class="btn btn-sm btn-ghost" data-card-reject="'+c.id+'">Reject</button>'
+          : (c.admit_card_reviewed_by ? '<span style="font-size:11px;color:#9999b0;">by '+e(c.admit_card_reviewed_by)+'</span>' : '');
+        var checkbox = c.admit_card_status === 'pending'
+          ? '<input type="checkbox" data-card-check="'+c.id+'">'
+          : '';
+        return '<tr>' +
+          (status === 'pending' ? '<td>'+checkbox+'</td>' : '') +
+          '<td>'+e(c.student_name)+'<br><span style="font-size:11px;color:#6b6b8a;">'+e(c.student_phone)+'</span></td>' +
+          '<td>'+e(c.program_label)+'</td>' +
+          '<td style="font-family:monospace;">'+e(c.roll_number||'-')+'</td>' +
+          '<td>'+fmtDate(c.admit_card_submitted_at)+'</td>' +
+          '<td>'+viewLink+'</td>' +
+          '<td>'+statusBadge+'</td>' +
+          '<td>'+actions+'</td></tr>';
+      }).join('');
+
+      body.innerHTML = bulkBar + '<div class="admin-table-wrap"><table class="admin-table"><thead><tr>' +
+        (status === 'pending' ? '<th></th>' : '') +
+        '<th>Learner</th><th>Program</th><th>Roll Number</th><th>Submitted</th><th>View</th><th>Status</th><th></th>' +
+        '</tr></thead><tbody>'+rows+'</tbody></table></div>';
+
+      function updateSelCount(){
+        var n = Object.keys(admitCardChecked).filter(function(id){ return admitCardChecked[id]; }).length;
+        var countEl = document.getElementById('admitCardSelCount');
+        var btn = document.getElementById('admitCardBulkApprove');
+        if (countEl) countEl.textContent = n + ' selected';
+        if (btn) btn.disabled = n === 0;
+      }
+
+      body.querySelectorAll('[data-card-check]').forEach(function(cb){
+        cb.addEventListener('change', function(){
+          admitCardChecked[cb.getAttribute('data-card-check')] = cb.checked;
+          updateSelCount();
+        });
+      });
+
+      var bulkApproveBtn = document.getElementById('admitCardBulkApprove');
+      if (bulkApproveBtn) {
+        bulkApproveBtn.addEventListener('click', function(){
+          var ids = Object.keys(admitCardChecked).filter(function(id){ return admitCardChecked[id]; });
+          if (!ids.length) return;
+          if (!confirm('Approve '+ids.length+' admit card(s)? Learners will be able to download them immediately.')) return;
+          bulkApproveBtn.disabled = true; bulkApproveBtn.textContent = 'Approving...';
+          adminFetch('POST', '/api/admit-cards/admin/bulk-approve', { ids: ids.map(Number) }).then(function(d){
+            showToast(d.approved+' admit card(s) approved', 'success');
+            loadAdmitCardApprovals();
+          }).catch(function(err){ showToast(err.message, 'error'); bulkApproveBtn.disabled = false; bulkApproveBtn.textContent = 'Approve Selected'; });
+        });
+      }
+
+      body.querySelectorAll('[data-card-approve]').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          var id = btn.getAttribute('data-card-approve');
+          btn.disabled = true; btn.textContent = 'Saving...';
+          adminFetch('PATCH', '/api/admit-cards/admin/'+id+'/approve').then(function(){
+            showToast('Admit card approved', 'success');
+            loadAdmitCardApprovals();
+          }).catch(function(err){ showToast(err.message, 'error'); btn.disabled = false; btn.textContent = 'Approve'; });
+        });
+      });
+      body.querySelectorAll('[data-card-reject]').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          var id = btn.getAttribute('data-card-reject');
+          var reasonInput = body.querySelector('[data-card-reason="'+id+'"]');
+          var reason = reasonInput ? reasonInput.value.trim() : '';
+          if (!reason) { showToast('Enter a rejection reason first', 'error'); if (reasonInput) reasonInput.focus(); return; }
+          if (!confirm('Reject this admit card? The learner will see the reason and will need to contact you.')) return;
+          btn.disabled = true; btn.textContent = 'Saving...';
+          adminFetch('PATCH', '/api/admit-cards/admin/'+id+'/reject', { reason: reason }).then(function(){
+            showToast('Admit card rejected', 'success');
+            loadAdmitCardApprovals();
+          }).catch(function(err){ showToast(err.message, 'error'); btn.disabled = false; btn.textContent = 'Reject'; });
+        });
+      });
+    }).catch(function(err){ body.innerHTML = '<p class="admin-empty">'+e(err.message)+'</p>'; });
+  }
+
   /* ── REFERRAL CODES (all paid learners, manual email trigger) ── */
   function loadReferralCodesAdmin(){
     var body = document.getElementById('referralCodesBody');
@@ -3397,6 +3515,7 @@
     var hmc=document.getElementById('homepageModalClose'); if(hmc) hmc.onclick=function(){document.getElementById('homepageModal').style.display='none';};
     // Status filter triggers client-side filter (no reload needed)
     var rpf=document.getElementById('referralPayoutFilter'); if(rpf) rpf.onchange=loadReferralPayouts;
+    var acf=document.getElementById('admitCardFilter'); if(acf) acf.onchange=loadAdmitCardApprovals;
     var bbf=document.getElementById('btnBackfillReferralCodes'); if(bbf) bbf.onclick=function(){
       bbf.disabled = true; bbf.textContent = 'Generating...';
       adminFetch('POST', '/api/payment/admin/backfill-referral-codes').then(function(d){

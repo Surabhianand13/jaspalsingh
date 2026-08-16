@@ -9,7 +9,7 @@
 const { query }  = require('../config/db');
 const { send: resendSend, PRIORITY } = require('../services/resendQueue');
 const {
-  generateAdmitCard, fetchImageBuffer,
+  generateAdmitCard, fetchImageBuffer, persistPendingAdmitCard,
 } = require('./tally-webhook');
 const { ESE_CENTRES, getEseCentreKey, ESE_PROGRAMS } = require('../config/eseTestSeries');
 
@@ -284,17 +284,15 @@ async function sendRejectionEmail(toEmail, reason) {
 }
 
 /* ── Shared token lookup + verification + atomic claim ──
-   Returns the claimed enrollment row, or null if rejected (a rejection
-   email has already been sent in that case). */
+   Returns the claimed enrollment row, or null if rejected. A mismatch
+   (email/phone) sets admit_card_status='rejected' with a reason so it
+   shows up in the admin Admit Cards queue - no rejection email is sent. */
 async function claimEnrollment({ email, phone, token, slug, tag }) {
   const normEmail = (email || '').toLowerCase().trim();
   const normPhone = (phone || '').replace(/\D/g, '').slice(-10);
 
   if (!token) {
-    console.warn(`[${tag}] No token in submission - rejecting`);
-    await sendRejectionEmail(email,
-      'Your submission did not include a valid enrollment token. This form must be opened using the personal link sent to you in your enrollment email. Please check your email for the "Fill Details Form" button and use that link.'
-    );
+    console.warn(`[${tag}] No token in submission - dropping`);
     return null;
   }
 
@@ -305,27 +303,23 @@ async function claimEnrollment({ email, phone, token, slug, tag }) {
 
   if (!lookupResult.rows.length) {
     console.warn(`[${tag}] Invalid token:`, token);
-    await sendRejectionEmail(email,
-      'The enrollment token in your submission is invalid or does not match any paid enrollment. Please use the original link sent in your enrollment email.'
-    );
     return null;
   }
 
   const preCheck = lookupResult.rows[0];
 
   if (preCheck.form_used) {
+    // Prior successful run already owns this row's admit_card_status.
     console.warn(`[${tag}] Token already used (pre-check), enrollment:`, preCheck.id);
-    await sendRejectionEmail(email,
-      'This enrollment form has already been submitted. Each enrollment allows only one submission. If you made a mistake in your earlier submission, please contact us on WhatsApp immediately and we will assist you.'
-    );
     return null;
   }
 
   const expectedEmail = (preCheck.student_email || '').toLowerCase().trim();
   if (normEmail !== expectedEmail) {
     console.warn(`[${tag}] Email mismatch - submitted:`, normEmail, 'expected:', expectedEmail);
-    await sendRejectionEmail(email,
-      `The email address you entered (${email}) does not match the email used during payment (${preCheck.student_email}). Please re-open the form using the link in your enrollment email and enter the same email address you used at checkout.`
+    await query(
+      `UPDATE enrollments SET admit_card_status = 'rejected', admit_card_rejection_reason = $1 WHERE id = $2 AND admit_card_status != 'approved'`,
+      [`Submitted email (${email}) does not match the email used at checkout.`, preCheck.id]
     );
     return null;
   }
@@ -333,8 +327,9 @@ async function claimEnrollment({ email, phone, token, slug, tag }) {
   const expectedPhone = (preCheck.student_phone || '').replace(/\D/g, '').slice(-10);
   if (normPhone && expectedPhone && normPhone !== expectedPhone) {
     console.warn(`[${tag}] Phone mismatch - submitted:`, normPhone, 'expected:', expectedPhone);
-    await sendRejectionEmail(email,
-      `The mobile number you entered does not match the number used during payment (+91 ${expectedPhone}). Please re-open the form using the link in your enrollment email and enter the same mobile number you used at checkout.`
+    await query(
+      `UPDATE enrollments SET admit_card_status = 'rejected', admit_card_rejection_reason = $1 WHERE id = $2 AND admit_card_status != 'approved'`,
+      [`Submitted mobile number does not match the number used at checkout (expected +91 ${expectedPhone}).`, preCheck.id]
     );
     return null;
   }
@@ -347,10 +342,8 @@ async function claimEnrollment({ email, phone, token, slug, tag }) {
   );
 
   if (!claimResult.rows.length) {
+    // Concurrent duplicate delivery - the winner owns this row's status.
     console.warn(`[${tag}] Race - already claimed, enrollment:`, preCheck.id);
-    await sendRejectionEmail(email,
-      'This enrollment form has already been submitted. Each enrollment allows only one submission. If you made a mistake in your earlier submission, please contact us on WhatsApp immediately and we will assist you.'
-    );
     return null;
   }
 
@@ -398,26 +391,11 @@ async function processEseSubmission(fields, programKey) {
       mode:         isOmr ? 'home' : 'offline',
     });
 
-    const htmlBody = buildEseAdmitCardHtml({ name, seriesName: cfg.seriesName, centreInfo, schedule: cfg.schedule });
-
-    const result = await resendSend({
-      from:        FROM,
-      to:          email,
-      subject:     `Confirmed! Your Admit Card for ${cfg.seriesName}`,
-      html:        htmlBody,
-      attachments: [
-        { filename: `AdmitCard_${rollNumber}.pdf`, content: pdfBuffer.toString('base64'), contentType: 'application/pdf' },
-      ],
-    }, PRIORITY.ADMIT_CARD);
-
-    if (result.error) {
-      console.error(`[tally-ese-${programKey}] Resend error:`, result.error);
-      await query('UPDATE enrollments SET form_used = FALSE, form_used_at = NULL WHERE id = $1', [enrollment.id]);
-      console.log(`[tally-ese-${programKey}] Reset form_used to FALSE so student can resubmit:`, enrollment.id);
-    } else {
-      console.log(`[tally-ese-${programKey}] Email sent to ${email} | Roll: ${rollNumber}`);
-      await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2', [rollNumber, enrollment.id]);
-    }
+    // Admit card is no longer emailed - persisted to R2 and held pending
+    // admin review instead (see routes/admit-card-review.js).
+    await persistPendingAdmitCard(enrollment.id, pdfBuffer);
+    await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2 AND roll_number IS NULL', [rollNumber, enrollment.id]);
+    console.log(`[tally-ese-${programKey}] Admit card generated and pending review | ${email} | Roll: ${rollNumber}`);
   } catch (err) {
     console.error(`[tally-ese-${programKey}] Admit card generation failed:`, err.message);
     await query('UPDATE enrollments SET form_used = FALSE, form_used_at = NULL WHERE id = $1', [enrollment.id]);
@@ -466,26 +444,11 @@ async function processEseCombinedSubmission(fields, programKey) {
       mode:         isOmr ? 'home' : 'offline',
     });
 
-    const htmlBody = buildEseComboAdmitCardHtml({ name, centreInfo });
-
-    const result = await resendSend({
-      from:        FROM,
-      to:          email,
-      subject:     `Confirmed! Your Admit Card for ${cfg.seriesName}`,
-      html:        htmlBody,
-      attachments: [
-        { filename: `AdmitCard_${rollNumber}.pdf`, content: pdfBuffer.toString('base64'), contentType: 'application/pdf' },
-      ],
-    }, PRIORITY.ADMIT_CARD);
-
-    if (result.error) {
-      console.error(`[tally-ese-${programKey}] Resend error:`, result.error);
-      await query('UPDATE enrollments SET form_used = FALSE, form_used_at = NULL WHERE id = $1', [enrollment.id]);
-      console.log(`[tally-ese-${programKey}] Reset form_used to FALSE so student can resubmit:`, enrollment.id);
-    } else {
-      console.log(`[tally-ese-${programKey}] Email sent to ${email} | Roll: ${rollNumber}`);
-      await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2', [rollNumber, enrollment.id]);
-    }
+    // Admit card is no longer emailed - persisted to R2 and held pending
+    // admin review instead (see routes/admit-card-review.js).
+    await persistPendingAdmitCard(enrollment.id, pdfBuffer);
+    await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2 AND roll_number IS NULL', [rollNumber, enrollment.id]);
+    console.log(`[tally-ese-${programKey}] Admit card generated and pending review | ${email} | Roll: ${rollNumber}`);
   } catch (err) {
     console.error(`[tally-ese-${programKey}] Admit card generation failed:`, err.message);
     await query('UPDATE enrollments SET form_used = FALSE, form_used_at = NULL WHERE id = $1', [enrollment.id]);

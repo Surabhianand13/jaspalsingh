@@ -15,9 +15,8 @@ const express = require('express');
 const router  = express.Router({ mergeParams: true });
 const { query } = require('../config/db');
 const {
-  parseTallyFields, sendRejectionEmail, generateAdmitCard, fetchImageBuffer,
+  parseTallyFields, generateAdmitCard, fetchImageBuffer, persistPendingAdmitCard,
 } = require('./tally-webhook');
-const { send: resendSend, PRIORITY } = require('../services/resendQueue');
 
 const FROM = 'Dr. Jaspal Singh <team@jaspalsingh.in>';
 
@@ -43,7 +42,8 @@ async function processGenericSubmission(fields, program) {
   const normPhone = (phone || '').replace(/\D/g, '').slice(-10);
 
   if (!token && !orderId) {
-    await sendRejectionEmail(email, 'Your submission did not include a valid enrollment token. This form must be opened using the personal link sent to you in your enrollment email.');
+    // No enrollment row identified at all - nothing to mark for review.
+    console.warn('[tally-generic] No token or order in submission - dropping');
     return;
   }
 
@@ -53,23 +53,29 @@ async function processGenericSubmission(fields, program) {
 
   if (!lookupResult.rows.length) {
     console.warn('[tally-generic] Invalid token/order - token:', token, 'orderId:', orderId);
-    await sendRejectionEmail(email, 'The enrollment token in your submission is invalid or does not match any paid enrollment. Please use the original link sent in your enrollment email.');
     return;
   }
   if (lookupResult.rows[0].form_used) {
-    await sendRejectionEmail(email, 'This enrollment form has already been submitted. Each enrollment allows only one submission. If you made a mistake in your earlier submission, please contact us on WhatsApp immediately and we will assist you.');
+    // Prior successful run already owns this row's admit_card_status.
+    console.warn('[tally-generic] Token already used, enrollment:', lookupResult.rows[0].id);
     return;
   }
 
   const preCheck = lookupResult.rows[0];
   const expectedEmail = (preCheck.student_email || '').toLowerCase().trim();
   if (normEmail !== expectedEmail) {
-    await sendRejectionEmail(email, `The email address you entered (${email}) does not match the email used during payment. Please re-open the form using the link in your enrollment email and enter the same email address you used at checkout.`);
+    await query(
+      `UPDATE enrollments SET admit_card_status = 'rejected', admit_card_rejection_reason = $1 WHERE id = $2 AND admit_card_status != 'approved'`,
+      [`Submitted email (${email}) does not match the email used at checkout.`, preCheck.id]
+    );
     return;
   }
   const expectedPhone = (preCheck.student_phone || '').replace(/\D/g, '').slice(-10);
   if (normPhone && expectedPhone && normPhone !== expectedPhone) {
-    await sendRejectionEmail(email, `The mobile number you entered does not match the number used during payment (+91 ${expectedPhone}). Please re-open the form using the link in your enrollment email and enter the same mobile number you used at checkout.`);
+    await query(
+      `UPDATE enrollments SET admit_card_status = 'rejected', admit_card_rejection_reason = $1 WHERE id = $2 AND admit_card_status != 'approved'`,
+      [`Submitted mobile number does not match the number used at checkout (expected +91 ${expectedPhone}).`, preCheck.id]
+    );
     return;
   }
 
@@ -79,8 +85,8 @@ async function processGenericSubmission(fields, program) {
     [preCheck.id]
   );
   if (!claimResult.rows.length) {
+    // Concurrent duplicate delivery - the winner owns this row's status.
     console.warn('[tally-generic] Race - already claimed, enrollment:', preCheck.id);
-    await sendRejectionEmail(email, 'This enrollment form has already been submitted. Each enrollment allows only one submission.');
     return;
   }
 
@@ -111,47 +117,11 @@ async function processGenericSubmission(fields, program) {
       mode,
     });
 
-    const waLine = launchConfig.waGroupUrl
-      ? `<p style="margin:16px 0 0;font-size:14px;"><a href="${launchConfig.waGroupUrl}" style="color:#4338CA;font-weight:700;">Join your WhatsApp group &rarr;</a></p>`
-      : '';
-    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/></head>
-<body style="margin:0;padding:0;background:#f4f5f8;font-family:'Segoe UI',Arial,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f5f8;padding:32px 16px;">
-<tr><td align="center"><table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
-  <tr><td style="background:#0F1117;border-radius:14px 14px 0 0;padding:24px 36px;text-align:center;">
-    <div style="font-size:20px;font-weight:800;color:#fff;">Dr. <span style="color:#C81240;">Jaspal Singh</span></div>
-    <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:4px;letter-spacing:1.5px;text-transform:uppercase;">jaspalsingh.in</div>
-  </td></tr>
-  <tr><td style="background:#fff;padding:32px 36px;">
-    <h2 style="margin:0 0 8px;font-size:20px;color:#1A1A2E;font-weight:800;">You're confirmed for ${seriesName}!</h2>
-    <p style="margin:0 0 12px;font-size:14px;color:#374151;line-height:1.7;">Your admit card is attached - roll number <strong>${rollNumber}</strong>.</p>
-    ${waLine}
-  </td></tr>
-  <tr><td style="background:#f4f5f8;border-radius:0 0 14px 14px;padding:16px 36px;text-align:center;">
-    <p style="margin:0;font-size:12px;color:#9ca3af;">jaspalsingh.in | +91 98291 33317</p>
-  </td></tr>
-</table></td></tr></table>
-</body></html>`;
-
-    const result = await resendSend({
-      from: FROM,
-      to:   email,
-      subject: `Confirmed! Your Admit Card for ${seriesName}`,
-      html,
-      attachments: [{
-        filename:    `AdmitCard_${rollNumber}.pdf`,
-        content:     pdfBuffer.toString('base64'),
-        contentType: 'application/pdf',
-      }],
-    }, PRIORITY.ADMIT_CARD);
-
-    if (result.error) {
-      console.error('[tally-generic] Resend error:', result.error);
-      await query('UPDATE enrollments SET form_used = FALSE, form_used_at = NULL WHERE id = $1', [enrollment.id]);
-    } else {
-      console.log(`[tally-generic] Email sent to ${email} | Roll: ${rollNumber} | Program: ${program.slug}`);
-      await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2', [rollNumber, enrollment.id]);
-    }
+    // Admit card is no longer emailed - persisted to R2 and held pending
+    // admin review instead (see routes/admit-card-review.js).
+    await persistPendingAdmitCard(enrollment.id, pdfBuffer);
+    await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2 AND roll_number IS NULL', [rollNumber, enrollment.id]);
+    console.log(`[tally-generic] Admit card generated and pending review | ${email} | Roll: ${rollNumber} | Program: ${program.slug}`);
   } catch (err) {
     console.error('[tally-generic] Admit card generation failed:', err.message);
     await query('UPDATE enrollments SET form_used = FALSE, form_used_at = NULL WHERE id = $1', [enrollment.id]);

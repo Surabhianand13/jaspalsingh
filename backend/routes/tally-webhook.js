@@ -10,6 +10,31 @@ const https         = require('https');
 const http          = require('http');
 const sharp         = require('sharp');
 const { send: resendSend, PRIORITY } = require('../services/resendQueue');
+const { PutObjectCommand } = require('@aws-sdk/client-s3');
+const { r2, BUCKET } = require('../config/r2');
+
+/* ── Persist a generated admit-card PDF to R2, instead of emailing it -
+   the admin approves/rejects via the Admit Cards queue (routes/admit-
+   card-review.js), and the learner then downloads the exact same PDF
+   from their own profile. Shared by every Tally webhook flow (RSSB
+   offline/OMR, ESE, generic).
+
+   status defaults to 'pending' for the learner-submitted webhook flows;
+   /admin/resend-admit-card (enrollment-account.js) passes 'approved'
+   instead, since that path is admin-initiated with admin-entered data -
+   there's nothing to review, so it skips the queue entirely while still
+   keeping the learner's profile download button consistent regardless
+   of which path issued their card. ── */
+async function persistPendingAdmitCard(enrollmentId, pdfBuffer, status = 'pending') {
+  const key = `admit-cards/${enrollmentId}-${Date.now()}.pdf`;
+  await r2.send(new PutObjectCommand({ Bucket: BUCKET, Key: key, Body: pdfBuffer, ContentType: 'application/pdf' }));
+  const pdfUrl = `${process.env.R2_PUBLIC_URL}/${key}`;
+  await query(
+    `UPDATE enrollments SET admit_card_pdf_url = $1, admit_card_pdf_key = $2, admit_card_status = $3, admit_card_submitted_at = NOW()
+     WHERE id = $4 AND admit_card_status != 'approved'`,
+    [pdfUrl, key, status, enrollmentId]
+  );
+}
 
 const FROM   = 'Dr. Jaspal Singh <team@jaspalsingh.in>';
 
@@ -723,10 +748,10 @@ async function processSubmission(fields, programType) {
   const normPhone = (phone || '').replace(/\D/g, '').slice(-10);
 
   if (!token && !orderId) {
-    console.warn('[tally-webhook] No token or order in submission - rejecting');
-    await sendRejectionEmail(email,
-      'Your submission did not include a valid enrollment token. This form must be opened using the personal link sent to you in your enrollment email. Please check your email for the "Fill Details Form" button and use that link.'
-    );
+    // No enrollment row identified at all (rare - only via a raw Tally URL
+    // opened without the emailed link) - nothing to mark for review, and no
+    // more auto-bounce emails, so this is a silent log only.
+    console.warn('[tally-webhook] No token or order in submission - dropping');
     return;
   }
 
@@ -743,29 +768,30 @@ async function processSubmission(fields, programType) {
       );
 
   if (!lookupResult.rows.length) {
+    // No matching enrollment - nothing to mark for review.
     console.warn('[tally-webhook] Invalid token/order - token:', token, 'orderId:', orderId);
-    await sendRejectionEmail(email,
-      'The enrollment token in your submission is invalid or does not match any paid enrollment. Please use the original link sent in your enrollment email.'
-    );
     return;
   }
 
   if (lookupResult.rows[0].form_used) {
+    // Duplicate/stale resubmission on a row that already went through a
+    // prior successful run - that run's admit_card_status is the correct
+    // state, don't touch it here.
     console.warn('[tally-webhook] Token already used (pre-check), enrollment:', lookupResult.rows[0].id);
-    await sendRejectionEmail(email,
-      'This enrollment form has already been submitted. Each enrollment allows only one submission. If you made a mistake in your earlier submission, please contact us on WhatsApp immediately and we will assist you.'
-    );
     return;
   }
 
   const preCheck = lookupResult.rows[0];
 
-  // Verify email matches payment
+  // Verify email matches payment - mismatches used to bounce an automated
+  // rejection email; now they land in the Admit Cards review queue with a
+  // reason attached, so admin can just WhatsApp the learner directly.
   const expectedEmail = (preCheck.student_email || '').toLowerCase().trim();
   if (normEmail !== expectedEmail) {
     console.warn('[tally-webhook] Email mismatch - submitted:', normEmail, 'expected:', expectedEmail);
-    await sendRejectionEmail(email,
-      `The email address you entered (${email}) does not match the email used during payment (${preCheck.student_email}). Please re-open the form using the link in your enrollment email and enter the same email address you used at checkout.`
+    await query(
+      `UPDATE enrollments SET admit_card_status = 'rejected', admit_card_rejection_reason = $1 WHERE id = $2 AND admit_card_status != 'approved'`,
+      [`Submitted email (${email}) does not match the email used at checkout.`, preCheck.id]
     );
     return;
   }
@@ -774,8 +800,9 @@ async function processSubmission(fields, programType) {
   const expectedPhone = (preCheck.student_phone || '').replace(/\D/g, '').slice(-10);
   if (normPhone && expectedPhone && normPhone !== expectedPhone) {
     console.warn('[tally-webhook] Phone mismatch - submitted:', normPhone, 'expected:', expectedPhone);
-    await sendRejectionEmail(email,
-      `The mobile number you entered does not match the number used during payment (+91 ${expectedPhone}). Please re-open the form using the link in your enrollment email and enter the same mobile number you used at checkout.`
+    await query(
+      `UPDATE enrollments SET admit_card_status = 'rejected', admit_card_rejection_reason = $1 WHERE id = $2 AND admit_card_status != 'approved'`,
+      [`Submitted mobile number does not match the number used at checkout (expected +91 ${expectedPhone}).`, preCheck.id]
     );
     return;
   }
@@ -791,11 +818,10 @@ async function processSubmission(fields, programType) {
   );
 
   if (!claimResult.rows.length) {
-    // Another concurrent request already claimed this slot
+    // Another concurrent request already claimed this slot and is (or just
+    // did) processing the real submission - don't touch admit_card_status,
+    // that request owns it.
     console.warn('[tally-webhook] Race - already claimed, enrollment:', preCheck.id);
-    await sendRejectionEmail(email,
-      'This enrollment form has already been submitted. Each enrollment allows only one submission. If you made a mistake in your earlier submission, please contact us on WhatsApp immediately and we will assist you.'
-    );
     return;
   }
 
@@ -836,30 +862,12 @@ async function processSubmission(fields, programType) {
       lastTestDate,
     });
 
-    const htmlBody = buildAdmitCardHtml({ name, seriesName, centreInfo, schedule, isDegreeCourse });
-
-    const result = await resendSend({
-      from:        FROM,
-      to:          email,
-      subject:     `Confirmed! Your Admit Card for ${seriesName}`,
-      html:        htmlBody,
-      attachments: [
-        {
-          filename:    `AdmitCard_${rollNumber}.pdf`,
-          content:     pdfBuffer.toString('base64'),
-          contentType: 'application/pdf',
-        },
-      ],
-    }, PRIORITY.ADMIT_CARD);
-
-    if (result.error) {
-      console.error('[tally-webhook] Resend error:', result.error);
-      await query('UPDATE enrollments SET form_used = FALSE, form_used_at = NULL WHERE id = $1', [enrollment.id]);
-      console.log('[tally-webhook] Reset form_used to FALSE so student can resubmit:', enrollment.id);
-    } else {
-      console.log(`[tally-webhook] Email sent to ${email} | Roll: ${rollNumber}`);
-      await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2', [rollNumber, enrollment.id]);
-    }
+    // Admit card is no longer emailed - persisted to R2 and held pending
+    // admin review instead. The learner downloads it from their own
+    // profile once approved (see routes/admit-card-review.js).
+    await persistPendingAdmitCard(enrollment.id, pdfBuffer);
+    await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2 AND roll_number IS NULL', [rollNumber, enrollment.id]);
+    console.log(`[tally-webhook] Admit card generated and pending review | ${email} | Roll: ${rollNumber}`);
   } catch (err) {
     console.error('[tally-webhook] Admit card generation failed:', err.message);
     await query('UPDATE enrollments SET form_used = FALSE, form_used_at = NULL WHERE id = $1', [enrollment.id]);
@@ -1156,10 +1164,7 @@ async function processComboSubmission(fields) {
   const normPhone = (phone || '').replace(/\D/g, '').slice(-10);
 
   if (!token) {
-    console.warn('[tally-combo] No token in submission - rejecting');
-    await sendRejectionEmail(email,
-      'Your submission did not include a valid enrollment token. This form must be opened using the personal link sent to you in your enrollment email. Please check your email for the "Fill Details Form" button and use that link.'
-    );
+    console.warn('[tally-combo] No token in submission - dropping');
     return;
   }
 
@@ -1170,17 +1175,12 @@ async function processComboSubmission(fields) {
 
   if (!lookupResult.rows.length) {
     console.warn('[tally-combo] Invalid token:', token);
-    await sendRejectionEmail(email,
-      'The enrollment token in your submission is invalid or does not match any paid enrollment. Please use the original link sent in your enrollment email.'
-    );
     return;
   }
 
   if (lookupResult.rows[0].form_used) {
+    // Prior successful run already owns this row's admit_card_status.
     console.warn('[tally-combo] Token already used (pre-check), enrollment:', lookupResult.rows[0].id);
-    await sendRejectionEmail(email,
-      'This enrollment form has already been submitted. Each enrollment allows only one submission. If you made a mistake in your earlier submission, please contact us on WhatsApp immediately and we will assist you.'
-    );
     return;
   }
 
@@ -1189,8 +1189,9 @@ async function processComboSubmission(fields) {
   const expectedEmail = (preCheck.student_email || '').toLowerCase().trim();
   if (normEmail !== expectedEmail) {
     console.warn('[tally-combo] Email mismatch - submitted:', normEmail, 'expected:', expectedEmail);
-    await sendRejectionEmail(email,
-      `The email address you entered (${email}) does not match the email used during payment (${preCheck.student_email}). Please re-open the form using the link in your enrollment email and enter the same email address you used at checkout.`
+    await query(
+      `UPDATE enrollments SET admit_card_status = 'rejected', admit_card_rejection_reason = $1 WHERE id = $2 AND admit_card_status != 'approved'`,
+      [`Submitted email (${email}) does not match the email used at checkout.`, preCheck.id]
     );
     return;
   }
@@ -1198,8 +1199,9 @@ async function processComboSubmission(fields) {
   const expectedPhone = (preCheck.student_phone || '').replace(/\D/g, '').slice(-10);
   if (normPhone && expectedPhone && normPhone !== expectedPhone) {
     console.warn('[tally-combo] Phone mismatch - submitted:', normPhone, 'expected:', expectedPhone);
-    await sendRejectionEmail(email,
-      `The mobile number you entered does not match the number used during payment (+91 ${expectedPhone}). Please re-open the form using the link in your enrollment email and enter the same mobile number you used at checkout.`
+    await query(
+      `UPDATE enrollments SET admit_card_status = 'rejected', admit_card_rejection_reason = $1 WHERE id = $2 AND admit_card_status != 'approved'`,
+      [`Submitted mobile number does not match the number used at checkout (expected +91 ${expectedPhone}).`, preCheck.id]
     );
     return;
   }
@@ -1214,10 +1216,8 @@ async function processComboSubmission(fields) {
   );
 
   if (!claimResult.rows.length) {
+    // Concurrent duplicate delivery - the winner owns this row's status.
     console.warn('[tally-combo] Token race - already claimed, enrollment:', preCheck.id);
-    await sendRejectionEmail(email,
-      'This enrollment form has already been submitted. Each enrollment allows only one submission. If you made a mistake in your earlier submission, please contact us on WhatsApp immediately and we will assist you.'
-    );
     return;
   }
 
@@ -1247,30 +1247,12 @@ async function processComboSubmission(fields) {
       photoBuffer,
     });
 
-    const htmlBody = buildComboAdmitCardHtml({ name, centreInfo });
-
-    const result = await resendSend({
-      from:        FROM,
-      to:          email,
-      subject:     `Confirmed! Your Admit Card for RSSB JE 2026 - Degree + Diploma Combo`,
-      html:        htmlBody,
-      attachments: [
-        {
-          filename:    `AdmitCard_Combo_${rollNumberDegree}_${rollNumberDiploma}.pdf`,
-          content:     pdfBuffer.toString('base64'),
-          contentType: 'application/pdf',
-        },
-      ],
-    }, PRIORITY.ADMIT_CARD);
-
-    if (result.error) {
-      console.error('[tally-combo] Resend error:', result.error);
-      await query('UPDATE enrollments SET form_used = FALSE, form_used_at = NULL WHERE id = $1', [enrollment.id]);
-      console.log('[tally-combo] Reset form_used to FALSE so student can resubmit:', enrollment.id);
-    } else {
-      console.log(`[tally-combo] Email sent to ${email} | Degree Roll: ${rollNumberDegree} | Diploma Roll: ${rollNumberDiploma}`);
-      await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2', [`${rollNumberDegree}|${rollNumberDiploma}`, enrollment.id]);
-    }
+    // Admit card is no longer emailed - persisted to R2 and held pending
+    // admin review instead. The learner downloads it from their own
+    // profile once approved (see routes/admit-card-review.js).
+    await persistPendingAdmitCard(enrollment.id, pdfBuffer);
+    await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2 AND roll_number IS NULL', [`${rollNumberDegree}|${rollNumberDiploma}`, enrollment.id]);
+    console.log(`[tally-combo] Admit card generated and pending review | ${email} | Degree Roll: ${rollNumberDegree} | Diploma Roll: ${rollNumberDiploma}`);
   } catch (err) {
     console.error('[tally-combo] Admit card generation failed:', err.message);
     await query('UPDATE enrollments SET form_used = FALSE, form_used_at = NULL WHERE id = $1', [enrollment.id]);
@@ -1307,3 +1289,4 @@ module.exports.SCHEDULE_DEGREE          = SCHEDULE_DEGREE;
 module.exports.SCHEDULE_DIPLOMA         = SCHEDULE_DIPLOMA;
 module.exports.parseTallyFields         = parseTallyFields;
 module.exports.sendRejectionEmail       = sendRejectionEmail;
+module.exports.persistPendingAdmitCard  = persistPendingAdmitCard;
