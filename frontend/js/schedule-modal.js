@@ -155,7 +155,8 @@
       '<div style="font-weight:700;color:#1A1A2E;margin-bottom:2px;">Test ' + test.test_number + (test.test_date ? ' &middot; ' + esc(test.test_date) : '') + '</div>' +
       '<div style="font-size:12.5px;color:#6b6b8a;margin-bottom:14px;">' + [test.questions ? test.questions + ' questions' : '', test.marks ? test.marks + ' marks' : '', test.duration_minutes ? test.duration_minutes + ' minutes' : ''].filter(Boolean).join(' &middot; ') + '</div>' +
       '<div id="scheduleCardsGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"></div>' +
-      '<div id="scheduleOmrUploadArea" style="margin-top:16px;"></div>';
+      '<div id="scheduleOmrUploadArea" style="margin-top:16px;"></div>' +
+      '<div id="scheduleResultArea" style="margin-top:16px;"></div>';
 
     document.getElementById('scheduleBackBtn').addEventListener('click', renderScheduleList);
 
@@ -165,10 +166,43 @@
       grid.appendChild(scheduleCard('Blank OMR', 'fa-clipboard-list', !!test.blank_omr_url, function () { window.open(test.blank_omr_url, '_blank'); }));
     }
     grid.appendChild(scheduleCard('Solution', 'fa-lightbulb', !!test.solution_url, function () { window.open(test.solution_url, '_blank'); }));
+    grid.appendChild(scheduleCard('Result', 'fa-chart-simple', !!test.result, function () { renderResultArea(test); }));
 
     if (test.requires_omr_upload) {
       renderOmrUploadArea(test);
     }
+  }
+
+  function renderResultArea(test) {
+    var area = document.getElementById('scheduleResultArea');
+    var r = test.result;
+    if (!r) { area.innerHTML = ''; return; }
+    var stat = function (label, value) {
+      return '<div style="text-align:center;"><div style="font-size:20px;font-weight:800;color:#1A1A2E;">' + (value != null ? esc(String(value)) : '-') + '</div>' +
+        '<div style="font-size:11px;color:#9999b0;text-transform:uppercase;letter-spacing:.04em;">' + esc(label) + '</div></div>';
+    };
+    var breakdownRows = Array.isArray(r.breakdown) ? r.breakdown.map(function (q) {
+      var statusColor = q.status === 'correct' ? '#0F766E' : q.status === 'wrong' ? '#C81240' : '#9999b0';
+      return '<tr><td style="padding:6px 10px;font-size:12.5px;color:#374151;">Q' + esc(String(q.q)) + '</td>' +
+        '<td style="padding:6px 10px;font-size:12.5px;font-weight:700;color:' + statusColor + ';text-transform:capitalize;">' + esc(q.status || '-') + '</td>' +
+        '<td style="padding:6px 10px;font-size:12.5px;color:#6b6b8a;">' + (q.marks != null ? esc(String(q.marks)) : '-') + '</td></tr>';
+    }).join('') : '';
+
+    area.innerHTML =
+      '<div style="border:1px solid #eee;border-radius:10px;padding:16px;">' +
+        '<div style="font-weight:700;color:#1A1A2E;margin-bottom:12px;">Your Result</div>' +
+        '<div style="display:grid;grid-template-columns:repeat(' + (r.rank != null ? 4 : 3) + ',1fr);gap:10px;margin-bottom:' + (breakdownRows ? '16px' : '0') + ';">' +
+          stat('Marks', r.total_marks) + stat('Correct', r.correct_count) + stat('Wrong', r.wrong_count) +
+          (r.rank != null ? stat('Rank', r.rank) : '') +
+        '</div>' +
+        (breakdownRows
+          ? '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;"><thead><tr>' +
+              '<th style="text-align:left;padding:6px 10px;font-size:11px;color:#9999b0;text-transform:uppercase;">Question</th>' +
+              '<th style="text-align:left;padding:6px 10px;font-size:11px;color:#9999b0;text-transform:uppercase;">Status</th>' +
+              '<th style="text-align:left;padding:6px 10px;font-size:11px;color:#9999b0;text-transform:uppercase;">Marks</th>' +
+            '</tr></thead><tbody>' + breakdownRows + '</tbody></table></div>'
+          : '') +
+      '</div>';
   }
 
   function renderOmrUploadArea(test) {

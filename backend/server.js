@@ -833,6 +833,34 @@ async function migrate() {
   await query(`CREATE INDEX IF NOT EXISTS idx_schedule_uploads_schedule ON schedule_uploads(schedule_id)`);
   await query(`CREATE UNIQUE INDEX IF NOT EXISTS schedule_uploads_schedule_enrollment_uidx ON schedule_uploads(schedule_id, enrollment_id) WHERE enrollment_id IS NOT NULL`);
 
+  /* Manual per-test results (2026-08-16): replaces the fully-manual
+     WhatsApp-only ranking process. Deliberately simpler than the
+     dormant omr_submissions bubble-detection tables (see comment on
+     omr_test_id/answer_key above) - there's no machine pass here to
+     reconcile against, admin just enters the final numbers. published_at
+     (nullable) gives a natural draft-then-publish step, same pattern as
+     paper_release_at already gates visibility elsewhere in this file. */
+  await query(`
+    CREATE TABLE IF NOT EXISTS test_results (
+      id                  SERIAL PRIMARY KEY,
+      schedule_id         INTEGER NOT NULL REFERENCES program_schedule(id) ON DELETE CASCADE,
+      enrollment_id       INTEGER NOT NULL REFERENCES enrollments(id) ON DELETE CASCADE,
+      roll_number         VARCHAR(30),
+      total_marks         NUMERIC(7,2),
+      correct_count       SMALLINT,
+      wrong_count         SMALLINT,
+      blank_count         SMALLINT,
+      rank_position       INTEGER,
+      question_breakdown  JSONB,
+      published_at        TIMESTAMPTZ,
+      entered_by          VARCHAR(255),
+      created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+  await query(`CREATE UNIQUE INDEX IF NOT EXISTS test_results_schedule_enrollment_uidx ON test_results(schedule_id, enrollment_id)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_test_results_schedule ON test_results(schedule_id)`);
+
   /* Offline CBT pilot (2026-08-09) - results synced in from air-gapped
      exam machines (see /offline-cbt) once a staff member connects that
      machine to a hotspot and hits Sync. external_id is the id the exam
