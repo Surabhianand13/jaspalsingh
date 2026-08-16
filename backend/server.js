@@ -120,6 +120,7 @@ app.use('/api/upload',       require('./routes/upload'));
 app.use('/api/payment',      require('./routes/payment'));
 app.use('/api/leads',        require('./routes/leads'));
 app.use('/api/enrollment',   require('./routes/enrollment-account'));
+app.use('/api/admit-cards',  require('./routes/admit-card-review'));
 app.use('/api/events',       require('./routes/events'));
 app.use('/api/programs',      require('./routes/programs'));
 app.use('/api/banners',       require('./routes/banners'));
@@ -254,6 +255,8 @@ process.on('uncaughtException', (err) => {
 /* ── Run DB migrations then start server ─────────────────── */
 
 const { query } = require('./config/db');
+const { generateRollNumber } = require('./utils/rollNumber');
+const { resolveRollNumberPrefix } = require('./utils/rollNumberPrefix');
 const PORT = process.env.PORT || 5000;
 
 async function migrate() {
@@ -302,6 +305,24 @@ async function migrate() {
   await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS refunded_by VARCHAR(255)`);
   await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS roll_number VARCHAR(30)`);
   await query(`CREATE UNIQUE INDEX IF NOT EXISTS enrollments_roll_number_uidx ON enrollments (roll_number) WHERE roll_number IS NOT NULL`);
+
+  /* ── Admit-card approval queue (2026-08-16): the Tally webhook flows
+     used to generate the admit-card PDF and email it immediately, with
+     no human review. Now they persist it to R2 as 'pending' instead -
+     an admin reviews the actual PDF (photo/name/govt ID) and approves
+     or rejects it before the learner can download it from their own
+     profile. 'none' is the default so every enrollment that already
+     had a card emailed before this shipped keeps showing today's plain
+     display - never a "pending review" nag for someone who was already
+     sent their card months ago. ── */
+  await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS admit_card_status VARCHAR(20) NOT NULL DEFAULT 'none'`);
+  await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS admit_card_pdf_url VARCHAR(1000)`);
+  await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS admit_card_pdf_key VARCHAR(500)`);
+  await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS admit_card_submitted_at TIMESTAMPTZ`);
+  await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS admit_card_reviewed_at TIMESTAMPTZ`);
+  await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS admit_card_reviewed_by VARCHAR(255)`);
+  await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS admit_card_rejection_reason TEXT`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_enrollments_admit_card_pending ON enrollments(admit_card_status) WHERE admit_card_status = 'pending'`);
   await query(`CREATE TABLE IF NOT EXISTS free_resources (
     id          SERIAL PRIMARY KEY,
     title       TEXT NOT NULL,
@@ -812,6 +833,34 @@ async function migrate() {
   await query(`CREATE INDEX IF NOT EXISTS idx_schedule_uploads_schedule ON schedule_uploads(schedule_id)`);
   await query(`CREATE UNIQUE INDEX IF NOT EXISTS schedule_uploads_schedule_enrollment_uidx ON schedule_uploads(schedule_id, enrollment_id) WHERE enrollment_id IS NOT NULL`);
 
+  /* Manual per-test results (2026-08-16): replaces the fully-manual
+     WhatsApp-only ranking process. Deliberately simpler than the
+     dormant omr_submissions bubble-detection tables (see comment on
+     omr_test_id/answer_key above) - there's no machine pass here to
+     reconcile against, admin just enters the final numbers. published_at
+     (nullable) gives a natural draft-then-publish step, same pattern as
+     paper_release_at already gates visibility elsewhere in this file. */
+  await query(`
+    CREATE TABLE IF NOT EXISTS test_results (
+      id                  SERIAL PRIMARY KEY,
+      schedule_id         INTEGER NOT NULL REFERENCES program_schedule(id) ON DELETE CASCADE,
+      enrollment_id       INTEGER NOT NULL REFERENCES enrollments(id) ON DELETE CASCADE,
+      roll_number         VARCHAR(30),
+      total_marks         NUMERIC(7,2),
+      correct_count       SMALLINT,
+      wrong_count         SMALLINT,
+      blank_count         SMALLINT,
+      rank_position       INTEGER,
+      question_breakdown  JSONB,
+      published_at        TIMESTAMPTZ,
+      entered_by          VARCHAR(255),
+      created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+  await query(`CREATE UNIQUE INDEX IF NOT EXISTS test_results_schedule_enrollment_uidx ON test_results(schedule_id, enrollment_id)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_test_results_schedule ON test_results(schedule_id)`);
+
   /* Offline CBT pilot (2026-08-09) - results synced in from air-gapped
      exam machines (see /offline-cbt) once a staff member connects that
      machine to a hotspot and hits Sync. external_id is the id the exam
@@ -1167,7 +1216,7 @@ async function migrate() {
      a number assigned here stays stable even after the learner later
      fills the form. Runs on every boot but only touches rows still
      missing one, so it's a no-op once everyone has caught up. Format
-     matches generateGenericRollNumber() in routes/tally-generic.js;
+     matches the shared generateRollNumber() in utils/rollNumber.js;
      the DB's partial unique index on roll_number (see ALTER TABLE
      above) is the actual overlap guarantee. ── */
   const rollBackfillRows = await query(
@@ -1184,6 +1233,57 @@ async function migrate() {
     }
     if (!rollNumber) continue;
     await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2 AND roll_number IS NULL', [rollNumber, row.id]);
+  }
+
+  /* ── General roll-number backfill, all programs (2026-08-16): roll
+     numbers are now assigned instantly at purchase (onEnrollmentPaid in
+     routes/payment.js), for every program, not just UP Polytechnic - the
+     block above is now a harmless subset of this one and left in place
+     rather than removed. This covers every already-paid enrollment that
+     predates that change, across RSSB/ESE/generic alike.
+
+     KNOWN_ROLL_NUMBERS lets the site owner supply the *real* already-
+     issued number for specific enrollments the system itself could never
+     recover - most notably the RSSB home-based OMR flow, which used to
+     generate and email a roll number without ever saving it (fixed in
+     routes/tally-omr-shared.js, but that fix can't retroactively recall
+     what a past email already said). Keyed by order_id so it survives
+     even if a row's other identifying fields change. Anything not listed
+     here gets a fresh auto-generated number - which is fine for RSSB
+     offline/ESE/generic enrollments, since those flows' roll numbers were
+     always persisted, so any that are still NULL genuinely never had one
+     issued at all. ── */
+  const KNOWN_ROLL_NUMBERS = {
+    // 'order_xxxxxxxxxxxx': 'OMR-DEG-12345',
+  };
+  for (const [orderId, knownRoll] of Object.entries(KNOWN_ROLL_NUMBERS)) {
+    await query(
+      `UPDATE enrollments SET roll_number = $1 WHERE order_id = $2 AND roll_number IS NULL`,
+      [knownRoll, orderId]
+    );
+  }
+
+  const generalRollBackfillRows = await query(
+    `SELECT id, program_slug FROM enrollments
+     WHERE status = 'paid' AND refund_status != 'initiated' AND roll_number IS NULL`
+  );
+  for (const row of generalRollBackfillRows.rows) {
+    try {
+      const prefix = await resolveRollNumberPrefix(row.program_slug);
+      let rollNumber;
+      if (typeof prefix === 'object' && prefix !== null) {
+        const [degree, diploma] = await Promise.all([
+          generateRollNumber(prefix.degree),
+          generateRollNumber(prefix.diploma),
+        ]);
+        rollNumber = `${degree}|${diploma}`;
+      } else {
+        rollNumber = await generateRollNumber(prefix);
+      }
+      await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2 AND roll_number IS NULL', [rollNumber, row.id]);
+    } catch (err) {
+      console.error(`[migrate] roll-number backfill failed for enrollment ${row.id}:`, err.message);
+    }
   }
 
   /* ── Independence Day Freedom Sale (2026-08-15 only): FREEDOM15 gives a
@@ -1256,6 +1356,34 @@ async function checkReferralDigest() {
   }
 }
 
+/* ── Daily admit-card approvals digest (same 6 PM IST slot as the
+   referral payout digest - two independent gates on the same interval
+   tick). Mirrors checkReferralDigest above. ── */
+let admitCardDigestSentDate = null;
+
+async function checkAdmitCardDigest() {
+  try {
+    const istNow = new Date(Date.now() + 5.5 * 60 * 60 * 1000); // UTC -> IST
+    const todayIST = istNow.toISOString().slice(0, 10);
+    if (istNow.getUTCHours() !== 18 || admitCardDigestSentDate === todayIST) return;
+
+    const result = await query(
+      `SELECT student_name, student_phone, program_name, roll_number
+       FROM enrollments
+       WHERE admit_card_status = 'pending'
+       ORDER BY admit_card_submitted_at ASC`
+    );
+    admitCardDigestSentDate = todayIST; // mark sent even if zero rows, so we don't re-check all day
+    if (!result.rows.length) return;
+
+    const { sendAdmitCardDigestEmail } = require('./services/paymentEmailService');
+    await sendAdmitCardDigestEmail(result.rows);
+    console.log(`[admit-card-digest] Sent digest for ${result.rows.length} pending card(s)`);
+  } catch (err) {
+    console.error('[admit-card-digest] Error:', err.message);
+  }
+}
+
 migrate()
   .catch(err => console.warn('⚠️  Migration warning:', err.message))
   .finally(() => {
@@ -1265,6 +1393,8 @@ migrate()
       console.log(`   Health check: http://localhost:${PORT}/api/health\n`);
       setInterval(checkReferralDigest, 15 * 60 * 1000); // check every 15 min, fires once at 6 PM IST
       checkReferralDigest();
+      setInterval(checkAdmitCardDigest, 15 * 60 * 1000);
+      checkAdmitCardDigest();
     });
   });
 

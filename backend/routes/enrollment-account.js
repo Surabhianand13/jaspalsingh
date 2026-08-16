@@ -199,7 +199,10 @@ router.get('/my-enrollments', protectLearner, async (req, res) => {
     );
 
     const result = await query(
-      `SELECT order_id, program_slug, program_name, amount, status, paid_at, coupon_code, roll_number
+      `SELECT order_id, program_slug, program_name, amount, status, paid_at, coupon_code, roll_number,
+              admit_card_status,
+              CASE WHEN admit_card_status = 'approved' THEN admit_card_pdf_url END AS admit_card_pdf_url,
+              CASE WHEN admit_card_status = 'rejected' THEN admit_card_rejection_reason END AS admit_card_rejection_reason
        FROM enrollments
        WHERE status = 'paid'
          AND refund_status != 'initiated'
@@ -508,7 +511,7 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
     if (!enrollment_id) return res.status(400).json({ error: 'enrollment_id required.' });
 
     const enrResult = await query(
-      `SELECT id, student_name, student_email, student_phone, program_slug
+      `SELECT id, student_name, student_email, student_phone, program_slug, roll_number
        FROM enrollments WHERE id = $1 AND status = 'paid'`,
       [enrollment_id]
     );
@@ -537,7 +540,7 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
 
     if (isCombo) {
       const {
-        generateComboAdmitCard, buildComboAdmitCardHtml, generateRollNumber, getCentreKey, CENTRES,
+        generateComboAdmitCard, buildComboAdmitCardHtml, generateRollNumber, getCentreKey, CENTRES, persistPendingAdmitCard,
       } = require('./tally-webhook');
       const { send: resendSend, PRIORITY } = require('../services/resendQueue');
 
@@ -545,8 +548,12 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
       const centreInfo = isOmr ? { name: 'Online (Home Based)', address: '', mapsLink: '#' }
         : (CENTRES[centreKey] || { name: centre, address: 'TBD', mapsLink: '#' });
 
-      const rollNumberDegree  = await generateRollNumber(centreKey || centreInfo.name, 'degree');
-      const rollNumberDiploma = await generateRollNumber(centreKey || centreInfo.name, 'diploma');
+      // Roll number is normally already assigned at purchase time
+      // (onEnrollmentPaid) - reuse it instead of minting a second, orphaned
+      // one; only regenerate as a fallback for pre-existing enrollments.
+      const [existingDegree, existingDiploma] = (enr.roll_number || '').split('|');
+      const rollNumberDegree  = existingDegree  || await generateRollNumber(centreKey || centreInfo.name, 'degree');
+      const rollNumberDiploma = existingDiploma || await generateRollNumber(centreKey || centreInfo.name, 'diploma');
 
       const pdfBuffer = await generateComboAdmitCard({
         name:  name || enr.student_name,
@@ -575,6 +582,7 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
 
       console.log(`[resend-admit-card] Sent combo to ${enr.student_email} | Degree Roll: ${rollNumberDegree} | Diploma Roll: ${rollNumberDiploma}`);
       await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2', [`${rollNumberDegree}|${rollNumberDiploma}`, enrollment_id]);
+      await persistPendingAdmitCard(enrollment_id, pdfBuffer, 'approved');
       return res.json({ message: `Admit card sent to ${enr.student_email}`, roll_number_degree: rollNumberDegree, roll_number_diploma: rollNumberDiploma });
     }
 
@@ -583,6 +591,7 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
       const {
         generateEseRollNumber, buildEseAdmitCardHtml, buildEseComboAdmitCardHtml,
       } = require('./tally-ese-shared');
+      const { persistPendingAdmitCard } = require('./tally-webhook');
       const { send: resendSend, PRIORITY } = require('../services/resendQueue');
       const cfg = ESE_PROGRAMS[eseKey];
 
@@ -591,7 +600,7 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
         : (ESE_CENTRES[centreKey] || { name: centre, address: 'TBD', mapsLink: '#' });
 
       if (isEseCombined) {
-        const rollNumber = await generateEseRollNumber(isOmr ? 'ESE' : (centreKey || centreInfo.name), 'CMB');
+        const rollNumber = enr.roll_number || await generateEseRollNumber(isOmr ? 'ESE' : (centreKey || centreInfo.name), 'CMB');
 
         const pdfBuffer = await generateAdmitCard({
           name:         name || enr.student_name,
@@ -622,10 +631,11 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
 
         console.log(`[resend-admit-card] Sent ESE combined to ${enr.student_email} | Roll: ${rollNumber}`);
         await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2', [rollNumber, enrollment_id]);
+        await persistPendingAdmitCard(enrollment_id, pdfBuffer, 'approved');
         return res.json({ message: `Admit card sent to ${enr.student_email}`, roll_number: rollNumber });
       }
 
-      const rollNumber = await generateEseRollNumber(isOmr ? 'ESE' : (centreKey || centreInfo.name), cfg.examCode);
+      const rollNumber = enr.roll_number || await generateEseRollNumber(isOmr ? 'ESE' : (centreKey || centreInfo.name), cfg.examCode);
 
       const pdfBuffer = await generateAdmitCard({
         name:         name || enr.student_name,
@@ -656,6 +666,7 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
 
       console.log(`[resend-admit-card] Sent ESE to ${enr.student_email} | Roll: ${rollNumber}`);
       await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2', [rollNumber, enrollment_id]);
+      await persistPendingAdmitCard(enrollment_id, pdfBuffer, 'approved');
       return res.json({ message: `Admit card sent to ${enr.student_email}`, roll_number: rollNumber });
     }
 
@@ -679,7 +690,7 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
       : null;
 
     let centreForCard, rollNumber, mode, htmlBody;
-    const { buildGenericAdmitCardHtml, getCentreKey, CENTRES } = require('./tally-webhook');
+    const { buildGenericAdmitCardHtml, getCentreKey, CENTRES, persistPendingAdmitCard } = require('./tally-webhook');
 
     if (isOmr) {
       mode          = 'home';
@@ -694,15 +705,19 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
       htmlBody      = buildGenericAdmitCardHtml({ name: name || enr.student_name, seriesName, centreInfo, mode });
     }
 
-    const prefix   = (isOmr ? 'OMR' : (getCentreKey(centre) || centre || 'JSP')).slice(0, 3).toUpperCase();
-    const examCode = ((program && program.shortName) || slug).replace(/[^a-zA-Z]/g, '').slice(0, 3).toUpperCase() || 'GEN';
-    rollNumber = null;
-    for (let i = 0; i < 10; i++) {
-      const candidate = `${prefix}-${examCode}-${Math.floor(10000 + Math.random() * 90000)}`;
-      const exists = await query('SELECT 1 FROM enrollments WHERE roll_number = $1', [candidate]);
-      if (!exists.rows.length) { rollNumber = candidate; break; }
+    // Roll number is normally already assigned at purchase time
+    // (onEnrollmentPaid) - reuse it instead of minting a second, orphaned one.
+    rollNumber = enr.roll_number || null;
+    if (!rollNumber) {
+      const prefix   = (isOmr ? 'OMR' : (getCentreKey(centre) || centre || 'JSP')).slice(0, 3).toUpperCase();
+      const examCode = ((program && program.shortName) || slug).replace(/[^a-zA-Z]/g, '').slice(0, 3).toUpperCase() || 'GEN';
+      for (let i = 0; i < 10; i++) {
+        const candidate = `${prefix}-${examCode}-${Math.floor(10000 + Math.random() * 90000)}`;
+        const exists = await query('SELECT 1 FROM enrollments WHERE roll_number = $1', [candidate]);
+        if (!exists.rows.length) { rollNumber = candidate; break; }
+      }
+      if (!rollNumber) rollNumber = `${prefix}-${examCode}-${Math.floor(10000 + Math.random() * 90000)}`;
     }
-    if (!rollNumber) rollNumber = `${prefix}-${examCode}-${Math.floor(10000 + Math.random() * 90000)}`;
 
     const pdfBuffer = await generateAdmitCard({
       name:         name || enr.student_name,
@@ -733,6 +748,7 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
 
     console.log(`[resend-admit-card] Sent to ${enr.student_email} | Roll: ${rollNumber}`);
     await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2', [rollNumber, enrollment_id]);
+    await persistPendingAdmitCard(enrollment_id, pdfBuffer, 'approved');
     res.json({ message: `Admit card sent to ${enr.student_email}`, roll_number: rollNumber });
   } catch (err) { next(err); }
 });
@@ -1243,3 +1259,4 @@ router.post('/admin/send-omr-analysis', protect, async (req, res) => {
 });
 
 module.exports = router;
+module.exports.programLabel = programLabel;

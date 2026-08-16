@@ -40,6 +40,33 @@
     'gate-ese-foundation':           { bg: 'linear-gradient(135deg,#166534,#15803D)', icon: 'fa-graduation-cap' },
   };
 
+  /* Admit card states, most recent flows first:
+     - 'approved': admin has reviewed the generated PDF - download it directly.
+     - 'pending':  learner submitted their Tally form, awaiting admin review.
+     - 'rejected': something didn't match (e.g. email/phone) - admin left a reason.
+     - 'none' (or anything else): pre-review-queue enrollment - falls back to
+       the plain roll-number display that existed before the approval queue,
+       so already-issued cards from before this shipped never show a
+       "pending review" nag they were never meant to see. */
+  function admitCardLine(e) {
+    if (e.admit_card_status === 'approved' && e.admit_card_pdf_url) {
+      return '<a href="' + esc(e.admit_card_pdf_url) + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:#0F766E;color:#fff;border-radius:20px;padding:7px 16px;font-size:12.5px;font-weight:700;text-decoration:none;">' +
+        '<i class="fas fa-download"></i> Download Admit Card' +
+      '</a>';
+    }
+    if (e.admit_card_status === 'pending') {
+      return '<span style="color:#9999b0;"><i class="fas fa-hourglass-half"></i> Admit card pending review</span>';
+    }
+    if (e.admit_card_status === 'rejected') {
+      return '<span style="color:#C81240;"><i class="fas fa-triangle-exclamation"></i> Admit card needs attention' +
+        (e.admit_card_rejection_reason ? ' - ' + esc(e.admit_card_rejection_reason) : '') +
+        ' - please <a href="https://wa.me/919829133317" target="_blank" rel="noopener" style="color:#C81240;font-weight:700;">WhatsApp us</a></span>';
+    }
+    return e.roll_number
+      ? '<i class="fas fa-id-card" style="color:#0F766E;"></i> Admit Card No: <strong style="font-family:monospace;">' + esc(e.roll_number) + '</strong>'
+      : '<span style="color:#9999b0;"><i class="fas fa-hourglass-half"></i> Admit card number: assigned shortly</span>';
+  }
+
   function loadEnrolledPrograms() {
     var body = document.getElementById('enrolledBody');
     authFetch('/api/enrollment/my-enrollments').then(function (data) {
@@ -71,9 +98,7 @@
               '<span class="enrolled-amount">&#8377;' + Number(e.amount).toLocaleString('en-IN') + ' paid</span>' +
             '</div>' +
             '<div class="enrolled-roll" style="margin-top:6px;font-size:13px;">' +
-              (e.roll_number
-                ? '<i class="fas fa-id-card" style="color:#0F766E;"></i> Admit Card No: <strong style="font-family:monospace;">' + esc(e.roll_number) + '</strong>'
-                : '<span style="color:#9999b0;"><i class="fas fa-hourglass-half"></i> Admit card number: assigned shortly</span>') +
+              admitCardLine(e) +
             '</div>' +
             '<button class="btn" data-schedule-open="' + esc(slug) + '" data-schedule-name="' + esc(e.program_name) + '" style="margin-top:10px;background:#0F766E;color:#fff;border:none;border-radius:20px;padding:10px 22px;font-size:13px;font-weight:700;cursor:pointer;">' +
               '<i class="fas fa-calendar-alt"></i> View Schedule' +

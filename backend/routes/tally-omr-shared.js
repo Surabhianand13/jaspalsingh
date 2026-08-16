@@ -7,7 +7,7 @@
 
 const { query }  = require('../config/db');
 const { send: resendSend, PRIORITY } = require('../services/resendQueue');
-const { generateAdmitCard, generateComboAdmitCard, fetchImageBuffer } = require('./tally-webhook');
+const { generateAdmitCard, generateComboAdmitCard, fetchImageBuffer, persistPendingAdmitCard } = require('./tally-webhook');
 
 const FROM   = 'Dr. Jaspal Singh <team@jaspalsingh.in>';
 
@@ -343,16 +343,13 @@ async function processOmrSubmission(fields, type) {
   const normPhone = (phone || '').replace(/\D/g, '').slice(-10);
 
   if (!token) {
-    console.warn('[tally-omr] No token in submission - rejecting');
-    await sendRejectionEmail(email,
-      'Your submission did not include a valid enrollment token. This form must be opened using the personal link sent to you in your enrollment email. Please check your email for the "Fill Details Form" button and use that link.'
-    );
+    console.warn('[tally-omr] No token in submission - dropping');
     return;
   }
 
   /* Look up token in enrollments, scoped to OMR program slugs */
   const enrResult = await query(
-    `SELECT id, student_email, student_phone, form_used, form_token, program_slug
+    `SELECT id, student_email, student_phone, form_used, form_token, program_slug, roll_number
      FROM enrollments
      WHERE form_token = $1 AND program_slug LIKE '%omr%'`,
     [token]
@@ -360,28 +357,25 @@ async function processOmrSubmission(fields, type) {
 
   if (!enrResult.rows.length) {
     console.warn('[tally-omr] Invalid token or not an OMR enrollment:', token);
-    await sendRejectionEmail(email,
-      'The enrollment token in your submission is invalid or does not match any paid OMR enrollment. Please use the original link sent in your enrollment email.'
-    );
     return;
   }
 
   const enrollment = enrResult.rows[0];
 
   if (enrollment.form_used) {
+    // Prior successful run already owns this row's admit_card_status.
     console.warn('[tally-omr] Token already used, enrollment:', enrollment.id);
-    await sendRejectionEmail(email,
-      'This enrollment form has already been submitted. Each enrollment allows only one submission. If you made a mistake, please contact us on WhatsApp.'
-    );
     return;
   }
 
-  /* Verify email matches */
+  /* Verify email matches - mismatches now land in the Admit Cards review
+     queue with a reason instead of bouncing an automated email. */
   const expectedEmail = (enrollment.student_email || '').toLowerCase().trim();
   if (normEmail !== expectedEmail) {
     console.warn('[tally-omr] Email mismatch - submitted:', normEmail, 'expected:', expectedEmail);
-    await sendRejectionEmail(email,
-      `The email address you entered (${email}) does not match the email used during payment. Please re-open the form using the link in your enrollment email.`
+    await query(
+      `UPDATE enrollments SET admit_card_status = 'rejected', admit_card_rejection_reason = $1 WHERE id = $2 AND admit_card_status != 'approved'`,
+      [`Submitted email (${email}) does not match the email used at checkout.`, enrollment.id]
     );
     return;
   }
@@ -390,8 +384,9 @@ async function processOmrSubmission(fields, type) {
   const expectedPhone = (enrollment.student_phone || '').replace(/\D/g, '').slice(-10);
   if (normPhone && expectedPhone && normPhone !== expectedPhone) {
     console.warn('[tally-omr] Phone mismatch - submitted:', normPhone, 'expected:', expectedPhone);
-    await sendRejectionEmail(email,
-      `The mobile number you entered does not match the number used during payment. Please re-open the form using the link in your enrollment email.`
+    await query(
+      `UPDATE enrollments SET admit_card_status = 'rejected', admit_card_rejection_reason = $1 WHERE id = $2 AND admit_card_status != 'approved'`,
+      [`Submitted mobile number does not match the number used at checkout (expected +91 ${expectedPhone}).`, enrollment.id]
     );
     return;
   }
@@ -406,10 +401,8 @@ async function processOmrSubmission(fields, type) {
   );
 
   if (!claimResult.rows.length) {
+    // Concurrent duplicate delivery - the winner owns this row's status.
     console.warn('[tally-omr] Token race - already claimed, enrollment:', enrollment.id);
-    await sendRejectionEmail(email,
-      'This enrollment form has already been submitted. Each enrollment allows only one submission. If you made a mistake, please contact us on WhatsApp.'
-    );
     return;
   }
 
@@ -425,7 +418,12 @@ async function processOmrSubmission(fields, type) {
      reach them without asking them to resubmit the form. */
   try {
 
-  const rollNumber  = generateOmrRollNumber(isDegreeCourse);
+  // Roll number is normally already assigned at purchase time (onEnrollmentPaid
+  // in routes/payment.js) - this only generates fresh as a fallback for
+  // enrollments that predate that change. Previously this always generated a
+  // new number here and never saved it, so the learner's profile could never
+  // show it - persisted below once the email send succeeds.
+  const rollNumber  = enrollment.roll_number || generateOmrRollNumber(isDegreeCourse);
   const photoBuffer = photoUrl ? await fetchImageBuffer(photoUrl) : null;
   const lastTestDate = getOmrLastTestDate(isDegreeCourse);
 
@@ -445,24 +443,23 @@ async function processOmrSubmission(fields, type) {
 
   const htmlBody = buildOmrConfirmationHtml({ name, isDegreeCourse });
 
+  // Admit card is no longer emailed - persisted to R2 and held pending admin
+  // review instead (see routes/admit-card-review.js), independent of the
+  // welcome/how-it-works email below.
+  await persistPendingAdmitCard(enrollment.id, pdfBuffer);
+  await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2 AND roll_number IS NULL', [rollNumber, enrollment.id]);
+
   const { error } = await resendSend({
     from:    FROM,
     to:      email,
     subject: `Identity Verified - You're enrolled in ${seriesName}`,
     html:    htmlBody,
-    attachments: [
-      {
-        filename:    `AdmitCard_${rollNumber}.pdf`,
-        content:     pdfBuffer.toString('base64'),
-        contentType: 'application/pdf',
-      },
-    ],
   }, PRIORITY.ACTION_REQUIRED);
 
   if (error) {
     console.error('[tally-omr] Resend error:', error);
   } else {
-    console.log(`[tally-omr] Confirmation email + Admit Card sent to ${email} | type: ${type} | Roll: ${rollNumber}`);
+    console.log(`[tally-omr] Confirmation email sent, admit card pending review | ${email} | type: ${type} | Roll: ${rollNumber}`);
   }
 
   } catch (err) {
@@ -485,7 +482,7 @@ async function processOmrSubmission(fields, type) {
       You are now enrolled in <strong style="color:#1A1A2E;">${seriesName}</strong>. Your identity has been verified successfully.
     </p>
     <p style="margin:0 0 16px;font-size:14px;color:#374151;line-height:1.7;">
-      Your Admit Card is being generated and will be emailed to you separately shortly. On each test day morning, you will receive the Question Paper and OMR Sheet PDFs on this email - fill them and reply with a photo before 10:00 PM the same day.
+      Your admit card is being finalized and will be available to download from your profile on jaspalsingh.in once ready. On each test day morning, you will receive the Question Paper and OMR Sheet PDFs on this email - fill them and reply with a photo before 10:00 PM the same day.
     </p>
     <p style="font-size:13px;color:#9ca3af;margin:16px 0 0;">For queries, WhatsApp us at +91 98291 33317.</p>
   </td></tr>
@@ -512,15 +509,12 @@ async function processComboOmrSubmission(fields) {
   const normPhone = (phone || '').replace(/\D/g, '').slice(-10);
 
   if (!token) {
-    console.warn('[tally-combo-omr] No token in submission - rejecting');
-    await sendRejectionEmail(email,
-      'Your submission did not include a valid enrollment token. This form must be opened using the personal link sent to you in your enrollment email. Please check your email for the "Fill Details Form" button and use that link.'
-    );
+    console.warn('[tally-combo-omr] No token in submission - dropping');
     return;
   }
 
   const enrResult = await query(
-    `SELECT id, student_email, student_phone, form_used, form_token, program_slug
+    `SELECT id, student_email, student_phone, form_used, form_token, program_slug, roll_number
      FROM enrollments
      WHERE form_token = $1 AND program_slug LIKE '%omr%'`,
     [token]
@@ -528,27 +522,23 @@ async function processComboOmrSubmission(fields) {
 
   if (!enrResult.rows.length) {
     console.warn('[tally-combo-omr] Invalid token or not an OMR enrollment:', token);
-    await sendRejectionEmail(email,
-      'The enrollment token in your submission is invalid or does not match any paid OMR enrollment. Please use the original link sent in your enrollment email.'
-    );
     return;
   }
 
   const enrollment = enrResult.rows[0];
 
   if (enrollment.form_used) {
+    // Prior successful run already owns this row's admit_card_status.
     console.warn('[tally-combo-omr] Token already used, enrollment:', enrollment.id);
-    await sendRejectionEmail(email,
-      'This enrollment form has already been submitted. Each enrollment allows only one submission. If you made a mistake, please contact us on WhatsApp.'
-    );
     return;
   }
 
   const expectedEmail = (enrollment.student_email || '').toLowerCase().trim();
   if (normEmail !== expectedEmail) {
     console.warn('[tally-combo-omr] Email mismatch - submitted:', normEmail, 'expected:', expectedEmail);
-    await sendRejectionEmail(email,
-      `The email address you entered (${email}) does not match the email used during payment. Please re-open the form using the link in your enrollment email.`
+    await query(
+      `UPDATE enrollments SET admit_card_status = 'rejected', admit_card_rejection_reason = $1 WHERE id = $2 AND admit_card_status != 'approved'`,
+      [`Submitted email (${email}) does not match the email used at checkout.`, enrollment.id]
     );
     return;
   }
@@ -556,8 +546,9 @@ async function processComboOmrSubmission(fields) {
   const expectedPhone = (enrollment.student_phone || '').replace(/\D/g, '').slice(-10);
   if (normPhone && expectedPhone && normPhone !== expectedPhone) {
     console.warn('[tally-combo-omr] Phone mismatch - submitted:', normPhone, 'expected:', expectedPhone);
-    await sendRejectionEmail(email,
-      `The mobile number you entered does not match the number used during payment. Please re-open the form using the link in your enrollment email.`
+    await query(
+      `UPDATE enrollments SET admit_card_status = 'rejected', admit_card_rejection_reason = $1 WHERE id = $2 AND admit_card_status != 'approved'`,
+      [`Submitted mobile number does not match the number used at checkout (expected +91 ${expectedPhone}).`, enrollment.id]
     );
     return;
   }
@@ -571,10 +562,8 @@ async function processComboOmrSubmission(fields) {
   );
 
   if (!claimResult.rows.length) {
+    // Concurrent duplicate delivery - the winner owns this row's status.
     console.warn('[tally-combo-omr] Token race - already claimed, enrollment:', enrollment.id);
-    await sendRejectionEmail(email,
-      'This enrollment form has already been submitted. Each enrollment allows only one submission. If you made a mistake, please contact us on WhatsApp.'
-    );
     return;
   }
 
@@ -742,8 +731,12 @@ async function processComboOmrSubmission(fields) {
      already marked used above, so this is the only remaining chance to
      reach them without asking them to resubmit the form. */
   try {
-    const rollNumberDegree  = generateOmrRollNumber(true);
-    const rollNumberDiploma = generateOmrRollNumber(false);
+    // roll_number is assigned at purchase time (onEnrollmentPaid) as
+    // "DEG_NUM|DIP_NUM" for combo programs - split it back out here, with a
+    // fallback for enrollments that predate that change.
+    const [existingDegree, existingDiploma] = (enrollment.roll_number || '').split('|');
+    const rollNumberDegree  = existingDegree  || generateOmrRollNumber(true);
+    const rollNumberDiploma = existingDiploma || generateOmrRollNumber(false);
     const photoBuffer = photoUrl ? await fetchImageBuffer(photoUrl) : null;
 
     const pdfBuffer = await generateComboAdmitCard({
@@ -758,24 +751,22 @@ async function processComboOmrSubmission(fields) {
       mode:        'home',
     });
 
+    // Admit card is no longer emailed - persisted to R2 and held pending
+    // admin review instead, independent of the welcome/how-it-works email.
+    await persistPendingAdmitCard(enrollment.id, pdfBuffer);
+    await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2 AND roll_number IS NULL', [`${rollNumberDegree}|${rollNumberDiploma}`, enrollment.id]);
+
     const { error } = await resendSend({
       from:    FROM,
       to:      email,
       subject: `Identity Verified - You're enrolled in ${seriesName}`,
       html:    htmlBody,
-      attachments: [
-        {
-          filename:    `AdmitCard_Combo_${rollNumberDegree}_${rollNumberDiploma}.pdf`,
-          content:     pdfBuffer.toString('base64'),
-          contentType: 'application/pdf',
-        },
-      ],
     }, PRIORITY.ACTION_REQUIRED);
 
     if (error) {
       console.error('[tally-combo-omr] Resend error:', error);
     } else {
-      console.log(`[tally-combo-omr] Confirmation + Admit Card sent to ${email} | Degree Roll: ${rollNumberDegree} | Diploma Roll: ${rollNumberDiploma}`);
+      console.log(`[tally-combo-omr] Confirmation email sent, admit card pending review | ${email} | Degree Roll: ${rollNumberDegree} | Diploma Roll: ${rollNumberDiploma}`);
     }
   } catch (err) {
     console.error('[tally-combo-omr] Failed to generate/send Admit Card - sending fallback confirmation without PDF. Enrollment:', enrollment.id, err);

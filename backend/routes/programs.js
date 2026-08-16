@@ -443,6 +443,97 @@ router.get('/schedule/:id/uploads/download-all', protect, async (req, res, next)
   }
 });
 
+/* ── Manual per-test results (2026-08-16) - replaces the fully-manual
+   WhatsApp-only ranking process. Admin enters marks/correct/wrong/blank
+   per learner (identified by roll number, the admin's natural
+   reference point), a test at a time. published_at gates learner
+   visibility - draft until explicitly published. ── */
+
+/* ADMIN: list results for a test (for the admin UI's current-state view) */
+router.get('/schedule/:id/results', protect, async (req, res, next) => {
+  try {
+    const result = await query(
+      `SELECT tr.id, tr.roll_number, tr.total_marks, tr.correct_count, tr.wrong_count, tr.blank_count,
+              tr.rank_position, tr.question_breakdown, tr.published_at, tr.entered_by,
+              e.student_name
+       FROM test_results tr
+       JOIN enrollments e ON e.id = tr.enrollment_id
+       WHERE tr.schedule_id = $1
+       ORDER BY tr.rank_position ASC NULLS LAST, tr.total_marks DESC NULLS LAST`,
+      [req.params.id]
+    );
+    res.json({ results: result.rows });
+  } catch (err) { next(err); }
+});
+
+/* ADMIN: bulk upsert results for a test, keyed by roll_number - mirrors
+   POST /:slug/schedule/bulk's "SELECT existing -> UPDATE or INSERT"
+   pattern (not a DB-level ON CONFLICT) for the same reason: tolerates
+   rows that don't cleanly resolve without failing the whole batch. */
+router.post('/schedule/:id/results/bulk', protect, async (req, res, next) => {
+  try {
+    const rows = Array.isArray(req.body.rows) ? req.body.rows : [];
+    if (!rows.length) return res.status(400).json({ error: 'rows array is required.' });
+    const publish = !!req.body.publish;
+    const scheduleId = req.params.id;
+
+    const skipped = [];
+    let saved = 0;
+    for (const row of rows) {
+      const rollNumber = (row.roll_number || '').trim();
+      if (!rollNumber) continue;
+      const enrResult = await query(`SELECT id FROM enrollments WHERE roll_number = $1`, [rollNumber]);
+      if (!enrResult.rows.length) { skipped.push(rollNumber); continue; }
+      const enrollmentId = enrResult.rows[0].id;
+
+      const values = [
+        row.total_marks != null && row.total_marks !== '' ? Number(row.total_marks) : null,
+        row.correct_count != null && row.correct_count !== '' ? parseInt(row.correct_count, 10) : null,
+        row.wrong_count != null && row.wrong_count !== '' ? parseInt(row.wrong_count, 10) : null,
+        row.blank_count != null && row.blank_count !== '' ? parseInt(row.blank_count, 10) : null,
+        row.rank_position != null && row.rank_position !== '' ? parseInt(row.rank_position, 10) : null,
+      ];
+
+      const existing = await query(
+        `SELECT id FROM test_results WHERE schedule_id = $1 AND enrollment_id = $2`,
+        [scheduleId, enrollmentId]
+      );
+      if (existing.rows.length) {
+        await query(
+          `UPDATE test_results SET roll_number = $1, total_marks = $2, correct_count = $3, wrong_count = $4, blank_count = $5,
+                  rank_position = $6, entered_by = $7, updated_at = NOW()
+                  ${publish ? ', published_at = NOW()' : ''}
+           WHERE id = $8`,
+          [rollNumber, ...values, req.admin.email, existing.rows[0].id]
+        );
+      } else {
+        await query(
+          `INSERT INTO test_results (schedule_id, enrollment_id, roll_number, total_marks, correct_count, wrong_count, blank_count, rank_position, entered_by, published_at)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,${publish ? 'NOW()' : 'NULL'})`,
+          [scheduleId, enrollmentId, rollNumber, ...values, req.admin.email]
+        );
+      }
+      saved++;
+    }
+
+    res.json({ message: `Saved ${saved} result(s)${skipped.length ? `, ${skipped.length} roll number(s) not found` : ''}.`, skipped });
+  } catch (err) { next(err); }
+});
+
+/* ADMIN: publish/unpublish a single result row without touching the rest -
+   for a one-off correction after a batch was already published. */
+router.patch('/schedule/results/:resultId/publish', protect, async (req, res, next) => {
+  try {
+    const publish = !!req.body.publish;
+    const result = await query(
+      `UPDATE test_results SET published_at = ${publish ? 'NOW()' : 'NULL'} WHERE id = $1 RETURNING id`,
+      [req.params.resultId]
+    );
+    if (!result.rows.length) return res.status(404).json({ error: 'Result not found.' });
+    res.json({ ok: true });
+  } catch (err) { next(err); }
+});
+
 /* ADMIN: delete a single row (for touch-ups without re-uploading everything) */
 router.delete('/:slug/schedule/:id', protect, async (req, res, next) => {
   try {

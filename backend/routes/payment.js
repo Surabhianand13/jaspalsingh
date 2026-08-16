@@ -13,6 +13,8 @@ const { protect } = require('../middleware/auth');
 const { protectLearner, optionalLearner } = require('../middleware/learnerAuth');
 const { isObviousTestSubmission } = require('../utils/spamFilter');
 const { verifyTurnstile } = require('../utils/turnstile');
+const { generateRollNumber } = require('../utils/rollNumber');
+const { resolveRollNumberPrefix } = require('../utils/rollNumberPrefix');
 
 const REFERRAL_DISCOUNT = 100;
 const REFERRAL_MIN_PRICE = 1599; // referral codes only apply to programs priced at or above this
@@ -108,11 +110,41 @@ async function cancelDuplicatePendingEnrollments(enrollment) {
   }
 }
 
+/* ── Assign an admit-card roll number the instant payment completes,
+   instead of waiting for the learner's Tally form submission (the old
+   per-program generators needed the learner's chosen centre, which
+   isn't known yet at this point - resolveRollNumberPrefix derives a
+   centre-free prefix from program_slug alone). No-ops if already set,
+   and the final UPDATE is guarded by `roll_number IS NULL` so a race
+   between the webhook and the /verify self-heal path can't double-
+   assign - at most one generated candidate wins, the other is simply
+   discarded (harmless, it was never persisted). ── */
+async function assignRollNumber(enrollment) {
+  if (enrollment.roll_number) return;
+  try {
+    const prefix = await resolveRollNumberPrefix(enrollment.program_slug);
+    let rollNumber;
+    if (typeof prefix === 'object' && prefix !== null) {
+      const [degree, diploma] = await Promise.all([
+        generateRollNumber(prefix.degree),
+        generateRollNumber(prefix.diploma),
+      ]);
+      rollNumber = `${degree}|${diploma}`;
+    } else {
+      rollNumber = await generateRollNumber(prefix);
+    }
+    await query(`UPDATE enrollments SET roll_number = $1 WHERE id = $2 AND roll_number IS NULL`, [rollNumber, enrollment.id]);
+  } catch (err) {
+    console.error('[assignRollNumber]', err.message);
+  }
+}
+
 /* ── Called whenever an enrollment transitions to 'paid' ── */
 async function onEnrollmentPaid(enrollment) {
   await ensureReferralCode(enrollment);
   await recordReferralCredit(enrollment);
   await cancelDuplicatePendingEnrollments(enrollment);
+  await assignRollNumber(enrollment);
 }
 
 /* ── Coupon catalogue ────────────────────────────────────────
