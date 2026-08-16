@@ -21,20 +21,7 @@ const { send: resendSend, PRIORITY } = require('../services/resendQueue');
 
 const FROM = 'Dr. Jaspal Singh <team@jaspalsingh.in>';
 
-/* Roll number format: <PREFIX>-<5 random digits>, unique against enrollments.
-   Prefix comes from the program's launch_config (admin-set), unlike the
-   bespoke routes which derive DEG/DIP from a hardcoded exam-name check. */
-async function generateGenericRollNumber(prefix) {
-  const clean = (prefix || 'GEN').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6) || 'GEN';
-  let roll;
-  for (let i = 0; i < 10; i++) {
-    const num = Math.floor(10000 + Math.random() * 90000);
-    roll = `${clean}-${num}`;
-    const exists = await query('SELECT 1 FROM enrollments WHERE roll_number = $1', [roll]);
-    if (!exists.rows.length) return roll;
-  }
-  return roll;
-}
+const { generateRollNumber } = require('../utils/rollNumber');
 
 /* Hybrid-launched offline programs are almost always a single batch in a
    single city, so launch_config.centre is one object, not a map - the
@@ -107,7 +94,7 @@ async function processGenericSubmission(fields, program) {
     // backfill run before this learner got to the form) instead of
     // generating a fresh one - otherwise the number shown in their profile
     // before submission would silently change once they submit.
-    const rollNumber  = enrollment.roll_number || await generateGenericRollNumber(launchConfig.rollPrefix);
+    const rollNumber  = enrollment.roll_number || await generateRollNumber(launchConfig.rollPrefix);
     const photoBuffer = photoUrl ? await fetchImageBuffer(photoUrl) : null;
 
     const pdfBuffer = await generateAdmitCard({

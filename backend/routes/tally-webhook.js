@@ -734,11 +734,11 @@ async function processSubmission(fields, programType) {
   // don't have the hidden token field configured in Tally.
   const lookupResult = token
     ? await query(
-        `SELECT id, student_email, student_phone, form_used, form_token FROM enrollments WHERE form_token = $1`,
+        `SELECT id, student_email, student_phone, form_used, form_token, roll_number FROM enrollments WHERE form_token = $1`,
         [token]
       )
     : await query(
-        `SELECT id, student_email, student_phone, form_used, form_token FROM enrollments WHERE order_id = $1 AND status = 'paid'`,
+        `SELECT id, student_email, student_phone, form_used, form_token, roll_number FROM enrollments WHERE order_id = $1 AND status = 'paid'`,
         [orderId]
       );
 
@@ -817,7 +817,10 @@ async function processSubmission(fields, programType) {
   const lastTestDate = isDegreeCourse ? '10 January 2027 (Test-28)' : '29 November 2026 (Test-22)';
 
   try {
-    const rollNumber   = await generateRollNumber(centreKey || centreRaw, targetExam || '');
+    // Roll number is assigned the instant payment completes (onEnrollmentPaid
+    // in routes/payment.js) - this only regenerates as a fallback for
+    // enrollments that predate that change and slipped through the backfill.
+    const rollNumber   = enrollment.roll_number || await generateRollNumber(centreKey || centreRaw, targetExam || '');
     const photoBuffer  = photoUrl ? await fetchImageBuffer(photoUrl) : null;
 
     const pdfBuffer = await generateAdmitCard({
@@ -1161,7 +1164,7 @@ async function processComboSubmission(fields) {
   }
 
   const lookupResult = await query(
-    `SELECT id, student_email, student_phone, form_used, form_token FROM enrollments WHERE form_token = $1`,
+    `SELECT id, student_email, student_phone, form_used, form_token, roll_number FROM enrollments WHERE form_token = $1`,
     [token]
   );
 
@@ -1225,8 +1228,12 @@ async function processComboSubmission(fields) {
   const centreInfo = CENTRES[centreKey] || { name: centreRaw || 'TBD', address: 'TBD', mapsLink: '#' };
 
   try {
-    const rollNumberDegree  = await generateRollNumber(centreKey || centreRaw, 'degree');
-    const rollNumberDiploma = await generateRollNumber(centreKey || centreRaw, 'diploma');
+    // roll_number is assigned at purchase time (onEnrollmentPaid) as
+    // "DEG_NUM|DIP_NUM" for combo programs - split it back out here, with a
+    // fallback for enrollments that predate that change.
+    const [existingDegree, existingDiploma] = (enrollment.roll_number || '').split('|');
+    const rollNumberDegree  = existingDegree  || await generateRollNumber(centreKey || centreRaw, 'degree');
+    const rollNumberDiploma = existingDiploma || await generateRollNumber(centreKey || centreRaw, 'diploma');
     const photoBuffer = photoUrl ? await fetchImageBuffer(photoUrl) : null;
 
     const pdfBuffer = await generateComboAdmitCard({

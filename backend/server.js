@@ -254,6 +254,8 @@ process.on('uncaughtException', (err) => {
 /* ── Run DB migrations then start server ─────────────────── */
 
 const { query } = require('./config/db');
+const { generateRollNumber } = require('./utils/rollNumber');
+const { resolveRollNumberPrefix } = require('./utils/rollNumberPrefix');
 const PORT = process.env.PORT || 5000;
 
 async function migrate() {
@@ -1167,7 +1169,7 @@ async function migrate() {
      a number assigned here stays stable even after the learner later
      fills the form. Runs on every boot but only touches rows still
      missing one, so it's a no-op once everyone has caught up. Format
-     matches generateGenericRollNumber() in routes/tally-generic.js;
+     matches the shared generateRollNumber() in utils/rollNumber.js;
      the DB's partial unique index on roll_number (see ALTER TABLE
      above) is the actual overlap guarantee. ── */
   const rollBackfillRows = await query(
@@ -1184,6 +1186,57 @@ async function migrate() {
     }
     if (!rollNumber) continue;
     await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2 AND roll_number IS NULL', [rollNumber, row.id]);
+  }
+
+  /* ── General roll-number backfill, all programs (2026-08-16): roll
+     numbers are now assigned instantly at purchase (onEnrollmentPaid in
+     routes/payment.js), for every program, not just UP Polytechnic - the
+     block above is now a harmless subset of this one and left in place
+     rather than removed. This covers every already-paid enrollment that
+     predates that change, across RSSB/ESE/generic alike.
+
+     KNOWN_ROLL_NUMBERS lets the site owner supply the *real* already-
+     issued number for specific enrollments the system itself could never
+     recover - most notably the RSSB home-based OMR flow, which used to
+     generate and email a roll number without ever saving it (fixed in
+     routes/tally-omr-shared.js, but that fix can't retroactively recall
+     what a past email already said). Keyed by order_id so it survives
+     even if a row's other identifying fields change. Anything not listed
+     here gets a fresh auto-generated number - which is fine for RSSB
+     offline/ESE/generic enrollments, since those flows' roll numbers were
+     always persisted, so any that are still NULL genuinely never had one
+     issued at all. ── */
+  const KNOWN_ROLL_NUMBERS = {
+    // 'order_xxxxxxxxxxxx': 'OMR-DEG-12345',
+  };
+  for (const [orderId, knownRoll] of Object.entries(KNOWN_ROLL_NUMBERS)) {
+    await query(
+      `UPDATE enrollments SET roll_number = $1 WHERE order_id = $2 AND roll_number IS NULL`,
+      [knownRoll, orderId]
+    );
+  }
+
+  const generalRollBackfillRows = await query(
+    `SELECT id, program_slug FROM enrollments
+     WHERE status = 'paid' AND refund_status != 'initiated' AND roll_number IS NULL`
+  );
+  for (const row of generalRollBackfillRows.rows) {
+    try {
+      const prefix = await resolveRollNumberPrefix(row.program_slug);
+      let rollNumber;
+      if (typeof prefix === 'object' && prefix !== null) {
+        const [degree, diploma] = await Promise.all([
+          generateRollNumber(prefix.degree),
+          generateRollNumber(prefix.diploma),
+        ]);
+        rollNumber = `${degree}|${diploma}`;
+      } else {
+        rollNumber = await generateRollNumber(prefix);
+      }
+      await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2 AND roll_number IS NULL', [rollNumber, row.id]);
+    } catch (err) {
+      console.error(`[migrate] roll-number backfill failed for enrollment ${row.id}:`, err.message);
+    }
   }
 
   /* ── Independence Day Freedom Sale (2026-08-15 only): FREEDOM15 gives a

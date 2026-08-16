@@ -97,6 +97,7 @@ const ESE_PROGRAMS = {
   },
   combined: {
     slug:       'ese-2027-prelims-jaspalsirki-testseries-combined',
+    examCode:   'CMB',
     seriesName: 'ESE 2027 Prelims - Paper 1 + 2 (GS, Eng. Aptitude & Civil) - Offline Test Series',
   },
   paper1Omr: {
@@ -115,6 +116,7 @@ const ESE_PROGRAMS = {
   },
   combinedOmr: {
     slug:       'ese-2027-prelims-jaspalsirki-testseries-combined-omr',
+    examCode:   'CMB',
     seriesName: 'ESE 2027 Prelims - Paper 1 + 2 (GS, Eng. Aptitude & Civil) - Home-Based OMR Test Series',
   },
 };

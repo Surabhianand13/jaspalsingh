@@ -299,7 +299,7 @@ async function claimEnrollment({ email, phone, token, slug, tag }) {
   }
 
   const lookupResult = await query(
-    `SELECT id, student_email, student_phone, form_used, form_token FROM enrollments WHERE form_token = $1 AND program_slug = $2`,
+    `SELECT id, student_email, student_phone, form_used, form_token, roll_number FROM enrollments WHERE form_token = $1 AND program_slug = $2`,
     [token, slug]
   );
 
@@ -379,7 +379,9 @@ async function processEseSubmission(fields, programKey) {
     : (ESE_CENTRES[centreKey] || { name: centreRaw || 'TBD', address: 'TBD', mapsLink: '#' });
 
   try {
-    const rollNumber  = await generateEseRollNumber(isOmr ? 'ESE' : (centreKey || centreRaw), cfg.examCode);
+    // Roll number is assigned at purchase time (onEnrollmentPaid) - this only
+    // regenerates as a fallback for enrollments that predate that change.
+    const rollNumber  = enrollment.roll_number || await generateEseRollNumber(isOmr ? 'ESE' : (centreKey || centreRaw), cfg.examCode);
     const photoBuffer = photoUrl ? await fetchImageBuffer(photoUrl) : null;
 
     const pdfBuffer = await generateAdmitCard({
@@ -445,7 +447,9 @@ async function processEseCombinedSubmission(fields, programKey) {
     : (ESE_CENTRES[centreKey] || { name: centreRaw || 'TBD', address: 'TBD', mapsLink: '#' });
 
   try {
-    const rollNumber  = await generateEseRollNumber(isOmr ? 'ESE' : (centreKey || centreRaw), 'CMB');
+    // Roll number is assigned at purchase time (onEnrollmentPaid) - this only
+    // regenerates as a fallback for enrollments that predate that change.
+    const rollNumber  = enrollment.roll_number || await generateEseRollNumber(isOmr ? 'ESE' : (centreKey || centreRaw), 'CMB');
     const photoBuffer = photoUrl ? await fetchImageBuffer(photoUrl) : null;
 
     const pdfBuffer = await generateAdmitCard({

@@ -352,7 +352,7 @@ async function processOmrSubmission(fields, type) {
 
   /* Look up token in enrollments, scoped to OMR program slugs */
   const enrResult = await query(
-    `SELECT id, student_email, student_phone, form_used, form_token, program_slug
+    `SELECT id, student_email, student_phone, form_used, form_token, program_slug, roll_number
      FROM enrollments
      WHERE form_token = $1 AND program_slug LIKE '%omr%'`,
     [token]
@@ -425,7 +425,12 @@ async function processOmrSubmission(fields, type) {
      reach them without asking them to resubmit the form. */
   try {
 
-  const rollNumber  = generateOmrRollNumber(isDegreeCourse);
+  // Roll number is normally already assigned at purchase time (onEnrollmentPaid
+  // in routes/payment.js) - this only generates fresh as a fallback for
+  // enrollments that predate that change. Previously this always generated a
+  // new number here and never saved it, so the learner's profile could never
+  // show it - persisted below once the email send succeeds.
+  const rollNumber  = enrollment.roll_number || generateOmrRollNumber(isDegreeCourse);
   const photoBuffer = photoUrl ? await fetchImageBuffer(photoUrl) : null;
   const lastTestDate = getOmrLastTestDate(isDegreeCourse);
 
@@ -463,6 +468,7 @@ async function processOmrSubmission(fields, type) {
     console.error('[tally-omr] Resend error:', error);
   } else {
     console.log(`[tally-omr] Confirmation email + Admit Card sent to ${email} | type: ${type} | Roll: ${rollNumber}`);
+    await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2 AND roll_number IS NULL', [rollNumber, enrollment.id]);
   }
 
   } catch (err) {
@@ -520,7 +526,7 @@ async function processComboOmrSubmission(fields) {
   }
 
   const enrResult = await query(
-    `SELECT id, student_email, student_phone, form_used, form_token, program_slug
+    `SELECT id, student_email, student_phone, form_used, form_token, program_slug, roll_number
      FROM enrollments
      WHERE form_token = $1 AND program_slug LIKE '%omr%'`,
     [token]
@@ -742,8 +748,12 @@ async function processComboOmrSubmission(fields) {
      already marked used above, so this is the only remaining chance to
      reach them without asking them to resubmit the form. */
   try {
-    const rollNumberDegree  = generateOmrRollNumber(true);
-    const rollNumberDiploma = generateOmrRollNumber(false);
+    // roll_number is assigned at purchase time (onEnrollmentPaid) as
+    // "DEG_NUM|DIP_NUM" for combo programs - split it back out here, with a
+    // fallback for enrollments that predate that change.
+    const [existingDegree, existingDiploma] = (enrollment.roll_number || '').split('|');
+    const rollNumberDegree  = existingDegree  || generateOmrRollNumber(true);
+    const rollNumberDiploma = existingDiploma || generateOmrRollNumber(false);
     const photoBuffer = photoUrl ? await fetchImageBuffer(photoUrl) : null;
 
     const pdfBuffer = await generateComboAdmitCard({
@@ -776,6 +786,7 @@ async function processComboOmrSubmission(fields) {
       console.error('[tally-combo-omr] Resend error:', error);
     } else {
       console.log(`[tally-combo-omr] Confirmation + Admit Card sent to ${email} | Degree Roll: ${rollNumberDegree} | Diploma Roll: ${rollNumberDiploma}`);
+      await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2 AND roll_number IS NULL', [`${rollNumberDegree}|${rollNumberDiploma}`, enrollment.id]);
     }
   } catch (err) {
     console.error('[tally-combo-omr] Failed to generate/send Admit Card - sending fallback confirmation without PDF. Enrollment:', enrollment.id, err);
