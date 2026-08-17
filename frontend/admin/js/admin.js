@@ -249,6 +249,7 @@
       case 'paidlearners': loadPaidLearners(); break;
       case 'referralpayouts': loadReferralPayouts(); loadReferralCodesAdmin(); break;
       case 'admitcards':   loadAdmitCardApprovals(); break;
+      case 'batchmaterials': loadBatchMaterials(); break;
       case 'programleads': loadProgramLeads(); break;
       case 'banners':      loadBanners();      break;
       case 'analytics':    loadBizAnalytics(); break;
@@ -3006,6 +3007,60 @@
     }).catch(function(err){ body.innerHTML = '<p class="admin-empty">'+e(err.message)+'</p>'; });
   }
 
+  /* ── शौर्य BATCH MATERIALS (DPPs / formula sheets, shared by track
+     across all 6 course options) ── */
+  var BM_TRACK_LABEL = { 'technical-degree': 'Technical - Degree', 'technical-diploma': 'Technical - Diploma', 'non-technical': 'Non-Technical' };
+  function loadBatchMaterials(){
+    var body = document.getElementById('batchMaterialsBody');
+    if (!body) return;
+    body.innerHTML = '<p class="admin-empty">Loading...</p>';
+    adminFetch('GET', '/api/programs/batch-materials').then(function(d){
+      var materials = d.materials || [];
+      if (!materials.length){ body.innerHTML = '<p class="admin-empty">No materials yet - add one above.</p>'; return; }
+      var rows = materials.map(function(m){
+        var viewLink = m.file_url
+          ? '<a href="'+e(m.file_url)+'" target="_blank" rel="noopener" title="Open the uploaded file" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:20px;background:#f4f4f7;color:#444;"><i class="fas fa-eye" style="font-size:11px;"></i></a>'
+          : '';
+        return '<tr>' +
+          '<td>'+e(BM_TRACK_LABEL[m.track] || m.track)+'</td>' +
+          '<td>'+e(m.kind === 'formula' ? 'Formula Sheet' : 'DPP')+'</td>' +
+          '<td>'+e(m.subject||'-')+'</td>' +
+          '<td>'+e(m.title)+'</td>' +
+          '<td>'+(m.file_url ? '<span style="color:#15803d;font-weight:700;">&#10003; Uploaded</span>' : '<span style="color:#c7c7d6;">Not uploaded</span>')+' '+viewLink+'</td>' +
+          '<td>' + pillBtn('data-bm-upload="'+m.id+'"', m.file_url ? 'Replace' : 'Upload', 'outline') + ' ' + pillBtn('data-bm-del="'+m.id+'"', 'Delete', 'danger') + '</td>' +
+        '</tr>';
+      }).join('');
+      body.innerHTML = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr>' +
+        '<th>Track</th><th>Kind</th><th>Subject</th><th>Title</th><th>File</th><th></th>' +
+        '</tr></thead><tbody>'+rows+'</tbody></table></div>';
+
+      body.querySelectorAll('[data-bm-upload]').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          var id = btn.getAttribute('data-bm-upload');
+          var input = document.createElement('input');
+          input.type = 'file'; input.accept = 'application/pdf';
+          input.onchange = function(){
+            if (!input.files[0]) return;
+            var fd = new FormData(); fd.append('file', input.files[0]);
+            showToast('Uploading…', 'success');
+            adminFetch('POST', '/api/programs/batch-materials/'+id+'/upload', fd)
+              .then(function(){ showToast('Uploaded', 'success'); loadBatchMaterials(); })
+              .catch(function(err){ showToast(err.message, 'error'); });
+          };
+          input.click();
+        });
+      });
+      body.querySelectorAll('[data-bm-del]').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          if (!confirm('Delete this material?')) return;
+          adminFetch('DELETE', '/api/programs/batch-materials/'+btn.getAttribute('data-bm-del'))
+            .then(function(){ showToast('Deleted', 'success'); loadBatchMaterials(); })
+            .catch(function(err){ showToast(err.message, 'error'); });
+        });
+      });
+    }).catch(function(err){ body.innerHTML = '<p class="admin-empty">'+e(err.message)+'</p>'; });
+  }
+
   /* ── REFERRAL CODES (all paid learners, manual email trigger) ── */
   function loadReferralCodesAdmin(){
     var body = document.getElementById('referralCodesBody');
@@ -3586,6 +3641,21 @@
     // Status filter triggers client-side filter (no reload needed)
     var rpf=document.getElementById('referralPayoutFilter'); if(rpf) rpf.onchange=loadReferralPayouts;
     var acf=document.getElementById('admitCardFilter'); if(acf) acf.onchange=loadAdmitCardApprovals;
+    var bmAddBtn=document.getElementById('bm_add_btn'); if(bmAddBtn) bmAddBtn.onclick=function(){
+      var title = document.getElementById('bm_add_title').value.trim();
+      if (!title) { showToast('Title is required', 'error'); return; }
+      adminFetch('POST', '/api/programs/batch-materials', {
+        track: document.getElementById('bm_add_track').value,
+        kind: document.getElementById('bm_add_kind').value,
+        subject: document.getElementById('bm_add_subject').value.trim(),
+        title: title,
+      }).then(function(){
+        showToast('Added - now upload the PDF', 'success');
+        document.getElementById('bm_add_subject').value = '';
+        document.getElementById('bm_add_title').value = '';
+        loadBatchMaterials();
+      }).catch(function(err){ showToast(err.message, 'error'); });
+    };
     var bbf=document.getElementById('btnBackfillReferralCodes'); if(bbf) bbf.onclick=function(){
       bbf.disabled = true; bbf.textContent = 'Generating...';
       adminFetch('POST', '/api/payment/admin/backfill-referral-codes').then(function(d){

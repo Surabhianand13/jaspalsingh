@@ -162,6 +162,40 @@ router.get('/:program_slug', protectLearner, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/* ── GET /api/schedule/:program_slug/materials ───────────────
+   शौर्य Batch DPPs / formula sheets - no recorded content is provided for
+   the offline classroom program, so subject PDFs are the only self-study
+   support between classes. Scoped to whichever content track(s) the
+   learner's specific purchase includes (programs.launch_config.batch.
+   materialTracks) - a Non-Technical-only buyer never sees Technical PDFs
+   meant for a different option. Empty array (not an error) for any
+   program that isn't a शौर्य Batch option, so the frontend can call this
+   unconditionally and just hide the tab when it comes back empty. ── */
+router.get('/:program_slug/materials', protectLearner, async (req, res, next) => {
+  try {
+    const learner = await loadLearner(req.learner.id);
+    if (!learner) return res.status(401).json({ error: 'Learner not found.' });
+
+    const enrollment = await getActiveEnrollment(learner.id, learner.email, learner.phone, req.params.program_slug);
+    if (!enrollment) {
+      return res.status(403).json({ error: 'No active enrollment for this program. If you were refunded, this program is no longer accessible.' });
+    }
+
+    const progRes = await query(`SELECT launch_config FROM programs WHERE slug = $1`, [req.params.program_slug]);
+    const lc = progRes.rows[0] && progRes.rows[0].launch_config;
+    const tracks = (lc && lc.batch && lc.batch.materialTracks) || [];
+    if (!tracks.length) return res.json({ materials: [] });
+
+    const result = await query(
+      `SELECT id, track, kind, subject, title, file_url FROM batch_materials
+       WHERE track = ANY($1::text[]) AND file_url IS NOT NULL
+       ORDER BY track ASC, sort_order ASC, id ASC`,
+      [tracks]
+    );
+    res.json({ materials: result.rows });
+  } catch (err) { next(err); }
+});
+
 /* ── POST /api/schedule/:program_slug/tests/:scheduleId/submit-omr ──
    Self-serve answer-sheet upload, replacing "fill it, email it, admin
    downloads it". Re-validates enrollment AND the upload window
