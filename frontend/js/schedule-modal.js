@@ -39,7 +39,11 @@
     return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
-  var scheduleState = { slug: null, name: null, tests: [], categories: [], category: null };
+  var scheduleState = { slug: null, name: null, tests: [], categories: [], category: null, materials: [] };
+
+  /* शौर्य Batch subject-track labels for the Study Materials list - matches
+     backend/routes/programs.js's BM_TRACK_LABEL. */
+  var TRACK_LABEL = { 'technical-degree': 'Technical - Degree', 'technical-diploma': 'Technical - Diploma', 'non-technical': 'Non-Technical' };
 
   /* Combo programs (RSSB Degree/Diploma, ESE Civil/General Studies) bundle
      two tracks under one program_slug - matches backend/routes/learner-
@@ -74,10 +78,19 @@
 
   function openScheduleModal(slug, name) {
     ensureScheduleModal();
-    scheduleState.slug = slug; scheduleState.name = name; scheduleState.category = null;
+    scheduleState.slug = slug; scheduleState.name = name; scheduleState.category = null; scheduleState.materials = [];
     document.getElementById('scheduleModalHeading').textContent = name;
     document.getElementById('scheduleModalOverlay').style.display = 'flex';
     loadScheduleForCategory(null);
+    // Fetched separately (empty array for every non-शौर्य-Batch program) so
+    // it never blocks or breaks the existing test-schedule flow while
+    // waiting on it - the "Study Materials" button just doesn't appear
+    // until this resolves for programs that have any.
+    authFetch('/api/schedule/' + encodeURIComponent(slug) + '/materials').then(function (data) {
+      scheduleState.materials = data.materials || [];
+      var btn = document.getElementById('scheduleMaterialsBtn');
+      if (btn && scheduleState.materials.length) btn.style.display = 'inline-block';
+    }).catch(function () { /* silently no-op - materials are additive, not required */ });
   }
 
   function loadScheduleForCategory(category) {
@@ -111,13 +124,49 @@
     });
   }
 
+  function materialsButtonHtml() {
+    return '<button id="scheduleMaterialsBtn" style="display:' + (scheduleState.materials.length ? 'inline-block' : 'none') + ';background:#4338CA;color:#fff;border:none;border-radius:20px;padding:8px 18px;font-size:12.5px;font-weight:700;cursor:pointer;margin-bottom:14px;">' +
+      '<i class="fas fa-book-open"></i> Study Materials (DPPs &amp; Formula Sheets)' +
+    '</button>';
+  }
+  function wireMaterialsButton() {
+    var btn = document.getElementById('scheduleMaterialsBtn');
+    if (btn) btn.addEventListener('click', renderMaterialsList);
+  }
+
+  function renderMaterialsList() {
+    var bodyEl = document.getElementById('scheduleModalBody');
+    var byTrack = {};
+    scheduleState.materials.forEach(function (m) {
+      (byTrack[m.track] = byTrack[m.track] || []).push(m);
+    });
+    var sections = Object.keys(byTrack).map(function (track) {
+      var items = byTrack[track].map(function (m) {
+        return '<div style="display:flex;align-items:center;justify-content:space-between;border:1px solid #eee;border-radius:10px;padding:12px 16px;margin-bottom:8px;">' +
+          '<div>' +
+            '<div style="font-weight:700;color:#1A1A2E;font-size:13.5px;">' + esc(m.title) + '</div>' +
+            '<div style="font-size:11.5px;color:#9999b0;">' + esc(m.kind === 'formula' ? 'Formula Sheet' : 'DPP') + (m.subject ? ' &middot; ' + esc(m.subject) : '') + '</div>' +
+          '</div>' +
+          '<a href="' + esc(m.file_url) + '" target="_blank" rel="noopener" style="background:#0F766E;color:#fff;border-radius:20px;padding:7px 16px;font-size:12px;font-weight:700;text-decoration:none;"><i class="fas fa-download"></i> Open</a>' +
+        '</div>';
+      }).join('');
+      return '<div style="margin-bottom:18px;"><div style="font-weight:800;color:#4338CA;font-size:12.5px;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;">' + esc(TRACK_LABEL[track] || track) + '</div>' + items + '</div>';
+    }).join('');
+
+    bodyEl.innerHTML = '<button id="scheduleBackBtn" style="background:none;border:none;color:#0F766E;font-weight:700;cursor:pointer;margin-bottom:14px;">&larr; Back to schedule</button>' +
+      (sections || '<p class="profile-empty">No study materials uploaded yet - check back soon.</p>');
+    document.getElementById('scheduleBackBtn').addEventListener('click', function () {
+      scheduleState.categories.length && !scheduleState.category ? renderTrackPicker() : renderScheduleList();
+    });
+  }
+
   function renderScheduleList() {
     var bodyEl = document.getElementById('scheduleModalBody');
     var tests = scheduleState.tests;
     var trackSwitcher = scheduleState.categories.length
       ? '<button id="scheduleTrackSwitch" style="background:none;border:none;color:#0F766E;font-weight:700;cursor:pointer;margin-bottom:10px;font-size:12.5px;">' + esc(categoryLabel(scheduleState.category)) + ' &middot; change track</button>'
       : '';
-    bodyEl.innerHTML = trackSwitcher + (!tests.length
+    bodyEl.innerHTML = trackSwitcher + '<div>' + materialsButtonHtml() + '</div>' + (!tests.length
       ? '<p class="profile-empty">No tests scheduled yet - check back soon.</p>'
       : tests.map(function (t) {
         return '<div style="display:flex;align-items:center;justify-content:space-between;border:1px solid #eee;border-radius:10px;padding:12px 16px;margin-bottom:10px;">' +
@@ -131,6 +180,7 @@
       }).join(''));
     var trackSwitchBtn = document.getElementById('scheduleTrackSwitch');
     if (trackSwitchBtn) trackSwitchBtn.addEventListener('click', function () { loadScheduleForCategory(null); });
+    wireMaterialsButton();
     bodyEl.querySelectorAll('[data-schedule-view]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var test = tests.filter(function (t) { return String(t.id) === btn.getAttribute('data-schedule-view'); })[0];

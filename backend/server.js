@@ -861,6 +861,31 @@ async function migrate() {
   await query(`CREATE UNIQUE INDEX IF NOT EXISTS test_results_schedule_enrollment_uidx ON test_results(schedule_id, enrollment_id)`);
   await query(`CREATE INDEX IF NOT EXISTS idx_test_results_schedule ON test_results(schedule_id)`);
 
+  /* शौर्य Batch DPPs / formula sheets (2026-08-17): no recorded content is
+     provided for the offline classroom program, only subject PDFs to
+     support self-study between classes. Deliberately NOT scoped to a
+     single program_slug - all 6 शौर्य Batch options pull from the same 3
+     shared pools by `track` (technical-degree / technical-diploma /
+     non-technical), since e.g. the Complete Degree and Technical+TS
+     Degree options both unlock the same Technical-Degree materials. The
+     learner-facing endpoint (routes/learner-schedule.js) filters by
+     whichever track(s) programs.launch_config.batch.materialTracks lists
+     for their specific purchase. */
+  await query(`
+    CREATE TABLE IF NOT EXISTS batch_materials (
+      id          SERIAL PRIMARY KEY,
+      track       VARCHAR(30) NOT NULL,
+      kind        VARCHAR(20) NOT NULL DEFAULT 'dpp',
+      subject     VARCHAR(150),
+      title       VARCHAR(300) NOT NULL,
+      file_url    VARCHAR(1000),
+      file_key    VARCHAR(500),
+      sort_order  INTEGER NOT NULL DEFAULT 0,
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+  await query(`CREATE INDEX IF NOT EXISTS idx_batch_materials_track ON batch_materials(track)`);
+
   /* Offline CBT pilot (2026-08-09) - results synced in from air-gapped
      exam machines (see /offline-cbt) once a staff member connects that
      machine to a hotspot and hits Sync. external_id is the id the exam
@@ -1127,6 +1152,177 @@ async function migrate() {
       centre: null,
     })]
   );
+
+  /* ── शौर्य Batch - RSSB JE 2026 (2026-08-17): first offline CLASSROOM
+     program on the platform, not just a test series - 500hrs Technical +
+     100hrs Non-Technical live teaching at the Jaipur centre, taught by
+     Dr. Jaspal Singh, Praveen Sir and Deven Sir, capped at 200 seats.
+     Uses the 'course' category (already defined in CAT_LABEL/CAT_ICON on
+     the frontend, previously unused - rssb-jen-crash-course and
+     gate-ese-foundation were seeded with it as coming_soon placeholders).
+
+     6 separate purchasable options, each its own program row/slug/price
+     so every combination gets its own SEO-indexable URL - see
+     frontend/programs/shaurya-batch-rssb-je-2026/ for the comparison page
+     that lists all 6 side by side.
+
+     5 of 6 options bundle the EXISTING live RSSB Degree/Diploma Test
+     Series product rather than duplicating a schedule - launch_config.
+     batch.bundledTestSeriesSlug tells onEnrollmentPaid (routes/payment.js)
+     to auto-create a linked enrollment in that program at purchase time,
+     which reuses that program's entire existing Tally-form + admit-card-
+     review pipeline untouched. That shared admit card is deliberately
+     also the learner's classroom attendance ID (per the site owner's
+     spec) - no separate ID needed. Only the Non-Technical-only option (4)
+     has no bundled test series, so it gets its own rollPrefix/tallyFormUrl
+     like any other standalone generic-launch program. ── */
+  const shauryaCentre = {
+    name: 'Jaipur',
+    address: '33, White House, Opp. Zone Tech, Tonk Road, Madhuvan Colony, Mansingh Pura, Jaipur, Rajasthan 302015',
+    mapsLink: 'https://maps.app.goo.gl/UiYpXv447AWrfyMX8',
+  };
+  const shauryaEducators = [
+    { name: 'Dr. Jaspal Singh', credentials: 'Ex-IES Officer (AIR-04), PhD, GATE AIR-06, 15+ years teaching experience' },
+    { name: 'Praveen Sir', credentials: '8+ years teaching experience' },
+    { name: 'Deven Sir', credentials: '8+ years teaching experience' },
+  ];
+  const shauryaContentHours = { technical: 500, nonTechnical: 100 };
+  const shauryaSyllabusUrl = '/assets/docs/rssb-je-2026-shaurya-batch-syllabus.pdf';
+  const shauryaLaunches = [
+    {
+      slug: 'rssb-je-2026-shaurya-batch-complete-degree',
+      title: 'RSSB JE 2026 - शौर्य Batch - Complete Course (Degree)',
+      level: 'Complete Course - Degree', price: 19999, mrp: 44999, sort_order: 24,
+      short_name: 'शौर्य Batch - Complete Degree',
+      short_desc: 'Technical + Non-Technical live classroom teaching (600 hrs) at our Jaipur centre, plus the full 28-test RSSB JE Degree Test Series - everything in one batch.',
+      who_for: [
+        'Degree (Civil) candidates who want live classroom teaching, not just self-study test series',
+        'Aspirants in or near Jaipur who can attend offline classes',
+        'Candidates who want Dr. Jaspal Singh, Praveen Sir and Deven Sir teaching Technical + Non-Technical live',
+        'Anyone who wants one single program covering syllabus + practice + testing',
+      ],
+      materialTracks: ['technical-degree', 'non-technical'],
+      bundledTestSeriesSlug: 'rssb-jen-degree-test-series',
+    },
+    {
+      slug: 'rssb-je-2026-shaurya-batch-complete-diploma',
+      title: 'RSSB JE 2026 - शौर्य Batch - Complete Course (Diploma)',
+      level: 'Complete Course - Diploma', price: 17999, mrp: 39999, sort_order: 25,
+      short_name: 'शौर्य Batch - Complete Diploma',
+      short_desc: 'Technical + Non-Technical live classroom teaching (600 hrs) at our Jaipur centre, plus the full 22-test RSSB JE Diploma Test Series - everything in one batch.',
+      who_for: [
+        'Diploma (Civil) candidates who want live classroom teaching, not just self-study test series',
+        'Aspirants in or near Jaipur who can attend offline classes',
+        'Candidates who want Dr. Jaspal Singh, Praveen Sir and Deven Sir teaching Technical + Non-Technical live',
+        'Anyone who wants one single program covering syllabus + practice + testing',
+      ],
+      materialTracks: ['technical-diploma', 'non-technical'],
+      bundledTestSeriesSlug: 'rssb-jen-diploma-test-series',
+    },
+    {
+      slug: 'rssb-je-2026-shaurya-batch-non-technical-test-series',
+      title: 'RSSB JE 2026 - शौर्य Batch - Non-Technical + Test Series',
+      level: 'Non-Technical + Test Series', price: 5999, mrp: 14999, sort_order: 26,
+      short_name: 'शौर्य Batch - Non-Technical + Test Series',
+      short_desc: '100 hrs of live Non-Technical (Rajasthan GK, History, Art & Culture, Political & Administrative System) classroom teaching, plus the RSSB JE Diploma Test Series.',
+      who_for: [
+        'Candidates who are confident in their core Technical subjects but want structured Non-Technical/GK teaching',
+        'Aspirants who want live classes for the shared GK portion plus test practice',
+        'Anyone combining self-study for Technical with classroom support for Non-Technical',
+      ],
+      materialTracks: ['non-technical'],
+      bundledTestSeriesSlug: 'rssb-jen-diploma-test-series',
+    },
+    {
+      slug: 'rssb-je-2026-shaurya-batch-non-technical-only',
+      title: 'RSSB JE 2026 - शौर्य Batch - Non-Technical Course',
+      level: 'Non-Technical Only', price: 4999, mrp: 9999, sort_order: 27,
+      short_name: 'शौर्य Batch - Non-Technical Only',
+      short_desc: '100 hrs of live Non-Technical (Rajasthan GK, History, Art & Culture, Political & Administrative System) classroom teaching at our Jaipur centre.',
+      who_for: [
+        'Candidates who only need structured Non-Technical/GK classroom teaching',
+        'Aspirants already enrolled in a Technical-only track or test series elsewhere',
+        'Anyone who wants live GK teaching without committing to the full batch',
+      ],
+      materialTracks: ['non-technical'],
+      bundledTestSeriesSlug: null,
+    },
+    {
+      slug: 'rssb-je-2026-shaurya-batch-technical-test-series-degree',
+      title: 'RSSB JE 2026 - शौर्य Batch - Technical + Test Series (Degree)',
+      level: 'Technical + Test Series - Degree', price: 14999, mrp: 34999, sort_order: 28,
+      short_name: 'शौर्य Batch - Technical + Test Series (Degree)',
+      short_desc: '500 hrs of live Degree-level Technical classroom teaching at our Jaipur centre, plus the full 28-test RSSB JE Degree Test Series.',
+      who_for: [
+        'Degree (Civil) candidates who want live Technical teaching plus test practice',
+        'Aspirants confident in Non-Technical/GK who want to focus classroom time on core Civil Engineering',
+        'Candidates who want Dr. Jaspal Singh, Praveen Sir and Deven Sir teaching Technical subjects live',
+      ],
+      materialTracks: ['technical-degree'],
+      bundledTestSeriesSlug: 'rssb-jen-degree-test-series',
+    },
+    {
+      slug: 'rssb-je-2026-shaurya-batch-technical-test-series-diploma',
+      title: 'RSSB JE 2026 - शौर्य Batch - Technical + Test Series (Diploma)',
+      level: 'Technical + Test Series - Diploma', price: 12999, mrp: 29999, sort_order: 29,
+      short_name: 'शौर्य Batch - Technical + Test Series (Diploma)',
+      short_desc: '500 hrs of live Diploma-level Technical classroom teaching at our Jaipur centre, plus the full 22-test RSSB JE Diploma Test Series.',
+      who_for: [
+        'Diploma (Civil) candidates who want live Technical teaching plus test practice',
+        'Aspirants confident in Non-Technical/GK who want to focus classroom time on core Civil Engineering',
+        'Candidates who want Dr. Jaspal Singh, Praveen Sir and Deven Sir teaching Technical subjects live',
+      ],
+      materialTracks: ['technical-diploma'],
+      bundledTestSeriesSlug: 'rssb-jen-diploma-test-series',
+    },
+  ];
+  const shauryaFaqs = [
+    { question: 'Where are the classes held?', answer: 'At our offline centre in Jaipur - 33, White House, Opp. Zone Tech, Tonk Road, Madhuvan Colony, Mansingh Pura, Jaipur, Rajasthan 302015. This is currently the only city for शौर्य Batch.' },
+    { question: 'When does the batch start?', answer: 'Tentatively September 2026. Class timings will be announced to enrolled learners in advance.' },
+    { question: 'Is there a seat limit?', answer: 'Yes - शौर्य Batch is capped at 200 seats to keep classroom sizes manageable. Enrollment closes once the batch is full.' },
+    { question: 'Is recorded content provided?', answer: 'No, शौर्य Batch is a live offline classroom program - there are no recorded lectures. Subject-wise DPPs and formula sheets are shared as downloadable PDFs to support your offline preparation.' },
+    { question: 'Do I get an admit card / ID?', answer: 'Yes - the same roll number and admit card used for your Test Series doubles as your classroom attendance ID, so you only need to carry one.' },
+  ];
+  for (const p of shauryaLaunches) {
+    await query(
+      `INSERT INTO programs (slug, title, category, exam, level, status, price, mrp, accent, icon_class, thumbnail_url, short_name, sort_order, omr_enabled, total_tests, omr_categories, tags, short_desc, who_for, faqs, detail_url, is_visible)
+       VALUES ($1,$2,'course','RSSB JE 2026',$3,'enrolling',$4,$5,'orange','fa-chalkboard-teacher',NULL,$6,$7,FALSE,NULL,NULL,$8,$9,$10,$11,$12,TRUE)
+       ON CONFLICT (slug) DO UPDATE SET
+         short_name = COALESCE(programs.short_name, EXCLUDED.short_name),
+         tags       = CASE WHEN programs.tags = '[]'::jsonb OR programs.tags IS NULL THEN EXCLUDED.tags ELSE programs.tags END,
+         short_desc = COALESCE(programs.short_desc, EXCLUDED.short_desc),
+         who_for    = COALESCE(programs.who_for, EXCLUDED.who_for),
+         faqs       = COALESCE(programs.faqs, EXCLUDED.faqs)`,
+      [p.slug, p.title, p.level, p.price, p.mrp, p.short_name, p.sort_order,
+       JSON.stringify(['New']), p.short_desc, JSON.stringify(p.who_for), JSON.stringify(shauryaFaqs),
+       '/programs/' + p.slug + '/']
+    );
+    await query(
+      `UPDATE programs SET launch_config = $1 WHERE slug = $2 AND launch_config IS NULL`,
+      [JSON.stringify({
+        seriesName: p.title,
+        tallyFormUrl: null, // pending - needs a real Tally form, same as every other program launch
+        mode: 'offline',
+        rollPrefix: 'SHAURYA',
+        waGroupUrl: null,
+        lastTestDate: p.bundledTestSeriesSlug
+          ? 'See the bundled Test Series schedule on your profile once enrolled'
+          : 'To be announced - notified via email & WhatsApp',
+        centre: shauryaCentre,
+        batch: {
+          startDate: 'September 2026',
+          timings: 'To be announced',
+          seatCap: 200,
+          educators: shauryaEducators,
+          contentHours: shauryaContentHours,
+          materialTracks: p.materialTracks,
+          bundledTestSeriesSlug: p.bundledTestSeriesSlug,
+          syllabusUrl: shauryaSyllabusUrl,
+        },
+      }), p.slug]
+    );
+  }
+  console.log('✅ Seeded/updated 6 शौर्य Batch - RSSB JE 2026 options');
 
   /* ── RVUNL JE 2026 (Electrical/Mechanical/Civil): real Tally forms wired
      2026-08-10 - single fixed centre (Jaipur) per program, per explicit

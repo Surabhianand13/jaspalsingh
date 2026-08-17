@@ -564,6 +564,75 @@ router.put('/:slug/content', protect, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/* ── ADMIN: शौर्य Batch DPPs / formula sheets - list/create/upload/delete.
+   Registered before the /:slug catch-all below so /batch-materials always
+   resolves here, not as a program lookup for slug="batch-materials".
+   Not scoped to a program - see the batch_materials CREATE TABLE comment
+   in server.js for why these are shared across all 6 शौर्य Batch options
+   by content track instead. ── */
+router.get('/batch-materials', protect, async (req, res, next) => {
+  try {
+    const { track } = req.query;
+    const where = track ? `WHERE track = $1` : '';
+    const result = await query(
+      `SELECT id, track, kind, subject, title, file_url, sort_order FROM batch_materials
+       ${where} ORDER BY track ASC, sort_order ASC, id ASC`,
+      track ? [track] : []
+    );
+    res.json({ materials: result.rows });
+  } catch (err) { next(err); }
+});
+
+router.post('/batch-materials', protect, async (req, res, next) => {
+  try {
+    const { track, kind, subject, title } = req.body;
+    if (!track || !title) return res.status(400).json({ error: 'track and title are required.' });
+    const maxSort = await query(`SELECT COALESCE(MAX(sort_order), -1) AS m FROM batch_materials WHERE track = $1`, [track]);
+    const result = await query(
+      `INSERT INTO batch_materials (track, kind, subject, title, sort_order) VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+      [track, kind || 'dpp', subject || null, title, maxSort.rows[0].m + 1]
+    );
+    res.status(201).json({ material: result.rows[0] });
+  } catch (err) { next(err); }
+});
+
+router.post('/batch-materials/:id/upload', protect, scheduleAssetUpload.single('file'), handleUploadError, async (req, res, next) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
+    const existing = await query(`SELECT file_key FROM batch_materials WHERE id = $1`, [req.params.id]);
+    if (!existing.rows.length) return res.status(404).json({ error: 'Material not found.' });
+
+    const key = `batch-materials/${req.params.id}-${Date.now()}-${req.file.originalname.replace(/\s+/g, '-')}`;
+    await r2.send(new PutObjectCommand({ Bucket: BUCKET, Key: key, Body: req.file.buffer, ContentType: 'application/pdf' }));
+    const publicUrl = `${process.env.R2_PUBLIC_URL}/${key}`;
+
+    const result = await query(
+      `UPDATE batch_materials SET file_url = $1, file_key = $2 WHERE id = $3 RETURNING *`,
+      [publicUrl, key, req.params.id]
+    );
+
+    const oldKey = existing.rows[0].file_key;
+    if (oldKey && oldKey !== key) {
+      try { await r2.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: oldKey })); }
+      catch (err) { console.warn(`⚠️  Could not delete old R2 material "${oldKey}":`, err.message); }
+    }
+
+    res.json({ material: result.rows[0] });
+  } catch (err) { next(err); }
+});
+
+router.delete('/batch-materials/:id', protect, async (req, res, next) => {
+  try {
+    const existing = await query(`DELETE FROM batch_materials WHERE id = $1 RETURNING file_key`, [req.params.id]);
+    const oldKey = existing.rows[0] && existing.rows[0].file_key;
+    if (oldKey) {
+      try { await r2.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: oldKey })); }
+      catch (err) { console.warn(`⚠️  Could not delete R2 material "${oldKey}":`, err.message); }
+    }
+    res.json({ ok: true });
+  } catch (err) { next(err); }
+});
+
 /* ── PUBLIC: single visible program by slug ──────────────────
    Registered last so it never shadows /admin/all or the numeric-id
    admin routes above. Used by frontend/programs/view/index.html - the

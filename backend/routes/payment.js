@@ -139,12 +139,54 @@ async function assignRollNumber(enrollment) {
   }
 }
 
+/* ── शौर्य Batch: 5 of its 6 options bundle the existing RSSB Degree/
+   Diploma Test Series product (launch_config.batch.bundledTestSeriesSlug)
+   instead of duplicating that schedule - this auto-creates a linked,
+   already-paid (amount 0) enrollment in that program the instant the
+   batch purchase completes, so the learner gets the exact same Tally-
+   form + admit-card-review flow as a standalone test-series buyer. That
+   admit card is deliberately also their classroom attendance ID (site
+   owner's spec) - no separate ID is issued.
+
+   order_id is deterministic ("<batch order id>-bundle") so this is safe
+   to call from both the webhook and the /verify self-heal path without
+   ever creating two linked enrollments for the same purchase - the
+   ON CONFLICT DO NOTHING is the actual guarantee, not the pre-check. ── */
+async function linkBundledTestSeries(enrollment) {
+  try {
+    const prog = await query('SELECT launch_config FROM programs WHERE slug = $1', [enrollment.program_slug]);
+    const batchConfig = prog.rows[0] && prog.rows[0].launch_config && prog.rows[0].launch_config.batch;
+    const bundledSlug = batchConfig && batchConfig.bundledTestSeriesSlug;
+    if (!bundledSlug) return;
+
+    const bundledProg = await query('SELECT title FROM programs WHERE slug = $1', [bundledSlug]);
+    const programName = (bundledProg.rows[0] && bundledProg.rows[0].title) || bundledSlug;
+    const formToken = crypto.randomBytes(32).toString('hex');
+
+    const inserted = await query(
+      `INSERT INTO enrollments (order_id, program_slug, program_name, amount, student_name, student_email, student_phone, status, paid_at, form_token)
+       VALUES ($1, $2, $3, 0, $4, $5, $6, 'paid', NOW(), $7)
+       ON CONFLICT (order_id) DO NOTHING
+       RETURNING *`,
+      [`${enrollment.order_id}-bundle`, bundledSlug, programName, enrollment.student_name, enrollment.student_email, enrollment.student_phone, formToken]
+    );
+    if (!inserted.rows.length) return; // already linked by a concurrent call
+
+    const linkedEnrollment = inserted.rows[0];
+    await assignRollNumber(linkedEnrollment);
+    sendWelcomePaymentEmail(linkedEnrollment).catch(e => console.error('[linkBundledTestSeries] welcome email failed:', e.message));
+  } catch (err) {
+    console.error('[linkBundledTestSeries]', err.message);
+  }
+}
+
 /* ── Called whenever an enrollment transitions to 'paid' ── */
 async function onEnrollmentPaid(enrollment) {
   await ensureReferralCode(enrollment);
   await recordReferralCredit(enrollment);
   await cancelDuplicatePendingEnrollments(enrollment);
   await assignRollNumber(enrollment);
+  await linkBundledTestSeries(enrollment);
 }
 
 /* ── Coupon catalogue ────────────────────────────────────────
