@@ -482,7 +482,13 @@ router.post('/schedule/:id/results/bulk', protect, async (req, res, next) => {
     for (const row of rows) {
       const rollNumber = (row.roll_number || '').trim();
       if (!rollNumber) continue;
-      const enrResult = await query(`SELECT id FROM enrollments WHERE roll_number = $1`, [rollNumber]);
+      // Combo (Degree+Diploma) enrollments store roll_number as a packed
+      // "DEG-X|DIP-Y" pair, but the admit card only shows the learner one
+      // bare half - an exact match alone would skip every combo result.
+      const enrResult = await query(
+        `SELECT id FROM enrollments WHERE roll_number = $1 OR roll_number LIKE $1 || '|%' OR roll_number LIKE '%|' || $1`,
+        [rollNumber]
+      );
       if (!enrResult.rows.length) { skipped.push(rollNumber); continue; }
       const enrollmentId = enrResult.rows[0].id;
 

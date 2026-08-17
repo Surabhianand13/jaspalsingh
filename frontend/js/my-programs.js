@@ -62,9 +62,16 @@
         (e.admit_card_rejection_reason ? ' - ' + esc(e.admit_card_rejection_reason) : '') +
         ' - please <a href="https://wa.me/919829133317" target="_blank" rel="noopener" style="color:#C81240;font-weight:700;">WhatsApp us</a></span>';
     }
-    return e.roll_number
-      ? '<i class="fas fa-id-card" style="color:#0F766E;"></i> Admit Card No: <strong style="font-family:monospace;">' + esc(e.roll_number) + '</strong>'
-      : '<span style="color:#9999b0;"><i class="fas fa-hourglass-half"></i> Admit card number: assigned shortly</span>';
+    if (!e.roll_number) {
+      return '<span style="color:#9999b0;"><i class="fas fa-hourglass-half"></i> Admit card number: assigned shortly</span>';
+    }
+    // Combo (Degree+Diploma) enrollments store roll_number as a packed
+    // "DEG-X|DIP-Y" pair - show each half labeled instead of the raw string.
+    var parts = e.roll_number.split('|');
+    var display = parts.length === 2
+      ? 'Degree: <strong style="font-family:monospace;">' + esc(parts[0]) + '</strong> &middot; Diploma: <strong style="font-family:monospace;">' + esc(parts[1]) + '</strong>'
+      : 'Admit Card No: <strong style="font-family:monospace;">' + esc(e.roll_number) + '</strong>';
+    return '<i class="fas fa-id-card" style="color:#0F766E;"></i> ' + display;
   }
 
   function loadEnrolledPrograms() {

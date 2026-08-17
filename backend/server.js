@@ -1263,28 +1263,12 @@ async function migrate() {
     );
   }
 
-  const generalRollBackfillRows = await query(
-    `SELECT id, program_slug FROM enrollments
-     WHERE status = 'paid' AND refund_status != 'initiated' AND roll_number IS NULL`
-  );
-  for (const row of generalRollBackfillRows.rows) {
-    try {
-      const prefix = await resolveRollNumberPrefix(row.program_slug);
-      let rollNumber;
-      if (typeof prefix === 'object' && prefix !== null) {
-        const [degree, diploma] = await Promise.all([
-          generateRollNumber(prefix.degree),
-          generateRollNumber(prefix.diploma),
-        ]);
-        rollNumber = `${degree}|${diploma}`;
-      } else {
-        rollNumber = await generateRollNumber(prefix);
-      }
-      await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2 AND roll_number IS NULL', [rollNumber, row.id]);
-    } catch (err) {
-      console.error(`[migrate] roll-number backfill failed for enrollment ${row.id}:`, err.message);
-    }
-  }
+  // The actual per-row backfill loop runs AFTER the server starts listening
+  // (see backfillMissingRollNumbers, called near app.listen below) instead
+  // of here - a large legacy backlog would otherwise serially query the DB
+  // once per row before migrate() resolves, and app.listen() is gated on
+  // migrate() finishing, delaying the whole site coming back up after
+  // every deploy for no reason a paying learner would ever notice.
 
   /* ── Independence Day Freedom Sale (2026-08-15 only): FREEDOM15 gives a
      genuine 15%-off-anything coupon, which needed a new coupon `type`
@@ -1367,20 +1351,62 @@ async function checkAdmitCardDigest() {
     const todayIST = istNow.toISOString().slice(0, 10);
     if (istNow.getUTCHours() !== 18 || admitCardDigestSentDate === todayIST) return;
 
+    // Rejected rows (email/phone mismatch at submission) get no email to
+    // anyone - the learner sees the reason on their own profile, but
+    // nothing ever surfaced them to admin, so a validation problem could
+    // sit unnoticed indefinitely. Including them here (separately from
+    // pending) is the only proactive notice admin gets.
     const result = await query(
-      `SELECT student_name, student_phone, program_name, roll_number
+      `SELECT student_name, student_phone, program_name, roll_number, admit_card_status, admit_card_rejection_reason
        FROM enrollments
-       WHERE admit_card_status = 'pending'
-       ORDER BY admit_card_submitted_at ASC`
+       WHERE admit_card_status IN ('pending', 'rejected')
+       ORDER BY admit_card_status ASC, admit_card_submitted_at ASC`
     );
     admitCardDigestSentDate = todayIST; // mark sent even if zero rows, so we don't re-check all day
     if (!result.rows.length) return;
 
     const { sendAdmitCardDigestEmail } = require('./services/paymentEmailService');
     await sendAdmitCardDigestEmail(result.rows);
-    console.log(`[admit-card-digest] Sent digest for ${result.rows.length} pending card(s)`);
+    console.log(`[admit-card-digest] Sent digest for ${result.rows.length} card(s) needing attention`);
   } catch (err) {
     console.error('[admit-card-digest] Error:', err.message);
+  }
+}
+
+/* ── Backfill roll numbers for already-paid enrollments that predate
+   instant-at-purchase assignment (onEnrollmentPaid in routes/payment.js),
+   across every program. Runs after the server is already listening (not
+   inside migrate()) so a large legacy backlog never delays the site
+   coming back up after a deploy - each row still gets a fresh query/write,
+   but that work no longer blocks the first HTTP request from being
+   served. ── */
+async function backfillMissingRollNumbers() {
+  try {
+    const rows = await query(
+      `SELECT id, program_slug FROM enrollments
+       WHERE status = 'paid' AND refund_status != 'initiated' AND roll_number IS NULL`
+    );
+    for (const row of rows.rows) {
+      try {
+        const prefix = await resolveRollNumberPrefix(row.program_slug);
+        let rollNumber;
+        if (typeof prefix === 'object' && prefix !== null) {
+          const [degree, diploma] = await Promise.all([
+            generateRollNumber(prefix.degree),
+            generateRollNumber(prefix.diploma),
+          ]);
+          rollNumber = `${degree}|${diploma}`;
+        } else {
+          rollNumber = await generateRollNumber(prefix);
+        }
+        await query('UPDATE enrollments SET roll_number = $1 WHERE id = $2 AND roll_number IS NULL', [rollNumber, row.id]);
+      } catch (err) {
+        console.error(`[roll-number-backfill] failed for enrollment ${row.id}:`, err.message);
+      }
+    }
+    if (rows.rows.length) console.log(`[roll-number-backfill] Assigned roll numbers for ${rows.rows.length} enrollment(s)`);
+  } catch (err) {
+    console.error('[roll-number-backfill] Error:', err.message);
   }
 }
 
@@ -1395,6 +1421,7 @@ migrate()
       checkReferralDigest();
       setInterval(checkAdmitCardDigest, 15 * 60 * 1000);
       checkAdmitCardDigest();
+      backfillMissingRollNumbers();
     });
   });
 
