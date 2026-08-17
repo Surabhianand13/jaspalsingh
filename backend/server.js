@@ -1228,7 +1228,7 @@ async function migrate() {
       title: 'RSSB JE 2026 - शौर्य Batch - Non-Technical + Test Series',
       level: 'Non-Technical + Test Series', price: 5999, mrp: 14999, sort_order: 26,
       short_name: 'शौर्य Batch - Non-Technical + Test Series',
-      short_desc: '100 hrs of live Non-Technical (Rajasthan GK, History, Art & Culture, Political & Administrative System) classroom teaching, plus the RSSB JE Diploma Test Series.',
+      short_desc: '100 hrs of live Non-Technical (Rajasthan GK, History, Art & Culture, Political & Administrative System) classroom teaching, plus the RSSB JE Test Series - GK content is identical for Degree and Diploma.',
       who_for: [
         'Candidates who are confident in their core Technical subjects but want structured Non-Technical/GK teaching',
         'Aspirants who want live classes for the shared GK portion plus test practice',
@@ -1350,6 +1350,20 @@ async function migrate() {
       [JSON.stringify({ technical: 350, nonTechnical: 100 }), slug]
     );
   }
+
+  /* ── शौर्य Batch "Non-Technical + Test Series" - drop the Diploma-specific
+     wording (2026-08-17): Non-Technical/GK content and marks weightage are
+     identical for Degree and Diploma, so copy calling out "Diploma Test
+     Series" specifically was misleading a Degree candidate into thinking
+     this option didn't apply to them. The bundle still technically links
+     to the rssb-jen-diploma-test-series program (launch_config.batch.
+     bundledTestSeriesSlug, unchanged) - only the customer-facing wording
+     changes to describe it track-neutrally. Explicit unconditional UPDATE
+     since short_desc is already live from before this correction. ── */
+  await query(
+    `UPDATE programs SET short_desc = $1 WHERE slug = 'rssb-je-2026-shaurya-batch-non-technical-test-series'`,
+    ['100 hrs of live Non-Technical (Rajasthan GK, History, Art & Culture, Political & Administrative System) classroom teaching, plus the RSSB JE Test Series - GK content is identical for Degree and Diploma.']
+  );
 
   /* ── RVUNL JE 2026 (Electrical/Mechanical/Civil): real Tally forms wired
      2026-08-10 - single fixed centre (Jaipur) per program, per explicit
