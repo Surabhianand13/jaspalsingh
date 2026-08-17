@@ -1186,7 +1186,11 @@ async function migrate() {
     { name: 'Praveen Sir', credentials: '8+ years teaching experience' },
     { name: 'Deven Sir', credentials: '8+ years teaching experience' },
   ];
-  const shauryaContentHours = { technical: 500, nonTechnical: 100 };
+  // Degree and Diploma technical teaching hours differ (2026-08-17 correction) -
+  // Diploma is 350hrs Technical (not 500hrs like Degree), Non-Technical is the
+  // same 100hrs either way.
+  const shauryaContentHoursDegree  = { technical: 500, nonTechnical: 100 };
+  const shauryaContentHoursDiploma = { technical: 350, nonTechnical: 100 };
   const shauryaSyllabusUrl = '/assets/docs/rssb-je-2026-shaurya-batch-syllabus.pdf';
   const shauryaLaunches = [
     {
@@ -1194,7 +1198,7 @@ async function migrate() {
       title: 'RSSB JE 2026 - शौर्य Batch - Complete Course (Degree)',
       level: 'Complete Course - Degree', price: 19999, mrp: 44999, sort_order: 24,
       short_name: 'शौर्य Batch - Complete Degree',
-      short_desc: 'Technical + Non-Technical live classroom teaching (600 hrs) at our Jaipur centre, plus the full 28-test RSSB JE Degree Test Series - everything in one batch.',
+      short_desc: 'Technical + Non-Technical live classroom teaching (600 hrs) at our Jaipur centre, plus the full RSSB JE Degree Test Series - everything in one batch.',
       who_for: [
         'Degree (Civil) candidates who want live classroom teaching, not just self-study test series',
         'Aspirants in or near Jaipur who can attend offline classes',
@@ -1209,7 +1213,7 @@ async function migrate() {
       title: 'RSSB JE 2026 - शौर्य Batch - Complete Course (Diploma)',
       level: 'Complete Course - Diploma', price: 17999, mrp: 39999, sort_order: 25,
       short_name: 'शौर्य Batch - Complete Diploma',
-      short_desc: 'Technical + Non-Technical live classroom teaching (600 hrs) at our Jaipur centre, plus the full 22-test RSSB JE Diploma Test Series - everything in one batch.',
+      short_desc: 'Technical + Non-Technical live classroom teaching (450 hrs) at our Jaipur centre, plus the full RSSB JE Diploma Test Series - everything in one batch.',
       who_for: [
         'Diploma (Civil) candidates who want live classroom teaching, not just self-study test series',
         'Aspirants in or near Jaipur who can attend offline classes',
@@ -1252,7 +1256,7 @@ async function migrate() {
       title: 'RSSB JE 2026 - शौर्य Batch - Technical + Test Series (Degree)',
       level: 'Technical + Test Series - Degree', price: 14999, mrp: 34999, sort_order: 28,
       short_name: 'शौर्य Batch - Technical + Test Series (Degree)',
-      short_desc: '500 hrs of live Degree-level Technical classroom teaching at our Jaipur centre, plus the full 28-test RSSB JE Degree Test Series.',
+      short_desc: '500 hrs of live Degree-level Technical classroom teaching at our Jaipur centre, plus the full RSSB JE Degree Test Series.',
       who_for: [
         'Degree (Civil) candidates who want live Technical teaching plus test practice',
         'Aspirants confident in Non-Technical/GK who want to focus classroom time on core Civil Engineering',
@@ -1266,7 +1270,7 @@ async function migrate() {
       title: 'RSSB JE 2026 - शौर्य Batch - Technical + Test Series (Diploma)',
       level: 'Technical + Test Series - Diploma', price: 12999, mrp: 29999, sort_order: 29,
       short_name: 'शौर्य Batch - Technical + Test Series (Diploma)',
-      short_desc: '500 hrs of live Diploma-level Technical classroom teaching at our Jaipur centre, plus the full 22-test RSSB JE Diploma Test Series.',
+      short_desc: '350 hrs of live Diploma-level Technical classroom teaching at our Jaipur centre, plus the full RSSB JE Diploma Test Series.',
       who_for: [
         'Diploma (Civil) candidates who want live Technical teaching plus test practice',
         'Aspirants confident in Non-Technical/GK who want to focus classroom time on core Civil Engineering',
@@ -1314,7 +1318,7 @@ async function migrate() {
           timings: 'To be announced',
           seatCap: 200,
           educators: shauryaEducators,
-          contentHours: shauryaContentHours,
+          contentHours: p.materialTracks.includes('technical-degree') ? shauryaContentHoursDegree : shauryaContentHoursDiploma,
           materialTracks: p.materialTracks,
           bundledTestSeriesSlug: p.bundledTestSeriesSlug,
           syllabusUrl: shauryaSyllabusUrl,
@@ -1323,6 +1327,29 @@ async function migrate() {
     );
   }
   console.log('✅ Seeded/updated 6 शौर्य Batch - RSSB JE 2026 options');
+
+  /* ── शौर्य Batch Diploma hours correction (2026-08-17): Diploma technical
+     teaching is 350hrs, not 500hrs like Degree (450hrs total for Complete
+     Diploma, not 600hrs) - the seed loop above only writes short_desc/
+     launch_config the FIRST time (COALESCE / IS NULL guards, so admin
+     edits always win over a re-seed), which means it can't fix a value
+     that's already live from before this correction. This explicitly
+     overwrites the two Diploma-track rows unconditionally, once. ── */
+  await query(
+    `UPDATE programs SET short_desc = $1 WHERE slug = 'rssb-je-2026-shaurya-batch-complete-diploma'`,
+    ['Technical + Non-Technical live classroom teaching (450 hrs) at our Jaipur centre, plus the full RSSB JE Diploma Test Series - everything in one batch.']
+  );
+  await query(
+    `UPDATE programs SET short_desc = $1 WHERE slug = 'rssb-je-2026-shaurya-batch-technical-test-series-diploma'`,
+    ['350 hrs of live Diploma-level Technical classroom teaching at our Jaipur centre, plus the full RSSB JE Diploma Test Series.']
+  );
+  for (const slug of ['rssb-je-2026-shaurya-batch-complete-diploma', 'rssb-je-2026-shaurya-batch-technical-test-series-diploma']) {
+    await query(
+      `UPDATE programs SET launch_config = jsonb_set(launch_config, '{batch,contentHours}', $1::jsonb)
+       WHERE slug = $2 AND launch_config IS NOT NULL`,
+      [JSON.stringify({ technical: 350, nonTechnical: 100 }), slug]
+    );
+  }
 
   /* ── RVUNL JE 2026 (Electrical/Mechanical/Civil): real Tally forms wired
      2026-08-10 - single fixed centre (Jaipur) per program, per explicit
