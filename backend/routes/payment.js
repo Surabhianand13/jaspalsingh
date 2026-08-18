@@ -281,8 +281,13 @@ const FALLBACK_PROGRAMS = {
 
 async function getProgramData(slug) {
   try {
-    const result = await query(`SELECT slug, title, short_name, price, mrp FROM programs WHERE slug = $1`, [slug]);
-    if (result.rows.length && result.rows[0].price != null && result.rows[0].mrp != null) {
+    const result = await query(`SELECT slug, title, short_name, price, mrp, is_visible FROM programs WHERE slug = $1`, [slug]);
+    // is_visible = FALSE only ever hid a program from listings (homepage/
+    // programs page) - nothing enforced it at the actual purchase point,
+    // so a discontinued program (e.g. admin "marks off" a cancelled exam)
+    // stayed fully payable to anyone with a direct link or bookmark. This
+    // is the real enforcement: explicitly hidden programs can't be bought.
+    if (result.rows.length && result.rows[0].price != null && result.rows[0].mrp != null && result.rows[0].is_visible !== false) {
       const row = result.rows[0];
       return { name: row.title, shortName: row.short_name || row.title, price: row.price, mrp: row.mrp };
     }
@@ -619,7 +624,7 @@ router.get('/programs', async (req, res) => {
   try {
     const result = await query(
       `SELECT slug, title, price, mrp, thumbnail_url, accent, icon_class, category
-       FROM programs WHERE price IS NOT NULL AND mrp IS NOT NULL`
+       FROM programs WHERE price IS NOT NULL AND mrp IS NOT NULL AND is_visible IS NOT FALSE`
     );
     for (const row of result.rows) {
       out[row.slug] = {
