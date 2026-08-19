@@ -869,6 +869,21 @@ async function processSubmission(fields, programType) {
   const enrollment = preCheck;
   console.log('[tally-webhook] Token claimed, processing enrollment:', enrollment.id);
 
+  // Name is the one field every Tally form has and every admit card needs -
+  // if it parsed empty, something upstream (a field label edited in Tally,
+  // a payload shape change) broke, and continuing would silently produce a
+  // blank-looking "approved" card instead of a usable one. Fail safe: flag
+  // for manual review with the raw payload logged, same as an email/phone
+  // mismatch above, rather than generating a card nobody can actually use.
+  if (!name) {
+    console.error('[tally-webhook] No name parsed from submission - raw fields:', JSON.stringify(fields));
+    await query(
+      `UPDATE enrollments SET admit_card_status = 'rejected', admit_card_rejection_reason = $1, admit_card_submitted_at = NOW() WHERE id = $2 AND admit_card_status != 'approved'`,
+      [`Your name could not be read from the submitted form. Please message us on WhatsApp so we can fix this manually.`, enrollment.id]
+    );
+    return;
+  }
+
   const centreKey  = getCentreKey(centreRaw);
   const centreInfo = CENTRES[centreKey] || { name: centreRaw || 'TBD', address: 'TBD', mapsLink: '#' };
 
@@ -1265,6 +1280,17 @@ async function processComboSubmission(fields) {
 
   const enrollment = preCheck;
   console.log('[tally-combo] Token claimed, processing combo enrollment:', enrollment.id);
+
+  // See processSubmission's identical check above for why - fail safe
+  // against a blank-looking "approved" card instead of generating one.
+  if (!name) {
+    console.error('[tally-combo] No name parsed from submission - raw fields:', JSON.stringify(fields));
+    await query(
+      `UPDATE enrollments SET admit_card_status = 'rejected', admit_card_rejection_reason = $1, admit_card_submitted_at = NOW() WHERE id = $2 AND admit_card_status != 'approved'`,
+      [`Your name could not be read from the submitted form. Please message us on WhatsApp so we can fix this manually.`, enrollment.id]
+    );
+    return;
+  }
 
   const centreKey  = getCentreKey(centreRaw);
   const centreInfo = CENTRES[centreKey] || { name: centreRaw || 'TBD', address: 'TBD', mapsLink: '#' };

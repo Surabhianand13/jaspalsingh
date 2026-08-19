@@ -95,6 +95,17 @@ async function processGenericSubmission(fields, program) {
   const centreInfo = mode === 'offline' ? resolveGenericCentre(centreRaw, launchConfig) : null;
   const seriesName = launchConfig.seriesName || program.title;
 
+  // Fail safe against a blank-looking "approved" card - see the identical
+  // check in tally-webhook.js's processSubmission for the reasoning.
+  if (!name) {
+    console.error('[tally-generic] No name parsed from submission - raw fields:', JSON.stringify(fields));
+    await query(
+      `UPDATE enrollments SET admit_card_status = 'rejected', admit_card_rejection_reason = $1, admit_card_submitted_at = NOW() WHERE id = $2 AND admit_card_status != 'approved'`,
+      [`Your name could not be read from the submitted form. Please message us on WhatsApp so we can fix this manually.`, enrollment.id]
+    );
+    return;
+  }
+
   try {
     // Reuse a roll number already on the row (e.g. from an admin priority
     // backfill run before this learner got to the form) instead of
