@@ -1166,16 +1166,19 @@ async function migrate() {
      frontend/programs/shaurya-batch-rssb-je-2026/ for the comparison page
      that lists all 6 side by side.
 
-     5 of 6 options bundle the EXISTING live RSSB Degree/Diploma Test
-     Series product rather than duplicating a schedule - launch_config.
-     batch.bundledTestSeriesSlug tells onEnrollmentPaid (routes/payment.js)
-     to auto-create a linked enrollment in that program at purchase time,
-     which reuses that program's entire existing Tally-form + admit-card-
-     review pipeline untouched. That shared admit card is deliberately
-     also the learner's classroom attendance ID (per the site owner's
-     spec) - no separate ID needed. Only the Non-Technical-only option (4)
-     has no bundled test series, so it gets its own rollPrefix/tallyFormUrl
-     like any other standalone generic-launch program. ── */
+     All 6 options originally bundled into the EXISTING RSSB Degree/
+     Diploma Test Series product instead of having their own schedule
+     (launch_config.batch.bundledTestSeriesSlug, auto-linking a paid
+     enrollment in that program at purchase time). Reverted 2026-08-19:
+     the owner confirmed शौर्य Batch's own tests are NOT the same test
+     series as that product - there is no real connection - so every
+     option now gets its own standalone rollPrefix ('SHAURYA') and needs
+     its own real Tally form (tallyFormUrl, still pending - see
+     NO_FULFILLMENT_SLUGS in paymentEmailService.js for the manual-
+     follow-up email that covers the gap until one exists), same as any
+     other program launch - the bundling fields have been removed from
+     the seed data below entirely (see the correction block after the
+     seed loop, which also retroactively fixes already-live rows). ── */
   const shauryaCentre = {
     name: 'Jaipur',
     address: '33, White House, Opp. Zone Tech, Tonk Road, Madhuvan Colony, Mansingh Pura, Jaipur, Rajasthan 302015',
@@ -1206,7 +1209,6 @@ async function migrate() {
         'Anyone who wants one single program covering syllabus + practice + testing',
       ],
       materialTracks: ['technical-degree', 'non-technical'],
-      bundledTestSeriesSlug: 'rssb-jen-degree-test-series',
     },
     {
       slug: 'rssb-je-2026-shaurya-batch-complete-diploma',
@@ -1221,7 +1223,6 @@ async function migrate() {
         'Anyone who wants one single program covering syllabus + practice + testing',
       ],
       materialTracks: ['technical-diploma', 'non-technical'],
-      bundledTestSeriesSlug: 'rssb-jen-diploma-test-series',
     },
     {
       slug: 'rssb-je-2026-shaurya-batch-non-technical-test-series',
@@ -1235,7 +1236,6 @@ async function migrate() {
         'Anyone combining self-study for Technical with classroom support for Non-Technical',
       ],
       materialTracks: ['non-technical'],
-      bundledTestSeriesSlug: 'rssb-jen-diploma-test-series',
     },
     {
       slug: 'rssb-je-2026-shaurya-batch-non-technical-only',
@@ -1249,7 +1249,6 @@ async function migrate() {
         'Anyone who wants live GK teaching without committing to the full batch',
       ],
       materialTracks: ['non-technical'],
-      bundledTestSeriesSlug: null,
     },
     {
       slug: 'rssb-je-2026-shaurya-batch-technical-test-series-degree',
@@ -1263,7 +1262,6 @@ async function migrate() {
         'Candidates who want Dr. Jaspal Singh, Praveen Sir and Deven Sir teaching Technical subjects live',
       ],
       materialTracks: ['technical-degree'],
-      bundledTestSeriesSlug: 'rssb-jen-degree-test-series',
     },
     {
       slug: 'rssb-je-2026-shaurya-batch-technical-test-series-diploma',
@@ -1277,7 +1275,6 @@ async function migrate() {
         'Candidates who want Dr. Jaspal Singh, Praveen Sir and Deven Sir teaching Technical subjects live',
       ],
       materialTracks: ['technical-diploma'],
-      bundledTestSeriesSlug: 'rssb-jen-diploma-test-series',
     },
   ];
   const shauryaFaqs = [
@@ -1285,7 +1282,7 @@ async function migrate() {
     { question: 'When does the batch start?', answer: 'Tentatively September 2026. Class timings will be announced to enrolled learners in advance.' },
     { question: 'Is there a seat limit?', answer: 'Yes - शौर्य Batch is capped at 200 seats to keep classroom sizes manageable. Enrollment closes once the batch is full.' },
     { question: 'Is recorded content provided?', answer: 'No, शौर्य Batch is a live offline classroom program - there are no recorded lectures. Subject-wise DPPs and formula sheets are shared as downloadable PDFs to support your offline preparation.' },
-    { question: 'Do I get an admit card / ID?', answer: 'Yes - the same roll number and admit card used for your Test Series doubles as your classroom attendance ID, so you only need to carry one.' },
+    { question: 'Do I get an admit card / ID?', answer: 'Yes - you\'ll get a roll number and admit card for शौर्य Batch itself once your details form is reviewed and approved, which also serves as your classroom attendance ID.' },
   ];
   for (const p of shauryaLaunches) {
     await query(
@@ -1309,9 +1306,7 @@ async function migrate() {
         mode: 'offline',
         rollPrefix: 'SHAURYA',
         waGroupUrl: null,
-        lastTestDate: p.bundledTestSeriesSlug
-          ? 'See the bundled Test Series schedule on your profile once enrolled'
-          : 'To be announced - notified via email & WhatsApp',
+        lastTestDate: 'To be announced - notified via email & WhatsApp',
         centre: shauryaCentre,
         batch: {
           startDate: 'September 2026',
@@ -1320,13 +1315,67 @@ async function migrate() {
           educators: shauryaEducators,
           contentHours: p.materialTracks.includes('technical-degree') ? shauryaContentHoursDegree : shauryaContentHoursDiploma,
           materialTracks: p.materialTracks,
-          bundledTestSeriesSlug: p.bundledTestSeriesSlug,
           syllabusUrl: shauryaSyllabusUrl,
         },
       }), p.slug]
     );
   }
   console.log('✅ Seeded/updated 6 शौर्य Batch - RSSB JE 2026 options');
+
+  /* ── शौर्य Batch bundling revert (2026-08-19): the seed loop above only
+     writes launch_config the FIRST time (WHERE launch_config IS NULL), so
+     removing bundledTestSeriesSlug from the seed data above did nothing
+     for the 6 rows already live since 2026-08-17 - they still carry the
+     old bundled config. Explicit unconditional correction, once: strip
+     the bundle field and restore the standalone lastTestDate wording on
+     every शौर्य Batch row that still has one. jsonb `-` (minus) removes a
+     key outright rather than leaving it set to null. ── */
+  await query(
+    `UPDATE programs
+     SET launch_config = jsonb_set(launch_config, '{batch}', (launch_config->'batch') - 'bundledTestSeriesSlug')
+     WHERE slug LIKE 'rssb-je-2026-shaurya-batch-%' AND launch_config->'batch' ? 'bundledTestSeriesSlug'`
+  );
+  await query(
+    `UPDATE programs
+     SET launch_config = jsonb_set(launch_config, '{lastTestDate}', '"To be announced - notified via email & WhatsApp"')
+     WHERE slug LIKE 'rssb-je-2026-shaurya-batch-%' AND launch_config->>'lastTestDate' LIKE 'See the bundled Test Series%'`
+  );
+
+  /* ── Cancel any bundle-linked enrollment rows the old (removed)
+     linkBundledTestSeries() already created (payment.js) - those are
+     phantom amount-0 enrollments in rssb-jen-degree/diploma-test-series
+     with a deterministic "<original order id>-bundle" order_id, standing
+     in for a connection that turned out not to exist. Only cancel ones
+     nobody has actually used yet (form never submitted, no admit-card
+     activity) - if a learner already went through that Tally form and
+     has a real (or pending) admit card on this row, leave it completely
+     alone; cancelling it would destroy data a real person is depending
+     on, which is worse than the phantom row itself. ── */
+  const cancelledBundles = await query(
+    `UPDATE enrollments SET status = 'cancelled'
+     WHERE order_id LIKE '%-bundle' AND amount = 0 AND status = 'paid'
+       AND program_slug IN ('rssb-jen-degree-test-series', 'rssb-jen-diploma-test-series')
+       AND form_used = FALSE AND admit_card_status = 'none'
+     RETURNING id`
+  );
+  if (cancelledBundles.rows.length) {
+    console.log(`✅ Cancelled ${cancelledBundles.rows.length} unused शौर्य Batch bundle-linked enrollment(s)`);
+  }
+
+  /* ── Same revert, for the FAQ text: "Do I get an admit card / ID?" used
+     to promise the (now-removed) bundled Test Series admit card doubling
+     as the classroom ID - faqs only ever gets set once (COALESCE guard in
+     the seed loop above), so this corrects the already-live wrong answer
+     on all 6 rows, once, by overwriting the whole array with the current
+     shauryaFaqs (already has the corrected wording above). Simple full
+     overwrite rather than editing one element in place - much lower risk
+     of a bad migrate() at boot than in-place JSONB array surgery. ── */
+  await query(
+    `UPDATE programs SET faqs = $1
+     WHERE slug LIKE 'rssb-je-2026-shaurya-batch-%'
+       AND faqs::text LIKE '%doubles as your classroom attendance ID, so you only need to carry one%'`,
+    [JSON.stringify(shauryaFaqs)]
+  );
 
   /* ── शौर्य Batch Diploma hours correction (2026-08-17): Diploma technical
      teaching is 350hrs, not 500hrs like Degree (450hrs total for Complete
@@ -1352,14 +1401,13 @@ async function migrate() {
   }
 
   /* ── शौर्य Batch "Non-Technical + Test Series" - drop the Diploma-specific
-     wording (2026-08-17): Non-Technical/GK content and marks weightage are
-     identical for Degree and Diploma, so copy calling out "Diploma Test
-     Series" specifically was misleading a Degree candidate into thinking
-     this option didn't apply to them. The bundle still technically links
-     to the rssb-jen-diploma-test-series program (launch_config.batch.
-     bundledTestSeriesSlug, unchanged) - only the customer-facing wording
-     changes to describe it track-neutrally. Explicit unconditional UPDATE
-     since short_desc is already live from before this correction. ── */
+     wording (2026-08-17, predates the 2026-08-19 bundling revert above):
+     Non-Technical/GK content and marks weightage are identical for Degree
+     and Diploma, so copy calling out "Diploma Test Series" specifically
+     was misleading a Degree candidate into thinking this option didn't
+     apply to them - only the customer-facing wording changes here, track-
+     neutrally. Explicit unconditional UPDATE since short_desc is already
+     live from before this correction. ── */
   await query(
     `UPDATE programs SET short_desc = $1 WHERE slug = 'rssb-je-2026-shaurya-batch-non-technical-test-series'`,
     ['100 hrs of live Non-Technical (Rajasthan GK, History, Art & Culture, Political & Administrative System) classroom teaching, plus the RSSB JE Test Series - GK content is identical for Degree and Diploma.']
@@ -1577,16 +1625,18 @@ async function checkReferralDigest() {
   }
 }
 
-/* ── Daily admit-card approvals digest (same 6 PM IST slot as the
-   referral payout digest - two independent gates on the same interval
-   tick). Mirrors checkReferralDigest above. ── */
+/* ── Daily admit-card approvals digest (10 PM IST, matching the owner's
+   own daily review habit - reviews the queue every evening around then).
+   Independent gate on the same 15-min interval tick as the referral
+   payout digest above, just a different hour. Mirrors checkReferralDigest
+   above otherwise. ── */
 let admitCardDigestSentDate = null;
 
 async function checkAdmitCardDigest() {
   try {
     const istNow = new Date(Date.now() + 5.5 * 60 * 60 * 1000); // UTC -> IST
     const todayIST = istNow.toISOString().slice(0, 10);
-    if (istNow.getUTCHours() !== 18 || admitCardDigestSentDate === todayIST) return;
+    if (istNow.getUTCHours() !== 22 || admitCardDigestSentDate === todayIST) return;
 
     // Rejected rows (email/phone mismatch at submission) get no email to
     // anyone - the learner sees the reason on their own profile, but

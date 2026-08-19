@@ -44,11 +44,21 @@ const SLUG_COMBO_OMR     = 'rssb-je-jaspalsirki-testseries-degree-diploma-combo-
    of a broken "Fill Details Form" link. Remove a slug from this set
    once its launch_config/bespoke route is wired up. */
 const NO_FULFILLMENT_SLUGS = new Set([
-  // Empty as of 2026-08-11 - all 6 programs launched 2026-08-09 (RVUNL x3,
-  // BPSC x2, UP Polytechnic) now have real launch_config/Tally forms
-  // wired in server.js. Add a slug back here if a future program launches
-  // without a Tally form yet, so it gets the manual-follow-up email
-  // instead of a broken "Fill Details Form" link.
+  // शौर्य Batch (launched 2026-08-17): all 6 options need their own real
+  // Tally form (none exists yet) - they used to bundle into the existing
+  // RSSB Degree/Diploma Test Series product instead, but that connection
+  // was reverted 2026-08-19 (it wasn't actually the same test series).
+  // 4 of these 6 slugs contain "degree"/"diploma" and would otherwise
+  // silently misroute to that unrelated product's real Tally form with
+  // the wrong order/token; the other 2 contain neither and would fall
+  // through to the Diploma form by default - all 6 need the guard.
+  // Remove a slug from this set once it gets a real launch_config.tallyFormUrl.
+  'rssb-je-2026-shaurya-batch-complete-degree',
+  'rssb-je-2026-shaurya-batch-complete-diploma',
+  'rssb-je-2026-shaurya-batch-non-technical-test-series',
+  'rssb-je-2026-shaurya-batch-non-technical-only',
+  'rssb-je-2026-shaurya-batch-technical-test-series-degree',
+  'rssb-je-2026-shaurya-batch-technical-test-series-diploma',
 ]);
 
 /* ── ESE 2027 Prelims - 6 programs, matched by exact slug (config-driven) ── */
@@ -200,16 +210,7 @@ async function sendWelcomePaymentEmail(enrollment) {
   const isEse          = !!ESE_TALLY_FORM_URLS[slug];
 
   const hasTallyForm = !!(launchConfig && launchConfig.tallyFormUrl);
-  // शौर्य Batch: 5 of its 6 options intentionally have no Tally form of
-  // their own (launch_config.tallyFormUrl is null by design) - their
-  // admit card / classroom ID comes from the auto-linked bundled Test
-  // Series enrollment instead (see linkBundledTestSeries in payment.js),
-  // which gets its own separate welcome email. Without this check these
-  // slugs would fall through to the generic "degree"/"diploma" substring
-  // guess below and misroute to the standalone Test Series' own form with
-  // the batch enrollment's (wrong) order/token.
-  const isShauryaBundled = !!(launchConfig && launchConfig.batch && launchConfig.batch.bundledTestSeriesSlug);
-  const needsManualFulfillment = !hasTallyForm && (NO_FULFILLMENT_SLUGS.has(slug) || isShauryaBundled);
+  const needsManualFulfillment = !hasTallyForm && NO_FULFILLMENT_SLUGS.has(slug);
 
   const tallyBase = (launchConfig && launchConfig.tallyFormUrl) ? launchConfig.tallyFormUrl
     : isEse ? ESE_TALLY_FORM_URLS[slug]
@@ -254,22 +255,7 @@ async function sendWelcomePaymentEmail(enrollment) {
      the usual "fill this form to get your Admit Card" CTA (which would
      silently point at an unrelated program's form) is replaced with a
      plain "we'll contact you directly" notice instead. */
-  const actionBlock = isShauryaBundled ? `
-    <!-- शौर्य BATCH: admit card comes from the bundled Test Series enrollment -->
-    <div style="background:#fff8f0;border:1px solid #fed7aa;border-radius:12px;padding:20px 24px;margin-bottom:28px;">
-      <div style="font-size:13px;font-weight:800;color:#c2410c;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">
-        What Happens Next
-      </div>
-      <p style="margin:0 0 14px;font-size:14px;color:#374151;line-height:1.7;">
-        Your classroom seat is confirmed! Your शौर्य Batch enrollment also includes the Test Series - you'll receive a separate email shortly with a form to fill in your details. That same submission generates your admit card, which doubles as your classroom attendance ID, so you only need to carry one.
-      </p>
-      <p style="margin:0 0 14px;font-size:13px;color:#6b7280;">
-        Don't see that email within a few minutes? Message us directly - quote your Order ID below.
-      </p>
-      <a href="https://wa.me/919829133317?text=${encodeURIComponent('Hi, I just enrolled in ' + enrollment.program_name + '. Order ID: ' + enrollment.order_id)}" style="display:inline-block;background:#25D366;color:#fff;border-radius:10px;padding:14px 28px;font-size:15px;font-weight:700;text-decoration:none;">
-        Message Us on WhatsApp →
-      </a>
-    </div>` : needsManualFulfillment ? `
+  const actionBlock = needsManualFulfillment ? `
     <!-- MANUAL FOLLOW-UP (no Tally form configured yet for this program) -->
     <div style="background:#fff8f0;border:1px solid #fed7aa;border-radius:12px;padding:20px 24px;margin-bottom:28px;">
       <div style="font-size:13px;font-weight:800;color:#c2410c;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">

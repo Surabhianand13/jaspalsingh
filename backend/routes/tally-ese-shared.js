@@ -369,6 +369,17 @@ async function processEseSubmission(fields, programKey) {
 
   console.log(`[tally-ese-${programKey}] Token claimed, processing enrollment:`, enrollment.id);
 
+  // Fail safe against a blank-looking "approved" card - see the identical
+  // check in tally-webhook.js's processSubmission for the reasoning.
+  if (!name) {
+    console.error(`[tally-ese-${programKey}] No name parsed from submission - raw fields:`, JSON.stringify(fields));
+    await query(
+      `UPDATE enrollments SET admit_card_status = 'rejected', admit_card_rejection_reason = $1, admit_card_submitted_at = NOW() WHERE id = $2 AND admit_card_status != 'approved'`,
+      [`Your name could not be read from the submitted form. Please message us on WhatsApp so we can fix this manually.`, enrollment.id]
+    );
+    return;
+  }
+
   const centreKey  = isOmr ? null : getEseCentreKey(centreRaw);
   const centreInfo = isOmr ? { name: 'Online (Home Based)', address: '', mapsLink: '#' }
     : (ESE_CENTRES[centreKey] || { name: centreRaw || 'TBD', address: 'TBD', mapsLink: '#' });
@@ -422,6 +433,17 @@ async function processEseCombinedSubmission(fields, programKey) {
   if (!enrollment) return;
 
   console.log(`[tally-ese-${programKey}] Token claimed, processing enrollment:`, enrollment.id);
+
+  // Fail safe against a blank-looking "approved" card - see the identical
+  // check in tally-webhook.js's processSubmission for the reasoning.
+  if (!name) {
+    console.error(`[tally-ese-${programKey}] No name parsed from submission - raw fields:`, JSON.stringify(fields));
+    await query(
+      `UPDATE enrollments SET admit_card_status = 'rejected', admit_card_rejection_reason = $1, admit_card_submitted_at = NOW() WHERE id = $2 AND admit_card_status != 'approved'`,
+      [`Your name could not be read from the submitted form. Please message us on WhatsApp so we can fix this manually.`, enrollment.id]
+    );
+    return;
+  }
 
   const centreKey  = isOmr ? null : getEseCentreKey(centreRaw);
   const centreInfo = isOmr ? { name: 'Online (Home Based)', address: '', mapsLink: '#' }
