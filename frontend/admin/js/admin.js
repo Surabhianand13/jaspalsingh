@@ -52,8 +52,9 @@
       headers: headers
     };
 
+    var isUpload = body instanceof FormData;
     if (body) {
-      if (body instanceof FormData) {
+      if (isUpload) {
         /* Browser sets Content-Type + boundary automatically */
         init.body = body;
       } else {
@@ -62,7 +63,20 @@
       }
     }
 
+    /* Plain fetch() has no timeout - a stalled connection (e.g. Render's
+       free tier waking from a cold start, or a dropped connection) used to
+       hang forever with no error and no way to tell the difference from
+       "still working". File uploads get a longer allowance since a real
+       50 MB PDF over a slow connection can legitimately take a while;
+       everything else gets a shorter one since those are small JSON
+       payloads that should be fast even on a cold start. */
+    var controller = new AbortController();
+    var timeoutMs = isUpload ? 90000 : 40000;
+    var timer = setTimeout(function () { controller.abort(); }, timeoutMs);
+    init.signal = controller.signal;
+
     return fetch(API_BASE + path, init).then(function (res) {
+      clearTimeout(timer);
       if (res.status === 401) {
         logout();
         return Promise.reject(new Error('Session expired. Please log in again.'));
@@ -77,6 +91,12 @@
       /* 204 No Content */
       if (res.status === 204) return null;
       return res.json();
+    }).catch(function (err) {
+      clearTimeout(timer);
+      if (err.name === 'AbortError') {
+        return Promise.reject(new Error('Request timed out - the server took too long to respond (it may be waking up from idle). Please try again.'));
+      }
+      return Promise.reject(err);
     });
   }
 
