@@ -677,7 +677,7 @@ function buildGenericAdmitCardHtml({ name, seriesName, centreInfo, mode }) {
   ${mode === 'home' ? `
   <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:20px 24px;margin:20px 0;">
     <h2 style="font-size:15px;margin:0 0 12px;color:#c81240;">Mode</h2>
-    <p style="margin:4px 0;">This is a <strong>Home-Based (Online) Test Series</strong> - download the question paper and OMR sheet, and upload your filled answer sheet, directly from your dashboard.</p>
+    <p style="margin:4px 0;">This is a <strong>Printed OMR Offline Test Series</strong> - download the question paper and OMR sheet, and upload your filled answer sheet, directly from your dashboard.</p>
   </div>
   ` : `
   <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:20px 24px;margin:20px 0;">
@@ -964,7 +964,7 @@ function generateComboAdmitCard({
     const AMBERG = '#fff7ed';
 
     const seriesName = seriesNameOverride || (mode === 'home'
-      ? 'RSSB JE 2026 - Civil Degree + Diploma Combo - Home-Based OMR Test Series'
+      ? 'RSSB JE 2026 - Civil Degree + Diploma Combo - Printed OMR Offline Test Series'
       : 'RSSB JE 2026 - Civil Degree + Diploma Combo - Offline Test Series');
 
     doc.rect(0, 0, W, 110).fill(NAVY);

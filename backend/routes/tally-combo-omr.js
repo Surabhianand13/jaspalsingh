@@ -1,6 +1,6 @@
 /* ============================================================
    routes/tally-combo-omr.js  -  Degree + Diploma Combo OMR webhook
-   Handles Tally form submissions for the Home-Based OMR combo series.
+   Handles Tally form submissions for the Printed OMR Offline combo series.
    No admit card PDF - validates token and sends a confirmation email
    covering both the Degree and Diploma schedules.
    ============================================================ */
