@@ -2286,7 +2286,7 @@
       fld('Feature bullets shown on the card (comma separated, e.g. Subject-wise Mock Tests, Full-Length Papers, Expert Review)','pm_features', (p.tags||[]).filter(function(t){ return !PRESET_TAGS[t]; }).join(', ')) +
       fld('Sort order','pm_sort',p.sort_order||0) +
       '<div style="border-top:1px dashed rgba(26,26,46,.15);margin:14px 0;padding-top:14px;">' +
-        '<label class="admin-field" style="flex-direction:row;align-items:center;gap:10px;"><input type="checkbox" id="pm_omr" style="width:auto;"'+(p.omr_enabled?' checked':'')+'> <span>OMR / Home-Based program (shows up in the OMR sending picker)</span></label>' +
+        '<label class="admin-field" style="flex-direction:row;align-items:center;gap:10px;"><input type="checkbox" id="pm_omr" style="width:auto;"'+(p.omr_enabled?' checked':'')+'> <span>Printed OMR Offline program (shows up in the OMR sending picker)</span></label>' +
         fld('Total tests in this series','pm_total_tests',p.total_tests||'') +
         fld('Categories for combo programs (comma separated, e.g. degree, diploma - leave blank if not a combo)','pm_omr_categories',(p.omr_categories||[]).join(', ')) +
       '</div>' +
@@ -2781,7 +2781,7 @@
     modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
     var centreFieldHtml = isOmr
       ? '<div><label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Mode</label>' +
-          '<input type="text" value="Online (Home Based)" disabled style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;background:#f9fafb;color:#6b7280;"/></div>'
+          '<input type="text" value="Offline (Printed OMR)" disabled style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;background:#f9fafb;color:#6b7280;"/></div>'
       : '<div><label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Test Centre *</label>' +
           '<select id="ac_centre" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;">' +
             '<option value="">Select centre...</option>' +

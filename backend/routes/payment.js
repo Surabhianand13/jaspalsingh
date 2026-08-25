@@ -233,8 +233,8 @@ const FALLBACK_PROGRAMS = {
   'rssb-jen-diploma-test-series':     { name: 'RSSB JE 2026 - Jaspal Sir Ki Test Series Offline', shortName: 'RSSB JE 2026 Test Series', price: 3799, mrp: 7999 },
   'rssb-jen-degree-test-series':      { name: 'RSSB JE 2026 - Jaspal Sir Ki Test Series Offline', shortName: 'RSSB JE 2026 Test Series', price: 3999, mrp: 7999 },
   'rpsc-ae-interview':                { name: 'RPSC AE 2024 - Interview Guidance Programme', shortName: 'RPSC AE Interview Guidance', price: 4999, mrp: 8999 },
-  'rssb-je-omr-degree-test-series':   { name: 'RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Degree (Home-Based OMR Test Series)', shortName: 'RSSB JE 2026 OMR Degree Test Series', price: 1999, mrp: 2999 },
-  'rssb-jen-omr-diploma-test-series': { name: 'RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Diploma (Home-Based OMR Test Series)', shortName: 'RSSB JE 2026 OMR Diploma Test Series', price: 1999, mrp: 2999 },
+  'rssb-je-omr-degree-test-series':   { name: 'RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Degree (Printed OMR Offline Test Series)', shortName: 'RSSB JE 2026 OMR Degree Test Series', price: 1999, mrp: 2999 },
+  'rssb-jen-omr-diploma-test-series': { name: 'RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Diploma (Printed OMR Offline Test Series)', shortName: 'RSSB JE 2026 OMR Diploma Test Series', price: 1999, mrp: 2999 },
 };
 
 async function getProgramData(slug) {

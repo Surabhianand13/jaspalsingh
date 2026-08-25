@@ -1,6 +1,6 @@
 /* ============================================================
    scripts/backfill-omr-admit-cards.js
-   One-time script: send Home-Based Admit Card PDFs to OMR
+   One-time script: send Printed OMR Admit Card PDFs to OMR
    Degree/Diploma learners who already filled the Tally form,
    using the raw Tally CSV export (columns A-P only).
 
@@ -108,8 +108,8 @@ async function processFile(filePath, isDegreeCourse, sendReal, results) {
   };
 
   const seriesName = isDegreeCourse
-    ? 'RSSB JE 2026 - Civil Degree (Home-Based OMR Test Series)'
-    : 'RSSB JE 2026 - Civil Diploma (Home-Based OMR Test Series)';
+    ? 'RSSB JE 2026 - Civil Degree (Printed OMR Offline Test Series)'
+    : 'RSSB JE 2026 - Civil Diploma (Printed OMR Offline Test Series)';
   const lastTestDate = isDegreeCourse ? LAST_TEST_DATE.degree : LAST_TEST_DATE.diploma;
   const label = isDegreeCourse ? 'DEGREE' : 'DIPLOMA';
 
@@ -131,7 +131,7 @@ async function processFile(filePath, isDegreeCourse, sendReal, results) {
 
       const pdfBuffer = await generateAdmitCard({
         name, govtId, rollNumber,
-        centre: 'Online (Home Based)',
+        centre: 'Offline (Printed OMR)',
         targetExam: seriesName,
         phone: phone || 'N/A',
         email,

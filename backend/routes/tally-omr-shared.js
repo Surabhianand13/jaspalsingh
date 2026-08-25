@@ -1,8 +1,8 @@
 /* ============================================================
    routes/tally-omr-shared.js
-   Shared logic for OMR Online Test Series Tally webhooks.
+   Shared logic for Printed OMR Offline Test Series Tally webhooks.
    Validates form token, marks used, sends confirmation email
-   with a Home-Based Admit Card PDF attached.
+   with a Printed OMR Admit Card PDF attached.
    ============================================================ */
 
 const { query }  = require('../config/db');
@@ -59,7 +59,7 @@ function parseTallyFields(fields) {
   return result;
 }
 
-/* ── Roll number generator (no physical centre for home-based OMR) ── */
+/* ── Roll number generator (no physical centre for printed OMR offline) ── */
 
 function generateOmrRollNumber(isDegreeCourse) {
   const examCode = isDegreeCourse ? 'DEG' : 'DIP';
@@ -137,8 +137,8 @@ function getOmrLastTestDate(isDegreeCourse) {
 
 function getOmrSeriesName(isDegreeCourse) {
   return isDegreeCourse
-    ? 'RSSB JE 2026 - Civil Degree (Home-Based OMR Test Series)'
-    : 'RSSB JE 2026 - Civil Diploma (Home-Based OMR Test Series)';
+    ? 'RSSB JE 2026 - Civil Degree (Printed OMR Offline Test Series)'
+    : 'RSSB JE 2026 - Civil Diploma (Printed OMR Offline Test Series)';
 }
 
 /* ── Build the full "Identity Verified" confirmation email HTML ──
@@ -442,7 +442,7 @@ async function processOmrSubmission(fields, type) {
     name:       name || 'Student',
     govtId:     govtId || 'N/A',
     rollNumber,
-    centre:     'Online (Home Based)',
+    centre:     'Offline (Printed OMR)',
     targetExam: seriesName,
     phone:      phone || 'N/A',
     email:      email || 'N/A',
@@ -591,7 +591,7 @@ async function processComboOmrSubmission(fields) {
     return;
   }
 
-  const seriesName = 'RSSB JE 2026 - Civil Degree + Diploma Combo (Home-Based OMR Test Series)';
+  const seriesName = 'RSSB JE 2026 - Civil Degree + Diploma Combo (Printed OMR Offline Test Series)';
   const degreeRows  = OMR_SCHEDULE_DEGREE.map(([num, date, syllabus]) =>
     `<tr style="border-bottom:1px solid #e2e8f0;">
        <td style="padding:7px 10px;font-size:12px;font-weight:700;color:#6366F1;white-space:nowrap;">Test ${num}</td>
@@ -766,7 +766,7 @@ async function processComboOmrSubmission(fields) {
       govtId:      govtId || 'N/A',
       rollNumberDegree,
       rollNumberDiploma,
-      centre:      'Online (Home Based)',
+      centre:      'Offline (Printed OMR)',
       phone:       phone || 'N/A',
       email:       email || 'N/A',
       photoBuffer,

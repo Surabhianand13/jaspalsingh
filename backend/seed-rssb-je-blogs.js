@@ -186,7 +186,7 @@ const posts = [
   <li>Topic-wise &amp; Full-Length Mock Test Series with detailed solutions</li>
   <li>Previous Year Questions analysis with shortcut techniques</li>
   <li>Live doubt sessions &amp; personalized mentorship by an Ex-IES officer</li>
-  <li>Offline Batch Available | Online Test Series at jaspalsingh.in</li>
+  <li>Offline Batch Available | Test Series Available at jaspalsingh.in</li>
 </ul>
 
 <h2>8. Frequently Asked Questions (FAQs)</h2>

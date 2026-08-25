@@ -497,11 +497,11 @@ async function migrate() {
     INSERT INTO programs (slug,title,category,exam,level,status,price,mrp,accent,sort_order,detail_url,is_visible)
     VALUES
       ('rssb-je-omr-degree-test-series',
-       'RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Degree (Home-Based OMR Test Series)',
+       'RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Degree (Printed OMR Offline Test Series)',
        'test-series','RSSB JE 2026','Degree (Civil)','enrolling',1999,2999,'purple',6,
        '/programs/rssb-je-jaspalsirki-testseries-degree-civil-omr/',TRUE),
       ('rssb-jen-omr-diploma-test-series',
-       'RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Diploma (Home-Based OMR Test Series)',
+       'RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Diploma (Printed OMR Offline Test Series)',
        'test-series','RSSB JE 2026','Diploma (Civil)','enrolling',1999,2999,'purple',7,
        '/programs/rssb-jen-2026-jaspalsirki-testseries-diploma-civil-omr/',TRUE)
     ON CONFLICT (slug) DO NOTHING
@@ -666,10 +666,10 @@ async function migrate() {
     ['ese-2027-prelims-jaspalsirki-testseries-paper1', 'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 1 (GS & Engineering Aptitude)', 'test-series', 'ESE 2027 Prelims', 'Paper 1', 'enrolling', 2999, 4999, 'purple', 'fa-book-reader', '/assets/images/thumb-ese-2027-prelims.jpg', 'ESE 2027 Prelims Paper 1', 10, false, 22, null],
     ['ese-2027-prelims-jaspalsirki-testseries-paper2-civil', 'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 2 (Civil)', 'test-series', 'ESE 2027 Prelims', 'Paper 2 (Civil)', 'enrolling', 2999, 4999, 'purple', 'fa-drafting-compass', '/assets/images/thumb-ese-2027-prelims.jpg', 'ESE 2027 Prelims Paper 2 (Civil)', 11, false, 22, null],
     ['ese-2027-prelims-jaspalsirki-testseries-combined', 'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 1 + 2 (GS, Eng. Aptitude & Civil)', 'test-series', 'ESE 2027 Prelims', 'Paper 1+2', 'enrolling', 4499, 9999, 'purple', 'fa-layer-group', '/assets/images/thumb-ese-2027-prelims.jpg', 'ESE 2027 Prelims Paper 1+2', 12, false, 22, JSON.stringify(['paper1', 'paper2'])],
-    ['ese-2027-prelims-jaspalsirki-testseries-paper1-omr', 'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 1 (Home-Based OMR Test Series)', 'test-series', 'ESE 2027 Prelims', 'Paper 1', 'enrolling', 2499, 3999, 'indigo', 'fa-book-reader', '/assets/images/thumb-ese-2027-prelims.jpg', 'ESE 2027 Prelims Paper 1 OMR', 13, true, 22, null],
-    ['ese-2027-prelims-jaspalsirki-testseries-paper2-civil-omr', 'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 2 Civil (Home-Based OMR Test Series)', 'test-series', 'ESE 2027 Prelims', 'Paper 2 (Civil)', 'enrolling', 2499, 3999, 'indigo', 'fa-drafting-compass', '/assets/images/thumb-ese-2027-prelims.jpg', 'ESE 2027 Prelims Paper 2 OMR', 14, true, 22, null],
-    ['ese-2027-prelims-jaspalsirki-testseries-combined-omr', 'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 1 + 2 Civil (Home-Based OMR Test Series)', 'test-series', 'ESE 2027 Prelims', 'Paper 1+2', 'enrolling', 2999, 7999, 'indigo', 'fa-layer-group', '/assets/images/thumb-ese-2027-prelims.jpg', 'ESE 2027 Prelims Paper 1+2 OMR', 15, true, 22, JSON.stringify(['paper1', 'paper2'])],
-    ['rssb-je-jaspalsirki-testseries-degree-diploma-combo-omr', 'RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Degree + Diploma Combo (Home-Based OMR Test Series)', 'test-series', 'RSSB JE 2026', 'Degree + Diploma', 'enrolling', 2499, 4999, 'indigo', 'fa-layer-group', '/assets/images/thumb-rssb-je-test-series.jpg?v=2', 'RSSB JE Degree + Diploma Combo OMR', 16, true, 28, JSON.stringify(['degree', 'diploma'])],
+    ['ese-2027-prelims-jaspalsirki-testseries-paper1-omr', 'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 1 (Printed OMR Offline Test Series)', 'test-series', 'ESE 2027 Prelims', 'Paper 1', 'enrolling', 2499, 3999, 'indigo', 'fa-book-reader', '/assets/images/thumb-ese-2027-prelims.jpg', 'ESE 2027 Prelims Paper 1 OMR', 13, true, 22, null],
+    ['ese-2027-prelims-jaspalsirki-testseries-paper2-civil-omr', 'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 2 Civil (Printed OMR Offline Test Series)', 'test-series', 'ESE 2027 Prelims', 'Paper 2 (Civil)', 'enrolling', 2499, 3999, 'indigo', 'fa-drafting-compass', '/assets/images/thumb-ese-2027-prelims.jpg', 'ESE 2027 Prelims Paper 2 OMR', 14, true, 22, null],
+    ['ese-2027-prelims-jaspalsirki-testseries-combined-omr', 'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 1 + 2 Civil (Printed OMR Offline Test Series)', 'test-series', 'ESE 2027 Prelims', 'Paper 1+2', 'enrolling', 2999, 7999, 'indigo', 'fa-layer-group', '/assets/images/thumb-ese-2027-prelims.jpg', 'ESE 2027 Prelims Paper 1+2 OMR', 15, true, 22, JSON.stringify(['paper1', 'paper2'])],
+    ['rssb-je-jaspalsirki-testseries-degree-diploma-combo-omr', 'RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Degree + Diploma Combo (Printed OMR Offline Test Series)', 'test-series', 'RSSB JE 2026', 'Degree + Diploma', 'enrolling', 2499, 4999, 'indigo', 'fa-layer-group', '/assets/images/thumb-rssb-je-test-series.jpg?v=2', 'RSSB JE Degree + Diploma Combo OMR', 16, true, 28, JSON.stringify(['degree', 'diploma'])],
     ['rssb-je-jaspalsirki-testseries-degree-diploma-combo', 'RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Degree + Diploma Combo Offline', 'test-series', 'RSSB JE 2026', 'Degree + Diploma', 'enrolling', 5499, 9999, 'teal', 'fa-layer-group', '/assets/images/thumb-rssb-je-test-series.jpg?v=2', 'RSSB JE Degree + Diploma Combo', 17, false, 28, JSON.stringify(['degree', 'diploma'])],
   ];
   for (const p of programBackfill) {
@@ -972,8 +972,8 @@ async function migrate() {
 
   /* ── New program launches (2026-08-09): RVUNL JE 2026 (Electrical/
      Mechanical/Civil), BPSC Assistant Public Sanitary & Waste Management
-     Officer 2026 (Bihar, Offline + Home-Based OMR), UP Polytechnic
-     Lecturer - Civil (Home-Based OMR). Same upsert-every-boot pattern as
+     Officer 2026 (Bihar, Offline + Printed OMR), UP Polytechnic
+     Lecturer - Civil (Printed OMR Offline). Same upsert-every-boot pattern as
      programBackfill above so re-deploys stay idempotent and any
      admin edit already made in the DB always wins via COALESCE. ── */
   const newProgramLaunches = [
@@ -1063,19 +1063,19 @@ async function migrate() {
         { question: 'Which post is this test series for?', answer: 'Assistant Public Sanitary & Waste Management Officer under BPSC Advertisement No. 108/2025, Nagar Vikas evam Awas Vibhag, Bihar.' },
         { question: 'What is the paper pattern?', answer: 'Two compulsory objective papers held on the same day: Paper I General Studies (125 questions / 100 marks / 2 hours) and Paper II Solid & Liquid Waste Management (125 questions / 100 marks / 2 hours).' },
         { question: 'When does this batch start?', answer: 'Tentatively September 2026. Exact dates are shared with enrolled learners in advance.' },
-        { question: 'Is there a home-based option if I cannot travel to Patna or Delhi?', answer: 'Yes, the same test series is also available as a Home-Based OMR test series - see the OMR variant on this page.' },
+        { question: 'Is there a printed OMR offline option if I cannot travel to Patna or Delhi?', answer: 'Yes, the same test series is also available as a Printed OMR Offline test series - see the OMR variant on this page.' },
       ],
     },
     {
       slug: 'bpsc-sanitary-officer-2026-jaspalsirki-testseries-omr',
-      title: 'BPSC Bihar Assistant Public Sanitary & Waste Management Officer 2026 - Jaspal Sir Ki Test Series (Home-Based OMR)',
-      category: 'test-series', exam: 'BPSC Bihar Sanitary Officer 2026', level: 'Home-Based OMR', status: 'enrolling',
+      title: 'BPSC Bihar Assistant Public Sanitary & Waste Management Officer 2026 - Jaspal Sir Ki Test Series (Printed OMR Offline)',
+      category: 'test-series', exam: 'BPSC Bihar Sanitary Officer 2026', level: 'Printed OMR Offline', status: 'enrolling',
       price: 1499, mrp: 3999, accent: 'indigo', icon_class: 'fa-recycle',
       thumbnail_url: '/assets/images/thumb-bpsc-sanitary-officer-2026.jpg',
       short_name: 'BPSC Bihar Sanitary Officer 2026 Test Series (OMR)', sort_order: 22,
       omr_enabled: true, total_tests: 20, omr_categories: null,
       tags: ['New'],
-      short_desc: '20 home-based OMR tests covering General Studies + Solid & Liquid Waste Management for BPSC Advt. 108/2025 - attempt from anywhere.',
+      short_desc: '20 printed OMR offline tests covering General Studies + Solid & Liquid Waste Management for BPSC Advt. 108/2025 - attempt from anywhere.',
       who_for: [
         'Graduates in Chemistry/Environmental Science/Civil/Environmental/Public Health Engg./Bio Technology/Planning/Architecture applying under BPSC Advt. 108/2025',
         'Candidates outside Patna/Delhi who still want a proctored-style OMR practice routine',
@@ -1083,21 +1083,21 @@ async function migrate() {
         'Anyone who wants a structured subject-wise + full-length test progression',
       ],
       faqs: [
-        { question: 'How does the home-based OMR test series work?', answer: 'You receive the question paper and a blank OMR sheet on each test date, attempt it at home within the time limit, and upload your filled sheet before the deadline.' },
+        { question: 'How does the printed OMR offline test series work?', answer: 'You receive the question paper and a blank OMR sheet on each test date, attempt it at home within the time limit, and upload your filled sheet before the deadline.' },
         { question: 'What is the paper pattern?', answer: 'Two compulsory objective papers held on the same day: Paper I General Studies (125 questions / 100 marks / 2 hours) and Paper II Solid & Liquid Waste Management (125 questions / 100 marks / 2 hours).' },
         { question: 'When does this batch start?', answer: 'Tentatively September 2026. Exact dates are shared with enrolled learners in advance.' },
       ],
     },
     {
       slug: 'up-polytechnic-lecturer-jaspalsirki-testseries-civil-omr',
-      title: 'UP Polytechnic Lecturer - Jaspal Sir Ki Test Series - Civil (Home-Based OMR)',
-      category: 'test-series', exam: 'UP Polytechnic Lecturer', level: 'Civil (Home-Based OMR)', status: 'enrolling',
+      title: 'UP Polytechnic Lecturer - Jaspal Sir Ki Test Series - Civil (Printed OMR Offline)',
+      category: 'test-series', exam: 'UP Polytechnic Lecturer', level: 'Civil (Printed OMR Offline)', status: 'enrolling',
       price: 599, mrp: 1499, accent: 'purple', icon_class: 'fa-chalkboard-teacher',
       thumbnail_url: '/assets/images/thumb-up-polytechnic-lecturer.jpg',
       short_name: 'UP Polytechnic Lecturer Civil OMR Test Series', sort_order: 23,
       omr_enabled: true, total_tests: 12, omr_categories: null,
       tags: ['New'],
-      short_desc: '12 home-based OMR tests (Hindi + Civil Paper I, GS + Civil Paper II) for the UP Technical Education (Teaching) Service Exam - Civil branch.',
+      short_desc: '12 printed OMR offline tests (Hindi + Civil Paper I, GS + Civil Paper II) for the UP Technical Education (Teaching) Service Exam - Civil branch.',
       who_for: [
         'Candidates applying for Lecturer (Civil Engineering), Govt. Polytechnics under UPPSC Advt. A-11/E-1/2025',
         'Aspirants who want the exact UPPSC two-paper pattern practiced at home',
@@ -1108,7 +1108,7 @@ async function migrate() {
         { question: 'Which exam is this for?', answer: 'The UP Technical Education (Teaching) Service Examination-2025 (UPPSC Advt. No. A-11/E-1/2025), Lecturer post, Civil Engineering branch.' },
         { question: 'What is the test schedule?', answer: '12 tests across 6 dates - 16 Aug, 20 Aug, 23 Aug, 27 Aug, 30 Aug & 3 Sep 2026 - two tests (Paper I and Paper II) on each date.' },
         { question: 'What is the paper pattern?', answer: 'Paper I: Hindi (25 questions / 75 marks) + Civil-I (100 questions / 300 marks), 2.5 hours. Paper II: General Studies (25 questions / 75 marks) + Civil-II (100 questions / 300 marks), 2.5 hours.' },
-        { question: 'Is this a home-based test series?', answer: 'Yes. You get the question paper and blank OMR sheet on each test date and upload your filled sheet before the deadline - no need to travel to a center.' },
+        { question: 'Is this a printed OMR offline test series?', answer: 'Yes. You get the question paper and blank OMR sheet on each test date and upload your filled sheet before the deadline - no need to travel to a center.' },
       ],
     },
   ];
@@ -1136,14 +1136,76 @@ async function migrate() {
   }
   console.log('✅ Seeded/updated 6 new program launches: RVUNL JE 2026 (Electrical/Mechanical/Civil), BPSC Bihar Sanitary Officer 2026 (Offline/OMR), UP Polytechnic Lecturer Civil OMR');
 
-  /* ── UP Polytechnic Lecturer (Civil, Home-Based OMR): real Tally form
+  /* ── "Home-Based OMR" -> "Printed OMR Offline" rebrand (2026-08-26): the
+     owner does not want "Home Based" or "Online" used anywhere on the site
+     for these take-home/postal OMR test series. title/level/short_desc/faqs
+     are all only-set-once columns (VALUES on first INSERT, either
+     "ON CONFLICT DO NOTHING" above or an UPDATE SET clause that never
+     touches these specific columns) - every seed block above already has
+     the corrected copy, but that does nothing for the rows that were
+     already live before this change. Explicit unconditional corrections,
+     once, for every affected slug. faqs is fully overwritten (not edited
+     in place) to avoid risky JSONB array surgery inside migrate() - see
+     the शौर्य Batch faqs correction earlier in this function for why. ── */
+  const omrRebrandTitles = [
+    ['rssb-je-omr-degree-test-series', 'RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Degree (Printed OMR Offline Test Series)'],
+    ['rssb-jen-omr-diploma-test-series', 'RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Diploma (Printed OMR Offline Test Series)'],
+    ['ese-2027-prelims-jaspalsirki-testseries-paper1-omr', 'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 1 (Printed OMR Offline Test Series)'],
+    ['ese-2027-prelims-jaspalsirki-testseries-paper2-civil-omr', 'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 2 Civil (Printed OMR Offline Test Series)'],
+    ['ese-2027-prelims-jaspalsirki-testseries-combined-omr', 'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 1 + 2 Civil (Printed OMR Offline Test Series)'],
+    ['rssb-je-jaspalsirki-testseries-degree-diploma-combo-omr', 'RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Degree + Diploma Combo (Printed OMR Offline Test Series)'],
+    ['bpsc-sanitary-officer-2026-jaspalsirki-testseries-omr', 'BPSC Bihar Assistant Public Sanitary & Waste Management Officer 2026 - Jaspal Sir Ki Test Series (Printed OMR Offline)'],
+    ['up-polytechnic-lecturer-jaspalsirki-testseries-civil-omr', 'UP Polytechnic Lecturer - Jaspal Sir Ki Test Series - Civil (Printed OMR Offline)'],
+  ];
+  for (const [slug, title] of omrRebrandTitles) {
+    await query(`UPDATE programs SET title = $1 WHERE slug = $2`, [title, slug]);
+  }
+  await query(`UPDATE programs SET level = 'Printed OMR Offline' WHERE slug = 'bpsc-sanitary-officer-2026-jaspalsirki-testseries-omr'`);
+  await query(`UPDATE programs SET level = 'Civil (Printed OMR Offline)' WHERE slug = 'up-polytechnic-lecturer-jaspalsirki-testseries-civil-omr'`);
+  await query(
+    `UPDATE programs SET short_desc = $1 WHERE slug = 'bpsc-sanitary-officer-2026-jaspalsirki-testseries-omr'`,
+    ['20 printed OMR offline tests covering General Studies + Solid & Liquid Waste Management for BPSC Advt. 108/2025 - attempt from anywhere.']
+  );
+  await query(
+    `UPDATE programs SET short_desc = $1 WHERE slug = 'up-polytechnic-lecturer-jaspalsirki-testseries-civil-omr'`,
+    ['12 printed OMR offline tests (Hindi + Civil Paper I, GS + Civil Paper II) for the UP Technical Education (Teaching) Service Exam - Civil branch.']
+  );
+  await query(
+    `UPDATE programs SET faqs = $1 WHERE slug = 'bpsc-sanitary-officer-2026-jaspalsirki-testseries-offline'`,
+    [JSON.stringify([
+      { question: 'Which post is this test series for?', answer: 'Assistant Public Sanitary & Waste Management Officer under BPSC Advertisement No. 108/2025, Nagar Vikas evam Awas Vibhag, Bihar.' },
+      { question: 'What is the paper pattern?', answer: 'Two compulsory objective papers held on the same day: Paper I General Studies (125 questions / 100 marks / 2 hours) and Paper II Solid & Liquid Waste Management (125 questions / 100 marks / 2 hours).' },
+      { question: 'When does this batch start?', answer: 'Tentatively September 2026. Exact dates are shared with enrolled learners in advance.' },
+      { question: 'Is there a printed OMR offline option if I cannot travel to Patna or Delhi?', answer: 'Yes, the same test series is also available as a Printed OMR Offline test series - see the OMR variant on this page.' },
+    ])]
+  );
+  await query(
+    `UPDATE programs SET faqs = $1 WHERE slug = 'bpsc-sanitary-officer-2026-jaspalsirki-testseries-omr'`,
+    [JSON.stringify([
+      { question: 'How does the printed OMR offline test series work?', answer: 'You receive the question paper and a blank OMR sheet on each test date, attempt it at home within the time limit, and upload your filled sheet before the deadline.' },
+      { question: 'What is the paper pattern?', answer: 'Two compulsory objective papers held on the same day: Paper I General Studies (125 questions / 100 marks / 2 hours) and Paper II Solid & Liquid Waste Management (125 questions / 100 marks / 2 hours).' },
+      { question: 'When does this batch start?', answer: 'Tentatively September 2026. Exact dates are shared with enrolled learners in advance.' },
+    ])]
+  );
+  await query(
+    `UPDATE programs SET faqs = $1 WHERE slug = 'up-polytechnic-lecturer-jaspalsirki-testseries-civil-omr'`,
+    [JSON.stringify([
+      { question: 'Which exam is this for?', answer: 'The UP Technical Education (Teaching) Service Examination-2025 (UPPSC Advt. No. A-11/E-1/2025), Lecturer post, Civil Engineering branch.' },
+      { question: 'What is the test schedule?', answer: '12 tests across 6 dates - 16 Aug, 20 Aug, 23 Aug, 27 Aug, 30 Aug & 3 Sep 2026 - two tests (Paper I and Paper II) on each date.' },
+      { question: 'What is the paper pattern?', answer: 'Paper I: Hindi (25 questions / 75 marks) + Civil-I (100 questions / 300 marks), 2.5 hours. Paper II: General Studies (25 questions / 75 marks) + Civil-II (100 questions / 300 marks), 2.5 hours.' },
+      { question: 'Is this a printed OMR offline test series?', answer: 'Yes. You get the question paper and blank OMR sheet on each test date and upload your filled sheet before the deadline - no need to travel to a center.' },
+    ])]
+  );
+  console.log('✅ Corrected "Home-Based OMR" -> "Printed OMR Offline" wording on 8 already-live program rows');
+
+  /* ── UP Polytechnic Lecturer (Civil, Printed OMR Offline): real Tally form
      wired 2026-08-10 - only sets launch_config the first time so any
      later admin-panel edit (rollPrefix, waGroupUrl, etc.) always wins. ── */
   await query(
     `UPDATE programs SET launch_config = $1
      WHERE slug = 'up-polytechnic-lecturer-jaspalsirki-testseries-civil-omr' AND launch_config IS NULL`,
     [JSON.stringify({
-      seriesName: 'UP Polytechnic Lecturer - Civil (Home-Based OMR)',
+      seriesName: 'UP Polytechnic Lecturer - Civil (Printed OMR Offline)',
       tallyFormUrl: 'https://tally.so/r/gDVyVl',
       mode: 'home',
       rollPrefix: 'UPPOLY',
@@ -1151,6 +1213,10 @@ async function migrate() {
       lastTestDate: 'Tests run 16, 20, 23, 27, 30 Aug & 3 Sep 2026 - see full schedule on the program page',
       centre: null,
     })]
+  );
+  await query(
+    `UPDATE programs SET launch_config = jsonb_set(launch_config, '{seriesName}', '"UP Polytechnic Lecturer - Civil (Printed OMR Offline)"')
+     WHERE slug = 'up-polytechnic-lecturer-jaspalsirki-testseries-civil-omr' AND launch_config->>'seriesName' LIKE '%Home%'`
   );
 
   /* ── शौर्य Batch - RSSB JE 2026 (2026-08-17): first offline CLASSROOM
@@ -1445,11 +1511,11 @@ async function migrate() {
     );
   }
 
-  /* ── BPSC Bihar Sanitary Officer 2026 (Offline + Home-Based OMR): real
+  /* ── BPSC Bihar Sanitary Officer 2026 (Offline + Printed OMR): real
      Tally forms wired 2026-08-11. Offline uses a single fixed centre
      (Patna) per the same "single centre" decision as RVUNL - Patna is
      the exam's home state, so it's the default primary city; the OMR
-     variant is home-based and needs no centre at all. Only sets
+     variant is printed OMR offline and needs no centre at all. Only sets
      launch_config the first time so a later admin-panel edit wins. ── */
   await query(
     `UPDATE programs SET launch_config = $1
@@ -1472,7 +1538,7 @@ async function migrate() {
     `UPDATE programs SET launch_config = $1
      WHERE slug = 'bpsc-sanitary-officer-2026-jaspalsirki-testseries-omr' AND launch_config IS NULL`,
     [JSON.stringify({
-      seriesName: 'BPSC Bihar Sanitary Officer 2026 (Home-Based OMR)',
+      seriesName: 'BPSC Bihar Sanitary Officer 2026 (Printed OMR Offline)',
       tallyFormUrl: 'https://tally.so/r/RGexql',
       mode: 'home',
       rollPrefix: 'BPSCOM',
@@ -1480,6 +1546,10 @@ async function migrate() {
       lastTestDate: 'Tentative start September 2026 - see full schedule on the program page',
       centre: null,
     })]
+  );
+  await query(
+    `UPDATE programs SET launch_config = jsonb_set(launch_config, '{seriesName}', '"BPSC Bihar Sanitary Officer 2026 (Printed OMR Offline)"')
+     WHERE slug = 'bpsc-sanitary-officer-2026-jaspalsirki-testseries-omr' AND launch_config->>'seriesName' LIKE '%Home%'`
   );
 
   /* ── RPSC AE 2024 Interview Guidance: relaunched 2026-08-11 - was
@@ -1529,7 +1599,7 @@ async function migrate() {
 
      KNOWN_ROLL_NUMBERS lets the site owner supply the *real* already-
      issued number for specific enrollments the system itself could never
-     recover - most notably the RSSB home-based OMR flow, which used to
+     recover - most notably the RSSB printed OMR offline flow, which used to
      generate and email a roll number without ever saving it (fixed in
      routes/tally-omr-shared.js, but that fix can't retroactively recall
      what a past email already said). Keyed by order_id so it survives

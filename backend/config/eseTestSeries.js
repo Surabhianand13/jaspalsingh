@@ -1,7 +1,7 @@
 /* ============================================================
    config/eseTestSeries.js
    Shared data for the 6 ESE 2027 Prelims Tally webhook flows
-   (Paper 1, Paper 2 Civil, Combined - each Offline + Home-Based OMR).
+   (Paper 1, Paper 2 Civil, Combined - each Offline + Printed OMR).
    Kept separate from tally-webhook.js's RSSB JE data since the two
    exams have entirely different centres/schedules.
    ============================================================ */
@@ -103,21 +103,21 @@ const ESE_PROGRAMS = {
   paper1Omr: {
     slug:       'ese-2027-prelims-jaspalsirki-testseries-paper1-omr',
     examCode:   'P1',
-    seriesName: 'ESE 2027 Prelims - Paper 1 (GS & Engineering Aptitude) - Home-Based OMR Test Series',
+    seriesName: 'ESE 2027 Prelims - Paper 1 (GS & Engineering Aptitude) - Printed OMR Offline Test Series',
     schedule:   SCHEDULE_PAPER1,
     lastTestDate: '17 January 2027 (Test-22)',
   },
   paper2Omr: {
     slug:       'ese-2027-prelims-jaspalsirki-testseries-paper2-civil-omr',
     examCode:   'P2',
-    seriesName: 'ESE 2027 Prelims - Paper 2 (Civil) - Home-Based OMR Test Series',
+    seriesName: 'ESE 2027 Prelims - Paper 2 (Civil) - Printed OMR Offline Test Series',
     schedule:   SCHEDULE_PAPER2,
     lastTestDate: '17 January 2027 (Test-22)',
   },
   combinedOmr: {
     slug:       'ese-2027-prelims-jaspalsirki-testseries-combined-omr',
     examCode:   'CMB',
-    seriesName: 'ESE 2027 Prelims - Paper 1 + 2 (GS, Eng. Aptitude & Civil) - Home-Based OMR Test Series',
+    seriesName: 'ESE 2027 Prelims - Paper 1 + 2 (GS, Eng. Aptitude & Civil) - Printed OMR Offline Test Series',
   },
 };
 

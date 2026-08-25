@@ -1,6 +1,6 @@
 /* ============================================================
    routes/tally-omr-diploma.js  -  OMR Diploma form webhook
-   Handles Tally form submissions for the OMR Online Diploma series.
+   Handles Tally form submissions for the Printed OMR Offline Diploma series.
    No admit card - just validates token and sends confirmation email.
    ============================================================ */
 

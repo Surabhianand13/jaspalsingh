@@ -1,7 +1,7 @@
 /* ============================================================
    routes/tally-ese-shared.js
    Shared logic for the 6 ESE 2027 Prelims Tally webhook flows
-   (Paper 1, Paper 2 Civil, Combined - each Offline + Home-Based OMR).
+   (Paper 1, Paper 2 Civil, Combined - each Offline + Printed OMR).
    Mirrors the RSSB JE flow in tally-webhook.js / tally-omr-shared.js,
    reusing its generic PDF/admit-card generators.
    ============================================================ */
@@ -381,7 +381,7 @@ async function processEseSubmission(fields, programKey) {
   }
 
   const centreKey  = isOmr ? null : getEseCentreKey(centreRaw);
-  const centreInfo = isOmr ? { name: 'Online (Home Based)', address: '', mapsLink: '#' }
+  const centreInfo = isOmr ? { name: 'Offline (Printed OMR)', address: '', mapsLink: '#' }
     : (ESE_CENTRES[centreKey] || { name: centreRaw || 'TBD', address: 'TBD', mapsLink: '#' });
 
   try {
@@ -446,7 +446,7 @@ async function processEseCombinedSubmission(fields, programKey) {
   }
 
   const centreKey  = isOmr ? null : getEseCentreKey(centreRaw);
-  const centreInfo = isOmr ? { name: 'Online (Home Based)', address: '', mapsLink: '#' }
+  const centreInfo = isOmr ? { name: 'Offline (Printed OMR)', address: '', mapsLink: '#' }
     : (ESE_CENTRES[centreKey] || { name: centreRaw || 'TBD', address: 'TBD', mapsLink: '#' });
 
   try {

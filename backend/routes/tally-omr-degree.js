@@ -1,6 +1,6 @@
 /* ============================================================
    routes/tally-omr-degree.js  -  OMR Degree form webhook
-   Handles Tally form submissions for the OMR Online Degree series.
+   Handles Tally form submissions for the Printed OMR Offline Degree series.
    No admit card - just validates token and sends confirmation email.
    ============================================================ */
 

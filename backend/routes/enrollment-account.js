@@ -504,7 +504,7 @@ router.patch('/admin/:id/email', protect, async (req, res, next) => {
    silent-failure bug fixed for OMR learners on 2026-07-04).
    Body: { enrollment_id, name, govt_id, centre, program_type, photo_url }
    `centre` is required for offline enrollments only - OMR enrollments are
-   always "Online (Home Based)" and ignore whatever centre is passed in. */
+   always "Offline (Printed OMR)" and ignore whatever centre is passed in. */
 router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
   try {
     const { enrollment_id, name, govt_id, centre, program_type, photo_url } = req.body;
@@ -545,7 +545,7 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
       const { send: resendSend, PRIORITY } = require('../services/resendQueue');
 
       const centreKey  = isOmr ? null : getCentreKey(centre);
-      const centreInfo = isOmr ? { name: 'Online (Home Based)', address: '', mapsLink: '#' }
+      const centreInfo = isOmr ? { name: 'Offline (Printed OMR)', address: '', mapsLink: '#' }
         : (CENTRES[centreKey] || { name: centre, address: 'TBD', mapsLink: '#' });
 
       // Roll number is normally already assigned at purchase time
@@ -596,7 +596,7 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
       const cfg = ESE_PROGRAMS[eseKey];
 
       const centreKey  = isOmr ? null : getEseCentreKey(centre);
-      const centreInfo = isOmr ? { name: 'Online (Home Based)', address: '', mapsLink: '#' }
+      const centreInfo = isOmr ? { name: 'Offline (Printed OMR)', address: '', mapsLink: '#' }
         : (ESE_CENTRES[centreKey] || { name: centre, address: 'TBD', mapsLink: '#' });
 
       if (isEseCombined) {
@@ -694,7 +694,7 @@ router.post('/admin/resend-admit-card', protect, async (req, res, next) => {
 
     if (isOmr) {
       mode          = 'home';
-      centreForCard = 'Online (Home Based)';
+      centreForCard = 'Offline (Printed OMR)';
       htmlBody      = buildGenericAdmitCardHtml({ name: name || enr.student_name, seriesName, mode });
     } else {
       const centreKey  = getCentreKey(centre);
