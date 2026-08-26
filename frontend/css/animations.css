@@ -136,6 +136,9 @@
 [data-stagger].is-visible > *:nth-child(4) { opacity:1; transform:none; transition-delay:0.24s; }
 [data-stagger].is-visible > *:nth-child(5) { opacity:1; transform:none; transition-delay:0.32s; }
 [data-stagger].is-visible > *:nth-child(6) { opacity:1; transform:none; transition-delay:0.40s; }
+/* Catch-all for lists longer than 6 items (e.g. Quick Links) - reveals at
+   the same delay as item 6 instead of staying invisible forever. */
+[data-stagger].is-visible > *:nth-child(n+7) { opacity:1; transform:none; transition-delay:0.40s; }
 
 /* ── Hero entrance sequence ───────────────────────────────── */
 
