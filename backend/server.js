@@ -1539,9 +1539,11 @@ async function migrate() {
        p.short_name, p.sort_order, isDegree ? 24 : 22, JSON.stringify(p.tags), '/programs/' + p.slug + '/']
     );
     // Explicit unconditional correction - this program already went live
-    // (pre-2026-08-27) without pricing_tiers/tags, so the IS NULL-guarded
-    // INSERT above alone won't retroactively add them to that row.
-    await query(`UPDATE programs SET pricing_tiers = $1, tags = $2 WHERE slug = $3`, [JSON.stringify(p.tiers), JSON.stringify(p.tags), p.slug]);
+    // (pre-2026-08-27) without pricing_tiers/tags, and with an earlier,
+    // longer title ("... - Jaipur/Delhi"), so the IS NULL-guarded/
+    // ON CONFLICT DO NOTHING INSERT above alone won't retroactively fix
+    // any of that on the existing row.
+    await query(`UPDATE programs SET pricing_tiers = $1, tags = $2, title = $3 WHERE slug = $4`, [JSON.stringify(p.tiers), JSON.stringify(p.tags), p.title, p.slug]);
     await query(
       `UPDATE programs SET launch_config = $1 WHERE slug = $2 AND launch_config IS NULL`,
       [JSON.stringify({
