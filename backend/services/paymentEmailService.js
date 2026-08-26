@@ -226,10 +226,19 @@ async function sendWelcomePaymentEmail(enrollment) {
   const formUrl = `${tallyBase}?name=${encodeURIComponent(enrollment.student_name)}&email=${encodeURIComponent(enrollment.student_email)}&phone=${encodeURIComponent(enrollment.student_phone || '')}&order=${encodeURIComponent(enrollment.order_id)}&token=${encodeURIComponent(enrollment.form_token || '')}`;
 
   /* Combo enrollees are in both cohorts, so they get both batch group
-     links; everyone else gets the single group matching their program. */
+     links; everyone else gets the single group matching their program.
+
+     Any program with a launch_config (admin-launched/generic) always uses
+     its own waGroupUrl, even before a Tally form exists - checking only
+     `launchConfig.tallyFormUrl` here (as this used to) let a program like
+     शौर्य Batch, which has no Tally form yet, fall through to the slug-
+     substring guess below and get an unrelated program's WhatsApp group
+     (e.g. "-complete-degree" matching the RSSB Degree Test Series group). */
   let waGroups;
-  if (launchConfig && launchConfig.tallyFormUrl) {
+  let waGroupPending = false;
+  if (launchConfig) {
     waGroups = launchConfig.waGroupUrl ? [{ label: null, link: launchConfig.waGroupUrl }] : [];
+    waGroupPending = !launchConfig.waGroupUrl;
   } else if (isComboOffline) {
     waGroups = [
       { label: 'Degree Batch',  link: WA_GROUP_DEGREE },
@@ -352,6 +361,16 @@ async function sendWelcomePaymentEmail(enrollment) {
       </a>${i < waGroups.length - 1 ? '<br/>' : ''}`).join('')}
       <p style="margin:10px 0 0;font-size:12px;color:#6b7280;">
         This is a one-time invite link for your program. Do not share it publicly.
+      </p>
+    </div>
+    ` : waGroupPending ? `
+    <!-- WHATSAPP GROUP PENDING (launch_config program, waGroupUrl not set yet) -->
+    <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:12px;padding:20px 24px;margin-bottom:28px;">
+      <div style="font-size:13px;font-weight:800;color:#166534;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">
+        WhatsApp Batch Group
+      </div>
+      <p style="margin:0;font-size:14px;color:#374151;line-height:1.7;">
+        We will add you to the WhatsApp group shortly - keep an eye on your phone.
       </p>
     </div>
     ` : ''}

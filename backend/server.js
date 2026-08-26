@@ -1375,8 +1375,8 @@ async function migrate() {
         lastTestDate: 'To be announced - notified via email & WhatsApp',
         centre: shauryaCentre,
         batch: {
-          startDate: 'September 2026',
-          timings: 'To be announced',
+          startDate: '9 September 2026',
+          timings: 'Afternoon (exact timings shared with enrolled learners before the batch starts)',
           seatCap: 200,
           educators: shauryaEducators,
           contentHours: p.materialTracks.includes('technical-degree') ? shauryaContentHoursDegree : shauryaContentHoursDiploma,
@@ -1427,6 +1427,21 @@ async function migrate() {
   if (cancelledBundles.rows.length) {
     console.log(`✅ Cancelled ${cancelledBundles.rows.length} unused शौर्य Batch bundle-linked enrollment(s)`);
   }
+
+  /* ── शौर्य Batch confirmed start date (2026-08-24): 9 September 2026,
+     afternoon classes - same "already-live, seed loop won't touch it"
+     situation as the bundling revert above, so another explicit one-time
+     correction. ── */
+  await query(
+    `UPDATE programs
+     SET launch_config = jsonb_set(launch_config, '{batch,startDate}', '"9 September 2026"')
+     WHERE slug LIKE 'rssb-je-2026-shaurya-batch-%' AND launch_config->'batch'->>'startDate' = 'September 2026'`
+  );
+  await query(
+    `UPDATE programs
+     SET launch_config = jsonb_set(launch_config, '{batch,timings}', '"Afternoon (exact timings shared with enrolled learners before the batch starts)"')
+     WHERE slug LIKE 'rssb-je-2026-shaurya-batch-%' AND launch_config->'batch'->>'timings' = 'To be announced'`
+  );
 
   /* ── Same revert, for the FAQ text: "Do I get an admit card / ID?" used
      to promise the (now-removed) bundled Test Series admit card doubling
