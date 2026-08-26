@@ -1549,6 +1549,22 @@ async function migrate() {
   }
   console.log('✅ Seeded/updated 4 शौर्य Offline Test Series - RSSB JE 2026 rows (Degree/Diploma x Jaipur-Delhi/Other-Centres)');
 
+  /* ── शौर्य Offline Test Series real Tally forms wired 2026-08-27 - one
+     form per track, shared across both price tiers (same test content,
+     just a different price), so both of a track's slugs get the same
+     tallyFormUrl. Explicit unconditional jsonb_set, not an IS NULL guard,
+     since launch_config is already set (from the seed above) on all 4
+     rows - only tallyFormUrl itself needs correcting, once. ── */
+  await query(
+    `UPDATE programs SET launch_config = jsonb_set(launch_config, '{tallyFormUrl}', '"https://tally.so/r/PdJ20x"')
+     WHERE slug IN ('shaurya-offline-rssb-je-2026-degree', 'shaurya-offline-rssb-je-2026-degree-other-centres')`
+  );
+  await query(
+    `UPDATE programs SET launch_config = jsonb_set(launch_config, '{tallyFormUrl}', '"https://tally.so/r/44V1j5"')
+     WHERE slug IN ('shaurya-offline-rssb-je-2026-diploma', 'shaurya-offline-rssb-je-2026-diploma-other-centres')`
+  );
+  console.log('✅ Wired real Tally forms for शौर्य Offline Test Series (Degree + Diploma)');
+
   /* ── RVUNL JE 2026 (Electrical/Mechanical/Civil): real Tally forms wired
      2026-08-10 - single fixed centre (Jaipur) per program, per explicit
      product decision (not learner-selectable across Jaipur/Bikaner/Kota -
