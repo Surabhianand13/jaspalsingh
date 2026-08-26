@@ -1487,58 +1487,64 @@ async function migrate() {
      the old one.
 
      Location-tiered pricing (Jaipur/Delhi cheaper than other Rajasthan
-     centres) is modelled as 2 separate program rows per track rather than
-     a dynamic per-request price, to avoid touching payment.js's core
-     order-creation logic at all - every other program on this site is a
-     single fixed price per slug, and this keeps that guarantee. The
-     program page shows one "Select your centre" dropdown that swaps
-     which of the 2 underlying slugs the Enroll Now button points at
-     before checkout ever loads (pure frontend - see the शौर्य Offline
-     program pages). Both tiers of a track share an identical
-     launch_config (seriesName/rollPrefix/tallyFormUrl) since it's the
-     same test content either way, just a different price - only ONE
-     Tally form is needed per track, not one per tier; the webhook is
-     registered under the Jaipur/Delhi tier's slug for both. ── */
+     centres) was originally modelled as 4 separate program rows (2
+     tracks x 2 price tiers) to avoid touching payment.js's pricing logic
+     at all. Reverted 2026-08-27 per explicit product direction: only 2
+     pages/programs total, and the learner picks their centre on the
+     checkout page itself (not before it, on the program page). This
+     needs genuine server-side tiered pricing - see `programs.
+     pricing_tiers` below and create-order's resolveTierPrice() in
+     payment.js, which always computes the real charge from the DB, never
+     trusts a client-supplied amount, exactly like every other program's
+     single fixed price. The 2 "-other-centres" rows created under the
+     old 4-row design are retired (is_visible = FALSE, not deleted - they
+     were already live for about a day, so any enrollment that happened
+     to reference one keeps working). ── */
+  await query(`ALTER TABLE programs ADD COLUMN IF NOT EXISTS pricing_tiers JSONB`);
+  await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS centre_tier VARCHAR(30)`);
+
   const shauryaOfflineLaunches = [
     {
       slug: 'shaurya-offline-rssb-je-2026-degree',
-      title: 'शौर्य Offline Test Series - RSSB JE 2026 (Degree) - Jaipur/Delhi',
+      title: 'शौर्य Offline Test Series - RSSB JE 2026 (Degree)',
       level: 'Degree (Civil)', price: 1600, mrp: 3200, sort_order: 30,
-      short_name: 'शौर्य Offline Test Series - Degree (Jaipur/Delhi)',
-    },
-    {
-      slug: 'shaurya-offline-rssb-je-2026-degree-other-centres',
-      title: 'शौर्य Offline Test Series - RSSB JE 2026 (Degree) - Other Rajasthan Centres',
-      level: 'Degree (Civil)', price: 1999, mrp: 3998, sort_order: 31,
-      short_name: 'शौर्य Offline Test Series - Degree (Other Centres)',
+      short_name: 'शौर्य Offline Test Series - Degree',
+      tiers: {
+        jaipur: { label: 'Jaipur',                    price: 1600, mrp: 3200 },
+        delhi:  { label: 'Delhi',                      price: 1600, mrp: 3200 },
+        other:  { label: 'Other Rajasthan Centre',     price: 1999, mrp: 3998 },
+      },
     },
     {
       slug: 'shaurya-offline-rssb-je-2026-diploma',
-      title: 'शौर्य Offline Test Series - RSSB JE 2026 (Diploma) - Jaipur/Delhi',
-      level: 'Diploma (Civil)', price: 1400, mrp: 2800, sort_order: 32,
-      short_name: 'शौर्य Offline Test Series - Diploma (Jaipur/Delhi)',
-    },
-    {
-      slug: 'shaurya-offline-rssb-je-2026-diploma-other-centres',
-      title: 'शौर्य Offline Test Series - RSSB JE 2026 (Diploma) - Other Rajasthan Centres',
-      level: 'Diploma (Civil)', price: 1999, mrp: 3998, sort_order: 33,
-      short_name: 'शौर्य Offline Test Series - Diploma (Other Centres)',
+      title: 'शौर्य Offline Test Series - RSSB JE 2026 (Diploma)',
+      level: 'Diploma (Civil)', price: 1400, mrp: 2800, sort_order: 31,
+      short_name: 'शौर्य Offline Test Series - Diploma',
+      tiers: {
+        jaipur: { label: 'Jaipur',                    price: 1400, mrp: 2800 },
+        delhi:  { label: 'Delhi',                      price: 1400, mrp: 2800 },
+        other:  { label: 'Other Rajasthan Centre',     price: 1999, mrp: 3998 },
+      },
     },
   ];
   for (const p of shauryaOfflineLaunches) {
     const isDegree = p.slug.includes('degree');
     await query(
-      `INSERT INTO programs (slug, title, category, exam, level, status, price, mrp, accent, icon_class, thumbnail_url, short_name, sort_order, omr_enabled, total_tests, is_visible, detail_url)
-       VALUES ($1,$2,'test-series','RSSB JE 2026',$3,'enrolling',$4,$5,'teal',$6,'/assets/images/thumb-rssb-je-test-series.jpg?v=2',$7,$8,FALSE,$9,TRUE,$10)
+      `INSERT INTO programs (slug, title, category, exam, level, status, price, mrp, pricing_tiers, accent, icon_class, thumbnail_url, short_name, sort_order, omr_enabled, total_tests, is_visible, detail_url)
+       VALUES ($1,$2,'test-series','RSSB JE 2026',$3,'enrolling',$4,$5,$6,'teal',$7,'/assets/images/thumb-rssb-je-test-series.jpg?v=2',$8,$9,FALSE,$10,TRUE,$11)
        ON CONFLICT (slug) DO NOTHING`,
-      [p.slug, p.title, p.level, p.price, p.mrp, isDegree ? 'fa-clipboard-check' : 'fa-clipboard-list',
-       p.short_name, p.sort_order, isDegree ? 24 : 22, '/programs/shaurya-offline-rssb-je-2026-' + (isDegree ? 'degree' : 'diploma') + '/']
+      [p.slug, p.title, p.level, p.price, p.mrp, JSON.stringify(p.tiers), isDegree ? 'fa-clipboard-check' : 'fa-clipboard-list',
+       p.short_name, p.sort_order, isDegree ? 24 : 22, '/programs/' + p.slug + '/']
     );
+    // Explicit unconditional correction - this program already went live
+    // (pre-2026-08-27) without pricing_tiers, so the IS NULL-guarded
+    // INSERT above alone won't retroactively add it to that row.
+    await query(`UPDATE programs SET pricing_tiers = $1 WHERE slug = $2`, [JSON.stringify(p.tiers), p.slug]);
     await query(
       `UPDATE programs SET launch_config = $1 WHERE slug = $2 AND launch_config IS NULL`,
       [JSON.stringify({
         seriesName: isDegree ? 'शौर्य Offline Test Series - RSSB JE 2026 (Degree)' : 'शौर्य Offline Test Series - RSSB JE 2026 (Diploma)',
-        tallyFormUrl: null, // pending - one real Tally form per track (Degree/Diploma), shared across both price tiers
+        tallyFormUrl: null, // pending - one real Tally form per track (Degree/Diploma)
         mode: 'offline',
         rollPrefix: isDegree ? 'SHDEG' : 'SHDIP',
         waGroupUrl: null,
@@ -1547,21 +1553,28 @@ async function migrate() {
       }), p.slug]
     );
   }
-  console.log('✅ Seeded/updated 4 शौर्य Offline Test Series - RSSB JE 2026 rows (Degree/Diploma x Jaipur-Delhi/Other-Centres)');
+  console.log('✅ Seeded/updated 2 शौर्य Offline Test Series - RSSB JE 2026 rows (Degree/Diploma), tiered pricing by centre');
+
+  // Retire the 2 "-other-centres" rows from the old 4-row design - hidden,
+  // not deleted, since they were live for about a day before this revert.
+  await query(
+    `UPDATE programs SET is_visible = FALSE
+     WHERE slug IN ('shaurya-offline-rssb-je-2026-degree-other-centres', 'shaurya-offline-rssb-je-2026-diploma-other-centres')`
+  );
 
   /* ── शौर्य Offline Test Series real Tally forms wired 2026-08-27 - one
-     form per track, shared across both price tiers (same test content,
-     just a different price), so both of a track's slugs get the same
-     tallyFormUrl. Explicit unconditional jsonb_set, not an IS NULL guard,
-     since launch_config is already set (from the seed above) on all 4
-     rows - only tallyFormUrl itself needs correcting, once. ── */
+     form per track, covering every centre/price tier a learner might
+     pick at checkout (the form itself asks which centre they attended).
+     Explicit unconditional jsonb_set, not an IS NULL guard, since
+     launch_config is already set (from the seed above) - only
+     tallyFormUrl itself needs correcting, once. ── */
   await query(
     `UPDATE programs SET launch_config = jsonb_set(launch_config, '{tallyFormUrl}', '"https://tally.so/r/PdJ20x"')
-     WHERE slug IN ('shaurya-offline-rssb-je-2026-degree', 'shaurya-offline-rssb-je-2026-degree-other-centres')`
+     WHERE slug = 'shaurya-offline-rssb-je-2026-degree'`
   );
   await query(
     `UPDATE programs SET launch_config = jsonb_set(launch_config, '{tallyFormUrl}', '"https://tally.so/r/44V1j5"')
-     WHERE slug IN ('shaurya-offline-rssb-je-2026-diploma', 'shaurya-offline-rssb-je-2026-diploma-other-centres')`
+     WHERE slug = 'shaurya-offline-rssb-je-2026-diploma'`
   );
   console.log('✅ Wired real Tally forms for शौर्य Offline Test Series (Degree + Diploma)');
 
