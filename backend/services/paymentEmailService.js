@@ -59,6 +59,16 @@ const NO_FULFILLMENT_SLUGS = new Set([
   'rssb-je-2026-shaurya-batch-non-technical-only',
   'rssb-je-2026-shaurya-batch-technical-test-series-degree',
   'rssb-je-2026-shaurya-batch-technical-test-series-diploma',
+  // शौर्य Offline Test Series - RSSB JE 2026 (launched 2026-08-26): a new,
+  // separate offline product from the existing RSSB Degree/Diploma Test
+  // Series - all 4 slugs (2 tracks x 2 price tiers) contain "degree"/
+  // "diploma" and would otherwise misroute to that unrelated product's
+  // real Tally form. Remove once each track gets its own real
+  // launch_config.tallyFormUrl (shared across both price tiers).
+  'shaurya-offline-rssb-je-2026-degree',
+  'shaurya-offline-rssb-je-2026-degree-other-centres',
+  'shaurya-offline-rssb-je-2026-diploma',
+  'shaurya-offline-rssb-je-2026-diploma-other-centres',
 ]);
 
 /* ── ESE 2027 Prelims - 6 programs, matched by exact slug (config-driven) ── */
