@@ -1479,6 +1479,92 @@ async function migrate() {
     ['100 hrs of live Non-Technical (Rajasthan GK, History, Art & Culture, Political & Administrative System) classroom teaching, plus the RSSB JE Test Series - GK content is identical for Degree and Diploma.']
   );
 
+  /* ── शौर्य Offline Test Series - RSSB JE 2026 (2026-08-26): a new,
+     separate offline test series - NOT the same product as the existing
+     rssb-jen-degree-test-series/rssb-jen-diploma-test-series (different
+     name, different start date 30 Sep 2026, different complete schedule).
+     Both stay live in parallel - existing enrollees are mid-schedule on
+     the old one.
+
+     Location-tiered pricing (Jaipur/Delhi cheaper than other Rajasthan
+     centres) is modelled as 2 separate program rows per track rather than
+     a dynamic per-request price, to avoid touching payment.js's core
+     order-creation logic at all - every other program on this site is a
+     single fixed price per slug, and this keeps that guarantee. The
+     program page shows one "Select your centre" dropdown that swaps
+     which of the 2 underlying slugs the Enroll Now button points at
+     before checkout ever loads (pure frontend - see the शौर्य Offline
+     program pages). Both tiers of a track share an identical
+     launch_config (seriesName/rollPrefix/tallyFormUrl) since it's the
+     same test content either way, just a different price - only ONE
+     Tally form is needed per track, not one per tier; the webhook is
+     registered under the Jaipur/Delhi tier's slug for both. ── */
+  const shauryaOfflineLaunches = [
+    {
+      slug: 'shaurya-offline-rssb-je-2026-degree',
+      title: 'शौर्य Offline Test Series - RSSB JE 2026 (Degree) - Jaipur/Delhi',
+      level: 'Degree (Civil)', price: 1600, mrp: 3200, sort_order: 30,
+      short_name: 'शौर्य Offline Test Series - Degree (Jaipur/Delhi)',
+    },
+    {
+      slug: 'shaurya-offline-rssb-je-2026-degree-other-centres',
+      title: 'शौर्य Offline Test Series - RSSB JE 2026 (Degree) - Other Rajasthan Centres',
+      level: 'Degree (Civil)', price: 1999, mrp: 3998, sort_order: 31,
+      short_name: 'शौर्य Offline Test Series - Degree (Other Centres)',
+    },
+    {
+      slug: 'shaurya-offline-rssb-je-2026-diploma',
+      title: 'शौर्य Offline Test Series - RSSB JE 2026 (Diploma) - Jaipur/Delhi',
+      level: 'Diploma (Civil)', price: 1400, mrp: 2800, sort_order: 32,
+      short_name: 'शौर्य Offline Test Series - Diploma (Jaipur/Delhi)',
+    },
+    {
+      slug: 'shaurya-offline-rssb-je-2026-diploma-other-centres',
+      title: 'शौर्य Offline Test Series - RSSB JE 2026 (Diploma) - Other Rajasthan Centres',
+      level: 'Diploma (Civil)', price: 1999, mrp: 3998, sort_order: 33,
+      short_name: 'शौर्य Offline Test Series - Diploma (Other Centres)',
+    },
+  ];
+  for (const p of shauryaOfflineLaunches) {
+    const isDegree = p.slug.includes('degree');
+    await query(
+      `INSERT INTO programs (slug, title, category, exam, level, status, price, mrp, accent, icon_class, thumbnail_url, short_name, sort_order, omr_enabled, total_tests, is_visible, detail_url)
+       VALUES ($1,$2,'test-series','RSSB JE 2026',$3,'enrolling',$4,$5,'teal',$6,'/assets/images/thumb-rssb-je-test-series.jpg?v=2',$7,$8,FALSE,$9,TRUE,$10)
+       ON CONFLICT (slug) DO NOTHING`,
+      [p.slug, p.title, p.level, p.price, p.mrp, isDegree ? 'fa-clipboard-check' : 'fa-clipboard-list',
+       p.short_name, p.sort_order, isDegree ? 24 : 22, '/programs/shaurya-offline-rssb-je-2026-' + (isDegree ? 'degree' : 'diploma') + '/']
+    );
+    await query(
+      `UPDATE programs SET launch_config = $1 WHERE slug = $2 AND launch_config IS NULL`,
+      [JSON.stringify({
+        seriesName: isDegree ? 'शौर्य Offline Test Series - RSSB JE 2026 (Degree)' : 'शौर्य Offline Test Series - RSSB JE 2026 (Diploma)',
+        tallyFormUrl: null, // pending - one real Tally form per track (Degree/Diploma), shared across both price tiers
+        mode: 'offline',
+        rollPrefix: isDegree ? 'SHDEG' : 'SHDIP',
+        waGroupUrl: null,
+        lastTestDate: isDegree ? '7 February 2027 (Test-24)' : '24 January 2027 (Test-22)',
+        centre: null, // varies per learner - collected via the Tally form's centre field, same as the existing offline RSSB product
+      }), p.slug]
+    );
+  }
+  console.log('✅ Seeded/updated 4 शौर्य Offline Test Series - RSSB JE 2026 rows (Degree/Diploma x Jaipur-Delhi/Other-Centres)');
+
+  /* ── शौर्य Offline Test Series real Tally forms wired 2026-08-27 - one
+     form per track, shared across both price tiers (same test content,
+     just a different price), so both of a track's slugs get the same
+     tallyFormUrl. Explicit unconditional jsonb_set, not an IS NULL guard,
+     since launch_config is already set (from the seed above) on all 4
+     rows - only tallyFormUrl itself needs correcting, once. ── */
+  await query(
+    `UPDATE programs SET launch_config = jsonb_set(launch_config, '{tallyFormUrl}', '"https://tally.so/r/PdJ20x"')
+     WHERE slug IN ('shaurya-offline-rssb-je-2026-degree', 'shaurya-offline-rssb-je-2026-degree-other-centres')`
+  );
+  await query(
+    `UPDATE programs SET launch_config = jsonb_set(launch_config, '{tallyFormUrl}', '"https://tally.so/r/44V1j5"')
+     WHERE slug IN ('shaurya-offline-rssb-je-2026-diploma', 'shaurya-offline-rssb-je-2026-diploma-other-centres')`
+  );
+  console.log('✅ Wired real Tally forms for शौर्य Offline Test Series (Degree + Diploma)');
+
   /* ── RVUNL JE 2026 (Electrical/Mechanical/Civil): real Tally forms wired
      2026-08-10 - single fixed centre (Jaipur) per program, per explicit
      product decision (not learner-selectable across Jaipur/Bikaner/Kota -

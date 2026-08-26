@@ -59,6 +59,9 @@ const NO_FULFILLMENT_SLUGS = new Set([
   'rssb-je-2026-shaurya-batch-non-technical-only',
   'rssb-je-2026-shaurya-batch-technical-test-series-degree',
   'rssb-je-2026-shaurya-batch-technical-test-series-diploma',
+  // शौर्य Offline Test Series - RSSB JE 2026: both tracks got real Tally
+  // forms 2026-08-27 (see the launch_config.tallyFormUrl correction in
+  // server.js) - no longer needed here, hasTallyForm now covers them.
 ]);
 
 /* ── ESE 2027 Prelims - 6 programs, matched by exact slug (config-driven) ── */
