@@ -1509,6 +1509,7 @@ async function migrate() {
       title: 'शौर्य Offline Test Series - RSSB JE 2026 (Degree)',
       level: 'Degree (Civil)', price: 1600, mrp: 3200, sort_order: 30,
       short_name: 'शौर्य Offline Test Series - Degree',
+      tags: ['Subject-wise Mock Tests', 'Full-length Mock Papers', 'Post-test Expert Review', 'Score Tracking & Analysis'],
       tiers: {
         jaipur: { label: 'Jaipur',                    price: 1600, mrp: 3200 },
         delhi:  { label: 'Delhi',                      price: 1600, mrp: 3200 },
@@ -1520,6 +1521,7 @@ async function migrate() {
       title: 'शौर्य Offline Test Series - RSSB JE 2026 (Diploma)',
       level: 'Diploma (Civil)', price: 1400, mrp: 2800, sort_order: 31,
       short_name: 'शौर्य Offline Test Series - Diploma',
+      tags: ['Subject-wise Mock Tests', 'Full-length Mock Papers', 'Post-test Expert Review', 'Score Tracking & Analysis'],
       tiers: {
         jaipur: { label: 'Jaipur',                    price: 1400, mrp: 2800 },
         delhi:  { label: 'Delhi',                      price: 1400, mrp: 2800 },
@@ -1530,16 +1532,16 @@ async function migrate() {
   for (const p of shauryaOfflineLaunches) {
     const isDegree = p.slug.includes('degree');
     await query(
-      `INSERT INTO programs (slug, title, category, exam, level, status, price, mrp, pricing_tiers, accent, icon_class, thumbnail_url, short_name, sort_order, omr_enabled, total_tests, is_visible, detail_url)
-       VALUES ($1,$2,'test-series','RSSB JE 2026',$3,'enrolling',$4,$5,$6,'teal',$7,'/assets/images/thumb-rssb-je-test-series.jpg?v=2',$8,$9,FALSE,$10,TRUE,$11)
+      `INSERT INTO programs (slug, title, category, exam, level, status, price, mrp, pricing_tiers, accent, icon_class, thumbnail_url, short_name, sort_order, omr_enabled, total_tests, tags, is_visible, detail_url)
+       VALUES ($1,$2,'test-series','RSSB JE 2026',$3,'enrolling',$4,$5,$6,'teal',$7,'/assets/images/thumb-rssb-je-test-series.jpg?v=2',$8,$9,FALSE,$10,$11,TRUE,$12)
        ON CONFLICT (slug) DO NOTHING`,
       [p.slug, p.title, p.level, p.price, p.mrp, JSON.stringify(p.tiers), isDegree ? 'fa-clipboard-check' : 'fa-clipboard-list',
-       p.short_name, p.sort_order, isDegree ? 24 : 22, '/programs/' + p.slug + '/']
+       p.short_name, p.sort_order, isDegree ? 24 : 22, JSON.stringify(p.tags), '/programs/' + p.slug + '/']
     );
     // Explicit unconditional correction - this program already went live
-    // (pre-2026-08-27) without pricing_tiers, so the IS NULL-guarded
-    // INSERT above alone won't retroactively add it to that row.
-    await query(`UPDATE programs SET pricing_tiers = $1 WHERE slug = $2`, [JSON.stringify(p.tiers), p.slug]);
+    // (pre-2026-08-27) without pricing_tiers/tags, so the IS NULL-guarded
+    // INSERT above alone won't retroactively add them to that row.
+    await query(`UPDATE programs SET pricing_tiers = $1, tags = $2 WHERE slug = $3`, [JSON.stringify(p.tiers), JSON.stringify(p.tags), p.slug]);
     await query(
       `UPDATE programs SET launch_config = $1 WHERE slug = $2 AND launch_config IS NULL`,
       [JSON.stringify({

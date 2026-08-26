@@ -91,14 +91,16 @@
     .er-key { color:var(--body-color); font-weight:500; }
     .er-val { font-family:var(--font-heading); font-weight:700; color:var(--heading-color); font-size:13px; }
     .er-val.green { color:var(--green); }
-    .price-block { background:linear-gradient(135deg,#0F766E 0%,#0D9488 100%); border-radius:12px; padding:16px 18px; margin-bottom:14px; }
-    .price-row { display:flex; align-items:baseline; gap:10px; margin-bottom:4px; }
-    .price-main { font-family:var(--font-heading); font-size:22px; font-weight:800; color:#fff; line-height:1.3; }
-    .price-note { font-size:11.5px; color:rgba(255,255,255,.8); margin-top:6px; }
+    .price-block { background:linear-gradient(135deg,#0F766E 0%,#0D9488 100%); border-radius:12px; padding:14px 18px; margin-bottom:14px; }
+    .price-tier-row { display:flex; align-items:center; justify-content:space-between; padding:7px 0; }
+    .price-tier-row + .price-tier-row { border-top:1px solid rgba(255,255,255,.18); }
+    .price-tier-label { font-size:12.5px; font-weight:600; color:rgba(255,255,255,.82); }
+    .price-tier-amt { font-family:var(--font-heading); font-size:18px; font-weight:800; color:#fff; }
+    .price-note { font-size:11px; color:rgba(255,255,255,.75); margin-top:8px; text-align:center; }
     .enroll-btn { display:block; width:100%; text-align:center; padding:13px 20px; border-radius:var(--radius-pill); font-family:var(--font-heading); font-size:14px; font-weight:800; background:var(--gradient); color:#fff; text-decoration:none; box-shadow:0 4px 18px rgba(200,18,64,.30); transition:var(--transition); }
     .enroll-btn:hover { transform:translateY(-2px); box-shadow:0 8px 26px rgba(200,18,64,.42); color:#fff; }
-    .enroll-wa { display:flex; align-items:center; justify-content:center; gap:8px; margin-top:10px; padding:11px 20px; border-radius:var(--radius-pill); font-family:var(--font-heading); font-size:13px; font-weight:700; background:rgba(37,211,102,.10); color:#1a7a40; border:1.5px solid rgba(37,211,102,.25); text-decoration:none; transition:var(--transition); }
-    .enroll-wa:hover { background:rgba(37,211,102,.18); color:#1a7a40; }
+    .enroll-timer { display:flex; align-items:center; justify-content:center; gap:8px; margin-top:10px; padding:11px 20px; border-radius:var(--radius-pill); font-family:var(--font-heading); font-size:13px; font-weight:700; background:rgba(200,18,64,.08); color:#C81240; border:1.5px solid rgba(200,18,64,.22); }
+    .enroll-timer .op-countdown { font-weight:800; font-variant-numeric:tabular-nums; letter-spacing:.4px; }
     .prog-detail-body { padding:72px 0 96px; }
     .detail-layout { display:grid; grid-template-columns:1fr 340px; gap:48px; align-items:start; }
     .detail-main { display:flex; flex-direction:column; gap:48px; }
@@ -223,13 +225,18 @@
                 <div class="enroll-row"><span class="er-key">Enrollment</span><span class="er-val green">Open</span></div>
               </div>
               <div class="price-block">
-                <div class="price-row">
-                  <span class="price-main">&#8377;1,600 - &#8377;1,999</span>
+                <div class="price-tier-row">
+                  <span class="price-tier-label">Jaipur / Delhi</span>
+                  <span class="price-tier-amt">&#8377;1,600</span>
                 </div>
-                <div class="price-note">₹1,600 in Jaipur/Delhi · ₹1,999 at other Rajasthan centres - select your centre at checkout</div>
+                <div class="price-tier-row">
+                  <span class="price-tier-label">Other Rajasthan Centres</span>
+                  <span class="price-tier-amt">&#8377;1,999</span>
+                </div>
+                <div class="price-note">Select your centre at checkout to confirm your price</div>
               </div>
               <a href="/checkout/?program=shaurya-offline-rssb-je-2026-degree" class="enroll-btn" data-role="enroll-link">Enroll Now</a>
-              <a href="https://wa.me/919829133317?text=I want more details about शौर्य Offline Test Series - RSSB JE 2026 (Degree)" target="_blank" rel="noopener" class="enroll-wa"><i class="fab fa-whatsapp"></i> Ask on WhatsApp</a>
+              <div class="enroll-timer"><i class="fas fa-bolt"></i> Offer ends in <span class="op-countdown"></span></div>
             </div>
           </div>
         </div>
@@ -424,13 +431,18 @@
                   <div class="enroll-row"><span class="er-key">Enrollment</span><span class="er-val green">Open</span></div>
                 </div>
                 <div class="price-block">
-                  <div class="price-row">
-                    <span class="price-main">&#8377;1,600 - &#8377;1,999</span>
+                  <div class="price-tier-row">
+                    <span class="price-tier-label">Jaipur / Delhi</span>
+                    <span class="price-tier-amt">&#8377;1,600</span>
                   </div>
-                  <div class="price-note">₹1,600 in Jaipur/Delhi · ₹1,999 at other Rajasthan centres - select your centre at checkout</div>
+                  <div class="price-tier-row">
+                    <span class="price-tier-label">Other Rajasthan Centres</span>
+                    <span class="price-tier-amt">&#8377;1,999</span>
+                  </div>
+                  <div class="price-note">Select your centre at checkout to confirm your price</div>
                 </div>
                 <a href="/checkout/?program=shaurya-offline-rssb-je-2026-degree" class="enroll-btn" data-role="enroll-link">Enroll Now</a>
-                <a href="https://wa.me/919829133317?text=I want more details about शौर्य Offline Test Series - RSSB JE 2026 (Degree)" target="_blank" rel="noopener" class="enroll-wa"><i class="fab fa-whatsapp"></i> Ask on WhatsApp</a>
+                <div class="enroll-timer"><i class="fas fa-bolt"></i> Offer ends in <span class="op-countdown"></span></div>
               </div>
             </div>
           </div>
@@ -505,5 +517,6 @@
   <script src="/js/main.js"></script>
   <script src="/js/chat-tab.js" defer></script>
   <script src="/js/track.js" defer></script>
+  <script src="/js/offer-countdown.js" defer></script>
 </body>
 </html>

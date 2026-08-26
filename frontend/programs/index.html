@@ -1309,6 +1309,13 @@
       return art;
     }
 
+    // शौर्य Offline Test Series is the lead offer - always pin it to the
+    // very front of the grid regardless of DOM/append order, in this order.
+    var PRIORITY_SLUGS = [
+      'shaurya-offline-rssb-je-2026-degree',
+      'shaurya-offline-rssb-je-2026-diploma'
+    ];
+
     function syncPrograms() {
       var grid = document.querySelector('.progs-grid');
       if (!grid) { bindProgFilters(); return; }
@@ -1334,6 +1341,15 @@
           list.forEach(function(p) {
             if (!existing[p.slug]) grid.appendChild(buildCard(p));
           });
+
+          // Pin priority slugs to the very front, in order
+          for (var i = PRIORITY_SLUGS.length - 1; i >= 0; i--) {
+            grid.querySelectorAll('.op-card').forEach(function(card) {
+              var cta = card.querySelector('.op-card-cta');
+              var slug = card.getAttribute('data-slug') || (cta ? slugFromHref(cta.getAttribute('href')) : '');
+              if (slug === PRIORITY_SLUGS[i]) grid.prepend(card);
+            });
+          }
 
           // Update active-count heading
           var heading = document.querySelector('#programs-grid .sec-heading');
