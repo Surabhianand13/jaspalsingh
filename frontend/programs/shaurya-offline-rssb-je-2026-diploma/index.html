@@ -46,7 +46,7 @@
     "@context": "https://schema.org",
     "@type": "FAQPage",
     "mainEntity": [
-      { "@type": "Question", "name": "How much does शौर्य Offline Test Series cost?", "acceptedAnswer": { "@type": "Answer", "text": "₹1,400 in Jaipur or Delhi, and ₹1,999 at any other Rajasthan centre. Select your centre on this page to see the exact price before enrolling." } },
+      { "@type": "Question", "name": "How much does शौर्य Offline Test Series cost?", "acceptedAnswer": { "@type": "Answer", "text": "₹1,400 in Jaipur or Delhi, and ₹1,999 at any other Rajasthan centre. You will select your centre at checkout to see the exact price before paying." } },
       { "@type": "Question", "name": "How many tests are there and when do they start?", "acceptedAnswer": { "@type": "Answer", "text": "22 tests in total, starting 30 August 2026 and running weekly through 24 January 2027. Each test has 120 questions." } },
       { "@type": "Question", "name": "Is this the same as the existing RSSB JE Diploma Offline Test Series?", "acceptedAnswer": { "@type": "Answer", "text": "No - शौर्य Offline Test Series is a separate, new test series with its own start date and complete schedule. The existing RSSB JE Diploma Offline Test Series continues to run separately for learners already enrolled in it." } }
     ]
@@ -91,14 +91,10 @@
     .er-key { color:var(--body-color); font-weight:500; }
     .er-val { font-family:var(--font-heading); font-weight:700; color:var(--heading-color); font-size:13px; }
     .er-val.green { color:var(--green); }
-    .centre-select-wrap { margin-bottom:14px; }
-    .centre-select-label { font-family:var(--font-heading); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--heading-color); margin-bottom:6px; display:block; }
-    .centre-select { width:100%; padding:11px 14px; border-radius:10px; border:1.5px solid rgba(26,26,46,.14); font-family:var(--font-heading); font-size:14px; font-weight:700; color:var(--heading-color); background:#fff; cursor:pointer; }
     .price-block { background:linear-gradient(135deg,#0F766E 0%,#0D9488 100%); border-radius:12px; padding:16px 18px; margin-bottom:14px; }
     .price-row { display:flex; align-items:baseline; gap:10px; margin-bottom:4px; }
-    .price-main { font-family:var(--font-heading); font-size:26px; font-weight:800; color:#fff; line-height:1; }
-    .price-mrp { font-size:13px; color:rgba(255,255,255,.55); text-decoration:line-through; }
-    .price-note { font-size:11.5px; color:rgba(255,255,255,.8); }
+    .price-main { font-family:var(--font-heading); font-size:22px; font-weight:800; color:#fff; line-height:1.3; }
+    .price-note { font-size:11.5px; color:rgba(255,255,255,.8); margin-top:6px; }
     .enroll-btn { display:block; width:100%; text-align:center; padding:13px 20px; border-radius:var(--radius-pill); font-family:var(--font-heading); font-size:14px; font-weight:800; background:var(--gradient); color:#fff; text-decoration:none; box-shadow:0 4px 18px rgba(200,18,64,.30); transition:var(--transition); }
     .enroll-btn:hover { transform:translateY(-2px); box-shadow:0 8px 26px rgba(200,18,64,.42); color:#fff; }
     .enroll-wa { display:flex; align-items:center; justify-content:center; gap:8px; margin-top:10px; padding:11px 20px; border-radius:var(--radius-pill); font-family:var(--font-heading); font-size:13px; font-weight:700; background:rgba(37,211,102,.10); color:#1a7a40; border:1.5px solid rgba(37,211,102,.25); text-decoration:none; transition:var(--transition); }
@@ -211,7 +207,7 @@
               <div class="ph-item"><i class="fas fa-file-alt"></i><span class="ph-num">22</span><span class="ph-label">Tests</span></div>
               <div class="ph-item"><i class="fas fa-calendar-alt"></i><span class="ph-num" style="font-size:11px;">30 Aug 2026</span><span class="ph-label">Starts</span></div>
               <div class="ph-item"><i class="fas fa-question-circle"></i><span class="ph-num">120</span><span class="ph-label">Qs / Test</span></div>
-              <div class="ph-item"><i class="fas fa-file-pdf"></i><span class="ph-num" style="font-size:11px;">PDF</span><span class="ph-label">Solution</span></div>
+              <div class="ph-item"><i class="fas fa-map-marker-alt"></i><span class="ph-num" style="font-size:11px;">Jaipur/Delhi</span><span class="ph-label">Priced Lower</span></div>
             </div>
           </div>
           <div class="enroll-card">
@@ -226,20 +222,11 @@
                 <div class="enroll-row"><span class="er-key">Level</span><span class="er-val">Diploma (Civil)</span></div>
                 <div class="enroll-row"><span class="er-key">Enrollment</span><span class="er-val green">Open</span></div>
               </div>
-              <div class="centre-select-wrap">
-                <label class="centre-select-label" for="centreSelect1">Select your centre</label>
-                <select class="centre-select" id="centreSelect1" onchange="updateShauryaPricing(this.value)">
-                  <option value="jaipur">Jaipur</option>
-                  <option value="delhi">Delhi</option>
-                  <option value="other">Other Rajasthan Centre</option>
-                </select>
-              </div>
               <div class="price-block">
                 <div class="price-row">
-                  <span class="price-main price-display">&#8377;1,400</span>
-                  <span class="price-mrp mrp-display">&#8377;2,800</span>
+                  <span class="price-main">&#8377;1,400 - &#8377;1,999</span>
                 </div>
-                <div class="price-note">Detailed Solution PDF included after every test</div>
+                <div class="price-note">₹1,400 in Jaipur/Delhi · ₹1,999 at other Rajasthan centres - select your centre at checkout</div>
               </div>
               <a href="/checkout/?program=shaurya-offline-rssb-je-2026-diploma" class="enroll-btn" data-role="enroll-link">Enroll Now</a>
               <a href="https://wa.me/919829133317?text=I want more details about शौर्य Offline Test Series - RSSB JE 2026 (Diploma)" target="_blank" rel="noopener" class="enroll-wa"><i class="fab fa-whatsapp"></i> Ask on WhatsApp</a>
@@ -260,10 +247,6 @@
                 <div class="included-item">
                   <span class="ii-icon" style="background:rgba(15,118,110,.1);color:#0F766E;"><i class="fas fa-file-alt"></i></span>
                   <div class="ii-body"><span class="ii-title">22 Tests, 120 Questions Each</span><span class="ii-desc">7 subject-wise tests followed by 15 full-length mock papers, weekly from 30 August 2026 to 24 January 2027.</span></div>
-                </div>
-                <div class="included-item">
-                  <span class="ii-icon" style="background:rgba(200,18,64,.09);color:#C81240;"><i class="fas fa-file-pdf"></i></span>
-                  <div class="ii-body"><span class="ii-title">Detailed Solution PDF After Every Test</span><span class="ii-desc">Analyse your mistakes, identify weak areas, and improve before the next test - delivered as a PDF, not a printed booklet.</span></div>
                 </div>
                 <div class="included-item">
                   <span class="ii-icon" style="background:rgba(5,150,105,.1);color:#059669;"><i class="fas fa-map-marker-alt"></i></span>
@@ -372,7 +355,7 @@
 
                 <details class="faq-item">
                   <summary>How much does शौर्य Offline Test Series cost?</summary>
-                  <p class="faq-body">₹1,400 in Jaipur or Delhi, and ₹1,999 at any other Rajasthan centre. Select your centre on this page (above) to see the exact price before you enroll - the Enroll Now button always reflects the price for the centre you've selected.</p>
+                  <p class="faq-body">₹1,400 in Jaipur or Delhi, and ₹1,999 at any other Rajasthan centre. Click Enroll Now and you will select your centre on the checkout page - the price updates automatically before you pay.</p>
                 </details>
 
                 <details class="faq-item">
@@ -397,7 +380,7 @@
 
                 <details class="faq-item">
                   <summary>Which cities is this test series available in?</summary>
-                  <p class="faq-body">शौर्य Offline Test Series is conducted Pan Rajasthan and in Delhi. Pricing is ₹1,400 in Jaipur and Delhi, and ₹1,999 at any other Rajasthan centre - select your centre above for the exact price and to enroll.</p>
+                  <p class="faq-body">शौर्य Offline Test Series is conducted Pan Rajasthan and in Delhi. Pricing is ₹1,400 in Jaipur and Delhi, and ₹1,999 at any other Rajasthan centre - select your centre at checkout for the exact price and to enroll.</p>
                 </details>
 
                 <details class="faq-item">
@@ -438,20 +421,11 @@
                   <div class="enroll-row"><span class="er-key">Level</span><span class="er-val">Diploma (Civil)</span></div>
                   <div class="enroll-row"><span class="er-key">Enrollment</span><span class="er-val green">Open</span></div>
                 </div>
-                <div class="centre-select-wrap">
-                  <label class="centre-select-label" for="centreSelect2">Select your centre</label>
-                  <select class="centre-select" id="centreSelect2" onchange="updateShauryaPricing(this.value)">
-                    <option value="jaipur">Jaipur</option>
-                    <option value="delhi">Delhi</option>
-                    <option value="other">Other Rajasthan Centre</option>
-                  </select>
-                </div>
                 <div class="price-block">
                   <div class="price-row">
-                    <span class="price-main price-display">&#8377;1,400</span>
-                    <span class="price-mrp mrp-display">&#8377;2,800</span>
+                    <span class="price-main">&#8377;1,400 - &#8377;1,999</span>
                   </div>
-                  <div class="price-note">Detailed Solution PDF included after every test</div>
+                  <div class="price-note">₹1,400 in Jaipur/Delhi · ₹1,999 at other Rajasthan centres - select your centre at checkout</div>
                 </div>
                 <a href="/checkout/?program=shaurya-offline-rssb-je-2026-diploma" class="enroll-btn" data-role="enroll-link">Enroll Now</a>
                 <a href="https://wa.me/919829133317?text=I want more details about शौर्य Offline Test Series - RSSB JE 2026 (Diploma)" target="_blank" rel="noopener" class="enroll-wa"><i class="fab fa-whatsapp"></i> Ask on WhatsApp</a>
@@ -529,21 +503,5 @@
   <script src="/js/main.js"></script>
   <script src="/js/chat-tab.js" defer></script>
   <script src="/js/track.js" defer></script>
-  <script>
-    var SHAURYA_OFFLINE_DIPLOMA_PRICING = {
-      jaipur: { slug: 'shaurya-offline-rssb-je-2026-diploma', price: 1400, mrp: 2800 },
-      delhi:  { slug: 'shaurya-offline-rssb-je-2026-diploma', price: 1400, mrp: 2800 },
-      other:  { slug: 'shaurya-offline-rssb-je-2026-diploma-other-centres', price: 1999, mrp: 3998 }
-    };
-    function updateShauryaPricing(tierKey) {
-      var t = SHAURYA_OFFLINE_DIPLOMA_PRICING[tierKey];
-      if (!t) return;
-      document.querySelectorAll('.centre-select').forEach(function(el) { el.value = tierKey; });
-      document.querySelectorAll('.price-display').forEach(function(el) { el.textContent = '₹' + t.price.toLocaleString('en-IN'); });
-      document.querySelectorAll('.mrp-display').forEach(function(el) { el.textContent = '₹' + t.mrp.toLocaleString('en-IN'); });
-      document.querySelectorAll('[data-role="enroll-link"]').forEach(function(el) { el.href = '/checkout/?program=' + t.slug; });
-    }
-    updateShauryaPricing('jaipur');
-  </script>
 </body>
 </html>

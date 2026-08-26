@@ -239,7 +239,7 @@ const FALLBACK_PROGRAMS = {
 
 async function getProgramData(slug) {
   try {
-    const result = await query(`SELECT slug, title, short_name, price, mrp, is_visible FROM programs WHERE slug = $1`, [slug]);
+    const result = await query(`SELECT slug, title, short_name, price, mrp, is_visible, pricing_tiers FROM programs WHERE slug = $1`, [slug]);
     // is_visible = FALSE only ever hid a program from listings (homepage/
     // programs page) - nothing enforced it at the actual purchase point,
     // so a discontinued program (e.g. admin "marks off" a cancelled exam)
@@ -247,12 +247,28 @@ async function getProgramData(slug) {
     // is the real enforcement: explicitly hidden programs can't be bought.
     if (result.rows.length && result.rows[0].price != null && result.rows[0].mrp != null && result.rows[0].is_visible !== false) {
       const row = result.rows[0];
-      return { name: row.title, shortName: row.short_name || row.title, price: row.price, mrp: row.mrp };
+      return { name: row.title, shortName: row.short_name || row.title, price: row.price, mrp: row.mrp, pricingTiers: row.pricing_tiers || null };
     }
   } catch (err) {
     console.error('[getProgramData] DB error, falling back to hardcoded catalogue:', err.message);
   }
   return FALLBACK_PROGRAMS[slug] || null;
+}
+
+/* ── Resolve a program's real price, accounting for centre-based tiered
+   pricing (शौर्य Offline Test Series - Degree/Diploma priced by centre:
+   Jaipur/Delhi cheaper than other Rajasthan centres). This is the ONLY
+   place a tiered program's price is ever decided - coupon/referral/
+   create-order all call this first and use its result as their base
+   price, so a client can never submit an arbitrary amount; centre_tier
+   only ever selects among prices this server itself defined in
+   programs.pricing_tiers. Returns null if the program is tiered but no
+   valid centre_tier was given - callers must treat that as a 400. ── */
+function resolveTierPrice(program, centreTier) {
+  if (!program.pricingTiers) return { price: program.price, mrp: program.mrp, tier: null };
+  const tier = program.pricingTiers[centreTier];
+  if (!tier) return null;
+  return { price: tier.price, mrp: tier.mrp, tier: centreTier };
 }
 
 /* ── Razorpay instance ───────────────────────────────────── */
@@ -264,13 +280,16 @@ const razorpay = new Razorpay({
 
 /* ── POST /api/payment/validate-coupon ───────────────────── */
 router.post('/validate-coupon', async (req, res) => {
-  const { coupon_code, program_slug } = req.body;
+  const { coupon_code, program_slug, centre_tier } = req.body;
   if (!coupon_code || !program_slug) return res.status(400).json({ error: 'coupon_code and program_slug required.' });
 
   const program = await getProgramData(program_slug);
   if (!program) return res.status(400).json({ error: 'Invalid program.' });
 
-  const result = await applyCoupon(coupon_code, program.price, program_slug);
+  const resolved = resolveTierPrice(program, centre_tier);
+  if (!resolved) return res.status(400).json({ error: 'Please select your centre first.' });
+
+  const result = await applyCoupon(coupon_code, resolved.price, program_slug);
   if (!result) return res.status(400).json({ valid: false, error: 'Invalid coupon code.' });
 
   if (await isCouponUsageExceeded(result.couponRow)) {
@@ -301,7 +320,7 @@ async function lookupReferral(referral_code, buyerPhone, buyerEmail, buyerLearne
 
 /* ── POST /api/payment/validate-referral ─────────────────── */
 router.post('/validate-referral', optionalLearner, async (req, res) => {
-  const { referral_code, program_slug, phone, email } = req.body;
+  const { referral_code, program_slug, phone, email, centre_tier } = req.body;
   if (!referral_code || !program_slug) return res.status(400).json({ error: 'referral_code and program_slug required.' });
 
   if (isFreedomSaleDay()) {
@@ -311,7 +330,10 @@ router.post('/validate-referral', optionalLearner, async (req, res) => {
   const program = await getProgramData(program_slug);
   if (!program) return res.status(400).json({ error: 'Invalid program.' });
 
-  if (program.price < REFERRAL_MIN_PRICE) {
+  const resolved = resolveTierPrice(program, centre_tier);
+  if (!resolved) return res.status(400).json({ error: 'Please select your centre first.' });
+
+  if (resolved.price < REFERRAL_MIN_PRICE) {
     return res.status(400).json({ valid: false, error: `Referral codes can only be used on programs priced Rs ${REFERRAL_MIN_PRICE} or above.` });
   }
 
@@ -325,7 +347,7 @@ router.post('/validate-referral', optionalLearner, async (req, res) => {
 /* ── POST /api/payment/create-order ─────────────────────── */
 router.post('/create-order', createOrderLimiter, optionalLearner, async (req, res) => {
   try {
-    const { program_slug, name, email: rawEmail, phone: rawPhone, coupon_code, referral_code, turnstile_token } = req.body;
+    const { program_slug, name, email: rawEmail, phone: rawPhone, coupon_code, referral_code, turnstile_token, centre_tier } = req.body;
 
     if (!program_slug || !name || !rawEmail || !rawPhone) {
       return res.status(400).json({ error: 'name, email, phone and program_slug are required.' });
@@ -353,11 +375,14 @@ router.post('/create-order', createOrderLimiter, optionalLearner, async (req, re
     const program = await getProgramData(program_slug);
     if (!program) return res.status(400).json({ error: 'Invalid program.' });
 
-    let finalPrice = program.price;
+    const resolved = resolveTierPrice(program, centre_tier);
+    if (!resolved) return res.status(400).json({ error: 'Please select your centre before enrolling.' });
+
+    let finalPrice = resolved.price;
     let couponApplied = null;
     let couponExclusive = false;
     if (coupon_code) {
-      const coup = await applyCoupon(coupon_code, program.price, program_slug);
+      const coup = await applyCoupon(coupon_code, resolved.price, program_slug);
       if (coup && coup.couponRow && await isCouponUsageExceeded(coup.couponRow)) {
         return res.status(400).json({ error: 'This coupon has already been used.' });
       }
@@ -392,10 +417,10 @@ router.post('/create-order', createOrderLimiter, optionalLearner, async (req, re
 
     // Store enrollment as pending
     await query(
-      `INSERT INTO enrollments (order_id, program_slug, program_name, amount, student_name, student_email, student_phone, status, coupon_code, referred_by, learner_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8, $9, $10)
+      `INSERT INTO enrollments (order_id, program_slug, program_name, amount, student_name, student_email, student_phone, status, coupon_code, referred_by, learner_id, centre_tier)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8, $9, $10, $11)
        ON CONFLICT (order_id) DO NOTHING`,
-      [order_id, program_slug, program.name, finalPrice, name, email, phone, couponApplied, referredBy, req.learner?.id || null]
+      [order_id, program_slug, program.name, finalPrice, name, email, phone, couponApplied, referredBy, req.learner?.id || null, resolved.tier]
     );
 
     res.json({
@@ -581,7 +606,7 @@ router.get('/programs', async (req, res) => {
   }
   try {
     const result = await query(
-      `SELECT slug, title, price, mrp, thumbnail_url, accent, icon_class, category
+      `SELECT slug, title, price, mrp, thumbnail_url, accent, icon_class, category, pricing_tiers
        FROM programs WHERE price IS NOT NULL AND mrp IS NOT NULL AND is_visible IS NOT FALSE`
     );
     for (const row of result.rows) {
@@ -592,6 +617,7 @@ router.get('/programs', async (req, res) => {
         icon:  row.icon_class || DEFAULT_ICON_BY_CATEGORY[row.category] || 'fa-clipboard-list',
         color: ACCENT_GRADIENTS[row.accent] || ACCENT_GRADIENTS.blue,
         thumb: row.thumbnail_url || null,
+        pricingTiers: row.pricing_tiers || null,
       };
     }
   } catch (err) {

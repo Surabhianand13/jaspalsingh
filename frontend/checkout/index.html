@@ -322,6 +322,12 @@
         <div class="co-summary-body">
           <div class="co-summary-label">You are enrolling in</div>
           <div class="co-summary-program" id="summaryName">-</div>
+          <div id="centreTierWrap" style="display:none;margin-bottom:14px;">
+            <label for="centreTierSelect" style="display:block;font-family:var(--font-heading, inherit);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#1A1A2E;margin-bottom:6px;">Select your centre</label>
+            <select id="centreTierSelect" style="width:100%;padding:11px 14px;border-radius:10px;border:1.5px solid rgba(26,26,46,.14);font-size:14px;font-weight:700;color:#1A1A2E;background:#fff;cursor:pointer;">
+              <option value="">Choose your centre...</option>
+            </select>
+          </div>
           <div class="co-price-block">
             <div class="co-price-mrp">MRP <span id="summaryMrp">-</span></div>
             <div class="co-price-offer" id="summaryPrice">-</div>
@@ -524,6 +530,8 @@
     let appliedCoupon   = null;
     let appliedReferral = null;
     let finalPrice    = program ? program.price : 0;
+    let currentMrp    = program ? program.mrp : 0;
+    let selectedCentreTier = null;
 
     // Detect login state at outer scope so submit handler can access it
     const _token    = localStorage.getItem('jaspal_learner_token');
@@ -533,8 +541,45 @@
     function updatePriceDisplay(price) {
       finalPrice = price;
       document.getElementById('summaryPrice').textContent = '₹' + price.toLocaleString('en-IN');
-      document.getElementById('summarySave').textContent  = 'You save ₹' + (program.mrp - price).toLocaleString('en-IN');
+      document.getElementById('summarySave').textContent  = 'You save ₹' + (currentMrp - price).toLocaleString('en-IN');
       document.getElementById('payBtnText').textContent   = 'Pay ₹' + price.toLocaleString('en-IN');
+    }
+
+    /* ── Centre-tiered pricing (e.g. शौर्य Offline Test Series - price
+       depends on which centre the learner picks). The real charge is
+       always recomputed server-side from programs.pricing_tiers via
+       resolveTierPrice() in payment.js - this client-side price is only
+       ever a display convenience, never trusted for the actual amount. ── */
+    function setCentreTierLock(locked) {
+      document.getElementById('payBtn').disabled = locked;
+      document.getElementById('couponApplyBtn').disabled = locked;
+      document.getElementById('referralApplyBtn').disabled = locked;
+    }
+    function onCentreTierChange(tierKey) {
+      selectedCentreTier = tierKey || null;
+      if (!tierKey || !program.pricingTiers || !program.pricingTiers[tierKey]) {
+        setCentreTierLock(true);
+        document.getElementById('summaryPrice').textContent = 'Select centre';
+        document.getElementById('summarySave').textContent = '';
+        document.getElementById('payBtnText').textContent = 'Select Your Centre First';
+        return;
+      }
+      setCentreTierLock(false);
+      const tier = program.pricingTiers[tierKey];
+      currentMrp = tier.mrp;
+      document.getElementById('summaryMrp').textContent = '₹' + tier.mrp.toLocaleString('en-IN');
+      updatePriceDisplay(tier.price);
+      // Re-validate any already-applied coupon/referral against the new tier price
+      if (appliedCoupon || appliedReferral) {
+        document.getElementById('inp-coupon').disabled = false;
+        document.getElementById('inp-referral').disabled = false;
+        document.getElementById('couponApplyBtn').textContent = 'Apply';
+        document.getElementById('referralApplyBtn').textContent = 'Apply';
+        appliedCoupon = null;
+        appliedReferral = null;
+        document.getElementById('couponMsg').textContent = '';
+        document.getElementById('referralMsg').textContent = '';
+      }
     }
 
     if (!program) {
@@ -542,8 +587,23 @@
       document.getElementById('errorState').style.display   = 'block';
     } else {
       document.getElementById('summaryName').textContent  = program.name;
-      document.getElementById('summaryMrp').textContent   = '₹' + program.mrp.toLocaleString('en-IN');
-      updatePriceDisplay(program.price);
+      if (program.pricingTiers) {
+        const wrap = document.getElementById('centreTierWrap');
+        const sel  = document.getElementById('centreTierSelect');
+        wrap.style.display = 'block';
+        Object.keys(program.pricingTiers).forEach(function(key) {
+          const t = program.pricingTiers[key];
+          const opt = document.createElement('option');
+          opt.value = key;
+          opt.textContent = t.label + ' - ₹' + t.price.toLocaleString('en-IN');
+          sel.appendChild(opt);
+        });
+        sel.addEventListener('change', function() { onCentreTierChange(this.value); });
+        onCentreTierChange(''); // starts locked until the learner picks a centre
+      } else {
+        document.getElementById('summaryMrp').textContent = '₹' + program.mrp.toLocaleString('en-IN');
+        updatePriceDisplay(program.price);
+      }
       const thumbEl = document.getElementById('summaryThumb');
       const iconEl  = document.getElementById('summaryIcon');
       if (program.thumb) {
@@ -608,6 +668,7 @@
       msg.textContent = '';
 
       if (!code) { msg.className = 'coupon-msg error'; msg.textContent = 'Please enter a coupon code.'; return; }
+      if (program.pricingTiers && !selectedCentreTier) { msg.className = 'coupon-msg error'; msg.textContent = 'Please select your centre first.'; return; }
 
       this.textContent = 'Checking...';
       this.disabled = true;
@@ -615,7 +676,7 @@
       try {
         const res  = await fetch(API + '/api/payment/validate-coupon', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ coupon_code: code, program_slug: slug }),
+          body: JSON.stringify({ coupon_code: code, program_slug: slug, centre_tier: selectedCentreTier }),
         });
         const data = await res.json();
 
@@ -668,6 +729,7 @@
       msg.textContent = '';
 
       if (!code) { msg.className = 'coupon-msg error'; msg.textContent = 'Please enter a referral code.'; return; }
+      if (program.pricingTiers && !selectedCentreTier) { msg.className = 'coupon-msg error'; msg.textContent = 'Please select your centre first.'; return; }
 
       this.textContent = 'Checking...';
       this.disabled = true;
@@ -675,7 +737,7 @@
       try {
         const res  = await fetch(API + '/api/payment/validate-referral', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ referral_code: code, program_slug: slug, phone, email }),
+          body: JSON.stringify({ referral_code: code, program_slug: slug, phone, email, centre_tier: selectedCentreTier }),
         });
         const data = await res.json();
 
@@ -722,6 +784,7 @@
       if (!_loggedIn && password.length < 6) { showError('Please set a password (min 6 characters) to create your account.'); return; }
       if (!tnc)                { showError('Please read and accept the Terms & Conditions to proceed.'); return; }
       if (!turnstileToken)     { showError('Please complete the verification check above.'); return; }
+      if (program.pricingTiers && !selectedCentreTier) { showError('Please select your centre before enrolling.'); return; }
 
       btn.disabled = true;
       document.getElementById('payBtnText').textContent = 'Please wait...';
@@ -779,7 +842,7 @@
 
         const res  = await fetch(API + '/api/payment/create-order', {
           method: 'POST', headers,
-          body: JSON.stringify({ program_slug: slug, name, email, phone, coupon_code: appliedCoupon, referral_code: appliedReferral, turnstile_token: turnstileToken }),
+          body: JSON.stringify({ program_slug: slug, name, email, phone, coupon_code: appliedCoupon, referral_code: appliedReferral, turnstile_token: turnstileToken, centre_tier: selectedCentreTier }),
         });
         const data = await res.json();
 
