@@ -1222,7 +1222,7 @@ async function migrate() {
   /* ── शौर्य Batch - RSSB JE 2026 (2026-08-17): first offline CLASSROOM
      program on the platform, not just a test series - 500hrs Technical +
      100hrs Non-Technical live teaching at the Jaipur centre, taught by
-     Dr. Jaspal Singh, Praveen Sir and Deven Sir, capped at 200 seats.
+     Dr. Jaspal Singh, capped at 200 seats.
      Uses the 'course' category (already defined in CAT_LABEL/CAT_ICON on
      the frontend, previously unused - rssb-jen-crash-course and
      gate-ese-foundation were seeded with it as coming_soon placeholders).
@@ -1252,8 +1252,6 @@ async function migrate() {
   };
   const shauryaEducators = [
     { name: 'Dr. Jaspal Singh', credentials: 'Ex-IES Officer (AIR-04), PhD, GATE AIR-06, 15+ years teaching experience' },
-    { name: 'Praveen Sir', credentials: '8+ years teaching experience' },
-    { name: 'Deven Sir', credentials: '8+ years teaching experience' },
   ];
   // Degree and Diploma technical teaching hours differ (2026-08-17 correction) -
   // Diploma is 350hrs Technical (not 500hrs like Degree), Non-Technical is the
@@ -1271,7 +1269,7 @@ async function migrate() {
       who_for: [
         'Degree (Civil) candidates who want live classroom teaching, not just self-study test series',
         'Aspirants in or near Jaipur who can attend offline classes',
-        'Candidates who want Dr. Jaspal Singh, Praveen Sir and Deven Sir teaching Technical + Non-Technical live',
+        'Candidates who want Dr. Jaspal Singh teaching Technical + Non-Technical live',
         'Anyone who wants one single program covering syllabus + practice + testing',
       ],
       materialTracks: ['technical-degree', 'non-technical'],
@@ -1285,7 +1283,7 @@ async function migrate() {
       who_for: [
         'Diploma (Civil) candidates who want live classroom teaching, not just self-study test series',
         'Aspirants in or near Jaipur who can attend offline classes',
-        'Candidates who want Dr. Jaspal Singh, Praveen Sir and Deven Sir teaching Technical + Non-Technical live',
+        'Candidates who want Dr. Jaspal Singh teaching Technical + Non-Technical live',
         'Anyone who wants one single program covering syllabus + practice + testing',
       ],
       materialTracks: ['technical-diploma', 'non-technical'],
@@ -1325,7 +1323,7 @@ async function migrate() {
       who_for: [
         'Degree (Civil) candidates who want live Technical teaching plus test practice',
         'Aspirants confident in Non-Technical/GK who want to focus classroom time on core Civil Engineering',
-        'Candidates who want Dr. Jaspal Singh, Praveen Sir and Deven Sir teaching Technical subjects live',
+        'Candidates who want Dr. Jaspal Singh teaching Technical subjects live',
       ],
       materialTracks: ['technical-degree'],
     },
@@ -1338,7 +1336,7 @@ async function migrate() {
       who_for: [
         'Diploma (Civil) candidates who want live Technical teaching plus test practice',
         'Aspirants confident in Non-Technical/GK who want to focus classroom time on core Civil Engineering',
-        'Candidates who want Dr. Jaspal Singh, Praveen Sir and Deven Sir teaching Technical subjects live',
+        'Candidates who want Dr. Jaspal Singh teaching Technical subjects live',
       ],
       materialTracks: ['technical-diploma'],
     },
@@ -1387,6 +1385,23 @@ async function migrate() {
     );
   }
   console.log('✅ Seeded/updated 6 शौर्य Batch - RSSB JE 2026 options');
+
+  /* ── Praveen Sir / Deven Sir removed from शौर्य Batch faculty (2026-08-26):
+     the owner asked for both names removed from the site entirely. The
+     seed loop above only writes launch_config/who_for the FIRST time
+     (WHERE launch_config IS NULL / COALESCE), so editing shauryaEducators
+     and the who_for text above did nothing for the 6 rows already live
+     since 2026-08-17/19 - explicit unconditional correction, once. ── */
+  await query(
+    `UPDATE programs
+     SET launch_config = jsonb_set(launch_config, '{batch,educators}', $1::jsonb)
+     WHERE slug LIKE 'rssb-je-2026-shaurya-batch-%'`,
+    [JSON.stringify(shauryaEducators)]
+  );
+  for (const p of shauryaLaunches) {
+    await query(`UPDATE programs SET who_for = $1 WHERE slug = $2`, [JSON.stringify(p.who_for), p.slug]);
+  }
+  console.log('✅ Removed Praveen Sir / Deven Sir from शौर्य Batch educators + who_for');
 
   /* ── शौर्य Batch bundling revert (2026-08-19): the seed loop above only
      writes launch_config the FIRST time (WHERE launch_config IS NULL), so
