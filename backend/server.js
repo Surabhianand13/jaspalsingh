@@ -1529,6 +1529,7 @@ async function migrate() {
       tiers: {
         jaipur: { label: 'Jaipur',                    price: 1600, mrp: 3200 },
         delhi:  { label: 'Delhi',                      price: 1600, mrp: 3200 },
+        alwar:  { label: 'Alwar',                      price: 1600, mrp: 3200 },
         other:  { label: 'Other Rajasthan Centre',     price: 1999, mrp: 3998 },
       },
     },
@@ -1542,6 +1543,7 @@ async function migrate() {
       tiers: {
         jaipur: { label: 'Jaipur',                    price: 1400, mrp: 2800 },
         delhi:  { label: 'Delhi',                      price: 1400, mrp: 2800 },
+        alwar:  { label: 'Alwar',                      price: 1400, mrp: 2800 },
         other:  { label: 'Other Rajasthan Centre',     price: 1999, mrp: 3998 },
       },
     },
