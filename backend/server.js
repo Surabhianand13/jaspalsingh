@@ -1602,6 +1602,60 @@ async function migrate() {
   );
   console.log('✅ Wired real Tally forms for शौर्य Offline Test Series (Degree + Diploma)');
 
+  /* ── शौर्य Printed OMR Offline Test Series - RSSB JE 2026 (2026-08-27):
+     the OMR/home-attempt sibling of शौर्य Offline Test Series - identical
+     schedule, dates and question papers, just attempted at home instead
+     of at a centre. Single flat price (no pricing_tiers, no centre
+     selection at checkout), mode: 'home' per the generic launch_config
+     convention used by every other take-home program on this platform
+     (UP Polytechnic Lecturer OMR, BPSC Sanitary Officer OMR) - 'home' is
+     the only non-'offline' value the generic webhook (tally-generic.js)
+     understands, there is no separate 'omr' mode. tallyFormUrl starts
+     null - pending, same as every new launch - see NO_FULFILLMENT_SLUGS
+     in paymentEmailService.js for the fallback email that covers the gap
+     until the owner creates the real Tally forms. ── */
+  const shauryaOmrLaunches = [
+    {
+      slug: 'shaurya-omr-rssb-je-2026-degree',
+      title: 'शौर्य Printed OMR Offline Test Series - RSSB JE 2026 (Degree)',
+      level: 'Degree (Civil)', price: 999, mrp: 1999, sort_order: 32,
+      short_name: 'शौर्य Printed OMR - Degree',
+      thumb: '/assets/images/program-thumbs/shaurya-offline-degree.jpg',
+      tags: ['Same Question Paper as Offline', 'Full-length + Subject-wise Tests', 'Post-test Expert Review', 'Attempt From Home'],
+    },
+    {
+      slug: 'shaurya-omr-rssb-je-2026-diploma',
+      title: 'शौर्य Printed OMR Offline Test Series - RSSB JE 2026 (Diploma)',
+      level: 'Diploma (Civil)', price: 999, mrp: 1999, sort_order: 33,
+      short_name: 'शौर्य Printed OMR - Diploma',
+      thumb: '/assets/images/program-thumbs/shaurya-offline-diploma.jpg',
+      tags: ['Same Question Paper as Offline', 'Full-length + Subject-wise Tests', 'Post-test Expert Review', 'Attempt From Home'],
+    },
+  ];
+  for (const p of shauryaOmrLaunches) {
+    const isDegree = p.slug.includes('degree');
+    await query(
+      `INSERT INTO programs (slug, title, category, exam, level, status, price, mrp, accent, icon_class, thumbnail_url, short_name, sort_order, omr_enabled, total_tests, tags, is_visible, detail_url)
+       VALUES ($1,$2,'test-series','RSSB JE 2026',$3,'enrolling',$4,$5,'purple',$6,$7,$8,$9,TRUE,$10,$11,TRUE,$12)
+       ON CONFLICT (slug) DO NOTHING`,
+      [p.slug, p.title, p.level, p.price, p.mrp, isDegree ? 'fa-file-invoice' : 'fa-file-alt',
+       p.thumb, p.short_name, p.sort_order, isDegree ? 24 : 22, JSON.stringify(p.tags), '/programs/' + p.slug + '/']
+    );
+    await query(
+      `UPDATE programs SET launch_config = $1 WHERE slug = $2 AND launch_config IS NULL`,
+      [JSON.stringify({
+        seriesName: p.title,
+        tallyFormUrl: null, // pending - needs a real Tally form, same as every other program launch
+        mode: 'home',
+        rollPrefix: isDegree ? 'SHOMD' : 'SHOMP',
+        waGroupUrl: null,
+        lastTestDate: isDegree ? '7 February 2027 (Test-24)' : '24 January 2027 (Test-22)',
+        centre: null,
+      }), p.slug]
+    );
+  }
+  console.log('✅ Seeded/updated 2 शौर्य Printed OMR Offline Test Series - RSSB JE 2026 rows (Degree/Diploma)');
+
   /* ── RVUNL JE 2026 (Electrical/Mechanical/Civil): real Tally forms wired
      2026-08-10 - single fixed centre (Jaipur) per program, per explicit
      product decision (not learner-selectable across Jaipur/Bikaner/Kota -
