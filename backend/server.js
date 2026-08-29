@@ -1656,6 +1656,20 @@ async function migrate() {
   }
   console.log('✅ Seeded/updated 2 शौर्य Printed OMR Offline Test Series - RSSB JE 2026 rows (Degree/Diploma)');
 
+  /* ── शौर्य Printed OMR Offline Test Series real Tally forms wired
+     2026-08-28 - one form per track. Explicit unconditional jsonb_set,
+     not an IS NULL guard, since launch_config is already set (from the
+     seed above) - only tallyFormUrl itself needs correcting, once. ── */
+  await query(
+    `UPDATE programs SET launch_config = jsonb_set(launch_config, '{tallyFormUrl}', '"https://tally.so/r/kdBL4J"')
+     WHERE slug = 'shaurya-omr-rssb-je-2026-degree'`
+  );
+  await query(
+    `UPDATE programs SET launch_config = jsonb_set(launch_config, '{tallyFormUrl}', '"https://tally.so/r/BzWvYA"')
+     WHERE slug = 'shaurya-omr-rssb-je-2026-diploma'`
+  );
+  console.log('✅ Wired real Tally forms for शौर्य Printed OMR Offline Test Series (Degree + Diploma)');
+
   /* ── RVUNL JE 2026 (Electrical/Mechanical/Civil): real Tally forms wired
      2026-08-10 - single fixed centre (Jaipur) per program, per explicit
      product decision (not learner-selectable across Jaipur/Bikaner/Kota -

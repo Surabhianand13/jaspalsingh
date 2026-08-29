@@ -62,13 +62,9 @@ const NO_FULFILLMENT_SLUGS = new Set([
   // शौर्य Offline Test Series - RSSB JE 2026: both tracks got real Tally
   // forms 2026-08-27 (see the launch_config.tallyFormUrl correction in
   // server.js) - no longer needed here, hasTallyForm now covers them.
-  // शौर्य Printed OMR Offline Test Series - RSSB JE 2026 (launched
-  // 2026-08-27): both tracks share the "shaurya-omr-" prefix, so they
-  // don't collide with the old-branding rssb-* slug matching, but still
-  // need a real Tally form each - remove once launch_config.tallyFormUrl
-  // is wired up (matching the same pattern शौर्य Offline just went through).
-  'shaurya-omr-rssb-je-2026-degree',
-  'shaurya-omr-rssb-je-2026-diploma',
+  // शौर्य Printed OMR Offline Test Series - RSSB JE 2026: both tracks got
+  // real Tally forms 2026-08-28 (see the launch_config.tallyFormUrl
+  // correction in server.js) - no longer needed here either.
 ]);
 
 /* ── ESE 2027 Prelims - 6 programs, matched by exact slug (config-driven) ── */
