@@ -1310,10 +1310,13 @@
     }
 
     // शौर्य Offline Test Series is the lead offer - always pin it to the
-    // very front of the grid regardless of DOM/append order, in this order.
+    // very front of the grid regardless of DOM/append order, followed
+    // immediately by its शौर्य Printed OMR Offline sibling, in this order.
     var PRIORITY_SLUGS = [
       'shaurya-offline-rssb-je-2026-degree',
-      'shaurya-offline-rssb-je-2026-diploma'
+      'shaurya-offline-rssb-je-2026-diploma',
+      'shaurya-omr-rssb-je-2026-degree',
+      'shaurya-omr-rssb-je-2026-diploma'
     ];
 
     function syncPrograms() {

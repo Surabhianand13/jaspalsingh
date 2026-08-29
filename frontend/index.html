@@ -2360,13 +2360,17 @@
     var current = 'ese';
 
     // शौर्य Offline Test Series is the lead offer, pinned to the front of
-    // the RSSB JE tab - Degree first, Diploma second. Dynamically-added
-    // cards (from the admin-managed /api/programs sync above) don't carry a
-    // data-slug attribute, only the static ones do, so slugFromCard()
-    // falls back to parsing it out of the CTA href either way.
+    // the RSSB JE tab, followed immediately by its शौर्य Printed OMR
+    // Offline sibling (same schedule, attempted from home) - Degree
+    // before Diploma within each pair. Dynamically-added cards (from the
+    // admin-managed /api/programs sync above) don't carry a data-slug
+    // attribute, only the static ones do, so slugFromCard() falls back to
+    // parsing it out of the CTA href either way.
     var PINNED_RSSB_SLUGS = [
       'shaurya-offline-rssb-je-2026-degree',
-      'shaurya-offline-rssb-je-2026-diploma'
+      'shaurya-offline-rssb-je-2026-diploma',
+      'shaurya-omr-rssb-je-2026-degree',
+      'shaurya-omr-rssb-je-2026-diploma'
     ];
 
     function slugFromCard(card) {
