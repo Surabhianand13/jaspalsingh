@@ -1756,6 +1756,29 @@ async function migrate() {
   }
   console.log('✅ Seeded/updated 2 शौर्य Offline Practice Batch Course - RSSB JE 2026 rows (Degree/Diploma)');
 
+  /* ── Shared शौर्य Batch Tally forms wired 2026-08-30 - the owner built
+     ONE Tally form per track (Degree/Diploma) covering several शौर्य
+     Batch SKUs at once (Complete Course, Technical + Test Series, and
+     now शौर्य Offline Practice Batch Course), with a "which option did
+     you buy?" field in the form for the learner's own reference. That's
+     safe because routes/tally-generic.js resolves which program a
+     submission belongs to from the paid enrollment (via its token/order
+     id), never from the URL slug or the learner's form answer - so the
+     same webhook URL correctly produces the right admit card no matter
+     which of these programs the learner actually paid for. The two
+     Non-Technical-only SKUs aren't covered by either form yet (still in
+     NO_FULFILLMENT_SLUGS, paymentEmailService.js) - the owner said this
+     pair is specifically "for degree & diploma". ── */
+  await query(
+    `UPDATE programs SET launch_config = jsonb_set(launch_config, '{tallyFormUrl}', '"https://tally.so/r/BzREeA"')
+     WHERE slug IN ('rssb-je-2026-shaurya-batch-complete-degree', 'rssb-je-2026-shaurya-batch-technical-test-series-degree', 'shaurya-practice-batch-rssb-je-2026-degree')`
+  );
+  await query(
+    `UPDATE programs SET launch_config = jsonb_set(launch_config, '{tallyFormUrl}', '"https://tally.so/r/xXWV69"')
+     WHERE slug IN ('rssb-je-2026-shaurya-batch-complete-diploma', 'rssb-je-2026-shaurya-batch-technical-test-series-diploma', 'shaurya-practice-batch-rssb-je-2026-diploma')`
+  );
+  console.log('✅ Wired shared Tally forms for शौर्य Batch Degree-track and Diploma-track programs');
+
   /* ── RVUNL JE 2026 (Electrical/Mechanical/Civil): real Tally forms wired
      2026-08-10 - single fixed centre (Jaipur) per program, per explicit
      product decision (not learner-selectable across Jaipur/Bikaner/Kota -
