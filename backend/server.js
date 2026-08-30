@@ -290,6 +290,30 @@ async function migrate() {
   await query(`ALTER TABLE learners ADD COLUMN IF NOT EXISTS city VARCHAR(100)`);
   await query(`ALTER TABLE learners ADD COLUMN IF NOT EXISTS photo_url VARCHAR(1000)`);
 
+  /* ── Fix pre-existing non-normalized learners.phone values (2026-08-30):
+     POST /register and PUT /me both used to write phone to the learners
+     table exactly as the client sent it (with a country code, spaces, or
+     dashes), while enrollments.student_phone is always normalized to a
+     bare 10-digit string at checkout (payment.js). The my-enrollments and
+     getActiveEnrollment queries compare the two, normalizing only the
+     enrollments side - so any learner whose stored phone wasn't already
+     bare digits could never match by phone, silently hiding their own
+     paid enrollments from their own dashboard. Both write paths are now
+     fixed to normalize going forward; this is the one-time retroactive
+     correction for accounts already saved the old way, plus a matching
+     backfill of learner_id on any paid enrollment this reconnects. ── */
+  await query(
+    `UPDATE learners SET phone = RIGHT(REGEXP_REPLACE(phone, '\\D', '', 'g'), 10)
+     WHERE phone IS NOT NULL AND phone !~ '^[0-9]{10}$'`
+  );
+  await query(
+    `UPDATE enrollments e SET learner_id = l.id
+     FROM learners l
+     WHERE e.learner_id IS NULL AND e.status = 'paid'
+       AND (LOWER(TRIM(e.student_email)) = LOWER(TRIM(l.email))
+            OR RIGHT(REGEXP_REPLACE(e.student_phone, '\\D', '', 'g'), 10) = l.phone)`
+  );
+
   /* ── Referral program ── */
   await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS referral_code VARCHAR(20)`);
   await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS referred_by VARCHAR(20)`);

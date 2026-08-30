@@ -112,8 +112,13 @@ const register = async (req, res, next) => {
       return res.status(409).json({ error: 'An account with this email already exists.' });
     }
 
-    if (phone) {
-      const normPhone = phone.replace(/\D/g, '').slice(-10);
+    // Normalized to bare 10 digits so it matches enrollments.student_phone's
+    // format exactly (that side is always normalized the same way at
+    // checkout, payment.js) - storing it any other way here silently breaks
+    // the phone-based enrollment lookup in my-enrollments/getActiveEnrollment
+    // for this account, even though the digits are identical.
+    const normPhone = phone ? phone.replace(/\D/g, '').slice(-10) : null;
+    if (normPhone) {
       const phoneExists = await query('SELECT id FROM learners WHERE phone = $1', [normPhone]);
       if (phoneExists.rows.length) {
         return res.status(409).json({ error: 'An account with this mobile number already exists. Please log in instead.' });
@@ -125,7 +130,7 @@ const register = async (req, res, next) => {
       `INSERT INTO learners (name, email, password_hash, target_exam, phone)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING id, name, email, target_exam, created_at`,
-      [name.trim(), norm, password_hash, target_exam || 'General', phone || null]
+      [name.trim(), norm, password_hash, target_exam || 'General', normPhone]
     );
 
     const learner = result.rows[0];
@@ -205,6 +210,12 @@ const updateMe = async (req, res, next) => {
   try {
     const { name, target_exam, phone, dob, gender, graduation_college, notify_strategy, city, photo_url } = req.body;
 
+    // Same normalization as registration - a phone stored with a country
+    // code/spaces/dashes here would no longer match enrollments.student_phone's
+    // bare-10-digit format, silently hiding this learner's own paid
+    // enrollments from their own dashboard.
+    const normPhone = phone ? phone.replace(/\D/g, '').slice(-10) : phone;
+
     if (photo_url !== undefined && photo_url !== null && photo_url !== '') {
       try {
         const u = new URL(photo_url);
@@ -229,7 +240,7 @@ const updateMe = async (req, res, next) => {
       [
         name               || null,
         target_exam        || null,
-        phone              || null,
+        normPhone          || null,
         dob                || null,
         gender             || null,
         graduation_college || null,
