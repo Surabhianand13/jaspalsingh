@@ -65,6 +65,11 @@ const NO_FULFILLMENT_SLUGS = new Set([
   // शौर्य Printed OMR Offline Test Series - RSSB JE 2026: both tracks got
   // real Tally forms 2026-08-28 (see the launch_config.tallyFormUrl
   // correction in server.js) - no longer needed here either.
+  // शौर्य Offline Practice Batch Course - RSSB JE 2026 (launched
+  // 2026-08-30): both tracks need their own real Tally form - remove
+  // once launch_config.tallyFormUrl is wired up.
+  'shaurya-practice-batch-rssb-je-2026-degree',
+  'shaurya-practice-batch-rssb-je-2026-diploma',
 ]);
 
 /* ── ESE 2027 Prelims - 6 programs, matched by exact slug (config-driven) ── */

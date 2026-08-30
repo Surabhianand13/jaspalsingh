@@ -1694,6 +1694,68 @@ async function migrate() {
   );
   console.log('✅ Wired real Tally forms for शौर्य Printed OMR Offline Test Series (Degree + Diploma)');
 
+  /* ── शौर्य Offline Practice Batch Course - RSSB JE 2026 (2026-08-30): a
+     third शौर्य product line, distinct from both शौर्य Offline Test Series
+     (pure test series, tiered pricing) and शौर्य Batch (500/350hrs full
+     syllabus teaching + bundled test series). This one is a live, in-
+     person question-discussion batch - 10,000+ practice questions across
+     Technical + Non-Technical, at the Jaipur centre only, single flat
+     price, no test series bundled and no test schedule at all - copy on
+     the pages/cards must never imply otherwise. category:'course' (same
+     as शौर्य Batch) so it renders via the same buildCard() sync on
+     /programs; the homepage's "Offline Batches" carousel is fully static
+     HTML with no sync script, so its 2 cards are hand-written below. ── */
+  const shauryaPracticeBatchEducators = [
+    { name: 'Dr. Jaspal Singh', credentials: 'Ex-IES Officer (AIR-04), PhD, GATE AIR-06, 15+ years teaching experience' },
+    { name: 'Lekhwani Sir', credentials: 'Co-Instructor - शौर्य Offline Practice Batch' },
+  ];
+  const shauryaPracticeBatchLaunches = [
+    {
+      slug: 'shaurya-practice-batch-rssb-je-2026-degree',
+      title: 'शौर्य Offline Practice Batch Course - RSSB JE 2026 (Degree)',
+      level: 'Degree (Civil)', price: 9999, mrp: 19999, sort_order: 36,
+      short_name: 'शौर्य Practice Batch - Degree',
+      tags: ['10,000+ Quality Questions Discussed', 'Technical + Non-Technical Covered', 'Live at Our Jaipur Centre', 'Only 100 Seats - Limited Enrollment'],
+    },
+    {
+      slug: 'shaurya-practice-batch-rssb-je-2026-diploma',
+      title: 'शौर्य Offline Practice Batch Course - RSSB JE 2026 (Diploma)',
+      level: 'Diploma (Civil)', price: 7999, mrp: 15999, sort_order: 37,
+      short_name: 'शौर्य Practice Batch - Diploma',
+      tags: ['10,000+ Quality Questions Discussed', 'Technical + Non-Technical Covered', 'Live at Our Jaipur Centre', 'Only 100 Seats - Limited Enrollment'],
+    },
+  ];
+  for (const p of shauryaPracticeBatchLaunches) {
+    const isDegree = p.slug.includes('degree');
+    await query(
+      `INSERT INTO programs (slug, title, category, exam, level, status, price, mrp, accent, icon_class, short_name, sort_order, omr_enabled, tags, is_visible, detail_url)
+       VALUES ($1,$2,'course','RSSB JE 2026',$3,'enrolling',$4,$5,$6,'fa-chalkboard-teacher',$7,$8,FALSE,$9,TRUE,$10)
+       ON CONFLICT (slug) DO NOTHING`,
+      [p.slug, p.title, p.level, p.price, p.mrp, isDegree ? 'orange' : 'teal',
+       p.short_name, p.sort_order, JSON.stringify(p.tags), '/programs/' + p.slug + '/']
+    );
+    await query(
+      `UPDATE programs SET launch_config = $1 WHERE slug = $2 AND launch_config IS NULL`,
+      [JSON.stringify({
+        seriesName: p.title,
+        tallyFormUrl: null, // pending - needs a real Tally form, same as every other program launch
+        mode: 'offline',
+        rollPrefix: isDegree ? 'SHPBD' : 'SHPBP',
+        waGroupUrl: null,
+        lastTestDate: 'To be announced - notified via email & WhatsApp',
+        centre: shauryaCentre,
+        batch: {
+          startDate: 'September 28, 2026',
+          timings: 'To be announced',
+          seatCap: 100,
+          educators: shauryaPracticeBatchEducators,
+          questionCount: '10,000+',
+        },
+      }), p.slug]
+    );
+  }
+  console.log('✅ Seeded/updated 2 शौर्य Offline Practice Batch Course - RSSB JE 2026 rows (Degree/Diploma)');
+
   /* ── RVUNL JE 2026 (Electrical/Mechanical/Civil): real Tally forms wired
      2026-08-10 - single fixed centre (Jaipur) per program, per explicit
      product decision (not learner-selectable across Jaipur/Bikaner/Kota -

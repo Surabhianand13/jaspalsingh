@@ -1310,13 +1310,18 @@
     }
 
     // शौर्य Offline Test Series is the lead offer - always pin it to the
-    // very front of the grid regardless of DOM/append order, followed
-    // immediately by its शौर्य Printed OMR Offline sibling, in this order.
+    // very front of the grid regardless of DOM/append order, followed by
+    // its शौर्य Printed OMR Offline sibling, then शौर्य Offline Practice
+    // Batch Course (a "course"-category product, so this pin is what puts
+    // it ahead of the existing शौर्य Batch cards once the Courses & Batches
+    // tab is filtered - those aren't pinned, just appended in API order).
     var PRIORITY_SLUGS = [
       'shaurya-offline-rssb-je-2026-degree',
       'shaurya-offline-rssb-je-2026-diploma',
       'shaurya-omr-rssb-je-2026-degree',
-      'shaurya-omr-rssb-je-2026-diploma'
+      'shaurya-omr-rssb-je-2026-diploma',
+      'shaurya-practice-batch-rssb-je-2026-degree',
+      'shaurya-practice-batch-rssb-je-2026-diploma'
     ];
 
     function syncPrograms() {
