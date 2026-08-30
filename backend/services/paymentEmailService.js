@@ -44,32 +44,26 @@ const SLUG_COMBO_OMR     = 'rssb-je-jaspalsirki-testseries-degree-diploma-combo-
    of a broken "Fill Details Form" link. Remove a slug from this set
    once its launch_config/bespoke route is wired up. */
 const NO_FULFILLMENT_SLUGS = new Set([
-  // शौर्य Batch (launched 2026-08-17): all 6 options need their own real
-  // Tally form (none exists yet) - they used to bundle into the existing
-  // RSSB Degree/Diploma Test Series product instead, but that connection
-  // was reverted 2026-08-19 (it wasn't actually the same test series).
-  // 4 of these 6 slugs contain "degree"/"diploma" and would otherwise
-  // silently misroute to that unrelated product's real Tally form with
-  // the wrong order/token; the other 2 contain neither and would fall
-  // through to the Diploma form by default - all 6 need the guard.
-  // Remove a slug from this set once it gets a real launch_config.tallyFormUrl.
-  'rssb-je-2026-shaurya-batch-complete-degree',
-  'rssb-je-2026-shaurya-batch-complete-diploma',
+  // शौर्य Batch (launched 2026-08-17): the 2 Non-Technical-only options
+  // still need their own real Tally form. The other 4 (Complete Course +
+  // Technical + Test Series, Degree and Diploma) got a real, SHARED
+  // Tally form per track 2026-08-30 - one form per track covers several
+  // शौर्य Batch SKUs at once, safely, because tally-generic.js resolves
+  // the program from the paid enrollment (token/order id), not the URL
+  // slug or the learner's form answer. See the launch_config.tallyFormUrl
+  // correction in server.js. Remove a slug from this set once it gets a
+  // real launch_config.tallyFormUrl.
   'rssb-je-2026-shaurya-batch-non-technical-test-series',
   'rssb-je-2026-shaurya-batch-non-technical-only',
-  'rssb-je-2026-shaurya-batch-technical-test-series-degree',
-  'rssb-je-2026-shaurya-batch-technical-test-series-diploma',
   // शौर्य Offline Test Series - RSSB JE 2026: both tracks got real Tally
   // forms 2026-08-27 (see the launch_config.tallyFormUrl correction in
   // server.js) - no longer needed here, hasTallyForm now covers them.
   // शौर्य Printed OMR Offline Test Series - RSSB JE 2026: both tracks got
   // real Tally forms 2026-08-28 (see the launch_config.tallyFormUrl
   // correction in server.js) - no longer needed here either.
-  // शौर्य Offline Practice Batch Course - RSSB JE 2026 (launched
-  // 2026-08-30): both tracks need their own real Tally form - remove
-  // once launch_config.tallyFormUrl is wired up.
-  'shaurya-practice-batch-rssb-je-2026-degree',
-  'shaurya-practice-batch-rssb-je-2026-diploma',
+  // शौर्य Offline Practice Batch Course - RSSB JE 2026: both tracks got
+  // the same shared शौर्य Batch Tally forms 2026-08-30 - no longer
+  // needed here either.
 ]);
 
 /* ── ESE 2027 Prelims - 6 programs, matched by exact slug (config-driven) ── */

@@ -141,7 +141,7 @@ async function processGenericSubmission(fields, program) {
 }
 
 router.post('/', async (req, res) => {
-  const programSlug = req.params.programSlug;
+  const urlSlug = req.params.programSlug;
   // Ack immediately - same pattern as every other Tally route, since Tally
   // retries on anything other than a fast 2xx.
   res.status(200).json({ ok: true });
@@ -149,13 +149,34 @@ router.post('/', async (req, res) => {
   if (req.body.eventType !== 'FORM_RESPONSE') return;
 
   try {
+    const fields = req.body.data?.fields || [];
+
+    // The program is resolved from the PAID ENROLLMENT (via the token/
+    // order id embedded in the learner's unique "Fill Details Form" link),
+    // never from the URL's :programSlug or any learner-editable field on
+    // the form - that's what makes it safe for one shared Tally form to
+    // serve several different programs at once (e.g. one "which option did
+    // you buy?" form covering multiple शौर्य Batch SKUs): whichever program
+    // the learner actually paid for is what determines their admit card's
+    // seriesName/rollPrefix/centre, regardless of what they select in the
+    // form or which URL Tally happens to be configured to hit. urlSlug is
+    // kept only as a fallback for the (now rare) case of a bad/missing
+    // token, and for log context.
+    const { token, orderId } = parseTallyFields(fields);
+    let programSlug = urlSlug;
+    if (token || orderId) {
+      const enrLookup = token
+        ? await query(`SELECT program_slug FROM enrollments WHERE form_token = $1`, [token])
+        : await query(`SELECT program_slug FROM enrollments WHERE order_id = $1 AND status = 'paid'`, [orderId]);
+      if (enrLookup.rows.length) programSlug = enrLookup.rows[0].program_slug;
+    }
+
     const progResult = await query(`SELECT * FROM programs WHERE slug = $1`, [programSlug]);
     const program = progResult.rows[0];
     if (!program || !program.launch_config) {
-      console.warn(`[tally-generic] No launch_config for program "${programSlug}" - ignoring submission.`);
+      console.warn(`[tally-generic] No launch_config for program "${programSlug}" (url slug "${urlSlug}") - ignoring submission.`);
       return;
     }
-    const fields = req.body.data?.fields || [];
     await processGenericSubmission(fields, program);
   } catch (err) {
     console.error('[tally-generic] Error processing submission:', err);
