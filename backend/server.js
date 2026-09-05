@@ -314,6 +314,25 @@ async function migrate() {
             OR RIGHT(REGEXP_REPLACE(e.student_phone, '\\D', '', 'g'), 10) = l.phone)`
   );
 
+  /* ── Targeted fix (2026-08-30): "Sant Ram Saharan" (order
+     JSP-RSSB-J-1788000952472, OMR Diploma, paid 29 Aug 2026) still isn't
+     showing on his own dashboard after the general backfill above - his
+     account's phone or email must differ from enrollments.student_email/
+     student_phone in a way byte-for-byte matching can't bridge (e.g. a
+     Gmail dot variant, or no phone on file at all), even though the two
+     visibly "look the same". Rather than loosen the general email/phone
+     matching logic (risky - could misroute one learner's enrollment to a
+     different person with a similar-looking address), force-link this
+     one known enrollment directly to whichever learners row actually has
+     this email or phone on file. No-ops harmlessly if neither matches. ── */
+  await query(
+    `UPDATE enrollments e SET learner_id = l.id
+     FROM learners l
+     WHERE e.order_id = 'JSP-RSSB-J-1788000952472' AND e.learner_id IS NULL
+       AND (LOWER(TRIM(l.email)) = 'santusaharan@gmail.com'
+            OR RIGHT(REGEXP_REPLACE(COALESCE(l.phone, ''), '\\D', '', 'g'), 10) = '8104581307')`
+  );
+
   /* ── Referral program ── */
   await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS referral_code VARCHAR(20)`);
   await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS referred_by VARCHAR(20)`);
