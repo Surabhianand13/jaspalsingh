@@ -244,7 +244,7 @@
       var pdfjsLib = results[0];
       var blob = results[1];
       viewerState.objectUrl = URL.createObjectURL(blob);
-      return pdfjsLib.getDocument(viewerState.objectUrl).promise;
+      return pdfjsLib.getDocument({ url: viewerState.objectUrl }).promise;
     }).then(function (pdfDoc) {
       viewerState.pdfDoc = pdfDoc;
       pagesEl.innerHTML = '';
