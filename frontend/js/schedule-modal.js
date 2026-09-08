@@ -50,19 +50,35 @@
     });
   }
 
-  /* Lazy-loads PDF.js (ESM build, cdnjs - already CSP-allowlisted for
-     Font Awesome) only when a learner actually opens a material, so
+  /* Lazy-loads PDF.js (classic UMD build, cdnjs - already CSP-allowlisted
+     for Font Awesome) only when a learner actually opens a material, so
      pages/programs without materials never pay for it. Cached so repeat
-     opens in the same page session don't re-import. */
-  var PDFJS_VERSION = '6.3.289';
+     opens in the same page session don't re-load.
+
+     Pinned to 3.11.174, NOT the current 6.x release - 6.3.289 crashed for
+     some learners with "n.toHex is not a function": its worker computes
+     document fingerprints via a bare Uint8Array.prototype.toHex() call
+     (no fallback), a very recently added JS engine method that older
+     Android WebView/Chrome builds don't have yet. 3.11.174 has no such
+     call anywhere in its bundle (only a self-contained toHexDigit()
+     helper) and was pdf.js's long-standing, broadly-compatible release
+     for years - the safer choice for a learner base on a wide mix of
+     devices. */
+  var PDFJS_VERSION = '3.11.174';
   var pdfjsLoadPromise = null;
   function ensurePdfJs() {
     if (!pdfjsLoadPromise) {
-      pdfjsLoadPromise = import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/' + PDFJS_VERSION + '/pdf.min.mjs')
-        .then(function (mod) {
-          mod.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/' + PDFJS_VERSION + '/pdf.worker.min.mjs';
-          return mod;
-        });
+      pdfjsLoadPromise = new Promise(function (resolve, reject) {
+        if (window.pdfjsLib) return resolve(window.pdfjsLib);
+        var script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/' + PDFJS_VERSION + '/pdf.min.js';
+        script.onload = function () {
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/' + PDFJS_VERSION + '/pdf.worker.min.js';
+          resolve(window.pdfjsLib);
+        };
+        script.onerror = function () { reject(new Error('Could not load the PDF viewer. Check your connection and try again.')); };
+        document.head.appendChild(script);
+      });
     }
     return pdfjsLoadPromise;
   }
