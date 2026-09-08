@@ -35,6 +35,38 @@
       });
   }
 
+  /* Same auth/token handling as authFetch, but resolves a Blob for binary
+     responses (the watermarked PDF) instead of parsing JSON. Only parses
+     JSON on the error path, to surface the same {error} messages. */
+  function authFetchBlob(path) {
+    var token = window.LearnerAuth ? window.LearnerAuth.getToken() : null;
+    var headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+    return fetch(API_BASE + path, { headers: headers }).then(function (res) {
+      if (!res.ok) {
+        return res.json().then(function (data) { throw new Error(data.error || 'Request failed (' + res.status + ')'); },
+          function () { throw new Error('Request failed (' + res.status + ')'); });
+      }
+      return res.blob();
+    });
+  }
+
+  /* Lazy-loads PDF.js (ESM build, cdnjs - already CSP-allowlisted for
+     Font Awesome) only when a learner actually opens a material, so
+     pages/programs without materials never pay for it. Cached so repeat
+     opens in the same page session don't re-import. */
+  var PDFJS_VERSION = '6.3.289';
+  var pdfjsLoadPromise = null;
+  function ensurePdfJs() {
+    if (!pdfjsLoadPromise) {
+      pdfjsLoadPromise = import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/' + PDFJS_VERSION + '/pdf.min.mjs')
+        .then(function (mod) {
+          mod.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/' + PDFJS_VERSION + '/pdf.worker.min.mjs';
+          return mod;
+        });
+    }
+    return pdfjsLoadPromise;
+  }
+
   function esc(s) {
     return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
@@ -147,7 +179,7 @@
             '<div style="font-weight:700;color:#1A1A2E;font-size:13.5px;">' + esc(m.title) + '</div>' +
             '<div style="font-size:11.5px;color:#9999b0;">' + esc(m.kind === 'formula' ? 'Formula Sheet' : 'DPP') + (m.subject ? ' &middot; ' + esc(m.subject) : '') + '</div>' +
           '</div>' +
-          '<a href="' + esc(m.file_url) + '" target="_blank" rel="noopener" style="background:#0F766E;color:#fff;border-radius:20px;padding:7px 16px;font-size:12px;font-weight:700;text-decoration:none;"><i class="fas fa-download"></i> Open</a>' +
+          '<button data-view-material="' + m.id + '" style="background:#0F766E;color:#fff;border:none;border-radius:20px;padding:7px 16px;font-size:12px;font-weight:700;cursor:pointer;"><i class="fas fa-eye"></i> View</button>' +
         '</div>';
       }).join('');
       return '<div style="margin-bottom:18px;"><div style="font-weight:800;color:#4338CA;font-size:12.5px;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;">' + esc(TRACK_LABEL[track] || track) + '</div>' + items + '</div>';
@@ -157,6 +189,82 @@
       (sections || '<p class="profile-empty">No study materials uploaded yet - check back soon.</p>');
     document.getElementById('scheduleBackBtn').addEventListener('click', function () {
       scheduleState.categories.length && !scheduleState.category ? renderTrackPicker() : renderScheduleList();
+    });
+    bodyEl.querySelectorAll('[data-view-material]').forEach(function (btn) {
+      btn.addEventListener('click', function () { openMaterialViewer(btn.getAttribute('data-view-material')); });
+    });
+  }
+
+  /* View-only in-page PDF viewer: fetches the watermarked bytes and
+     renders them page-by-page onto <canvas> via PDF.js, rather than
+     navigating to a URL or using an <iframe>/<embed> - that avoids the
+     browser's native PDF viewer chrome (and its own Save/Print/Download
+     buttons) entirely. Right-click is blocked inside it as a deterrent
+     against casual sharing, not as real screenshot/leak protection -
+     nothing running in a browser can prevent an OS-level screenshot. */
+  var viewerState = { pdfDoc: null, objectUrl: null };
+
+  function ensureViewerOverlay() {
+    if (document.getElementById('pdfViewerOverlay')) return;
+    var overlay = document.createElement('div');
+    overlay.id = 'pdfViewerOverlay';
+    overlay.style.cssText = 'display:none;position:fixed;inset:0;background:#1A1A2E;z-index:10000;flex-direction:column;';
+    overlay.innerHTML =
+      '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:#fff;border-bottom:1px solid #eee;">' +
+        '<span style="font-weight:700;color:#1A1A2E;font-size:13.5px;"><i class="fas fa-lock"></i> View only - downloading is disabled</span>' +
+        '<button id="pdfViewerClose" style="background:none;border:none;font-size:22px;cursor:pointer;color:#6b6b8a;">&times;</button>' +
+      '</div>' +
+      '<div id="pdfViewerPages" style="flex:1;overflow:auto;padding:20px;display:flex;flex-direction:column;align-items:center;gap:14px;user-select:none;-webkit-user-select:none;"></div>';
+    document.body.appendChild(overlay);
+    overlay.addEventListener('contextmenu', function (ev) { ev.preventDefault(); return false; });
+    document.getElementById('pdfViewerClose').addEventListener('click', closeViewer);
+  }
+
+  function closeViewer() {
+    var overlay = document.getElementById('pdfViewerOverlay');
+    if (overlay) overlay.style.display = 'none';
+    var pagesEl = document.getElementById('pdfViewerPages');
+    if (pagesEl) pagesEl.innerHTML = '';
+    if (viewerState.pdfDoc) { viewerState.pdfDoc.destroy(); viewerState.pdfDoc = null; }
+    if (viewerState.objectUrl) { URL.revokeObjectURL(viewerState.objectUrl); viewerState.objectUrl = null; }
+  }
+
+  function openMaterialViewer(materialId) {
+    closeViewer();
+    ensureViewerOverlay();
+    var overlay = document.getElementById('pdfViewerOverlay');
+    var pagesEl = document.getElementById('pdfViewerPages');
+    overlay.style.display = 'flex';
+    pagesEl.innerHTML = '<p style="color:#fff;">Loading…</p>';
+
+    Promise.all([
+      ensurePdfJs(),
+      authFetchBlob('/api/schedule/' + encodeURIComponent(scheduleState.slug) + '/materials/' + encodeURIComponent(materialId) + '/view'),
+    ]).then(function (results) {
+      var pdfjsLib = results[0];
+      var blob = results[1];
+      viewerState.objectUrl = URL.createObjectURL(blob);
+      return pdfjsLib.getDocument(viewerState.objectUrl).promise;
+    }).then(function (pdfDoc) {
+      viewerState.pdfDoc = pdfDoc;
+      pagesEl.innerHTML = '';
+      var renderPage = function (pageNum) {
+        if (pageNum > pdfDoc.numPages) return;
+        pdfDoc.getPage(pageNum).then(function (page) {
+          var viewport = page.getViewport({ scale: 1.3 });
+          var canvas = document.createElement('canvas');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          canvas.style.cssText = 'max-width:100%;box-shadow:0 2px 10px rgba(0,0,0,.3);';
+          pagesEl.appendChild(canvas);
+          page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport }).promise.then(function () {
+            renderPage(pageNum + 1);
+          });
+        });
+      };
+      renderPage(1);
+    }).catch(function (err) {
+      pagesEl.innerHTML = '<p style="color:#fff;">' + esc(err.message || 'Could not load this material.') + '</p>';
     });
   }
 
