@@ -202,7 +202,7 @@
      buttons) entirely. Right-click is blocked inside it as a deterrent
      against casual sharing, not as real screenshot/leak protection -
      nothing running in a browser can prevent an OS-level screenshot. */
-  var viewerState = { pdfDoc: null, objectUrl: null };
+  var viewerState = { pdfDoc: null };
 
   function ensureViewerOverlay() {
     if (document.getElementById('pdfViewerOverlay')) return;
@@ -226,7 +226,6 @@
     var pagesEl = document.getElementById('pdfViewerPages');
     if (pagesEl) pagesEl.innerHTML = '';
     if (viewerState.pdfDoc) { viewerState.pdfDoc.destroy(); viewerState.pdfDoc = null; }
-    if (viewerState.objectUrl) { URL.revokeObjectURL(viewerState.objectUrl); viewerState.objectUrl = null; }
   }
 
   function openMaterialViewer(materialId) {
@@ -243,8 +242,13 @@
     ]).then(function (results) {
       var pdfjsLib = results[0];
       var blob = results[1];
-      viewerState.objectUrl = URL.createObjectURL(blob);
-      return pdfjsLib.getDocument({ url: viewerState.objectUrl }).promise;
+      // Pass raw bytes rather than a blob: object URL - pdf.js fetches the
+      // `url` form from inside its worker thread, which the site's CSP
+      // connect-src (no `blob:` entry) blocks; `data` skips that fetch
+      // entirely since we already have the full file in memory.
+      return blob.arrayBuffer().then(function (buf) {
+        return pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
+      });
     }).then(function (pdfDoc) {
       viewerState.pdfDoc = pdfDoc;
       pagesEl.innerHTML = '';
