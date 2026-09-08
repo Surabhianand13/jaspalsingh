@@ -24,7 +24,8 @@
 const express = require('express');
 const router  = express.Router();
 const multer  = require('multer');
-const { PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const { PutObjectCommand, DeleteObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
+const { PDFDocument, StandardFonts, degrees, rgb } = require('pdf-lib');
 const { r2, BUCKET } = require('../config/r2');
 const { query } = require('../config/db');
 const { protectLearner } = require('../middleware/learnerAuth');
@@ -187,12 +188,77 @@ router.get('/:program_slug/materials', protectLearner, async (req, res, next) =>
     if (!tracks.length) return res.json({ materials: [] });
 
     const result = await query(
-      `SELECT id, track, kind, subject, title, file_url FROM batch_materials
+      `SELECT id, track, kind, subject, title FROM batch_materials
        WHERE track = ANY($1::text[]) AND file_url IS NOT NULL
        ORDER BY track ASC, sort_order ASC, id ASC`,
       [tracks]
     );
     res.json({ materials: result.rows });
+  } catch (err) { next(err); }
+});
+
+/* ── GET /api/schedule/:program_slug/materials/:id/view ──────
+   View-only delivery of a single material - never exposes the R2 URL to
+   the frontend. The backend pulls the original PDF from R2 itself,
+   burns a per-request watermark (this learner's name/email/phone +
+   timestamp, tiled across every page) into a fresh copy, and streams
+   that. This is a deterrent against casual forwarding, not a leakproof
+   control - a devtools-savvy user can still extract the response, but
+   what they get is watermarked back to them, and there's no more
+   plain downloadable link to share in the first place. Same
+   enrollment/track gate as the list route above. ── */
+router.get('/:program_slug/materials/:id/view', protectLearner, async (req, res, next) => {
+  try {
+    const learner = await loadLearner(req.learner.id);
+    if (!learner) return res.status(401).json({ error: 'Learner not found.' });
+
+    const enrollment = await getActiveEnrollment(learner.id, learner.email, learner.phone, req.params.program_slug);
+    if (!enrollment) {
+      return res.status(403).json({ error: 'No active enrollment for this program. If you were refunded, this program is no longer accessible.' });
+    }
+
+    const progRes = await query(`SELECT launch_config FROM programs WHERE slug = $1`, [req.params.program_slug]);
+    const lc = progRes.rows[0] && progRes.rows[0].launch_config;
+    const tracks = (lc && lc.batch && lc.batch.materialTracks) || [];
+    if (!tracks.length) return res.status(403).json({ error: 'Not available for this program.' });
+
+    const matRes = await query(`SELECT id, track, file_key FROM batch_materials WHERE id = $1`, [req.params.id]);
+    const material = matRes.rows[0];
+    if (!material || !material.file_key) return res.status(404).json({ error: 'Material not found.' });
+    if (!tracks.includes(material.track)) return res.status(403).json({ error: 'Not part of your enrolled track.' });
+
+    const obj = await r2.send(new GetObjectCommand({ Bucket: BUCKET, Key: material.file_key }));
+    const chunks = [];
+    for await (const chunk of obj.Body) chunks.push(chunk);
+    const original = Buffer.concat(chunks);
+
+    let pdfDoc;
+    try { pdfDoc = await PDFDocument.load(original); }
+    catch (e) { return res.status(422).json({ error: 'This file could not be opened for viewing.' }); }
+
+    const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    const stamp = `${learner.name || 'Learner'} · ${learner.email}${learner.phone ? ' · ' + learner.phone : ''} · ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`;
+    pdfDoc.getPages().forEach((page) => {
+      const { width, height } = page.getSize();
+      const fontSize = 11;
+      const textWidth = font.widthOfTextAtSize(stamp, fontSize);
+      // Tiled diagonal grid (not one corner stamp) so cropping the page
+      // can't remove the watermark.
+      for (let row = 0; row < height + 400; row += 160) {
+        for (let col = -textWidth; col < width + textWidth; col += textWidth + 60) {
+          page.drawText(stamp, { x: col, y: row, size: fontSize, font, color: rgb(0.55, 0.1, 0.1), opacity: 0.15, rotate: degrees(30) });
+        }
+      }
+    });
+    const watermarked = await pdfDoc.save();
+
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': 'inline; filename="material.pdf"',
+      'Cache-Control': 'no-store, private',
+      'Content-Length': watermarked.length,
+    });
+    res.send(Buffer.from(watermarked));
   } catch (err) { next(err); }
 });
 
