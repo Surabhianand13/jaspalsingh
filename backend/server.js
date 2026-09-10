@@ -1964,6 +1964,183 @@ async function migrate() {
     }
   }
 
+  /* ── UKPSC JE - Jaspal Sir Ki Test Series - Civil (Printed OMR Offline)
+     (2026-09-11): first UKPSC (Uttarakhand) launch on the platform, Civil
+     only (no Degree/Diploma split). Home-attempt printed OMR, same
+     mode:'home' generic convention as शौर्य Printed OMR / UP Polytechnic
+     OMR / BPSC OMR - tally-generic.js needs no changes. Flat price, no
+     pricing_tiers. tallyFormUrl starts null like every new launch - see
+     the NO_FULFILLMENT_SLUGS entry in paymentEmailService.js for the
+     fallback welcome-email copy that covers the gap until the owner
+     creates the real Tally form. ── */
+  await query(
+    `INSERT INTO programs (slug, title, category, exam, level, status, price, mrp, accent, icon_class, thumbnail_url, short_name, sort_order, omr_enabled, total_tests, tags, is_visible, detail_url)
+     VALUES ($1,$2,'test-series','UKPSC JE 2026','Civil Engineering','enrolling',$3,$4,'purple','fa-file-invoice',$5,$6,38,TRUE,112,$7,TRUE,$8)
+     ON CONFLICT (slug) DO NOTHING`,
+    [
+      'ukpsc-je-2026-civil-omr',
+      'UKPSC JE - Jaspal Sir Ki Test Series - Civil (Printed OMR Offline)',
+      1499, 2999,
+      '/assets/images/thumb-ukpsc-je-2026-civil-omr.jpg',
+      'UKPSC JE Civil - Printed OMR',
+      JSON.stringify(['Home-Based Printed OMR', '112 Tests Over 28 Weeks', 'Subject-Wise + Full-Length', 'Post-Test Solution PDF']),
+      '/programs/ukpsc-je-2026-civil-omr/',
+    ]
+  );
+  await query(
+    `UPDATE programs SET launch_config = $1 WHERE slug = 'ukpsc-je-2026-civil-omr' AND launch_config IS NULL`,
+    [JSON.stringify({
+      seriesName: 'UKPSC JE - Jaspal Sir Ki Test Series - Civil (Printed OMR Offline)',
+      tallyFormUrl: null, // pending - needs a real Tally form, same as every other program launch
+      mode: 'home',
+      rollPrefix: 'UKJEC',
+      waGroupUrl: null,
+      lastTestDate: '11 April 2027 (Test-112)',
+      centre: null,
+    })]
+  );
+  console.log('✅ Seeded/updated UKPSC JE - Jaspal Sir Ki Test Series - Civil (Printed OMR Offline)');
+
+  /* ── UKPSC JE Civil OMR schedule (112 tests, transcribed directly from
+     the owner-supplied schedule PDF, 2026-09-11): Phase 1 (Tests 1-72,
+     18 weeks, subject-wise, Sat = Non-Tech 50Q x2 shifts, Sun = Civil
+     100Q x2 shifts) + Phase 2 (Tests 73-112, 10 weeks, "FLT 1"-"FLT 10"
+     full-length, Sat = Non-Tech 100Q x2 shifts, Sun = Civil 180Q x2
+     shifts). marks/duration_minutes deliberately left NULL - the PDF
+     gives no marking scheme and the owner will fill both in later via
+     Admin -> Programs -> Schedule, same bulk-paste/per-row-edit tools
+     used for every other program's schedule (routes/programs.js).
+     No unique constraint on program_schedule (see the CREATE TABLE
+     comment above), so this is guarded by an explicit existence check
+     rather than ON CONFLICT. ── */
+  const ukpscJeCivilOmrSchedule = [
+    { test_number: 1, test_date: '3 Oct 2026', syllabus: 'General Hindi (Part 1)', questions: 50 },
+    { test_number: 2, test_date: '3 Oct 2026', syllabus: 'General Science & Tech', questions: 50 },
+    { test_number: 3, test_date: '4 Oct 2026', syllabus: 'Building Materials (BMC)', questions: 100 },
+    { test_number: 4, test_date: '4 Oct 2026', syllabus: 'Fluid Mechanics', questions: 100 },
+    { test_number: 5, test_date: '10 Oct 2026', syllabus: 'General English (Part 1)', questions: 50 },
+    { test_number: 6, test_date: '10 Oct 2026', syllabus: 'Environment & Ecology', questions: 50 },
+    { test_number: 7, test_date: '11 Oct 2026', syllabus: 'Strength of Materials (SOM)', questions: 100 },
+    { test_number: 8, test_date: '11 Oct 2026', syllabus: 'Hydrology', questions: 100 },
+    { test_number: 9, test_date: '17 Oct 2026', syllabus: 'General Hindi (Part 2)', questions: 50 },
+    { test_number: 10, test_date: '17 Oct 2026', syllabus: 'Gen. Aptitude (Part 1)', questions: 50 },
+    { test_number: 11, test_date: '18 Oct 2026', syllabus: 'Concrete Technology', questions: 100 },
+    { test_number: 12, test_date: '18 Oct 2026', syllabus: 'Irrigation Engineering', questions: 100 },
+    { test_number: 13, test_date: '24 Oct 2026', syllabus: 'General English (Part 2)', questions: 50 },
+    { test_number: 14, test_date: '24 Oct 2026', syllabus: 'Uttarakhand GK (Geography)', questions: 50 },
+    { test_number: 15, test_date: '25 Oct 2026', syllabus: 'RCC Design', questions: 100 },
+    { test_number: 16, test_date: '25 Oct 2026', syllabus: 'Soil Mechanics', questions: 100 },
+    { test_number: 17, test_date: '31 Oct 2026', syllabus: 'General Hindi (Part 3)', questions: 50 },
+    { test_number: 18, test_date: '31 Oct 2026', syllabus: 'Uttarakhand GK (History)', questions: 50 },
+    { test_number: 19, test_date: '1 Nov 2026', syllabus: 'Structural Analysis', questions: 100 },
+    { test_number: 20, test_date: '1 Nov 2026', syllabus: 'Foundation Engineering', questions: 100 },
+    { test_number: 21, test_date: '7 Nov 2026', syllabus: 'General English (Part 3)', questions: 50 },
+    { test_number: 22, test_date: '7 Nov 2026', syllabus: 'Disaster Management', questions: 50 },
+    { test_number: 23, test_date: '8 Nov 2026', syllabus: 'Steel Structures', questions: 100 },
+    { test_number: 24, test_date: '8 Nov 2026', syllabus: 'Environmental Engg (Water)', questions: 100 },
+    { test_number: 25, test_date: '14 Nov 2026', syllabus: 'General Hindi (Part 4)', questions: 50 },
+    { test_number: 26, test_date: '14 Nov 2026', syllabus: 'Gen. Aptitude (Part 2)', questions: 50 },
+    { test_number: 27, test_date: '15 Nov 2026', syllabus: 'Estimating & Costing', questions: 100 },
+    { test_number: 28, test_date: '15 Nov 2026', syllabus: 'Environmental Engg (Waste)', questions: 100 },
+    { test_number: 29, test_date: '21 Nov 2026', syllabus: 'General English (Part 4)', questions: 50 },
+    { test_number: 30, test_date: '21 Nov 2026', syllabus: 'Uttarakhand GK (Culture)', questions: 50 },
+    { test_number: 31, test_date: '22 Nov 2026', syllabus: 'Construction Management', questions: 100 },
+    { test_number: 32, test_date: '22 Nov 2026', syllabus: 'Highway Engineering', questions: 100 },
+    { test_number: 33, test_date: '28 Nov 2026', syllabus: 'Mixed Non-Tech (P1)', questions: 50 },
+    { test_number: 34, test_date: '28 Nov 2026', syllabus: 'Mixed Non-Tech (P2)', questions: 50 },
+    { test_number: 35, test_date: '29 Nov 2026', syllabus: 'Mix Test: Civil Paper 1', questions: 100 },
+    { test_number: 36, test_date: '29 Nov 2026', syllabus: 'Mix Test: Civil Paper 2', questions: 100 },
+    { test_number: 37, test_date: '5 Dec 2026', syllabus: 'Hindi Grammar & Vocab', questions: 50 },
+    { test_number: 38, test_date: '5 Dec 2026', syllabus: 'Gen. Science & Tech (Adv)', questions: 50 },
+    { test_number: 39, test_date: '6 Dec 2026', syllabus: 'Advanced BMC & Concrete', questions: 100 },
+    { test_number: 40, test_date: '6 Dec 2026', syllabus: 'Advanced Fluid & Machinery', questions: 100 },
+    { test_number: 41, test_date: '12 Dec 2026', syllabus: 'English Grammar & Vocab', questions: 50 },
+    { test_number: 42, test_date: '12 Dec 2026', syllabus: 'Environment & Ecology', questions: 50 },
+    { test_number: 43, test_date: '13 Dec 2026', syllabus: 'Advanced SOM', questions: 100 },
+    { test_number: 44, test_date: '13 Dec 2026', syllabus: 'Advanced Hydrology & Irrigation', questions: 100 },
+    { test_number: 45, test_date: '19 Dec 2026', syllabus: 'Hindi Comprehension', questions: 50 },
+    { test_number: 46, test_date: '19 Dec 2026', syllabus: 'Gen. Aptitude (Part 3)', questions: 50 },
+    { test_number: 47, test_date: '20 Dec 2026', syllabus: 'Advanced RCC & Steel', questions: 100 },
+    { test_number: 48, test_date: '20 Dec 2026', syllabus: 'Advanced Soil Mechanics', questions: 100 },
+    { test_number: 49, test_date: '26 Dec 2026', syllabus: 'English Comprehension', questions: 50 },
+    { test_number: 50, test_date: '26 Dec 2026', syllabus: 'Uttarakhand GK (Polity)', questions: 50 },
+    { test_number: 51, test_date: '27 Dec 2026', syllabus: 'Advanced Structural Analysis', questions: 100 },
+    { test_number: 52, test_date: '27 Dec 2026', syllabus: 'Surveying (Part 1)', questions: 100 },
+    { test_number: 53, test_date: '2 Jan 2027', syllabus: 'Mixed Hindi Test', questions: 50 },
+    { test_number: 54, test_date: '2 Jan 2027', syllabus: 'Uttarakhand GK (Economy)', questions: 50 },
+    { test_number: 55, test_date: '3 Jan 2027', syllabus: 'Adv. Estimating & Costing', questions: 100 },
+    { test_number: 56, test_date: '3 Jan 2027', syllabus: 'Surveying (Part 2 - Advanced)', questions: 100 },
+    { test_number: 57, test_date: '9 Jan 2027', syllabus: 'Mixed English Test', questions: 50 },
+    { test_number: 58, test_date: '9 Jan 2027', syllabus: 'Disaster Management (Adv)', questions: 50 },
+    { test_number: 59, test_date: '10 Jan 2027', syllabus: 'Mix: BMC, SOM, RCC', questions: 100 },
+    { test_number: 60, test_date: '10 Jan 2027', syllabus: 'Railway & Airport Engineering', questions: 100 },
+    { test_number: 61, test_date: '16 Jan 2027', syllabus: 'Full Hindi Mock', questions: 50 },
+    { test_number: 62, test_date: '16 Jan 2027', syllabus: 'Full Gen. Studies Mock', questions: 50 },
+    { test_number: 63, test_date: '17 Jan 2027', syllabus: 'Mix: Steel, SA, Est & Cost', questions: 100 },
+    { test_number: 64, test_date: '17 Jan 2027', syllabus: 'Adv. Environmental Engineering', questions: 100 },
+    { test_number: 65, test_date: '23 Jan 2027', syllabus: 'Full English Mock', questions: 50 },
+    { test_number: 66, test_date: '23 Jan 2027', syllabus: 'Full Apti & UK GK Mock', questions: 50 },
+    { test_number: 67, test_date: '24 Jan 2027', syllabus: 'Full Paper 1 Subject-wise Mix', questions: 100 },
+    { test_number: 68, test_date: '24 Jan 2027', syllabus: 'Full Paper 2 Subject-wise Mix', questions: 100 },
+    { test_number: 69, test_date: '30 Jan 2027', syllabus: 'Mega Mix Non-Tech 1', questions: 50 },
+    { test_number: 70, test_date: '30 Jan 2027', syllabus: 'Mega Mix Non-Tech 2', questions: 50 },
+    { test_number: 71, test_date: '31 Jan 2027', syllabus: 'Mega Mix Civil Paper 1', questions: 100 },
+    { test_number: 72, test_date: '31 Jan 2027', syllabus: 'Mega Mix Civil Paper 2', questions: 100 },
+    { test_number: 73, test_date: '6 Feb 2027', syllabus: 'FLT 1 - Full Hindi + English', questions: 100 },
+    { test_number: 74, test_date: '6 Feb 2027', syllabus: 'FLT 1 - Full GS + Apti + UK GK', questions: 100 },
+    { test_number: 75, test_date: '7 Feb 2027', syllabus: 'FLT 1 - Complete Civil Paper 1', questions: 180 },
+    { test_number: 76, test_date: '7 Feb 2027', syllabus: 'FLT 1 - Complete Civil Paper 2', questions: 180 },
+    { test_number: 77, test_date: '13 Feb 2027', syllabus: 'FLT 2 - Full Hindi + English', questions: 100 },
+    { test_number: 78, test_date: '13 Feb 2027', syllabus: 'FLT 2 - Full GS + Apti + UK GK', questions: 100 },
+    { test_number: 79, test_date: '14 Feb 2027', syllabus: 'FLT 2 - Complete Civil Paper 1', questions: 180 },
+    { test_number: 80, test_date: '14 Feb 2027', syllabus: 'FLT 2 - Complete Civil Paper 2', questions: 180 },
+    { test_number: 81, test_date: '20 Feb 2027', syllabus: 'FLT 3 - Full Hindi + English', questions: 100 },
+    { test_number: 82, test_date: '20 Feb 2027', syllabus: 'FLT 3 - Full GS + Apti + UK GK', questions: 100 },
+    { test_number: 83, test_date: '21 Feb 2027', syllabus: 'FLT 3 - Complete Civil Paper 1', questions: 180 },
+    { test_number: 84, test_date: '21 Feb 2027', syllabus: 'FLT 3 - Complete Civil Paper 2', questions: 180 },
+    { test_number: 85, test_date: '27 Feb 2027', syllabus: 'FLT 4 - Full Hindi + English', questions: 100 },
+    { test_number: 86, test_date: '27 Feb 2027', syllabus: 'FLT 4 - Full GS + Apti + UK GK', questions: 100 },
+    { test_number: 87, test_date: '28 Feb 2027', syllabus: 'FLT 4 - Complete Civil Paper 1', questions: 180 },
+    { test_number: 88, test_date: '28 Feb 2027', syllabus: 'FLT 4 - Complete Civil Paper 2', questions: 180 },
+    { test_number: 89, test_date: '6 Mar 2027', syllabus: 'FLT 5 - Full Hindi + English', questions: 100 },
+    { test_number: 90, test_date: '6 Mar 2027', syllabus: 'FLT 5 - Full GS + Apti + UK GK', questions: 100 },
+    { test_number: 91, test_date: '7 Mar 2027', syllabus: 'FLT 5 - Complete Civil Paper 1', questions: 180 },
+    { test_number: 92, test_date: '7 Mar 2027', syllabus: 'FLT 5 - Complete Civil Paper 2', questions: 180 },
+    { test_number: 93, test_date: '13 Mar 2027', syllabus: 'FLT 6 - Full Hindi + English', questions: 100 },
+    { test_number: 94, test_date: '13 Mar 2027', syllabus: 'FLT 6 - Full GS + Apti + UK GK', questions: 100 },
+    { test_number: 95, test_date: '14 Mar 2027', syllabus: 'FLT 6 - Complete Civil Paper 1', questions: 180 },
+    { test_number: 96, test_date: '14 Mar 2027', syllabus: 'FLT 6 - Complete Civil Paper 2', questions: 180 },
+    { test_number: 97, test_date: '20 Mar 2027', syllabus: 'FLT 7 - Full Hindi + English', questions: 100 },
+    { test_number: 98, test_date: '20 Mar 2027', syllabus: 'FLT 7 - Full GS + Apti + UK GK', questions: 100 },
+    { test_number: 99, test_date: '21 Mar 2027', syllabus: 'FLT 7 - Complete Civil Paper 1', questions: 180 },
+    { test_number: 100, test_date: '21 Mar 2027', syllabus: 'FLT 7 - Complete Civil Paper 2', questions: 180 },
+    { test_number: 101, test_date: '27 Mar 2027', syllabus: 'FLT 8 - Full Hindi + English', questions: 100 },
+    { test_number: 102, test_date: '27 Mar 2027', syllabus: 'FLT 8 - Full GS + Apti + UK GK', questions: 100 },
+    { test_number: 103, test_date: '28 Mar 2027', syllabus: 'FLT 8 - Complete Civil Paper 1', questions: 180 },
+    { test_number: 104, test_date: '28 Mar 2027', syllabus: 'FLT 8 - Complete Civil Paper 2', questions: 180 },
+    { test_number: 105, test_date: '3 Apr 2027', syllabus: 'FLT 9 - Full Hindi + English', questions: 100 },
+    { test_number: 106, test_date: '3 Apr 2027', syllabus: 'FLT 9 - Full GS + Apti + UK GK', questions: 100 },
+    { test_number: 107, test_date: '4 Apr 2027', syllabus: 'FLT 9 - Complete Civil Paper 1', questions: 180 },
+    { test_number: 108, test_date: '4 Apr 2027', syllabus: 'FLT 9 - Complete Civil Paper 2', questions: 180 },
+    { test_number: 109, test_date: '10 Apr 2027', syllabus: 'FLT 10 - Full Hindi + English', questions: 100 },
+    { test_number: 110, test_date: '10 Apr 2027', syllabus: 'FLT 10 - Full GS + Apti + UK GK', questions: 100 },
+    { test_number: 111, test_date: '11 Apr 2027', syllabus: 'FLT 10 - Complete Civil Paper 1', questions: 180 },
+    { test_number: 112, test_date: '11 Apr 2027', syllabus: 'FLT 10 - Complete Civil Paper 2', questions: 180 },
+  ];
+  const ukpscScheduleExists = await query(
+    `SELECT 1 FROM program_schedule WHERE program_slug = 'ukpsc-je-2026-civil-omr' LIMIT 1`
+  );
+  if (ukpscScheduleExists.rows.length === 0) {
+    for (const [i, row] of ukpscJeCivilOmrSchedule.entries()) {
+      await query(
+        `INSERT INTO program_schedule (program_slug, test_number, test_date, syllabus, questions, sort_order)
+         VALUES ('ukpsc-je-2026-civil-omr', $1, $2, $3, $4, $5)`,
+        [row.test_number, row.test_date, row.syllabus, row.questions, i]
+      );
+    }
+    console.log(`✅ Seeded ${ukpscJeCivilOmrSchedule.length} UKPSC JE Civil OMR schedule rows`);
+  }
+
   console.log('✅ Migration: enrollments, leads, events, programs, banners ensured');
 }
 
