@@ -2001,6 +2001,17 @@ async function migrate() {
   );
   console.log('✅ Seeded/updated UKPSC JE - Jaspal Sir Ki Test Series - Civil (Printed OMR Offline)');
 
+  /* ── UKPSC JE Civil OMR real Tally form wired 2026-09-11 - see the
+     NO_FULFILLMENT_SLUGS removal in paymentEmailService.js for the other
+     half of this change. Explicit unconditional jsonb_set, not an IS
+     NULL guard, since launch_config is already set (from the seed
+     above) - only tallyFormUrl itself needs correcting, once. ── */
+  await query(
+    `UPDATE programs SET launch_config = jsonb_set(launch_config, '{tallyFormUrl}', '"https://tally.so/r/obq6O1"')
+     WHERE slug = 'ukpsc-je-2026-civil-omr'`
+  );
+  console.log('✅ Wired real Tally form for UKPSC JE Civil OMR');
+
   /* ── UKPSC JE Civil OMR schedule (112 tests, transcribed directly from
      the owner-supplied schedule PDF, 2026-09-11): Phase 1 (Tests 1-72,
      18 weeks, subject-wise, Sat = Non-Tech 50Q x2 shifts, Sun = Civil

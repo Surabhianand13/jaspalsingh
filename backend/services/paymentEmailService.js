@@ -64,14 +64,9 @@ const NO_FULFILLMENT_SLUGS = new Set([
   // शौर्य Offline Practice Batch Course - RSSB JE 2026: both tracks got
   // the same shared शौर्य Batch Tally forms 2026-08-30 - no longer
   // needed here either.
-  // UKPSC JE Civil OMR (launched 2026-09-11): no Degree/Diploma or "omr"+
-  // track substring pair in its slug, so without this it would fall
-  // through the slug-sniffing tallyBase/waGroups logic below to an
-  // unrelated RSSB form (TALLY_FORM_URL_DIPLOMA) - actively wrong for a
-  // UKPSC learner. Remove once the owner creates a real Tally form and
-  // launch_config.tallyFormUrl is set (mirrors the jsonb_set correction
-  // already done for every other generic launch, see server.js).
-  'ukpsc-je-2026-civil-omr',
+  // UKPSC JE Civil OMR: got a real Tally form 2026-09-11 (see the
+  // launch_config.tallyFormUrl correction in server.js) - no longer
+  // needed here, hasTallyForm now covers it.
 ]);
 
 /* ── ESE 2027 Prelims - 6 programs, matched by exact slug (config-driven) ── */
