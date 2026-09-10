@@ -1555,7 +1555,13 @@
 
     tbody.innerHTML = '<tr><td colspan="8"><div class="admin-table-empty"><i class="fas fa-spinner fa-spin"></i><p>Loading…</p></div></td></tr>';
 
-    adminFetch('GET', '/api/learners').then(function (data) {
+    // GET /api/learners defaults to limit=50 server-side (built for a
+    // paginated view that was never wired up) - the table, its period
+    // filters, search, and CSV export all work off this one in-memory
+    // fetch, so a real limit here silently truncated everything to the
+    // most recent 50 signups. Ask for effectively all of them, matching
+    // how /admin/paid-learners already has no cap at all.
+    adminFetch('GET', '/api/learners?limit=1000000').then(function (data) {
       learnersState.items = Array.isArray(data) ? data : (data.learners || data.data || []);
       applyLearnerPeriodFilter();
     }).catch(function (err) {
