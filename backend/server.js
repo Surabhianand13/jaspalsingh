@@ -2171,6 +2171,18 @@ async function migrate() {
     console.log(`✅ Seeded ${ukpscJeCivilOmrSchedule.length} UKPSC JE Civil OMR schedule rows`);
   }
 
+  // Seed RSSB JE blog posts (idempotent - ON CONFLICT (slug) DO NOTHING)
+  const rssbJePosts = require('./seeds/blogPostsRssbJe');
+  for (const post of rssbJePosts) {
+    await query(
+      `INSERT INTO blog_posts (title, slug, content, excerpt, category, is_published, published_at)
+       VALUES ($1,$2,$3,$4,$5,TRUE,$6)
+       ON CONFLICT (slug) DO NOTHING`,
+      [post.title, post.slug, post.content, post.excerpt, post.category, post.published_at]
+    );
+  }
+  console.log(\`✅ Seeded \${rssbJePosts.length} RSSB JE blog posts\`);
+
   console.log('✅ Migration: enrollments, leads, events, programs, banners ensured');
 }
 
