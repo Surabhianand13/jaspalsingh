@@ -2181,7 +2181,7 @@ async function migrate() {
       [post.title, post.slug, post.content, post.excerpt, post.category, post.published_at]
     );
   }
-  console.log(\`✅ Seeded \${rssbJePosts.length} RSSB JE blog posts\`);
+  console.log('✅ Seeded ' + rssbJePosts.length + ' RSSB JE blog posts');
 
   console.log('✅ Migration: enrollments, leads, events, programs, banners ensured');
 }
