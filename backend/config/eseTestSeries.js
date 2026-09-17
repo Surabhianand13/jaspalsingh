@@ -159,8 +159,8 @@ const TALLY_FORM_URL_PAPER1_OMR    = process.env.TALLY_FORM_URL_ESE_PAPER1_OMR  
 const TALLY_FORM_URL_PAPER2_OMR    = process.env.TALLY_FORM_URL_ESE_PAPER2_OMR    || 'https://tally.so/r/obQ7b5';
 const TALLY_FORM_URL_COMBINED_OMR  = process.env.TALLY_FORM_URL_ESE_COMBINED_OMR  || 'https://tally.so/r/PdyXdP';
 
-const TALLY_FORM_URL_P1P2_OFFLINE  = process.env.TALLY_FORM_URL_ESE_P1P2_OFFLINE  || '#';
-const TALLY_FORM_URL_P1P2_OMR      = process.env.TALLY_FORM_URL_ESE_P1P2_OMR      || '#';
+const TALLY_FORM_URL_P1P2_OFFLINE  = process.env.TALLY_FORM_URL_ESE_P1P2_OFFLINE  || 'https://tally.so/r/9qe9A1';
+const TALLY_FORM_URL_P1P2_OMR      = process.env.TALLY_FORM_URL_ESE_P1P2_OMR      || 'https://tally.so/r/xXGM8J';
 
 const WA_GROUP_OFFLINE = 'https://chat.whatsapp.com/GUWPBuhIKSBC4S1RW1NxMm?s=sh&p=a&ilr=4';
 const WA_GROUP_OMR     = 'https://chat.whatsapp.com/L8gwagkk7Yz9mBS0oKmFnK?s=sh&p=a&ilr=4';
