@@ -452,7 +452,7 @@ async function processEseCombinedSubmission(fields, programKey) {
   try {
     // Roll number is assigned at purchase time (onEnrollmentPaid) - this only
     // regenerates as a fallback for enrollments that predate that change.
-    const rollNumber  = enrollment.roll_number || await generateEseRollNumber(isOmr ? 'ESE' : (centreKey || centreRaw), 'CMB');
+    const rollNumber  = enrollment.roll_number || await generateEseRollNumber(isOmr ? 'ESE' : (centreKey || centreRaw), cfg.examCode || 'CMB');
     const photoBuffer = photoUrl ? await fetchImageBuffer(photoUrl) : null;
 
     const pdfBuffer = await generateAdmitCard({
@@ -465,7 +465,7 @@ async function processEseCombinedSubmission(fields, programKey) {
       email:        email || 'N/A',
       photoBuffer,
       seriesName:   cfg.seriesName,
-      lastTestDate: '17 January 2027 (Test-22)',
+      lastTestDate: cfg.lastTestDate || '17 January 2027 (Test-22)',
       mode:         isOmr ? 'home' : 'offline',
     });
 
