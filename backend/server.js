@@ -531,6 +531,23 @@ async function migrate() {
     ON CONFLICT (slug) DO NOTHING
   `);
 
+  // Seed ESE 2027 Prelims P1+2 combined programs (upsert - safe to run every startup)
+  await query(`
+    INSERT INTO programs (slug,title,short_name,category,exam,level,status,price,mrp,accent,icon_class,sort_order,detail_url,is_visible,total_tests)
+    VALUES
+      ('ese-2027-prelims-jaspalsirki-testseries-p1p2-offline',
+       'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 1+2 Civil (Offline)',
+       'ESE 2027 Prelims P1+2 Offline',
+       'test-series','ESE 2027 Prelims','Paper 1+2 (Civil)','enrolling',2499,6999,'purple','fa-layer-group',8,
+       '/programs/ese-2027-prelims-jaspalsirki-testseries-p1p2-offline/',TRUE,13),
+      ('ese-2027-prelims-jaspalsirki-testseries-p1p2-omr',
+       'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 1+2 Civil (Printed OMR)',
+       'ESE 2027 Prelims P1+2 OMR',
+       'test-series','ESE 2027 Prelims','Paper 1+2 (Civil)','enrolling',1499,4999,'purple','fa-clipboard-check',9,
+       '/programs/ese-2027-prelims-jaspalsirki-testseries-p1p2-omr/',TRUE,13)
+    ON CONFLICT (slug) DO NOTHING
+  `);
+
   /* ── OMR Test Checker (admin-only bubble-sheet grading tool) ── */
   await query(`
     CREATE TABLE IF NOT EXISTS omr_templates (
