@@ -89,6 +89,8 @@ app.use('/api/tally-ese-combined',      apiLimiter, tallyRaw, verifyTallySignatu
 app.use('/api/tally-ese-paper1-omr',    apiLimiter, tallyRaw, verifyTallySignature, require('./routes/tally-ese-paper1-omr'));
 app.use('/api/tally-ese-paper2-omr',    apiLimiter, tallyRaw, verifyTallySignature, require('./routes/tally-ese-paper2-omr'));
 app.use('/api/tally-ese-combined-omr',  apiLimiter, tallyRaw, verifyTallySignature, require('./routes/tally-ese-combined-omr'));
+app.use('/api/tally-ese-p1p2-offline',  apiLimiter, tallyRaw, verifyTallySignature, require('./routes/tally-ese-p1p2-offline'));
+app.use('/api/tally-ese-p1p2-omr',      apiLimiter, tallyRaw, verifyTallySignature, require('./routes/tally-ese-p1p2-omr'));
 // Generic webhook for programs launched entirely from admin (Phase 6 - hybrid
 // launch). Existing 13 programs keep using their bespoke routes above; this
 // only activates for a program whose `launch_config` column is set.

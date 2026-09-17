@@ -77,6 +77,23 @@ const SCHEDULE_PAPER2 = [
   { test: 'Test-22', date: '17 January 2027',   syllabus: 'Full Length Test - 04', questions: 150 },
 ];
 
+/* ── Combined P1+P2 (13-test) schedule - 4 Oct 2026 to 17 Jan 2027 ── */
+const SCHEDULE_P1P2 = [
+  { test: 'Test-01', date: '04 October 2026',  syllabus: 'P1: Current Issues | P2: Design of Concrete & Masonry Structures', questions: 125 },
+  { test: 'Test-02', date: '11 October 2026',  syllabus: 'P1: Engineering Aptitude + Mathematics | P2: Solid Mechanics', questions: 125 },
+  { test: 'Test-03', date: '18 October 2026',  syllabus: 'P1: Standards & Quality Practices | P2: Environmental Engineering', questions: 125 },
+  { test: 'Test-04', date: '25 October 2026',  syllabus: 'P1: Basics of Energy & Environment | P2: Structural Analysis', questions: 125 },
+  { test: 'Test-05', date: '01 November 2026', syllabus: 'P1: ICT | P2: Transportation, Water Resources & Hydrology', questions: 125 },
+  { test: 'Test-06', date: '15 November 2026', syllabus: 'P1: Ethics & Values in Engineering | P2: Fluid Mechanics & Hydro Power', questions: 125 },
+  { test: 'Test-07', date: '22 November 2026', syllabus: 'P1: Basics of Project Management | P2: Geotechnical & Foundation Engineering', questions: 125 },
+  { test: 'Test-08', date: '29 November 2026', syllabus: 'P1: Design, Drawing & Safety | P2: Construction Practice, Planning & BMC', questions: 125 },
+  { test: 'Test-09', date: '06 December 2026', syllabus: 'P1: Material Science & Engineering | P2: Design of Steel Structures + Surveying', questions: 125 },
+  { test: 'Test-10', date: '13 December 2026', syllabus: 'Full Test 1 - P1: 100Q / P2: 150Q', questions: 250 },
+  { test: 'Test-11', date: '27 December 2026', syllabus: 'Full Test 2 - P1: 100Q / P2: 150Q', questions: 250 },
+  { test: 'Test-12', date: '11 January 2027',  syllabus: 'Full Test 3 - P1: 100Q / P2: 150Q', questions: 250 },
+  { test: 'Test-13', date: '17 January 2027',  syllabus: 'Full Test 4 - P1: 100Q / P2: 150Q', questions: 250 },
+];
+
 /* ── Program registry - one entry per Tally webhook route ──
    `paper` is used for the roll number exam code and single-paper email/PDF
    content; `combo` programs (Paper1+2) use both papers' schedules. */
@@ -119,6 +136,20 @@ const ESE_PROGRAMS = {
     examCode:   'CMB',
     seriesName: 'ESE 2027 Prelims - Paper 1 + 2 (GS, Eng. Aptitude & Civil) - Printed OMR Offline Test Series',
   },
+  p1p2Offline: {
+    slug:         'ese-2027-prelims-jaspalsirki-testseries-p1p2-offline',
+    examCode:     'P12',
+    seriesName:   'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 1 + 2 Civil (Offline)',
+    schedule:     SCHEDULE_P1P2,
+    lastTestDate: '17 January 2027 (Test-13)',
+  },
+  p1p2Omr: {
+    slug:         'ese-2027-prelims-jaspalsirki-testseries-p1p2-omr',
+    examCode:     'P12',
+    seriesName:   'ESE 2027 Prelims - Jaspal Sir Ki Test Series - Paper 1 + 2 Civil (Printed OMR)',
+    schedule:     SCHEDULE_P1P2,
+    lastTestDate: '17 January 2027 (Test-13)',
+  },
 };
 
 const TALLY_FORM_URL_PAPER1        = process.env.TALLY_FORM_URL_ESE_PAPER1        || 'https://tally.so/r/2E5JEg';
@@ -128,6 +159,9 @@ const TALLY_FORM_URL_PAPER1_OMR    = process.env.TALLY_FORM_URL_ESE_PAPER1_OMR  
 const TALLY_FORM_URL_PAPER2_OMR    = process.env.TALLY_FORM_URL_ESE_PAPER2_OMR    || 'https://tally.so/r/obQ7b5';
 const TALLY_FORM_URL_COMBINED_OMR  = process.env.TALLY_FORM_URL_ESE_COMBINED_OMR  || 'https://tally.so/r/PdyXdP';
 
+const TALLY_FORM_URL_P1P2_OFFLINE  = process.env.TALLY_FORM_URL_ESE_P1P2_OFFLINE  || '#';
+const TALLY_FORM_URL_P1P2_OMR      = process.env.TALLY_FORM_URL_ESE_P1P2_OMR      || '#';
+
 const WA_GROUP_OFFLINE = 'https://chat.whatsapp.com/GUWPBuhIKSBC4S1RW1NxMm?s=sh&p=a&ilr=4';
 const WA_GROUP_OMR     = 'https://chat.whatsapp.com/L8gwagkk7Yz9mBS0oKmFnK?s=sh&p=a&ilr=4';
 
@@ -136,6 +170,7 @@ module.exports = {
   getEseCentreKey,
   SCHEDULE_PAPER1,
   SCHEDULE_PAPER2,
+  SCHEDULE_P1P2,
   ESE_PROGRAMS,
   TALLY_FORM_URL_PAPER1,
   TALLY_FORM_URL_PAPER2,
@@ -143,6 +178,8 @@ module.exports = {
   TALLY_FORM_URL_PAPER1_OMR,
   TALLY_FORM_URL_PAPER2_OMR,
   TALLY_FORM_URL_COMBINED_OMR,
+  TALLY_FORM_URL_P1P2_OFFLINE,
+  TALLY_FORM_URL_P1P2_OMR,
   WA_GROUP_OFFLINE,
   WA_GROUP_OMR,
 };
