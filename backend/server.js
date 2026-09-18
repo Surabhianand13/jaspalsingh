@@ -2195,6 +2195,18 @@ async function migrate() {
   }
   console.log('✅ Seeded ' + esePosts.length + ' ESE 2027 blog posts');
 
+  // Seed remaining blog posts (idempotent - ON CONFLICT (slug) DO NOTHING)
+  const missingPosts = require('./seeds/blogPostsMissing');
+  for (const post of missingPosts) {
+    await query(
+      `INSERT INTO blog_posts (title, slug, content, excerpt, category, is_published, published_at)
+       VALUES ($1,$2,$3,$4,$5,TRUE,$6)
+       ON CONFLICT (slug) DO NOTHING`,
+      [post.title, post.slug, post.content, post.excerpt, post.category, post.published_at]
+    );
+  }
+  console.log('✅ Seeded ' + missingPosts.length + ' additional blog posts');
+
   console.log('✅ Migration: enrollments, leads, events, programs, banners ensured');
 }
 
