@@ -714,7 +714,7 @@ module.exports = [
 <h3>Engineering Mathematics</h3>
 <ul>
   <li>B.S. Grewal - Higher Engineering Mathematics (comprehensive, covers all ESE math topics)</li>
-  <li>Made Easy or similar publications' ESE Paper 1 mathematics workbook for practice problems</li>
+  <li>ESE Paper 1 mathematics workbook from any standard publication for practice problems</li>
 </ul>
 
 <h3>Current Issues, Environment, and Ethics</h3>
@@ -727,7 +727,7 @@ module.exports = [
 
 <h3>Project Management and Other Sections</h3>
 <ul>
-  <li>ESE Paper 1 specific workbooks published by Made Easy, IES Master, or similar publishers - these compile all non-math sections specifically for ESE Paper 1 and are time-efficient for covering these topics</li>
+  <li>ESE Paper 1 specific workbooks available from standard publishers - these compile all non-math sections specifically for ESE Paper 1 and are time-efficient for covering these topics</li>
 </ul>
 
 <h2>How to Use These Books Effectively</h2>
@@ -803,7 +803,7 @@ module.exports = [
 
 <p>The "best" coaching depends on your specific need. Here are honest distinctions:</p>
 <ul>
-  <li>If you need classroom teaching from scratch: major coaching institutes in Delhi (IES Master, Made Easy) offer full-course programmes covering concepts and tests together</li>
+  <li>If you need classroom teaching from scratch: various coaching institutes in Delhi offer full-course programmes covering concepts and tests together</li>
   <li>If you have studied the concepts and need structured test practice with real OMR feedback: Dr. Jaspal Singh's test series is specifically built for this phase</li>
   <li>If you are outside Delhi and Jaipur: the printed OMR home-based option provides a structured test environment that most institutes do not offer outside their cities</li>
 </ul>
