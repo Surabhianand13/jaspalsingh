@@ -2171,6 +2171,216 @@ async function migrate() {
     console.log(`✅ Seeded ${ukpscJeCivilOmrSchedule.length} UKPSC JE Civil OMR schedule rows`);
   }
 
+  /* ── UKPSC AE - Jaspal Sir Ki Test Series - Civil (Printed OMR Offline)
+     (2026-09-19): UKPSC AE (Assistant Engineer) launch - separate from JE.
+     21-week subject-wise Phase 1 (105 tests, 3 Sat shifts x 25Q + 2 Sun
+     shifts x 50Q per week) followed by 10-week Phase 2 FLTs (50 tests,
+     3 Sat x 100Q + 2 Sun x 180Q). Home-attempt printed OMR, same
+     mode:'home' convention. Tally form same as UKPSC JE. ── */
+  await query(
+    `INSERT INTO programs (slug, title, category, exam, level, status, price, mrp, accent, icon_class, thumbnail_url, short_name, sort_order, omr_enabled, total_tests, tags, is_visible, detail_url)
+     VALUES ($1,$2,'test-series','UKPSC AE 2026','Civil Engineering','enrolling',$3,$4,'purple','fa-file-invoice',$5,$6,39,TRUE,155,$7,TRUE,$8)
+     ON CONFLICT (slug) DO NOTHING`,
+    [
+      'ukpsc-ae-2026-civil-omr',
+      'UKPSC AE - Jaspal Sir Ki Test Series - Civil (Printed OMR Offline)',
+      1499, 2999,
+      '/assets/images/thumb-ukpsc-ae-2026-civil-omr.jpg',
+      'UKPSC AE Civil - Printed OMR',
+      JSON.stringify(['Home-Based Printed OMR', '155 Tests Over 31 Weeks', 'Subject-Wise + Full-Length', 'Post-Test Solution PDF']),
+      '/programs/ukpsc-ae-2026-civil-omr/',
+    ]
+  );
+  await query(
+    `UPDATE programs SET launch_config = $1 WHERE slug = 'ukpsc-ae-2026-civil-omr' AND launch_config IS NULL`,
+    [JSON.stringify({
+      seriesName: 'UKPSC AE - Jaspal Sir Ki Test Series - Civil (Printed OMR Offline)',
+      tallyFormUrl: 'https://tally.so/r/obq6O1',
+      mode: 'home',
+      rollPrefix: 'UKAEC',
+      waGroupUrl: null,
+      lastTestDate: '2 May 2027 (Test-155)',
+      centre: null,
+    })]
+  );
+  console.log('✅ Seeded/updated UKPSC AE - Jaspal Sir Ki Test Series - Civil (Printed OMR Offline)');
+
+  /* ── UKPSC AE Civil OMR schedule (155 tests, from owner-supplied PDF
+     schedule, 2026-09-19): Phase 1 (Tests 1-105, 21 weeks, subject-wise)
+     + Phase 2 (Tests 106-155, 10 FLT weeks). Guarded by existence check
+     (same pattern as UKPSC JE). ── */
+  const ukpscAeCivilOmrSchedule = [
+    { test_number: 1, test_date: '3 Oct 2026', syllabus: 'General Hindi (Part 1)', questions: 25 },
+    { test_number: 2, test_date: '3 Oct 2026', syllabus: 'General Science & Tech', questions: 25 },
+    { test_number: 3, test_date: '3 Oct 2026', syllabus: 'UK Geography & Climate', questions: 25 },
+    { test_number: 4, test_date: '4 Oct 2026', syllabus: 'Building Materials (BMC)', questions: 50 },
+    { test_number: 5, test_date: '4 Oct 2026', syllabus: 'Fluid Mechanics', questions: 50 },
+    { test_number: 6, test_date: '10 Oct 2026', syllabus: 'General English (Part 1)', questions: 25 },
+    { test_number: 7, test_date: '10 Oct 2026', syllabus: 'Environment & Pollution', questions: 25 },
+    { test_number: 8, test_date: '10 Oct 2026', syllabus: 'UK History (Post 19th C.)', questions: 25 },
+    { test_number: 9, test_date: '11 Oct 2026', syllabus: 'Strength of Materials (SOM)', questions: 50 },
+    { test_number: 10, test_date: '11 Oct 2026', syllabus: 'Hydrology & Water Resources', questions: 50 },
+    { test_number: 11, test_date: '17 Oct 2026', syllabus: 'General Hindi (Part 2)', questions: 25 },
+    { test_number: 12, test_date: '17 Oct 2026', syllabus: 'Gen. Aptitude (Part 1)', questions: 25 },
+    { test_number: 13, test_date: '17 Oct 2026', syllabus: 'UK Art, Culture & Fairs', questions: 25 },
+    { test_number: 14, test_date: '18 Oct 2026', syllabus: 'Theory of Structures', questions: 50 },
+    { test_number: 15, test_date: '18 Oct 2026', syllabus: 'Irrigation Engineering', questions: 50 },
+    { test_number: 16, test_date: '24 Oct 2026', syllabus: 'General English (Part 2)', questions: 25 },
+    { test_number: 17, test_date: '24 Oct 2026', syllabus: 'Info Tech & Computers', questions: 25 },
+    { test_number: 18, test_date: '24 Oct 2026', syllabus: 'UK Social Structure & Tribes', questions: 25 },
+    { test_number: 19, test_date: '25 Oct 2026', syllabus: 'RCC Design', questions: 50 },
+    { test_number: 20, test_date: '25 Oct 2026', syllabus: 'Highway Engineering', questions: 50 },
+    { test_number: 21, test_date: '31 Oct 2026', syllabus: 'General Hindi (Part 3)', questions: 25 },
+    { test_number: 22, test_date: '31 Oct 2026', syllabus: 'Disaster Management', questions: 25 },
+    { test_number: 23, test_date: '31 Oct 2026', syllabus: 'UK Economy & Resources', questions: 25 },
+    { test_number: 24, test_date: '1 Nov 2026', syllabus: 'Steel Structures', questions: 50 },
+    { test_number: 25, test_date: '1 Nov 2026', syllabus: 'Environmental Engg (Water)', questions: 50 },
+    { test_number: 26, test_date: '7 Nov 2026', syllabus: 'General English (Part 3)', questions: 25 },
+    { test_number: 27, test_date: '7 Nov 2026', syllabus: 'Cyber Ethics & Networks', questions: 25 },
+    { test_number: 28, test_date: '7 Nov 2026', syllabus: 'UK Polity & Local Govt', questions: 25 },
+    { test_number: 29, test_date: '8 Nov 2026', syllabus: 'Soil Mechanics', questions: 50 },
+    { test_number: 30, test_date: '8 Nov 2026', syllabus: 'Environmental Engg (Waste)', questions: 50 },
+    { test_number: 31, test_date: '14 Nov 2026', syllabus: 'General Hindi (Part 4)', questions: 25 },
+    { test_number: 32, test_date: '14 Nov 2026', syllabus: 'Gen. Science (Health)', questions: 25 },
+    { test_number: 33, test_date: '14 Nov 2026', syllabus: 'UK Govt Schemes & Policies', questions: 25 },
+    { test_number: 34, test_date: '15 Nov 2026', syllabus: 'Foundation Engineering', questions: 50 },
+    { test_number: 35, test_date: '15 Nov 2026', syllabus: 'Railway & Airport Engg', questions: 50 },
+    { test_number: 36, test_date: '21 Nov 2026', syllabus: 'General English (Part 4)', questions: 25 },
+    { test_number: 37, test_date: '21 Nov 2026', syllabus: 'Environment (Renewable)', questions: 25 },
+    { test_number: 38, test_date: '21 Nov 2026', syllabus: 'UK Demographics & Migration', questions: 25 },
+    { test_number: 39, test_date: '22 Nov 2026', syllabus: 'Surveying (Part 1)', questions: 50 },
+    { test_number: 40, test_date: '22 Nov 2026', syllabus: 'Fluid Machinery & Pumps', questions: 50 },
+    { test_number: 41, test_date: '28 Nov 2026', syllabus: 'Mixed Hindi + English 1', questions: 25 },
+    { test_number: 42, test_date: '28 Nov 2026', syllabus: 'Mixed GS & Aptitude 1', questions: 25 },
+    { test_number: 43, test_date: '28 Nov 2026', syllabus: 'Mixed UK Studies 1', questions: 25 },
+    { test_number: 44, test_date: '29 Nov 2026', syllabus: 'Mix Test: Civil Paper 1', questions: 50 },
+    { test_number: 45, test_date: '29 Nov 2026', syllabus: 'Mix Test: Civil Paper 2', questions: 50 },
+    { test_number: 46, test_date: '5 Dec 2026', syllabus: 'General Hindi (Part 5)', questions: 25 },
+    { test_number: 47, test_date: '5 Dec 2026', syllabus: 'General Aptitude (Part 2)', questions: 25 },
+    { test_number: 48, test_date: '5 Dec 2026', syllabus: 'UK Infrastructure (Roads)', questions: 25 },
+    { test_number: 49, test_date: '6 Dec 2026', syllabus: 'Advanced BMC & Concrete', questions: 50 },
+    { test_number: 50, test_date: '6 Dec 2026', syllabus: 'Advanced Fluid Mechanics', questions: 50 },
+    { test_number: 51, test_date: '12 Dec 2026', syllabus: 'General English (Part 5)', questions: 25 },
+    { test_number: 52, test_date: '12 Dec 2026', syllabus: 'General Science (Adv.)', questions: 25 },
+    { test_number: 53, test_date: '12 Dec 2026', syllabus: 'UK Agriculture & Horticulture', questions: 25 },
+    { test_number: 54, test_date: '13 Dec 2026', syllabus: 'Advanced SOM', questions: 50 },
+    { test_number: 55, test_date: '13 Dec 2026', syllabus: 'Advanced Irrigation', questions: 50 },
+    { test_number: 56, test_date: '19 Dec 2026', syllabus: 'General Hindi (Part 6)', questions: 25 },
+    { test_number: 57, test_date: '19 Dec 2026', syllabus: 'Environment (Climate Chg)', questions: 25 },
+    { test_number: 58, test_date: '19 Dec 2026', syllabus: 'UK Industry & Tourism', questions: 25 },
+    { test_number: 59, test_date: '20 Dec 2026', syllabus: 'Advanced RCC & Steel', questions: 50 },
+    { test_number: 60, test_date: '20 Dec 2026', syllabus: 'Advanced Highway & Traffic', questions: 50 },
+    { test_number: 61, test_date: '26 Dec 2026', syllabus: 'General English (Part 6)', questions: 25 },
+    { test_number: 62, test_date: '26 Dec 2026', syllabus: 'Info Tech (Networks/AI)', questions: 25 },
+    { test_number: 63, test_date: '26 Dec 2026', syllabus: 'UK Budget & Public Finance', questions: 25 },
+    { test_number: 64, test_date: '27 Dec 2026', syllabus: 'Advanced Soil & Foundation', questions: 50 },
+    { test_number: 65, test_date: '27 Dec 2026', syllabus: 'Advanced Env. Engineering', questions: 50 },
+    { test_number: 66, test_date: '2 Jan 2027', syllabus: 'General Hindi (Part 7)', questions: 25 },
+    { test_number: 67, test_date: '2 Jan 2027', syllabus: 'Disaster Mgmt (Planning)', questions: 25 },
+    { test_number: 68, test_date: '2 Jan 2027', syllabus: 'UK Human Dev. & Employment', questions: 25 },
+    { test_number: 69, test_date: '3 Jan 2027', syllabus: 'Surveying (Part 2 - Adv)', questions: 50 },
+    { test_number: 70, test_date: '3 Jan 2027', syllabus: 'Open Channel Flow', questions: 50 },
+    { test_number: 71, test_date: '9 Jan 2027', syllabus: 'General English (Part 7)', questions: 25 },
+    { test_number: 72, test_date: '9 Jan 2027', syllabus: 'Gen. Aptitude (Part 3)', questions: 25 },
+    { test_number: 73, test_date: '9 Jan 2027', syllabus: 'UK Current Sports & Events', questions: 25 },
+    { test_number: 74, test_date: '10 Jan 2027', syllabus: 'Estimating & Costing', questions: 50 },
+    { test_number: 75, test_date: '10 Jan 2027', syllabus: 'Hydrology (Flood Routing)', questions: 50 },
+    { test_number: 76, test_date: '16 Jan 2027', syllabus: 'General Hindi (Part 8)', questions: 25 },
+    { test_number: 77, test_date: '16 Jan 2027', syllabus: 'Cyber Security & Malware', questions: 25 },
+    { test_number: 78, test_date: '16 Jan 2027', syllabus: 'UK Miscellaneous GK', questions: 25 },
+    { test_number: 79, test_date: '17 Jan 2027', syllabus: 'Construction Management', questions: 50 },
+    { test_number: 80, test_date: '17 Jan 2027', syllabus: 'Engg. Geology / Mix P2', questions: 50 },
+    { test_number: 81, test_date: '23 Jan 2027', syllabus: 'General English (Part 8)', questions: 25 },
+    { test_number: 82, test_date: '23 Jan 2027', syllabus: 'Mixed General Science', questions: 25 },
+    { test_number: 83, test_date: '23 Jan 2027', syllabus: 'Mixed UK Geo & History', questions: 25 },
+    { test_number: 84, test_date: '24 Jan 2027', syllabus: 'Mix: BMC, SOM, RCC, Steel', questions: 50 },
+    { test_number: 85, test_date: '24 Jan 2027', syllabus: 'Mix: FM, Irr, Highway, Env', questions: 50 },
+    { test_number: 86, test_date: '30 Jan 2027', syllabus: 'Mixed Hindi + English 2', questions: 25 },
+    { test_number: 87, test_date: '30 Jan 2027', syllabus: 'Mixed GS & Aptitude 2', questions: 25 },
+    { test_number: 88, test_date: '30 Jan 2027', syllabus: 'Mixed UK Studies 2', questions: 25 },
+    { test_number: 89, test_date: '31 Jan 2027', syllabus: 'Mix Test: Civil Paper 1', questions: 50 },
+    { test_number: 90, test_date: '31 Jan 2027', syllabus: 'Mix Test: Civil Paper 2', questions: 50 },
+    { test_number: 91, test_date: '6 Feb 2027', syllabus: 'Full Hindi Mock (25Q)', questions: 25 },
+    { test_number: 92, test_date: '6 Feb 2027', syllabus: 'Full GS & Apti Mock', questions: 25 },
+    { test_number: 93, test_date: '6 Feb 2027', syllabus: 'Full UK Studies Mock', questions: 25 },
+    { test_number: 94, test_date: '7 Feb 2027', syllabus: 'Full Paper 1 Subject Mix', questions: 50 },
+    { test_number: 95, test_date: '7 Feb 2027', syllabus: 'Full Paper 2 Subject Mix', questions: 50 },
+    { test_number: 96, test_date: '13 Feb 2027', syllabus: 'Full English Mock (25Q)', questions: 25 },
+    { test_number: 97, test_date: '13 Feb 2027', syllabus: 'Full GS & Apti Mock', questions: 25 },
+    { test_number: 98, test_date: '13 Feb 2027', syllabus: 'Full UK Studies Mock', questions: 25 },
+    { test_number: 99, test_date: '14 Feb 2027', syllabus: 'Full Paper 1 Subject Mix', questions: 50 },
+    { test_number: 100, test_date: '14 Feb 2027', syllabus: 'Full Paper 2 Subject Mix', questions: 50 },
+    { test_number: 101, test_date: '20 Feb 2027', syllabus: 'Mega Mix Hindi/Eng', questions: 25 },
+    { test_number: 102, test_date: '20 Feb 2027', syllabus: 'Mega Mix GS & Apti', questions: 25 },
+    { test_number: 103, test_date: '20 Feb 2027', syllabus: 'Mega Mix UK Studies', questions: 25 },
+    { test_number: 104, test_date: '21 Feb 2027', syllabus: 'Mega Mix Civil Paper 1', questions: 50 },
+    { test_number: 105, test_date: '21 Feb 2027', syllabus: 'Mega Mix Civil Paper 2', questions: 50 },
+    { test_number: 106, test_date: '27 Feb 2027', syllabus: 'FLT 1 - Hindi/English', questions: 100 },
+    { test_number: 107, test_date: '27 Feb 2027', syllabus: 'FLT 1 - GS & Aptitude', questions: 100 },
+    { test_number: 108, test_date: '27 Feb 2027', syllabus: 'FLT 1 - UK Studies', questions: 100 },
+    { test_number: 109, test_date: '28 Feb 2027', syllabus: 'FLT 1 - Complete Civil Paper 1', questions: 180 },
+    { test_number: 110, test_date: '28 Feb 2027', syllabus: 'FLT 1 - Complete Civil Paper 2', questions: 180 },
+    { test_number: 111, test_date: '6 Mar 2027', syllabus: 'FLT 2 - Hindi/English', questions: 100 },
+    { test_number: 112, test_date: '6 Mar 2027', syllabus: 'FLT 2 - GS & Aptitude', questions: 100 },
+    { test_number: 113, test_date: '6 Mar 2027', syllabus: 'FLT 2 - UK Studies', questions: 100 },
+    { test_number: 114, test_date: '7 Mar 2027', syllabus: 'FLT 2 - Complete Civil Paper 1', questions: 180 },
+    { test_number: 115, test_date: '7 Mar 2027', syllabus: 'FLT 2 - Complete Civil Paper 2', questions: 180 },
+    { test_number: 116, test_date: '13 Mar 2027', syllabus: 'FLT 3 - Hindi/English', questions: 100 },
+    { test_number: 117, test_date: '13 Mar 2027', syllabus: 'FLT 3 - GS & Aptitude', questions: 100 },
+    { test_number: 118, test_date: '13 Mar 2027', syllabus: 'FLT 3 - UK Studies', questions: 100 },
+    { test_number: 119, test_date: '14 Mar 2027', syllabus: 'FLT 3 - Complete Civil Paper 1', questions: 180 },
+    { test_number: 120, test_date: '14 Mar 2027', syllabus: 'FLT 3 - Complete Civil Paper 2', questions: 180 },
+    { test_number: 121, test_date: '20 Mar 2027', syllabus: 'FLT 4 - Hindi/English', questions: 100 },
+    { test_number: 122, test_date: '20 Mar 2027', syllabus: 'FLT 4 - GS & Aptitude', questions: 100 },
+    { test_number: 123, test_date: '20 Mar 2027', syllabus: 'FLT 4 - UK Studies', questions: 100 },
+    { test_number: 124, test_date: '21 Mar 2027', syllabus: 'FLT 4 - Complete Civil Paper 1', questions: 180 },
+    { test_number: 125, test_date: '21 Mar 2027', syllabus: 'FLT 4 - Complete Civil Paper 2', questions: 180 },
+    { test_number: 126, test_date: '27 Mar 2027', syllabus: 'FLT 5 - Hindi/English', questions: 100 },
+    { test_number: 127, test_date: '27 Mar 2027', syllabus: 'FLT 5 - GS & Aptitude', questions: 100 },
+    { test_number: 128, test_date: '27 Mar 2027', syllabus: 'FLT 5 - UK Studies', questions: 100 },
+    { test_number: 129, test_date: '28 Mar 2027', syllabus: 'FLT 5 - Complete Civil Paper 1', questions: 180 },
+    { test_number: 130, test_date: '28 Mar 2027', syllabus: 'FLT 5 - Complete Civil Paper 2', questions: 180 },
+    { test_number: 131, test_date: '3 Apr 2027', syllabus: 'FLT 6 - Hindi/English', questions: 100 },
+    { test_number: 132, test_date: '3 Apr 2027', syllabus: 'FLT 6 - GS & Aptitude', questions: 100 },
+    { test_number: 133, test_date: '3 Apr 2027', syllabus: 'FLT 6 - UK Studies', questions: 100 },
+    { test_number: 134, test_date: '4 Apr 2027', syllabus: 'FLT 6 - Complete Civil Paper 1', questions: 180 },
+    { test_number: 135, test_date: '4 Apr 2027', syllabus: 'FLT 6 - Complete Civil Paper 2', questions: 180 },
+    { test_number: 136, test_date: '10 Apr 2027', syllabus: 'FLT 7 - Hindi/English', questions: 100 },
+    { test_number: 137, test_date: '10 Apr 2027', syllabus: 'FLT 7 - GS & Aptitude', questions: 100 },
+    { test_number: 138, test_date: '10 Apr 2027', syllabus: 'FLT 7 - UK Studies', questions: 100 },
+    { test_number: 139, test_date: '11 Apr 2027', syllabus: 'FLT 7 - Complete Civil Paper 1', questions: 180 },
+    { test_number: 140, test_date: '11 Apr 2027', syllabus: 'FLT 7 - Complete Civil Paper 2', questions: 180 },
+    { test_number: 141, test_date: '17 Apr 2027', syllabus: 'FLT 8 - Hindi/English', questions: 100 },
+    { test_number: 142, test_date: '17 Apr 2027', syllabus: 'FLT 8 - GS & Aptitude', questions: 100 },
+    { test_number: 143, test_date: '17 Apr 2027', syllabus: 'FLT 8 - UK Studies', questions: 100 },
+    { test_number: 144, test_date: '18 Apr 2027', syllabus: 'FLT 8 - Complete Civil Paper 1', questions: 180 },
+    { test_number: 145, test_date: '18 Apr 2027', syllabus: 'FLT 8 - Complete Civil Paper 2', questions: 180 },
+    { test_number: 146, test_date: '24 Apr 2027', syllabus: 'FLT 9 - Hindi/English', questions: 100 },
+    { test_number: 147, test_date: '24 Apr 2027', syllabus: 'FLT 9 - GS & Aptitude', questions: 100 },
+    { test_number: 148, test_date: '24 Apr 2027', syllabus: 'FLT 9 - UK Studies', questions: 100 },
+    { test_number: 149, test_date: '25 Apr 2027', syllabus: 'FLT 9 - Complete Civil Paper 1', questions: 180 },
+    { test_number: 150, test_date: '25 Apr 2027', syllabus: 'FLT 9 - Complete Civil Paper 2', questions: 180 },
+    { test_number: 151, test_date: '1 May 2027', syllabus: 'FLT 10 - Hindi/English', questions: 100 },
+    { test_number: 152, test_date: '1 May 2027', syllabus: 'FLT 10 - GS & Aptitude', questions: 100 },
+    { test_number: 153, test_date: '1 May 2027', syllabus: 'FLT 10 - UK Studies', questions: 100 },
+    { test_number: 154, test_date: '2 May 2027', syllabus: 'FLT 10 - Complete Civil Paper 1', questions: 180 },
+    { test_number: 155, test_date: '2 May 2027', syllabus: 'FLT 10 - Complete Civil Paper 2', questions: 180 }
+  ];
+  const ukpscAeScheduleExists = await query(
+    `SELECT 1 FROM program_schedule WHERE program_slug = 'ukpsc-ae-2026-civil-omr' LIMIT 1`
+  );
+  if (ukpscAeScheduleExists.rows.length === 0) {
+    for (const [i, row] of ukpscAeCivilOmrSchedule.entries()) {
+      await query(
+        `INSERT INTO program_schedule (program_slug, test_number, test_date, syllabus, questions)
+         VALUES ('ukpsc-ae-2026-civil-omr', $1, $2, $3, $4)`,
+        [row.test_number, row.test_date, row.syllabus, row.questions]
+      );
+    }
+    console.log(`✅ Seeded ${ukpscAeCivilOmrSchedule.length} UKPSC AE Civil OMR schedule rows`);
+  }
+
+
   // Seed RSSB JE blog posts (idempotent - ON CONFLICT (slug) DO NOTHING)
   const rssbJePosts = require('./seeds/blogPostsRssbJe');
   for (const post of rssbJePosts) {
