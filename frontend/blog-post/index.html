@@ -7,6 +7,7 @@
   <meta name="description" content="Read the latest insights, exam updates and strategy tips from Dr. Jaspal Singh." />
   <meta name="author" content="Dr. Jaspal Singh" />
   <meta name="robots" content="index, follow" />
+  <link rel="canonical" id="bp-canonical" href="https://jaspalsingh.in/blog-post/" />
   <meta name="theme-color" content="#1A1A2E" />
 
   <!-- Open Graph (updated dynamically via JS) -->
@@ -935,11 +936,9 @@
         setMeta('property', 'og:image', post.cover_image_url);
       }
 
-      /* Canonical */
-      var canon = document.createElement('link');
-      canon.rel = 'canonical';
-      canon.href = pageUrl;
-      document.head.appendChild(canon);
+      /* Canonical - update the static placeholder so Googlebot sees it pre-JS too */
+      var canon = document.getElementById('bp-canonical');
+      if (canon) { canon.href = pageUrl; }
 
       /* Article JSON-LD */
       injectSchema(post, pageUrl, dateStr);
