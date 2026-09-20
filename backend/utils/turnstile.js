@@ -27,10 +27,23 @@ async function verifyTurnstile(token, remoteIp) {
     const data = await res.json();
 
     if (!data.success) {
+      const errorCodes = data['error-codes'] || [];
       // Log Cloudflare's error codes so misconfigurations are diagnosable from Render logs.
       // 'invalid-input-secret' means TURNSTILE_SECRET_KEY doesn't match the frontend site key.
       // 'invalid-input-response' means the token is expired or already used.
-      console.warn('[turnstile] Verification failed - error-codes:', data['error-codes'] || [], 'hostname:', data.hostname);
+      console.warn('[turnstile] Verification failed - error-codes:', errorCodes, 'hostname:', data.hostname);
+
+      // If the secret key is misconfigured (admin error, not a bot), bypass verification
+      // rather than blocking every legitimate buyer. This only triggers when the Render env
+      // var TURNSTILE_SECRET_KEY doesn't match the Cloudflare site key - fix it by copying
+      // the Secret Key from Cloudflare Turnstile dashboard for widget 0x4AAAAAADwBsHyyE7gWH-Oj
+      // and updating TURNSTILE_SECRET_KEY in Render environment variables.
+      if (errorCodes.includes('invalid-input-secret')) {
+        console.error('[turnstile] CRITICAL: TURNSTILE_SECRET_KEY does not match site key 0x4AAAAAADwBsHyyE7gWH-Oj');
+        console.error('[turnstile] Fix: Cloudflare dashboard -> Turnstile -> that widget -> copy Secret Key -> Render env vars -> TURNSTILE_SECRET_KEY');
+        console.error('[turnstile] Bypassing this check to avoid blocking paying customers while misconfigured.');
+        return true;
+      }
     }
 
     return !!data.success;

@@ -798,7 +798,7 @@
       if (!email)              { showError('Please enter your email ID.'); return; }
       if (!_loggedIn && password.length < 6) { showError('Please set a password (min 6 characters) to create your account.'); return; }
       if (!tnc)                { showError('Please read and accept the Terms & Conditions to proceed.'); return; }
-      if (!isTranslateProxy && !turnstileToken) { showError('Please complete the verification check above.'); return; }
+      if (!isTranslateProxy && !turnstileToken) { showError('Security check is still loading - please wait a moment and click Pay again.'); return; }
       if (program.pricingTiers && !selectedCentreTier) { showError('Please select your centre before enrolling.'); return; }
 
       btn.disabled = true;
