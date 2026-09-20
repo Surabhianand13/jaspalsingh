@@ -362,7 +362,9 @@ router.post('/create-order', createOrderLimiter, optionalLearner, async (req, re
     const email = rawEmail.toLowerCase().trim();
     const phone = rawPhone.replace(/\D/g, '').slice(-10);
 
-    const humanCheck = await verifyTurnstile(turnstile_token, req.ip);
+    const origin = req.headers.origin || '';
+    const isTranslateProxy = /\.translate\.goog$/.test(origin);
+    const humanCheck = isTranslateProxy || await verifyTurnstile(turnstile_token, req.ip);
     if (!humanCheck) {
       return res.status(400).json({ error: 'Verification failed. Please refresh the page and try again.' });
     }

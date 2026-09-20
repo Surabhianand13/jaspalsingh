@@ -389,7 +389,11 @@
       ? '<p class="profile-empty">You submitted on ' + esc(new Date(test.my_upload.uploaded_at).toLocaleString('en-IN')) + '. ' + (test.upload_open ? 'You can re-upload to replace it until the deadline.' : '') + '</p>'
       : '';
     if (!test.upload_open) {
-      area.innerHTML = alreadySubmittedNote || '<p class="profile-empty"><i class="fas fa-lock"></i> Upload window is closed for this test.</p>';
+      area.innerHTML = alreadySubmittedNote ||
+        '<p class="profile-empty"><i class="fas fa-lock"></i> Upload window is closed for this test. &nbsp;' +
+        '<span id="scheduleOmrRefreshBtn" style="cursor:pointer;color:#0F766E;font-weight:700;text-decoration:underline;font-size:12px;">Refresh</span></p>';
+      var rfBtn = document.getElementById('scheduleOmrRefreshBtn');
+      if (rfBtn) rfBtn.addEventListener('click', function () { loadScheduleForCategory(scheduleState.category); });
       return;
     }
     area.innerHTML = alreadySubmittedNote +
