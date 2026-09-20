@@ -882,6 +882,13 @@
             contact: phone,
           },
           theme: { color: '#C81240' },
+          modal: {
+            ondismiss: function() {
+              btn.disabled = false;
+              document.getElementById('payBtnText').textContent = 'Pay ₹' + finalPrice.toLocaleString('en-IN');
+              resetTurnstile();
+            }
+          },
           handler: async function (response) {
             // Payment succeeded - verify with backend
             checkoutCompleted = true;
