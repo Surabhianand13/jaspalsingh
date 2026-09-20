@@ -25,6 +25,14 @@ async function verifyTurnstile(token, remoteIp) {
 
     const res = await fetch(VERIFY_URL, { method: 'POST', body });
     const data = await res.json();
+
+    if (!data.success) {
+      // Log Cloudflare's error codes so misconfigurations are diagnosable from Render logs.
+      // 'invalid-input-secret' means TURNSTILE_SECRET_KEY doesn't match the frontend site key.
+      // 'invalid-input-response' means the token is expired or already used.
+      console.warn('[turnstile] Verification failed - error-codes:', data['error-codes'] || [], 'hostname:', data.hostname);
+    }
+
     return !!data.success;
   } catch (err) {
     console.error('[turnstile] Verification request failed:', err.message);
