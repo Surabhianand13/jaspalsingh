@@ -297,7 +297,7 @@
             <label for="inp-tnc">I have read and agree to the <a href="/terms/" target="_blank" class="tnc-link">Terms &amp; Conditions</a>, including the media consent, identity verification requirements, and access revocation policy. <span style="color:#C81240;">*</span></label>
           </div>
 
-          <div class="cf-turnstile" data-sitekey="0x4AAAAAADwBsHyyE7gWH-Oj" data-theme="light" data-refresh-expired="auto" style="margin-bottom:14px;"></div>
+          <div class="cf-turnstile" data-sitekey="0x4AAAAAADwBsHyyE7gWH-Oj" data-theme="light" data-refresh-expired="auto" data-callback="onTurnstileSuccess" data-error-callback="onTurnstileError" style="margin-bottom:14px;"></div>
 
           <div id="formError" class="co-error"></div>
 
@@ -960,8 +960,29 @@
     }
 
     // Turnstile tokens are single-use - reset the widget so a retry gets a fresh one.
+    function onTurnstileSuccess() {
+      // Fresh token available - re-enable Pay if it was held waiting for a new token.
+      var btn = document.getElementById('payBtn');
+      if (btn && btn.dataset.awaitingToken) {
+        btn.disabled = false;
+        delete btn.dataset.awaitingToken;
+      }
+    }
+    function onTurnstileError() {
+      // Widget failed - keep Pay enabled so the user isn't stuck forever.
+      var btn = document.getElementById('payBtn');
+      if (btn && btn.dataset.awaitingToken) {
+        btn.disabled = false;
+        delete btn.dataset.awaitingToken;
+      }
+    }
     function resetTurnstile() {
-      if (typeof turnstile !== 'undefined') turnstile.reset();
+      if (typeof turnstile !== 'undefined') {
+        // Disable Pay while the widget re-solves to prevent stale-token reuse.
+        var btn = document.getElementById('payBtn');
+        if (btn) { btn.dataset.awaitingToken = '1'; btn.disabled = true; }
+        turnstile.reset();
+      }
     }
 
     })(); // end async IIFE
