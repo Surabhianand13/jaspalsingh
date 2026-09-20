@@ -38,6 +38,10 @@ app.use(cors({
     // Webhook endpoints have their own validation (form_token, HMAC signature).
     if (!origin) return callback(null, true);
     if (allowedOrigins.indexOf(origin) !== -1) return callback(null, true);
+    // Google Translate proxies the site as jaspalsingh-in.translate.goog -
+    // block this at the CORS level and the checkout API calls fail, so users
+    // reading via Google Translate can't enroll at all.
+    if (/\.translate\.goog$/.test(origin)) return callback(null, true);
     callback(new Error('Not allowed by CORS: ' + origin));
   },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
