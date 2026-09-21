@@ -2188,7 +2188,7 @@ async function migrate() {
     [
       'ukpsc-ae-2026-civil-omr',
       'UKPSC AE - Jaspal Sir Ki Test Series - Civil (Printed OMR Offline)',
-      1499, 2999,
+      1999, 4999,
       '/assets/images/thumb-ukpsc-ae-2026-civil-omr.jpg',
       'UKPSC AE Civil - Printed OMR',
       JSON.stringify(['Home-Based Printed OMR', '155 Tests Over 31 Weeks', 'Subject-Wise + Full-Length', 'Post-Test Solution PDF']),
@@ -2370,7 +2370,9 @@ async function migrate() {
     { test_number: 154, test_date: '2 May 2027', syllabus: 'FLT 10 - Complete Civil Paper 1', questions: 180 },
     { test_number: 155, test_date: '2 May 2027', syllabus: 'FLT 10 - Complete Civil Paper 2', questions: 180 }
   ];
-  const ukpscAeScheduleExists = await query(
+
+  await query(`UPDATE programs SET price = 1999, mrp = 4999 WHERE slug = 'ukpsc-ae-2026-civil-omr' AND (price != 1999 OR mrp != 4999)`);
+    const ukpscAeScheduleExists = await query(
     `SELECT 1 FROM program_schedule WHERE program_slug = 'ukpsc-ae-2026-civil-omr' LIMIT 1`
   );
   if (ukpscAeScheduleExists.rows.length === 0) {
