@@ -30,6 +30,105 @@
       });
   }
 
+  function authFetchBlob(path) {
+    var token = getToken();
+    var headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+    return fetch(API_BASE + path, { headers: headers }).then(function (res) {
+      if (!res.ok) {
+        return res.json().then(
+          function (data) { throw new Error(data.error || 'Request failed (' + res.status + ')'); },
+          function ()     { throw new Error('Request failed (' + res.status + ')'); }
+        );
+      }
+      return res.blob();
+    });
+  }
+
+  /* ── Free-resource PDF viewer (PDF.js canvas, no download) ── */
+  var PDFJS_VERSION = '3.11.174';
+  var pdfjsLoadPromise = null;
+  function ensurePdfJs() {
+    if (!pdfjsLoadPromise) {
+      pdfjsLoadPromise = new Promise(function (resolve, reject) {
+        if (window.pdfjsLib) return resolve(window.pdfjsLib);
+        var script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/' + PDFJS_VERSION + '/pdf.min.js';
+        script.onload = function () {
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/' + PDFJS_VERSION + '/pdf.worker.min.js';
+          resolve(window.pdfjsLib);
+        };
+        script.onerror = function () { reject(new Error('Could not load the PDF viewer. Check your connection and try again.')); };
+        document.head.appendChild(script);
+      });
+    }
+    return pdfjsLoadPromise;
+  }
+
+  var frViewerState = { pdfDoc: null };
+
+  function ensureFrViewerOverlay() {
+    if (document.getElementById('frPdfViewerOverlay')) return;
+    var overlay = document.createElement('div');
+    overlay.id = 'frPdfViewerOverlay';
+    overlay.style.cssText = 'display:none;position:fixed;inset:0;background:#1A1A2E;z-index:10000;flex-direction:column;';
+    overlay.innerHTML =
+      '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:#fff;border-bottom:1px solid #eee;">' +
+        '<span style="font-weight:700;color:#1A1A2E;font-size:13.5px;"><i class="fas fa-lock"></i> View only - downloading is disabled</span>' +
+        '<button id="frPdfViewerClose" style="background:none;border:none;font-size:22px;cursor:pointer;color:#6b6b8a;">&times;</button>' +
+      '</div>' +
+      '<div id="frPdfViewerPages" style="flex:1;overflow:auto;padding:20px;display:flex;flex-direction:column;align-items:center;gap:14px;user-select:none;-webkit-user-select:none;"></div>';
+    document.body.appendChild(overlay);
+    overlay.addEventListener('contextmenu', function (ev) { ev.preventDefault(); return false; });
+    document.getElementById('frPdfViewerClose').addEventListener('click', closeFrViewer);
+  }
+
+  function closeFrViewer() {
+    var overlay = document.getElementById('frPdfViewerOverlay');
+    if (overlay) overlay.style.display = 'none';
+    var pagesEl = document.getElementById('frPdfViewerPages');
+    if (pagesEl) pagesEl.innerHTML = '';
+    if (frViewerState.pdfDoc) { frViewerState.pdfDoc.destroy(); frViewerState.pdfDoc = null; }
+  }
+
+  function openFreeResourceViewer(resourceId) {
+    closeFrViewer();
+    ensureFrViewerOverlay();
+    var overlay = document.getElementById('frPdfViewerOverlay');
+    var pagesEl = document.getElementById('frPdfViewerPages');
+    overlay.style.display = 'flex';
+    pagesEl.innerHTML = '<p style="color:#fff;">Loading...</p>';
+    Promise.all([
+      ensurePdfJs(),
+      authFetchBlob('/api/free-resources/' + encodeURIComponent(resourceId) + '/view'),
+    ]).then(function (results) {
+      var pdfjsLib = results[0];
+      var blob = results[1];
+      return blob.arrayBuffer().then(function (buf) {
+        return pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
+      });
+    }).then(function (pdfDoc) {
+      frViewerState.pdfDoc = pdfDoc;
+      pagesEl.innerHTML = '';
+      var renderPage = function (pageNum) {
+        if (pageNum > pdfDoc.numPages) return;
+        pdfDoc.getPage(pageNum).then(function (page) {
+          var viewport = page.getViewport({ scale: 1.3 });
+          var canvas = document.createElement('canvas');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          canvas.style.cssText = 'max-width:100%;box-shadow:0 2px 10px rgba(0,0,0,.3);';
+          pagesEl.appendChild(canvas);
+          page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport }).promise.then(function () {
+            renderPage(pageNum + 1);
+          });
+        });
+      };
+      renderPage(1);
+    }).catch(function (err) {
+      pagesEl.innerHTML = '<p style="color:#fff;padding:20px;">' + esc(err.message || 'Could not load this resource.') + '</p>';
+    });
+  }
+
   /* ── Guard: redirect if not logged in ───────────────────── */
   function init() {
     if (!getToken()) {
@@ -276,10 +375,10 @@
               (r.description ? '<div style="font-size:12px;color:#64748b;margin-top:2px;">' + esc(r.description) + '</div>' : '') +
             '</div>' +
           '</div>' +
-          '<a href="' + esc(r.pdf_url) + '" target="_blank" rel="noopener" ' +
-             'style="flex-shrink:0;display:inline-flex;align-items:center;gap:6px;background:#c81240;color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;">' +
+          '<button onclick="window.__openFreeResource(' + r.id + ')" ' +
+             'style="flex-shrink:0;display:inline-flex;align-items:center;gap:6px;background:#c81240;color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;border:none;cursor:pointer;">' +
             '<i class="fas fa-eye"></i> View' +
-          '</a>' +
+          '</button>' +
         '</div>';
       }).join('');
       body.innerHTML = '<div style="padding:0 4px;">' + cards + '</div>' +
@@ -290,6 +389,8 @@
         '</div>';
 
       /* Auto-scroll if arriving from resource page */
+      window.__openFreeResource = openFreeResourceViewer;
+
       if (window.location.hash === '#free-resources') {
         setTimeout(function () {
           var sec = document.getElementById('free-resources');
