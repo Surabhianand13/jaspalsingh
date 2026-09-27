@@ -2398,7 +2398,14 @@ async function migrate() {
       sort_order: 38,
       is_active: true,
       omr_enabled: false,
-      launch_config: JSON.stringify({ mode: 'offline', centres: ['jaipur', 'other'] }),
+      launch_config: JSON.stringify({
+        seriesName: "4th Oct'26 - RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Degree (Offline)",
+        tallyFormUrl: 'https://tally.so/r/1A8QvQ',
+        mode: 'offline',
+        rollPrefix: 'FLTDOF',
+        waGroupUrl: null,
+        lastTestDate: '10 Jan 2027 (FLT-15)',
+      }),
       pricing_tiers: JSON.stringify({
         jaipur: { label: 'Jaipur', price: 999, mrp: 2999 },
         other:  { label: 'Other Centres', price: 1299, mrp: 2999 },
@@ -2413,7 +2420,14 @@ async function migrate() {
       sort_order: 39,
       is_active: true,
       omr_enabled: false,
-      launch_config: JSON.stringify({ mode: 'offline', centres: ['jaipur', 'other'] }),
+      launch_config: JSON.stringify({
+        seriesName: "4th Oct'26 - RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Diploma (Offline)",
+        tallyFormUrl: 'https://tally.so/r/1A8QvQ',
+        mode: 'offline',
+        rollPrefix: 'FLTPOF',
+        waGroupUrl: null,
+        lastTestDate: '10 Jan 2027 (FLT-15)',
+      }),
       pricing_tiers: JSON.stringify({
         jaipur: { label: 'Jaipur', price: 999, mrp: 2999 },
         other:  { label: 'Other Centres', price: 1299, mrp: 2999 },
@@ -2428,7 +2442,14 @@ async function migrate() {
       sort_order: 40,
       is_active: true,
       omr_enabled: true,
-      launch_config: JSON.stringify({ mode: 'home' }),
+      launch_config: JSON.stringify({
+        seriesName: "4th Oct'26 - RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Degree (Printed OMR)",
+        tallyFormUrl: 'https://tally.so/r/WOyaYj',
+        mode: 'home',
+        rollPrefix: 'FLTDOM',
+        waGroupUrl: null,
+        lastTestDate: '10 Jan 2027 (FLT-15)',
+      }),
       pricing_tiers: null,
     },
     {
@@ -2440,7 +2461,14 @@ async function migrate() {
       sort_order: 41,
       is_active: true,
       omr_enabled: true,
-      launch_config: JSON.stringify({ mode: 'home' }),
+      launch_config: JSON.stringify({
+        seriesName: "4th Oct'26 - RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Diploma (Printed OMR)",
+        tallyFormUrl: 'https://tally.so/r/WOyaYj',
+        mode: 'home',
+        rollPrefix: 'FLTPOM',
+        waGroupUrl: null,
+        lastTestDate: '10 Jan 2027 (FLT-15)',
+      }),
       pricing_tiers: null,
     },
   ];
@@ -2453,6 +2481,22 @@ async function migrate() {
     );
   }
   console.log('✅ Seeded 4 RSSB JE 2026 FLT (4 Oct) programs');
+
+  // Wire Tally forms for FLT programs already inserted (idempotent jsonb_set)
+  const flt4OctTallyForms = [
+    ['rssb-je-2026-4oct-flt-degree-offline',  'https://tally.so/r/1A8QvQ'],
+    ['rssb-je-2026-4oct-flt-diploma-offline', 'https://tally.so/r/1A8QvQ'],
+    ['rssb-je-2026-4oct-flt-degree-omr',      'https://tally.so/r/WOyaYj'],
+    ['rssb-je-2026-4oct-flt-diploma-omr',     'https://tally.so/r/WOyaYj'],
+  ];
+  for (const [slug, url] of flt4OctTallyForms) {
+    await query(
+      `UPDATE programs SET launch_config = jsonb_set(COALESCE(launch_config, '{}'), '{tallyFormUrl}', $1)
+       WHERE slug = $2`,
+      [JSON.stringify(url), slug]
+    );
+  }
+  console.log('✅ Wired Tally forms for RSSB JE 2026 FLT (4 Oct) programs');
 
   // Seed RSSB JE blog posts (idempotent - ON CONFLICT (slug) DO NOTHING)
   const rssbJePosts = require('./seeds/blogPostsRssbJe');
