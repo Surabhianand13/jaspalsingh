@@ -2387,6 +2387,73 @@ async function migrate() {
   }
 
 
+  // Seed RSSB JE 2026 FLT (4 Oct) programs
+  const flt4OctPrograms = [
+    {
+      slug: 'rssb-je-2026-4oct-flt-degree-offline',
+      title: "4th Oct'26 - RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Degree Offline",
+      subtitle: '15 full-length tests every Sunday from 4 Oct 2026, offline at centre - Degree level',
+      price: 999,
+      mrp: 2999,
+      sort_order: 38,
+      is_active: true,
+      omr_enabled: false,
+      launch_config: JSON.stringify({ mode: 'offline', centres: ['jaipur', 'other'] }),
+      pricing_tiers: JSON.stringify({
+        jaipur: { label: 'Jaipur', price: 999, mrp: 2999 },
+        other:  { label: 'Other Centres', price: 1299, mrp: 2999 },
+      }),
+    },
+    {
+      slug: 'rssb-je-2026-4oct-flt-diploma-offline',
+      title: "4th Oct'26 - RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Diploma Offline",
+      subtitle: '15 full-length tests every Sunday from 4 Oct 2026, offline at centre - Diploma level',
+      price: 999,
+      mrp: 2999,
+      sort_order: 39,
+      is_active: true,
+      omr_enabled: false,
+      launch_config: JSON.stringify({ mode: 'offline', centres: ['jaipur', 'other'] }),
+      pricing_tiers: JSON.stringify({
+        jaipur: { label: 'Jaipur', price: 999, mrp: 2999 },
+        other:  { label: 'Other Centres', price: 1299, mrp: 2999 },
+      }),
+    },
+    {
+      slug: 'rssb-je-2026-4oct-flt-degree-omr',
+      title: "4th Oct'26 - RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Degree OMR",
+      subtitle: '15 full-length tests every Sunday from 4 Oct 2026, printed OMR from home - Degree level',
+      price: 599,
+      mrp: 1999,
+      sort_order: 40,
+      is_active: true,
+      omr_enabled: true,
+      launch_config: JSON.stringify({ mode: 'home' }),
+      pricing_tiers: null,
+    },
+    {
+      slug: 'rssb-je-2026-4oct-flt-diploma-omr',
+      title: "4th Oct'26 - RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Diploma OMR",
+      subtitle: '15 full-length tests every Sunday from 4 Oct 2026, printed OMR from home - Diploma level',
+      price: 599,
+      mrp: 1999,
+      sort_order: 41,
+      is_active: true,
+      omr_enabled: true,
+      launch_config: JSON.stringify({ mode: 'home' }),
+      pricing_tiers: null,
+    },
+  ];
+  for (const prog of flt4OctPrograms) {
+    await query(
+      `INSERT INTO programs (slug, title, subtitle, price, mrp, sort_order, is_active, omr_enabled, launch_config, pricing_tiers)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+       ON CONFLICT (slug) DO NOTHING`,
+      [prog.slug, prog.title, prog.subtitle, prog.price, prog.mrp, prog.sort_order, prog.is_active, prog.omr_enabled, prog.launch_config, prog.pricing_tiers]
+    );
+  }
+  console.log('✅ Seeded 4 RSSB JE 2026 FLT (4 Oct) programs');
+
   // Seed RSSB JE blog posts (idempotent - ON CONFLICT (slug) DO NOTHING)
   const rssbJePosts = require('./seeds/blogPostsRssbJe');
   for (const post of rssbJePosts) {
