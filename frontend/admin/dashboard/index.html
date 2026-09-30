@@ -900,6 +900,13 @@
           <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:5px;">Description (optional)</label>
           <input type="text" id="fr-desc" placeholder="e.g. Full solutions with explanations" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;box-sizing:border-box;" />
         </div>
+        <div style="margin-bottom:14px;">
+          <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:5px;">Access Restriction</label>
+          <select id="fr-gating" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;box-sizing:border-box;">
+            <option value="">Open to all logged-in learners</option>
+            <option value="rpsc_ae">RPSC AE 2024 - Interview candidates only</option>
+          </select>
+        </div>
         <div style="margin-bottom:20px;">
           <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:5px;">PDF File *</label>
           <input type="file" id="fr-file" accept="application/pdf" style="font-size:13px;" />
@@ -1331,6 +1338,7 @@ const FR_API = location.hostname === 'localhost' ? 'http://localhost:5000' : 'ht
 
 function openUploadModal() {
   document.getElementById('freeResourceModal').style.display = 'flex';
+  document.getElementById('fr-gating').value = '';
   document.getElementById('fr-title').value = '';
   document.getElementById('fr-desc').value = '';
   document.getElementById('fr-file').value = '';
@@ -1359,6 +1367,8 @@ async function uploadFreeResource() {
   formData.append('pdf', file);
   formData.append('title', title);
   if (desc) formData.append('description', desc);
+  const gating = document.getElementById('fr-gating').value;
+  if (gating) formData.append('gating_type', gating);
 
   try {
     const r = await fetch(`${FR_API}/api/free-resources`, {
@@ -1397,13 +1407,14 @@ async function loadFreeResources() {
 
     el.innerHTML = `<table class="admin-table" style="width:100%;">
       <thead><tr>
-        <th>Title</th><th>Description</th><th>Visible</th><th>Shareable URL</th><th>Actions</th>
+        <th>Title</th><th>Description</th><th>Gating</th><th>Visible</th><th>Shareable URL</th><th>Actions</th>
       </tr></thead>
       <tbody>${rows.map(res => {
         const shareUrl = `https://jaspalsingh.in/resource?id=${res.id}`;
         return `<tr>
           <td><strong>${res.title}</strong></td>
           <td style="color:#64748b;font-size:13px;">${res.description || '-'}</td>
+          <td>${res.gating_type === 'rpsc_ae' ? '<span style="font-size:11px;background:#fef3c7;color:#92400e;padding:3px 8px;border-radius:20px;font-weight:700;">RPSC AE only</span>' : '<span style="font-size:11px;color:#94a3b8;">Open</span>'}</td>
           <td>
             <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
               <input type="checkbox" ${res.visible ? 'checked' : ''} onchange="toggleResource(${res.id}, this.checked)" />

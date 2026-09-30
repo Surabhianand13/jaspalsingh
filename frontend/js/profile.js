@@ -90,7 +90,115 @@
     if (frViewerState.pdfDoc) { frViewerState.pdfDoc.destroy(); frViewerState.pdfDoc = null; }
   }
 
-  function openFreeResourceViewer(resourceId) {
+  /* ── RPSC AE Verification modal ─────────────────────────── */
+  var rpscVerifyPendingId = null;
+
+  function ensureRpscModal() {
+    if (document.getElementById('rpscAeModal')) return;
+    var modal = document.createElement('div');
+    modal.id = 'rpscAeModal';
+    modal.style.cssText = 'display:none;position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,.6);align-items:center;justify-content:center;';
+    modal.innerHTML =
+      '<div style="background:#fff;border-radius:16px;padding:28px 24px;max-width:400px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.3);">' +
+        '<h3 style="margin:0 0 8px;font-size:18px;color:#0f172a;"><i class="fas fa-shield-alt" style="color:#c81240;margin-right:8px;"></i>Verify RPSC AE Application</h3>' +
+        '<p style="margin:0 0 20px;font-size:13px;color:#64748b;">This document is exclusively for RPSC AE 2024 interview candidates. Enter your application details to unlock access.</p>' +
+        '<div style="margin-bottom:14px;">' +
+          '<label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:5px;">Application Number *</label>' +
+          '<input id="rpscAppNum" type="text" inputmode="numeric" placeholder="e.g. 202434338188" maxlength="12" ' +
+            'style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;box-sizing:border-box;" />' +
+          '<div style="font-size:11px;color:#94a3b8;margin-top:4px;">12 digits - must start with 2024</div>' +
+        '</div>' +
+        '<div style="margin-bottom:20px;">' +
+          '<label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:5px;">Roll Number *</label>' +
+          '<input id="rpscRollNum" type="text" placeholder="Your RPSC AE roll number" ' +
+            'style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;box-sizing:border-box;" />' +
+        '</div>' +
+        '<div id="rpscVerifyMsg" style="display:none;font-size:13px;padding:10px 14px;border-radius:8px;margin-bottom:14px;"></div>' +
+        '<div style="display:flex;gap:10px;">' +
+          '<button id="rpscVerifyBtn" style="flex:1;background:#c81240;color:#fff;border:none;padding:11px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">' +
+            '<i class="fas fa-unlock"></i> Verify &amp; Open' +
+          '</button>' +
+          '<button onclick="closeRpscModal()" style="flex:0 0 auto;background:#f1f5f9;color:#374151;border:none;padding:11px 16px;border-radius:8px;font-size:14px;cursor:pointer;">Cancel</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(modal);
+    document.getElementById('rpscVerifyBtn').addEventListener('click', submitRpscVerify);
+    modal.addEventListener('keydown', function (e) { if (e.key === 'Enter') submitRpscVerify(); });
+  }
+
+  function showRpscModal(resourceId) {
+    rpscVerifyPendingId = resourceId;
+    ensureRpscModal();
+    document.getElementById('rpscAppNum').value = '';
+    document.getElementById('rpscRollNum').value = '';
+    var msg = document.getElementById('rpscVerifyMsg');
+    msg.style.display = 'none'; msg.textContent = '';
+    var btn = document.getElementById('rpscVerifyBtn');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-unlock"></i> Verify &amp; Open';
+    var modal = document.getElementById('rpscAeModal');
+    modal.style.display = 'flex';
+    setTimeout(function () { document.getElementById('rpscAppNum').focus(); }, 100);
+  }
+
+  function closeRpscModal() {
+    var modal = document.getElementById('rpscAeModal');
+    if (modal) modal.style.display = 'none';
+    rpscVerifyPendingId = null;
+  }
+
+  function submitRpscVerify() {
+    var appNum  = (document.getElementById('rpscAppNum').value || '').trim();
+    var rollNum = (document.getElementById('rpscRollNum').value || '').trim();
+    var msgEl   = document.getElementById('rpscVerifyMsg');
+    var btn     = document.getElementById('rpscVerifyBtn');
+
+    if (!appNum || !rollNum) {
+      setRpscMsg('Please fill in both fields.', 'error'); return;
+    }
+    if (!/^2024\d{8}$/.test(appNum)) {
+      setRpscMsg('Application number must be 12 digits starting with 2024 (e.g. 202434338188).', 'error'); return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
+    setRpscMsg('', '');
+
+    authFetch('/api/free-resources/rpsc-verify', {
+      method: 'POST',
+      body: JSON.stringify({ application_number: appNum, roll_no: rollNum }),
+    }).then(function () {
+      setRpscMsg('Verified! Opening document...', 'success');
+      var pending = rpscVerifyPendingId;
+      setTimeout(function () {
+        closeRpscModal();
+        openFreeResourceViewer(pending, null);
+      }, 800);
+    }).catch(function (err) {
+      setRpscMsg(err.message || 'Verification failed. Please try again.', 'error');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-unlock"></i> Verify &amp; Open';
+    });
+  }
+
+  function setRpscMsg(text, type) {
+    var el = document.getElementById('rpscVerifyMsg');
+    el.textContent = text;
+    el.style.display = text ? 'block' : 'none';
+    el.style.background = type === 'error' ? '#fef2f2' : '#f0fdf4';
+    el.style.color      = type === 'error' ? '#991b1b' : '#166534';
+  }
+
+
+
+  function openFreeResourceViewer(resourceId, gatingType) {
+    if (gatingType === 'rpsc_ae') {
+      authFetch('/api/free-resources/rpsc-verify-status').then(function (data) {
+        if (data.verified) { openFreeResourceViewer(resourceId, null); }
+        else { showRpscModal(resourceId); }
+      }).catch(function () { showRpscModal(resourceId); });
+      return;
+    }
     closeFrViewer();
     ensureFrViewerOverlay();
     var overlay = document.getElementById('frPdfViewerOverlay');
@@ -375,7 +483,7 @@
               (r.description ? '<div style="font-size:12px;color:#64748b;margin-top:2px;">' + esc(r.description) + '</div>' : '') +
             '</div>' +
           '</div>' +
-          '<button onclick="window.__openFreeResource(' + r.id + ')" ' +
+          '<button onclick="window.__openFreeResource(' + r.id + ', ' + JSON.stringify(r.gating_type || null) + ')" ' +
              'style="flex-shrink:0;display:inline-flex;align-items:center;gap:6px;background:#c81240;color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;border:none;cursor:pointer;">' +
             '<i class="fas fa-eye"></i> View' +
           '</button>' +
@@ -389,7 +497,7 @@
         '</div>';
 
       /* Auto-scroll if arriving from resource page */
-      window.__openFreeResource = openFreeResourceViewer;
+      window.__openFreeResource = function(id, gatingType) { openFreeResourceViewer(id, gatingType); };
 
       if (window.location.hash === '#free-resources') {
         setTimeout(function () {

@@ -362,6 +362,14 @@ async function migrate() {
     visible     BOOLEAN NOT NULL DEFAULT TRUE,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`);
+  await query(`ALTER TABLE free_resources ADD COLUMN IF NOT EXISTS gating_type TEXT DEFAULT NULL`);
+  await query(`CREATE TABLE IF NOT EXISTS rpsc_ae_verifications (
+    id                 SERIAL PRIMARY KEY,
+    learner_id         INTEGER NOT NULL UNIQUE,
+    application_number TEXT NOT NULL UNIQUE,
+    roll_no            TEXT NOT NULL,
+    verified_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`);
 
   /* ── One-time cleanup: close out stale 'pending' rows left behind by
      retried checkouts where a sibling order for the same learner+program
