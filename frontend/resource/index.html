@@ -87,14 +87,19 @@
     }
 
     function onAuthSuccess() {
-      window.location.href = '/profile#free-resources';
+      var dest = resourceId
+        ? '/profile?open_resource=' + encodeURIComponent(resourceId) + '#free-resources'
+        : '/profile#free-resources';
+      window.location.href = dest;
     }
 
     function checkAuth() {
       var token = localStorage.getItem(TOKEN_KEY);
+      var dest = resourceId
+        ? '/profile?open_resource=' + encodeURIComponent(resourceId) + '#free-resources'
+        : '/profile#free-resources';
       if (token) {
-        /* Already logged in - go straight to profile */
-        window.location.href = '/profile#free-resources';
+        window.location.href = dest;
       } else {
         document.getElementById('res-title').textContent = 'Free Resource';
         document.getElementById('res-desc').textContent  = 'Sign in or create a free account to access this resource.';
