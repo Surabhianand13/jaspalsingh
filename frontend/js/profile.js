@@ -65,6 +65,7 @@
   }
 
   var frViewerState = { pdfDoc: null };
+  var frGatingTypes = {};
 
   function ensureFrViewerOverlay() {
     if (document.getElementById('frPdfViewerOverlay')) return;
@@ -473,6 +474,7 @@
         return;
       }
       var cards = resources.map(function (r) {
+        frGatingTypes[r.id] = r.gating_type || null;
         return '<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-bottom:1px solid rgba(26,26,46,.07);">' +
           '<div style="display:flex;align-items:center;gap:12px;">' +
             '<div style="width:36px;height:36px;border-radius:10px;background:#fff0f4;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
@@ -483,7 +485,7 @@
               (r.description ? '<div style="font-size:12px;color:#64748b;margin-top:2px;">' + esc(r.description) + '</div>' : '') +
             '</div>' +
           '</div>' +
-          '<button onclick="window.__openFreeResource(' + r.id + ', ' + JSON.stringify(r.gating_type || null) + ')" ' +
+          '<button onclick="window.__openFreeResource(' + r.id + ')" ' +
              'style="flex-shrink:0;display:inline-flex;align-items:center;gap:6px;background:#c81240;color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;border:none;cursor:pointer;">' +
             '<i class="fas fa-eye"></i> View' +
           '</button>' +
@@ -497,7 +499,7 @@
         '</div>';
 
       /* Auto-scroll if arriving from resource page */
-      window.__openFreeResource = function(id, gatingType) { openFreeResourceViewer(id, gatingType); };
+      window.__openFreeResource = function(id) { openFreeResourceViewer(id, frGatingTypes[id] || null); };
 
       if (window.location.hash === '#free-resources') {
         setTimeout(function () {
