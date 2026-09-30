@@ -106,6 +106,20 @@ router.get('/', protectLearner, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/* ── GET /api/free-resources/rpsc-verifications  (admin - RPSC AE verified learners) ── */
+router.get('/rpsc-verifications', protect, async (req, res, next) => {
+  try {
+    const result = await query(
+      `SELECT v.id, v.application_number, v.roll_no, v.verified_at,
+              l.id AS learner_id, l.name, l.email, l.phone
+       FROM rpsc_ae_verifications v
+       JOIN learners l ON l.id = v.learner_id
+       ORDER BY v.verified_at DESC`
+    );
+    res.json(result.rows);
+  } catch (err) { next(err); }
+});
+
 /* ── GET /api/free-resources/admin  (admin list) ── */
 router.get('/admin', protect, async (req, res, next) => {
   try {
