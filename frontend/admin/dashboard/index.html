@@ -1446,7 +1446,10 @@ async function loadFreeResources() {
               </button>
             </div>
           </td>
-          <td>
+          <td style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+            <button class="btn-admin-secondary btn-admin-sm" onclick="editResourceGating(${res.id}, '${(res.gating_type || '')}')" title="Change access restriction">
+              <i class="fas fa-shield-alt"></i>
+            </button>
             <button class="btn-admin-danger btn-admin-sm" onclick="deleteFreeResource(${res.id})">
               <i class="fas fa-trash"></i>
             </button>
@@ -1501,6 +1504,26 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 });
+function editResourceGating(id, currentGating) {
+  const options = ['', 'rpsc_ae'];
+  const labels  = {'': 'Open to all logged-in learners', 'rpsc_ae': 'RPSC AE 2024 - Interview candidates only'};
+  const currentLabel = labels[currentGating] || 'Open to all logged-in learners';
+  const newGating = currentGating === 'rpsc_ae' ? '' : 'rpsc_ae';
+  const newLabel  = labels[newGating];
+  if (!confirm(`Change access restriction for this resource?
+
+Current: ${currentLabel}
+New: ${newLabel}`)) return;
+  fetch(`${FR_API}/api/free-resources/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('jaspal_admin_token')}` },
+    body: JSON.stringify({ gating_type: newGating || null }),
+  }).then(r => r.json()).then(d => {
+    if (d.error) { alert('Error: ' + d.error); return; }
+    loadFreeResources();
+  }).catch(() => alert('Failed to update gating.'));
+}
+
 async function loadRpscVerifications() {
   const el = document.getElementById('rpsc-verifications-list');
   if (!el) return;
