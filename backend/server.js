@@ -1891,6 +1891,29 @@ async function migrate() {
      only visibility was wrong. ── */
   await query(`UPDATE programs SET is_visible = TRUE WHERE slug = 'rpsc-ae-interview'`);
 
+  /* ── RPSC AE 2024 Interview Guidance: real Tally form wired 2026-09-30.
+     Before this the program had no launch_config and wasn't in
+     NO_FULFILLMENT_SLUGS, so sendWelcomePaymentEmail fell through the
+     slug guessing to the RSSB JE Diploma form. Only sets launch_config
+     the first time so any later admin-panel edit (waGroupUrl etc.) wins. ── */
+  await query(
+    `UPDATE programs SET launch_config = $1
+     WHERE slug = 'rpsc-ae-interview' AND launch_config IS NULL`,
+    [JSON.stringify({
+      seriesName: 'RPSC AE 2024 - Interview Guidance Programme',
+      tallyFormUrl: 'https://tally.so/r/RGEB2d',
+      mode: 'offline',
+      rollPrefix: 'RPSCAE',
+      waGroupUrl: null,
+      lastTestDate: 'Starts last week of October 2026 - schedule notified via email & WhatsApp',
+      centre: {
+        name: 'Jaipur',
+        address: '33, White House, Opp. Zone Tech, Tonk Road, Madhuvan Colony, Mansingh Pura, Jaipur, Rajasthan 302015',
+        mapsLink: 'https://maps.app.goo.gl/UiYpXv447AWrfyMX8',
+      },
+    })]
+  );
+
   /* ── UP Polytechnic roll-number backfill (2026-08-15): learners who
      paid before/without submitting the post-payment Tally details form
      have no roll_number yet and nothing to show in "My Programs" -
