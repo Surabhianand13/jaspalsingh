@@ -221,19 +221,19 @@ ul, ol {
   height: var(--header-h);
   background: linear-gradient(
     180deg,
-    #1A1A2E 0%,
-    #1A1A2E calc(var(--header-brand-h) - 1px),
-    rgba(255,255,255,0.10) calc(var(--header-brand-h) - 1px),
-    rgba(255,255,255,0.10) var(--header-brand-h),
-    #151527 var(--header-brand-h),
-    #151527 100%
+    #FFFFFF 0%,
+    #FFFFFF calc(var(--header-brand-h) - 1px),
+    rgba(200,18,64,0.18) calc(var(--header-brand-h) - 1px),
+    rgba(200,18,64,0.18) var(--header-brand-h),
+    #FEF6F8 var(--header-brand-h),
+    #FEF6F8 100%
   );
-  border-bottom: 2px solid var(--magenta);
+  border-bottom: 2.5px solid var(--magenta);
   transition: box-shadow 0.4s ease;
 }
 
 .site-header.scrolled {
-  box-shadow: 0 4px 32px rgba(0,0,0,0.35);
+  box-shadow: 0 4px 20px rgba(200,18,64,0.10), 0 2px 8px rgba(26,26,46,0.08);
 }
 
 /* Home page uses default white nav (no dark hero behind it) */
@@ -325,7 +325,7 @@ ul, ol {
   font-family: var(--font-heading);
   font-weight: 700;
   font-size: 13.5px;
-  color: rgba(255,255,255,0.88);
+  color: var(--heading-color);
   letter-spacing: 0.2px;
   white-space: nowrap;
 }
@@ -443,7 +443,7 @@ ul, ol {
   display: block;
   width: 24px;
   height: 2px;
-  background: rgba(255,255,255,0.88);
+  background: var(--heading-color);
   border-radius: 2px;
   transition: var(--transition);
 }
@@ -1115,7 +1115,7 @@ ul, ol {
   font-family: var(--font-heading);
   font-weight: 700;
   font-size: 15px;
-  color: rgba(255,255,255,0.85);
+  color: var(--heading-color);
   white-space: nowrap;
   cursor: pointer;
   transition: color 0.15s, background 0.15s;
@@ -1126,8 +1126,8 @@ ul, ol {
 
 .nav-it-btn:hover,
 .nav-it-btn.open {
-  color: #fff;
-  background: rgba(255,255,255,0.08);
+  color: var(--magenta);
+  background: rgba(200,18,64,0.06);
 }
 
 /* Active underline bar */
