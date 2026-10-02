@@ -57,8 +57,8 @@
   /* --- Mark active nav link based on current page --- */
   const currentPath = window.location.pathname.replace(/\/$/, '') || '/';
 
-  document.querySelectorAll('.nav-link, .drawer-link').forEach(function (link) {
-    const href = link.getAttribute('href');
+  document.querySelectorAll('.nav-it-btn[href], .drawer-link').forEach(function (link) {
+    var href = link.getAttribute('href');
     if (href === currentPath || (currentPath === '/' && (href === '/' || href === '/index.html'))) {
       link.classList.add('active');
     } else {
@@ -66,10 +66,62 @@
     }
   });
 
-  /* Mark dropdown trigger active when on /programs */
-  if (currentPath === '/programs' || currentPath.startsWith('/programs')) {
-    var trigger = document.querySelector('.nav-dropdown-trigger');
-    if (trigger) trigger.classList.add('active');
+  /* --- Desktop Exam Mega-Menu (hover + click) --- */
+  var mainNav = document.getElementById('mainNav');
+  if (mainNav) {
+    var openKey = null;
+    var closeTimer = null;
+
+    function openExamDrop(key) {
+      if (openKey && openKey !== key) closeExamDrop(true);
+      openKey = key;
+      var btn = mainNav.querySelector('.nav-it-btn[data-key="' + key + '"]');
+      var drop = document.getElementById('drop-' + key);
+      if (btn) { btn.classList.add('open'); btn.setAttribute('aria-expanded', 'true'); }
+      if (drop) drop.classList.add('vis');
+    }
+
+    function closeExamDrop(instant) {
+      if (!openKey) return;
+      var btn = mainNav.querySelector('.nav-it-btn[data-key="' + openKey + '"]');
+      var drop = document.getElementById('drop-' + openKey);
+      if (btn) { btn.classList.remove('open'); btn.setAttribute('aria-expanded', 'false'); }
+      if (drop) drop.classList.remove('vis');
+      openKey = null;
+    }
+
+    mainNav.querySelectorAll('.nav-it-btn[data-key]').forEach(function (btn) {
+      var key = btn.dataset.key;
+      var drop = document.getElementById('drop-' + key);
+      var navIt = btn.closest('.nav-it');
+
+      btn.addEventListener('mouseenter', function () {
+        clearTimeout(closeTimer);
+        openExamDrop(key);
+      });
+      btn.addEventListener('click', function () {
+        openKey === key ? closeExamDrop() : openExamDrop(key);
+      });
+      if (navIt) {
+        navIt.addEventListener('mouseleave', function () {
+          closeTimer = setTimeout(closeExamDrop, 200);
+        });
+      }
+      if (drop) {
+        drop.addEventListener('mouseenter', function () { clearTimeout(closeTimer); });
+        drop.addEventListener('mouseleave', function () {
+          closeTimer = setTimeout(closeExamDrop, 200);
+        });
+      }
+    });
+
+    document.addEventListener('click', function (e) {
+      if (mainNav && !mainNav.contains(e.target)) closeExamDrop();
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeExamDrop();
+    });
   }
 
   /* --- Mobile Drawer Accordion --- */
@@ -82,7 +134,7 @@
     });
   });
 
-  /* Auto-open accordion if on programs page */
+  /* Auto-open first accordion if on a programs page */
   if (currentPath.startsWith('/programs')) {
     var accTrigger = document.querySelector('.drawer-accordion-trigger');
     var accBody = accTrigger && accTrigger.nextElementSibling;
