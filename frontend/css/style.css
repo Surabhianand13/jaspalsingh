@@ -35,7 +35,9 @@
   --transition:     all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
   --container:      1200px;
-  --header-h:       72px;
+  --header-h:       124px;
+  --header-brand-h: 62px;
+  --header-nav-h:   62px;
 }
 
 /* --- Reset & Base --- */
@@ -217,37 +219,57 @@ ul, ol {
   right: 0;
   z-index: 900;
   height: var(--header-h);
-  background: var(--white);
+  background: linear-gradient(
+    180deg,
+    #1A1A2E 0%,
+    #1A1A2E calc(var(--header-brand-h) - 1px),
+    rgba(255,255,255,0.10) calc(var(--header-brand-h) - 1px),
+    rgba(255,255,255,0.10) var(--header-brand-h),
+    #151527 var(--header-brand-h),
+    #151527 100%
+  );
   border-bottom: 2px solid var(--magenta);
-  transition: background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease, backdrop-filter 0.4s ease;
+  transition: box-shadow 0.4s ease;
 }
 
 .site-header.scrolled {
-  box-shadow: 0 4px 32px rgba(26,26,46,0.1);
+  box-shadow: 0 4px 32px rgba(0,0,0,0.35);
 }
 
 /* Home page uses default white nav (no dark hero behind it) */
 
 .header-inner {
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
+  align-content: flex-start;
   height: 100%;
 }
-.header-left { flex-shrink: 0; }
-.header-right { flex-shrink: 0; }
 
-/* Left section: phone + brand */
+/* Row 1: brand bar */
 .header-left {
+  order: 1;
+  flex: 1;
   display: flex;
   align-items: center;
   gap: 18px;
+  height: var(--header-brand-h);
 }
 
-/* Right section: hamburger aligned to end */
+/* Row 1 right: auth buttons */
 .header-right {
+  order: 2;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  height: var(--header-brand-h);
+}
+
+/* Row 2: nav bar — full width */
+.main-nav {
+  order: 3;
+  flex: 0 0 100%;
+  height: var(--header-nav-h);
 }
 
 /* Phone link */
@@ -303,7 +325,7 @@ ul, ol {
   font-family: var(--font-heading);
   font-weight: 700;
   font-size: 13.5px;
-  color: var(--heading-color);
+  color: rgba(255,255,255,0.88);
   letter-spacing: 0.2px;
   white-space: nowrap;
 }
@@ -365,12 +387,12 @@ ul, ol {
   border-radius: 2px;
 }
 
-/* Desktop Nav — centered column */
+/* Desktop Nav — full-width second row (layout set in header-inner block above) */
 .main-nav {
-  flex: 1;
   display: flex;
   align-items: stretch;
   gap: 0;
+  justify-content: center;
 }
 
 .nav-link {
@@ -421,7 +443,7 @@ ul, ol {
   display: block;
   width: 24px;
   height: 2px;
-  background: var(--heading-color);
+  background: rgba(255,255,255,0.88);
   border-radius: 2px;
   transition: var(--transition);
 }
@@ -698,7 +720,9 @@ ul, ol {
    ============================================================ */
 
 @media (max-width: 900px) {
+  :root { --header-h: 64px; --header-brand-h: 64px; --header-nav-h: 0px; }
   .main-nav { display: none; }
+  .header-inner { flex-wrap: nowrap; align-items: center; }
   .hamburger { display: flex !important; visibility: visible !important; opacity: 1 !important; }
   .lw-h-wrap { display: none !important; }
   .phone-text { display: none; }
@@ -714,7 +738,6 @@ ul, ol {
 }
 
 @media (max-width: 600px) {
-  :root { --header-h: 64px; }
   .container { padding: 0 18px; }
   .section-pad { padding: 60px 0; }
   .section-header { margin-bottom: 44px; }
@@ -1074,6 +1097,7 @@ ul, ol {
 
 .nav-it {
   flex: 1;
+  max-width: 180px;
   position: relative;
   display: flex;
   align-items: stretch;
@@ -1084,23 +1108,26 @@ ul, ol {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 0 6px;
+  gap: 6px;
+  padding: 0 12px;
   background: none;
   border: none;
   font-family: var(--font-heading);
-  font-weight: 600;
-  font-size: 12.5px;
-  color: var(--heading-color);
+  font-weight: 700;
+  font-size: 15px;
+  color: rgba(255,255,255,0.85);
   white-space: nowrap;
   cursor: pointer;
-  transition: color 0.15s;
+  transition: color 0.15s, background 0.15s;
   text-decoration: none;
+  border-radius: 6px;
+  letter-spacing: 0.1px;
 }
 
 .nav-it-btn:hover,
 .nav-it-btn.open {
-  color: var(--magenta);
+  color: #fff;
+  background: rgba(255,255,255,0.08);
 }
 
 /* Active underline bar */
