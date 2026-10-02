@@ -2206,6 +2206,96 @@ async function migrate() {
     console.log(`✅ Seeded ${ukpscJeCivilOmrSchedule.length} UKPSC JE Civil OMR schedule rows`);
   }
 
+  /* ── UKPSC JE Civil OMR Phase 1 schedule correction (2026-10-02) ──
+     Initial seed used wrong question counts (50/100) and less specific
+     syllabus names. Frontend HTML has the authoritative schedule.
+     This UPDATE runs on every restart (idempotent) and preserves
+     any already-uploaded asset URLs (question_paper_url, solution_url,
+     blank_omr_url are not touched). Only tests 1-72 differ; FLT
+     tests 73-112 were correct in the original seed. ── */
+  const ukpscJePhase1Corrections = [
+    { test_number: 1,  test_date: '3 Oct 2026',  syllabus: 'General Hindi (1-4)',                                     questions: 25 },
+    { test_number: 2,  test_date: '3 Oct 2026',  syllabus: 'General Science & Tech',                                  questions: 25 },
+    { test_number: 3,  test_date: '4 Oct 2026',  syllabus: 'Building Materials & Construction',                       questions: 50 },
+    { test_number: 4,  test_date: '4 Oct 2026',  syllabus: 'Irrigation: Intro, Rainfall & Water Req.',                questions: 50 },
+    { test_number: 5,  test_date: '10 Oct 2026', syllabus: 'General English (1-4)',                                   questions: 25 },
+    { test_number: 6,  test_date: '10 Oct 2026', syllabus: 'Environment & Ecology',                                   questions: 25 },
+    { test_number: 7,  test_date: '11 Oct 2026', syllabus: 'Strength of Materials (SOM)',                             questions: 50 },
+    { test_number: 8,  test_date: '11 Oct 2026', syllabus: 'Fluid Mechanics: Properties & Kinematics',                questions: 50 },
+    { test_number: 9,  test_date: '17 Oct 2026', syllabus: 'General Hindi (5-8)',                                     questions: 25 },
+    { test_number: 10, test_date: '17 Oct 2026', syllabus: 'Gen. Aptitude (Part 1)',                                  questions: 25 },
+    { test_number: 11, test_date: '18 Oct 2026', syllabus: 'Theory of Structures & Analysis',                        questions: 50 },
+    { test_number: 12, test_date: '18 Oct 2026', syllabus: 'Irrigation: Lift & Flow Irrigation',                     questions: 50 },
+    { test_number: 13, test_date: '24 Oct 2026', syllabus: 'General English (5-8)',                                   questions: 25 },
+    { test_number: 14, test_date: '24 Oct 2026', syllabus: 'Uttarakhand GK (Geography)',                              questions: 25 },
+    { test_number: 15, test_date: '25 Oct 2026', syllabus: 'RCC Design (Working Stress)',                             questions: 50 },
+    { test_number: 16, test_date: '25 Oct 2026', syllabus: 'Fluid Mechanics: Dynamics & Flow Measurement',            questions: 50 },
+    { test_number: 17, test_date: '31 Oct 2026', syllabus: 'General Hindi (1-4)',                                     questions: 25 },
+    { test_number: 18, test_date: '31 Oct 2026', syllabus: 'Uttarakhand GK (History)',                                questions: 25 },
+    { test_number: 19, test_date: '1 Nov 2026',  syllabus: 'RCC Design (Limit State & Prestressed)',                  questions: 50 },
+    { test_number: 20, test_date: '1 Nov 2026',  syllabus: 'Irrigation: Canal Head Works & Regulators',               questions: 50 },
+    { test_number: 21, test_date: '7 Nov 2026',  syllabus: 'General English (9-12)',                                  questions: 25 },
+    { test_number: 22, test_date: '7 Nov 2026',  syllabus: 'Disaster Management',                                     questions: 25 },
+    { test_number: 23, test_date: '8 Nov 2026',  syllabus: 'Steel & Machinery Structures',                            questions: 50 },
+    { test_number: 24, test_date: '8 Nov 2026',  syllabus: 'Fluid Mechanics: Flow through Pipes & Channels',          questions: 50 },
+    { test_number: 25, test_date: '14 Nov 2026', syllabus: 'General Hindi (Part 5-8)',                                questions: 25 },
+    { test_number: 26, test_date: '14 Nov 2026', syllabus: 'Gen. Aptitude (Part 2)',                                  questions: 25 },
+    { test_number: 27, test_date: '15 Nov 2026', syllabus: 'Soil Mechanics & Foundation Engg (P1)',                   questions: 50 },
+    { test_number: 28, test_date: '15 Nov 2026', syllabus: 'Irrigation: Cross Drainage & Dams',                      questions: 50 },
+    { test_number: 29, test_date: '21 Nov 2026', syllabus: 'General English (13-16)',                                 questions: 25 },
+    { test_number: 30, test_date: '21 Nov 2026', syllabus: 'Uttarakhand GK (Culture)',                                questions: 25 },
+    { test_number: 31, test_date: '22 Nov 2026', syllabus: 'Soil Mechanics & Foundation Engg (P2)',                   questions: 50 },
+    { test_number: 32, test_date: '22 Nov 2026', syllabus: 'Fluid Mechanics: Hydraulic Machines (Pumps/Turbines)',    questions: 50 },
+    { test_number: 33, test_date: '28 Nov 2026', syllabus: 'Mixed Non-Tech (P1)',                                     questions: 25 },
+    { test_number: 34, test_date: '28 Nov 2026', syllabus: 'Mixed Non-Tech (P2)',                                     questions: 25 },
+    { test_number: 35, test_date: '29 Nov 2026', syllabus: 'Mix Test: Civil Paper 1',                                 questions: 50 },
+    { test_number: 36, test_date: '29 Nov 2026', syllabus: 'Mix Test: Civil Paper 2',                                 questions: 50 },
+    { test_number: 37, test_date: '5 Dec 2026',  syllabus: 'General Hindi',                                           questions: 25 },
+    { test_number: 38, test_date: '5 Dec 2026',  syllabus: 'Gen. Science & Tech (Adv)',                               questions: 25 },
+    { test_number: 39, test_date: '6 Dec 2026',  syllabus: 'Surveying (Principles & Leveling)',                       questions: 50 },
+    { test_number: 40, test_date: '6 Dec 2026',  syllabus: 'Irrigation: Water Logging, Drainage & Salinity',          questions: 50 },
+    { test_number: 41, test_date: '12 Dec 2026', syllabus: 'General English',                                         questions: 25 },
+    { test_number: 42, test_date: '12 Dec 2026', syllabus: 'Environment & Ecology',                                   questions: 25 },
+    { test_number: 43, test_date: '13 Dec 2026', syllabus: 'Surveying (Theodolite, Contouring & Curves)',             questions: 50 },
+    { test_number: 44, test_date: '13 Dec 2026', syllabus: 'Irrigation: Flood Protection & River Training',           questions: 50 },
+    { test_number: 45, test_date: '19 Dec 2026', syllabus: 'General Hindi',                                           questions: 25 },
+    { test_number: 46, test_date: '19 Dec 2026', syllabus: 'Gen. Aptitude (Part 3)',                                  questions: 25 },
+    { test_number: 47, test_date: '20 Dec 2026', syllabus: 'Water Supply & Sanitation (Water Quality)',               questions: 50 },
+    { test_number: 48, test_date: '20 Dec 2026', syllabus: 'Irrigation: Management & Major Projects',                 questions: 50 },
+    { test_number: 49, test_date: '26 Dec 2026', syllabus: 'General English',                                         questions: 25 },
+    { test_number: 50, test_date: '26 Dec 2026', syllabus: 'Uttarakhand GK (Polity)',                                 questions: 25 },
+    { test_number: 51, test_date: '27 Dec 2026', syllabus: 'Water Supply & Sanitation (Sewerage)',                    questions: 50 },
+    { test_number: 52, test_date: '27 Dec 2026', syllabus: 'Fluid Mechanics: Advanced Topics Mix',                    questions: 50 },
+    { test_number: 53, test_date: '2 Jan 2027',  syllabus: 'General Hindi',                                           questions: 25 },
+    { test_number: 54, test_date: '2 Jan 2027',  syllabus: 'Uttarakhand GK (Economy)',                                questions: 25 },
+    { test_number: 55, test_date: '3 Jan 2027',  syllabus: 'Estimating & Costing',                                    questions: 50 },
+    { test_number: 56, test_date: '3 Jan 2027',  syllabus: 'Water Resources Engineering Mix-1',                       questions: 50 },
+    { test_number: 57, test_date: '9 Jan 2027',  syllabus: 'General English',                                         questions: 25 },
+    { test_number: 58, test_date: '9 Jan 2027',  syllabus: 'Disaster Management (Adv)',                               questions: 25 },
+    { test_number: 59, test_date: '10 Jan 2027', syllabus: 'Construction Management & Accounts',                      questions: 50 },
+    { test_number: 60, test_date: '10 Jan 2027', syllabus: 'Fluid Mechanics Mix-1',                                   questions: 50 },
+    { test_number: 61, test_date: '16 Jan 2027', syllabus: 'General Hindi',                                           questions: 25 },
+    { test_number: 62, test_date: '16 Jan 2027', syllabus: 'Full Gen. Studies Mock',                                  questions: 25 },
+    { test_number: 63, test_date: '17 Jan 2027', syllabus: 'Mix: BMC, SOM, RCC & Steel',                              questions: 50 },
+    { test_number: 64, test_date: '17 Jan 2027', syllabus: 'Water Resources Engineering Mix-2',                       questions: 50 },
+    { test_number: 65, test_date: '23 Jan 2027', syllabus: 'General English',                                         questions: 25 },
+    { test_number: 66, test_date: '23 Jan 2027', syllabus: 'Full Apti & UK GK Mock',                                  questions: 25 },
+    { test_number: 67, test_date: '24 Jan 2027', syllabus: 'Mix: Soil, Survey, Water Supply & Est.',                  questions: 50 },
+    { test_number: 68, test_date: '24 Jan 2027', syllabus: 'Fluid Mechanics & Machinery Mix-2',                       questions: 50 },
+    { test_number: 69, test_date: '30 Jan 2027', syllabus: 'Mixed Non-Tech (P2)',                                     questions: 25 },
+    { test_number: 70, test_date: '30 Jan 2027', syllabus: 'Mega Mix Non-Tech 2',                                     questions: 25 },
+    { test_number: 71, test_date: '31 Jan 2027', syllabus: 'Mega Mix Civil Paper 1',                                  questions: 50 },
+    { test_number: 72, test_date: '31 Jan 2027', syllabus: 'Mega Mix Civil Paper 2',                                  questions: 50 },
+  ];
+  for (const row of ukpscJePhase1Corrections) {
+    await query(
+      `UPDATE program_schedule SET test_date = $1, syllabus = $2, questions = $3
+       WHERE program_slug = 'ukpsc-je-2026-civil-omr' AND test_number = $4`,
+      [row.test_date, row.syllabus, row.questions, row.test_number]
+    );
+  }
+  console.log('✅ Fixed UKPSC JE Civil OMR Phase 1 schedule (correct question counts and syllabus names)');
+
   /* ── UKPSC AE - Jaspal Sir Ki Test Series - Civil (Printed OMR Offline)
      (2026-09-19): UKPSC AE (Assistant Engineer) launch - separate from JE.
      21-week subject-wise Phase 1 (105 tests, 3 Sat shifts x 25Q + 2 Sun
