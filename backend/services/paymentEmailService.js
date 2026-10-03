@@ -69,21 +69,24 @@ const NO_FULFILLMENT_SLUGS = new Set([
   // needed here, hasTallyForm now covers it.
 ]);
 
-/* ── ESE 2027 Prelims - 6 programs, matched by exact slug (config-driven) ── */
+/* ── ESE 2027 Prelims - 8 programs, matched by exact slug (config-driven) ── */
 const {
   ESE_PROGRAMS,
   TALLY_FORM_URL_PAPER1, TALLY_FORM_URL_PAPER2, TALLY_FORM_URL_COMBINED,
   TALLY_FORM_URL_PAPER1_OMR, TALLY_FORM_URL_PAPER2_OMR, TALLY_FORM_URL_COMBINED_OMR,
+  TALLY_FORM_URL_P1P2_OFFLINE, TALLY_FORM_URL_P1P2_OMR,
   WA_GROUP_OFFLINE: ESE_WA_GROUP_OFFLINE, WA_GROUP_OMR: ESE_WA_GROUP_OMR,
 } = require('../config/eseTestSeries');
 
 const ESE_TALLY_FORM_URLS = {
-  [ESE_PROGRAMS.paper1.slug]:      TALLY_FORM_URL_PAPER1,
-  [ESE_PROGRAMS.paper2.slug]:      TALLY_FORM_URL_PAPER2,
-  [ESE_PROGRAMS.combined.slug]:    TALLY_FORM_URL_COMBINED,
-  [ESE_PROGRAMS.paper1Omr.slug]:   TALLY_FORM_URL_PAPER1_OMR,
-  [ESE_PROGRAMS.paper2Omr.slug]:   TALLY_FORM_URL_PAPER2_OMR,
-  [ESE_PROGRAMS.combinedOmr.slug]: TALLY_FORM_URL_COMBINED_OMR,
+  [ESE_PROGRAMS.paper1.slug]:       TALLY_FORM_URL_PAPER1,
+  [ESE_PROGRAMS.paper2.slug]:       TALLY_FORM_URL_PAPER2,
+  [ESE_PROGRAMS.combined.slug]:     TALLY_FORM_URL_COMBINED,
+  [ESE_PROGRAMS.paper1Omr.slug]:    TALLY_FORM_URL_PAPER1_OMR,
+  [ESE_PROGRAMS.paper2Omr.slug]:    TALLY_FORM_URL_PAPER2_OMR,
+  [ESE_PROGRAMS.combinedOmr.slug]:  TALLY_FORM_URL_COMBINED_OMR,
+  [ESE_PROGRAMS.p1p2Offline.slug]:  TALLY_FORM_URL_P1P2_OFFLINE,
+  [ESE_PROGRAMS.p1p2Omr.slug]:      TALLY_FORM_URL_P1P2_OMR,
 };
 
 function esc(s) {
