@@ -25,7 +25,6 @@ const express = require('express');
 const router  = express.Router();
 const multer  = require('multer');
 const { PutObjectCommand, DeleteObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
-const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const { PDFDocument, StandardFonts, degrees, rgb } = require('pdf-lib');
 const { r2, BUCKET } = require('../config/r2');
 const { query } = require('../config/db');
@@ -253,13 +252,13 @@ router.get('/:program_slug/materials/:id/view', protectLearner, async (req, res,
     });
     const watermarked = await pdfDoc.save();
 
-    const tmpKey = `tmp-wm/mat-${learner.id}-${req.params.id}-${Date.now()}.pdf`;
-    await r2.send(new PutObjectCommand({
-      Bucket: BUCKET, Key: tmpKey,
-      Body: Buffer.from(watermarked), ContentType: 'application/pdf',
-    }));
-    const presignedUrl = await getSignedUrl(r2, new GetObjectCommand({ Bucket: BUCKET, Key: tmpKey }), { expiresIn: 300 });
-    res.redirect(302, presignedUrl);
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': 'inline; filename="material.pdf"',
+      'Cache-Control': 'no-store, private',
+      'Content-Length': watermarked.length,
+    });
+    res.send(Buffer.from(watermarked));
   } catch (err) { next(err); }
 });
 
