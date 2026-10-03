@@ -169,6 +169,46 @@ app.get('/api/test-gmail', protect, async (req, res) => {
   }
 });
 
+/* ── One-time: resend correct welcome email to ESE P1P2 paid users ──
+   POST /api/resend-ese-p1p2-emails  -  Authorization: Bearer <admin JWT>
+   These users got the wrong RSSB JE form link. Remove once run.   */
+app.post('/api/resend-ese-p1p2-emails', protect, async (req, res) => {
+  const { query } = require('./config/db');
+  const { sendWelcomePaymentEmail } = require('./services/paymentEmailService');
+  const TARGET_SLUGS = [
+    'ese-2027-prelims-jaspalsirki-testseries-p1p2-offline',
+    'ese-2027-prelims-jaspalsirki-testseries-p1p2-omr',
+  ];
+  try {
+    const result = await query(
+      `SELECT e.id, e.order_id, e.student_name, e.student_email, e.student_phone,
+              e.amount, e.coupon_code, e.paid_at, e.form_token,
+              p.slug AS program_slug, p.name AS program_name
+       FROM enrollments e
+       JOIN programs p ON p.id = e.program_id
+       WHERE p.slug = ANY($1)
+         AND e.payment_status = 'paid'
+         AND e.is_refund IS NOT TRUE
+       ORDER BY e.paid_at ASC`,
+      [TARGET_SLUGS]
+    );
+    const rows = result.rows;
+    const sent = [], failed = [];
+    for (const row of rows) {
+      try {
+        await sendWelcomePaymentEmail(row);
+        sent.push({ email: row.student_email, slug: row.program_slug, order: row.order_id });
+      } catch (err) {
+        failed.push({ email: row.student_email, order: row.order_id, error: err.message });
+      }
+      await new Promise(r => setTimeout(r, 400));
+    }
+    res.json({ total: rows.length, sent: sent.length, failed: failed.length, sentList: sent, failedList: failed });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 /* ── One-time backfill: admin payment notifications (admin only) ──
    GET /api/backfill-notifications  -  Authorization: Bearer <admin JWT>
    Remove this route once no longer needed.                        */
