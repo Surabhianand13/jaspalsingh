@@ -2040,6 +2040,17 @@ async function migrate() {
        is_active = TRUE, label = EXCLUDED.label, expires_at = EXCLUDED.expires_at, updated_at = NOW()`
   );
 
+  /* ── AWF coupon (2026-10-06): 10% off all programs, exclusive (blocks
+     referral code). No expiry, no usage cap. ── */
+  await query(
+    `INSERT INTO coupons (code, type, discount_amount, program_prices, program_slugs, max_uses, exclusive, is_active, label, expires_at)
+     VALUES ('AWF', 'percent_discount', 10, NULL, NULL, NULL, TRUE, TRUE, 'AWF - 10% Off', NULL)
+     ON CONFLICT (code) DO UPDATE SET
+       type = EXCLUDED.type, discount_amount = EXCLUDED.discount_amount, program_prices = EXCLUDED.program_prices,
+       program_slugs = EXCLUDED.program_slugs, max_uses = EXCLUDED.max_uses, exclusive = EXCLUDED.exclusive,
+       is_active = TRUE, label = EXCLUDED.label, expires_at = EXCLUDED.expires_at, updated_at = NOW()`
+  );
+
   /* ── Seed second admin user from env var (never hardcode passwords) ── */
   {
     const bcrypt = require('bcryptjs');
