@@ -494,6 +494,23 @@
       },
     };
 
+    // Turnstile callbacks must be on window BEFORE Turnstile fires (it fires
+    // within seconds, before the async IIFE resumes from the backend fetch).
+    window.onTurnstileSuccess = function() {
+      var btn = document.getElementById('payBtn');
+      if (btn && btn.dataset.awaitingToken) {
+        btn.disabled = false;
+        delete btn.dataset.awaitingToken;
+      }
+    };
+    window.onTurnstileError = function() {
+      var btn = document.getElementById('payBtn');
+      if (btn && btn.dataset.awaitingToken) {
+        btn.disabled = false;
+        delete btn.dataset.awaitingToken;
+      }
+    };
+
     /* Everything below is wrapped in an async IIFE so we can fetch the live
        program catalogue before rendering - DB values (admin edits) win per
        slug, FALLBACK_PROGRAMS covers anything missing (API hiccup, or a
@@ -960,22 +977,7 @@
     }
 
     // Turnstile tokens are single-use - reset the widget so a retry gets a fresh one.
-    window.onTurnstileSuccess = function() {
-      // Fresh token available - re-enable Pay if it was held waiting for a new token.
-      var btn = document.getElementById('payBtn');
-      if (btn && btn.dataset.awaitingToken) {
-        btn.disabled = false;
-        delete btn.dataset.awaitingToken;
-      }
-    };
-    window.onTurnstileError = function() {
-      // Widget failed - keep Pay enabled so the user isn't stuck forever.
-      var btn = document.getElementById('payBtn');
-      if (btn && btn.dataset.awaitingToken) {
-        btn.disabled = false;
-        delete btn.dataset.awaitingToken;
-      }
-    };
+
     function resetTurnstile() {
       if (typeof turnstile !== 'undefined') {
         // Disable Pay while the widget re-solves to prevent stale-token reuse.
