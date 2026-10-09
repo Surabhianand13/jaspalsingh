@@ -20,7 +20,7 @@ const bcrypt  = require('bcryptjs');
 const jwt     = require('jsonwebtoken');
 const { query } = require('../config/db');
 const { sendWelcomeEmail, sendNewLearnerAlert, sendOtpEmail } = require('../services/emailService');
-const { isObviousTestSubmission } = require('../utils/spamFilter');
+const { isObviousTestSubmission, isReservedTestEmail } = require('../utils/spamFilter');
 
 const SALT_ROUNDS = 12;
 const TOKEN_TTL   = '30d'; // Learners stay logged in for 30 days
@@ -81,6 +81,13 @@ const register = async (req, res, next) => {
     }
 
     const norm = email.toLowerCase().trim();
+
+    // Reserved test domains (example.com, *.test, ...) can't receive mail, so
+    // they're never a real learner - block them on every signup path.
+    if (isReservedTestEmail(norm)) {
+      console.warn(`[register] Blocked reserved test domain: ${norm}`);
+      return res.status(400).json({ error: 'Please enter your real email address.' });
+    }
 
     // OTP is required for profile signup. Checkout flow skips OTP because
     // Cashfree payment itself verifies the user and account setup happens
