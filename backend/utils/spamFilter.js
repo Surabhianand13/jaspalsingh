@@ -21,6 +21,14 @@ function isJunkEmail(email) {
   return JUNK_EMAIL_RE.test((email || '').trim());
 }
 
+/* RFC 2606 / 6761 reserved domains - these can never receive mail, so no
+   genuine learner can ever sign up with one. Safe to hard-block. */
+const RESERVED_DOMAIN_RE = /@([a-z0-9-]+\.)*(example\.(com|net|org)|[a-z0-9-]+\.(test|example|invalid|localhost))$/i;
+
+function isReservedTestEmail(email) {
+  return RESERVED_DOMAIN_RE.test((email || '').trim());
+}
+
 function isJunkName(name) {
   return JUNK_NAME_RE.test((name || '').trim());
 }
@@ -33,4 +41,4 @@ function isObviousTestSubmission({ name, email, phone }) {
   return hits >= 2;
 }
 
-module.exports = { isObviousTestSubmission, isJunkPhone, isJunkEmail, isJunkName };
+module.exports = { isObviousTestSubmission, isReservedTestEmail, isJunkPhone, isJunkEmail, isJunkName };
