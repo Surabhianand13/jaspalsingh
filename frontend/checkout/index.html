@@ -297,7 +297,7 @@
             <label for="inp-tnc">I have read and agree to the <a href="/terms/" target="_blank" class="tnc-link">Terms &amp; Conditions</a>, including the media consent, identity verification requirements, and access revocation policy. <span style="color:#C81240;">*</span></label>
           </div>
 
-          <div class="cf-turnstile" data-sitekey="0x4AAAAAADwBsHyyE7gWH-Oj" data-theme="light" style="margin-bottom:14px;"></div>
+          <div class="cf-turnstile" data-sitekey="0x4AAAAAADwBsHyyE7gWH-Oj" data-theme="light" data-callback="onTurnstileSuccess" data-expired-callback="onTurnstileExpired" style="margin-bottom:14px;"></div>
 
           <div id="formError" class="co-error"></div>
 
@@ -478,6 +478,19 @@
         color: 'linear-gradient(145deg,#6D28D9,#7C3AED)',
         thumb: '/assets/images/thumb-up-polytechnic-lecturer.jpg'
       },
+    };
+
+    // Global callbacks required by Turnstile data-callback (must be on window scope)
+    window.onTurnstileSuccess = function() {
+      var btn = document.getElementById('payBtn');
+      if (btn && btn.dataset.awaitingToken) {
+        btn.disabled = false;
+        delete btn.dataset.awaitingToken;
+      }
+    };
+    window.onTurnstileExpired = function() {
+      var btn = document.getElementById('payBtn');
+      if (btn) { btn.disabled = true; btn.dataset.awaitingToken = '1'; }
     };
 
     /* Everything below is wrapped in an async IIFE so we can fetch the live
@@ -939,7 +952,11 @@
 
     // Turnstile tokens are single-use - reset the widget so a retry gets a fresh one.
     function resetTurnstile() {
-      if (typeof turnstile !== 'undefined') turnstile.reset();
+      if (typeof turnstile !== 'undefined') {
+        var btn = document.getElementById('payBtn');
+        if (btn) { btn.disabled = true; btn.dataset.awaitingToken = '1'; }
+        turnstile.reset();
+      }
     }
 
     })(); // end async IIFE
