@@ -276,8 +276,13 @@ app.use((req, res) => {
 
 app.use((err, req, res, next) => {
   console.error('[ERROR]', err.stack);
+
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(413).json({ error: 'File too large. Maximum allowed size is 100 MB.' });
+  }
+
   const status  = err.status || 500;
-  const message = process.env.NODE_ENV === 'production'
+  const message = (process.env.NODE_ENV === 'production' && !req.admin)
     ? 'Something went wrong. Please try again.'
     : err.message;
   res.status(status).json({ error: message });

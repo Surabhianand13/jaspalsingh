@@ -14,7 +14,7 @@ const { query }      = require('../config/db');
 const { protect }    = require('../middleware/auth');
 const { protectLearner } = require('../middleware/learnerAuth');
 
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
 
 /* ── POST /api/free-resources  (admin upload) ── */
 router.post('/', protect, upload.single('pdf'), async (req, res, next) => {
@@ -23,7 +23,10 @@ router.post('/', protect, upload.single('pdf'), async (req, res, next) => {
     const { title, description, gating_type } = req.body;
     if (!title) return res.status(400).json({ error: 'Title is required.' });
 
-    const key = `resources/${Date.now()}-${req.file.originalname.replace(/\s+/g, '-')}`;
+    const safeName = req.file.originalname
+      .replace(/\s+/g, '-')
+      .replace(/[^a-zA-Z0-9._\-]/g, '_');
+    const key = `resources/${Date.now()}-${safeName}`;
 
     await r2.send(new PutObjectCommand({
       Bucket:      BUCKET,
