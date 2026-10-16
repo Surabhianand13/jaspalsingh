@@ -1826,6 +1826,7 @@ async function migrate() {
           seatCap: 100,
           educators: shauryaPracticeBatchEducators,
           questionCount: '10,000+',
+          materialTracks: isDegree ? ['practice-degree'] : ['practice-diploma'],
         },
       }), p.slug]
     );
