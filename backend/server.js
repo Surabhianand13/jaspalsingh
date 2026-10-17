@@ -2826,6 +2826,42 @@ async function migrate() {
     }
   }
 
+  /* ── शौर्य Printed OMR Offline Test Series (Degree/Diploma) schedules
+     (2026-10-17): the admin had entered tests up to 11 Oct only (Diploma
+     also has no test 6 / 4 Oct). Add the rest of the schedule published on
+     each program page - Degree 24 tests to 7 Feb 2027, Diploma 22 tests to
+     24 Jan 2027, 120 Qs / 120 marks. Only test numbers that don't exist
+     yet are added, so the admin's own entries (whose topic wording differs
+     a little from the page) are untouched. Runs ONCE (site_settings marker).
+     The शौर्य Offline Practice Batch Course has no test series at all, so
+     nothing is seeded for it. */
+  {
+    const marker = await query(`SELECT 1 FROM site_settings WHERE key = 'seed_shaurya_omr_schedule_v1'`);
+    if (!marker.rows.length) {
+      // [test_number, test_date, syllabus, questions] - copied from the program pages
+      const shauryaOmrSchedules = {"shaurya-omr-rssb-je-2026-degree": [[1, "30 Aug 2026", "Rajasthan Geography-I + Building Technology & Construction Management", 120], [2, "6 Sep 2026", "Rajasthan History I + Fluid Mechanics", 120], [3, "13 Sep 2026", "Rajasthan Art & Culture-I + Surveying, Estimating Costing & Field Engineering", 120], [4, "20 Sep 2026", "Rajasthan Political & Administrative System-I + Irrigation & Water Resources", 120], [5, "27 Sep 2026", "Rajasthan Geography-II + Strength of Materials & Structural Analysis", 120], [6, "4 Oct 2026", "Rajasthan History II + RCC & Steel", 120], [7, "11 Oct 2026", "Rajasthan Art & Culture-II + Soil Mechanics & Foundation Engineering", 120], [8, "18 Oct 2026", "Rajasthan Political & Administrative System-II + Construction Technology & AutoCAD", 120], [9, "25 Oct 2026", "Rajasthan GK Mixed Revision + Public Health Engineering + Highway & Bridges", 120], [10, "1 Nov 2026", "Full Length Test - 01", 120], [11, "8 Nov 2026", "Full Length Test - 02", 120], [12, "15 Nov 2026", "Full Length Test - 03", 120], [13, "22 Nov 2026", "Full Length Test - 04", 120], [14, "29 Nov 2026", "Full Length Test - 05", 120], [15, "6 Dec 2026", "Full Length Test - 06", 120], [16, "13 Dec 2026", "Full Length Test - 07", 120], [17, "20 Dec 2026", "Full Length Test - 08", 120], [18, "27 Dec 2026", "Full Length Test - 09", 120], [19, "3 Jan 2027", "Full Length Test - 10", 120], [20, "10 Jan 2027", "Full Length Test - 11", 120], [21, "17 Jan 2027", "Full Length Test - 12", 120], [22, "24 Jan 2027", "Full Length Test - 13", 120], [23, "31 Jan 2027", "Full Length Test - 14", 120], [24, "7 Feb 2027", "Full Length Test - 15", 120]], "shaurya-omr-rssb-je-2026-diploma": [[1, "30 Aug 2026", "राजस्थान का भूगोल + Building Technology & Construction Management", 120], [2, "6 Sep 2026", "राजस्थान का इतिहास + Surveying, Estimating & Costing", 120], [3, "13 Sep 2026", "राजस्थान की कला एवं संस्कृति + Strength of Materials", 120], [4, "20 Sep 2026", "राजस्थान की राजनीतिक एवं प्रशासनिक व्यवस्था + Reinforced Concrete Design", 120], [5, "27 Sep 2026", "Rajasthan GK Mixed Revision-I + Irrigation & Water Resources", 120], [6, "4 Oct 2026", "Rajasthan GK Mixed Revision-II + Soil Engineering", 120], [7, "11 Oct 2026", "Rajasthan GK Mixed Revision-III + AutoCAD Civil Engineering Drawing", 120], [8, "18 Oct 2026", "Full Length Test - 01", 120], [9, "25 Oct 2026", "Full Length Test - 02", 120], [10, "1 Nov 2026", "Full Length Test - 03", 120], [11, "8 Nov 2026", "Full Length Test - 04", 120], [12, "15 Nov 2026", "Full Length Test - 05", 120], [13, "22 Nov 2026", "Full Length Test - 06", 120], [14, "29 Nov 2026", "Full Length Test - 07", 120], [15, "6 Dec 2026", "Full Length Test - 08", 120], [16, "13 Dec 2026", "Full Length Test - 09", 120], [17, "20 Dec 2026", "Full Length Test - 10", 120], [18, "27 Dec 2026", "Full Length Test - 11", 120], [19, "3 Jan 2027", "Full Length Test - 12", 120], [20, "10 Jan 2027", "Full Length Test - 13", 120], [21, "17 Jan 2027", "Full Length Test - 14", 120], [22, "24 Jan 2027", "Full Length Test - 15", 120]]};
+      let added = 0;
+      for (const [slug, rows] of Object.entries(shauryaOmrSchedules)) {
+        for (const [n, date, syllabus, qs] of rows) {
+          const res = await query(
+            `INSERT INTO program_schedule (program_slug, test_number, test_date, syllabus, questions, marks, sort_order, category)
+             SELECT $1::varchar, $2::int, $3::varchar, $4::text, $5::int, $5::int, $6::int, NULL
+             WHERE NOT EXISTS (
+               SELECT 1 FROM program_schedule WHERE program_slug = $1::varchar AND test_number = $2::int AND category IS NULL
+             )`,
+            [slug, n, date, syllabus, qs, n - 1]
+          );
+          added += res.rowCount;
+        }
+      }
+      await query(
+        `INSERT INTO site_settings (key, value, updated_by) VALUES ('seed_shaurya_omr_schedule_v1', $1, 'migrate') ON CONFLICT (key) DO NOTHING`,
+        [JSON.stringify({ added, at: new Date().toISOString() })]
+      );
+      console.log(`✅ शौर्य Printed OMR schedules: added ${added} missing test rows (existing tests untouched)`);
+    }
+  }
+
   // Seed RSSB JE blog posts (idempotent - ON CONFLICT (slug) DO NOTHING)
   const rssbJePosts = require('./seeds/blogPostsRssbJe');
   for (const post of rssbJePosts) {
