@@ -124,16 +124,38 @@
     if (overlay) overlay.style.display = 'none';
   }
 
-  function openScheduleModal(slug, name) {
+  function showModalFor(slug, name) {
     ensureScheduleModal();
     scheduleState.slug = slug; scheduleState.name = name; scheduleState.category = null; scheduleState.materials = [];
     document.getElementById('scheduleModalHeading').textContent = name;
     document.getElementById('scheduleModalOverlay').style.display = 'flex';
-    loadScheduleForCategory(null);
-    // Fetched separately (empty array for every non-शौर्य-Batch program) so
-    // it never blocks or breaks the existing test-schedule flow while
-    // waiting on it - the "Study Materials" button just doesn't appear
-    // until this resolves for programs that have any.
+  }
+
+  /* Dashboard entry point: jump straight to one test's detail (upload /
+     result) instead of making the learner find it in the list again. */
+  function openTest(slug, name, category, testId) {
+    showModalFor(slug, name);
+    loadScheduleForCategory(category || null, function () {
+      var test = scheduleState.tests.filter(function (t) { return String(t.id) === String(testId); })[0];
+      if (!test) { renderScheduleList(); return; }
+      renderScheduleDetail(test);
+      if (test.result) renderResultArea(test);
+    });
+    loadMaterials(slug);
+  }
+
+  function openMaterials(slug, name) {
+    showModalFor(slug, name);
+    document.getElementById('scheduleModalBody').innerHTML = '<p class="profile-empty">Loading study materials…</p>';
+    authFetch('/api/schedule/' + encodeURIComponent(slug) + '/materials').then(function (data) {
+      scheduleState.materials = data.materials || [];
+      renderMaterialsList();
+    }).catch(function (err) {
+      document.getElementById('scheduleModalBody').innerHTML = '<p class="profile-empty">' + esc(err.message || 'Could not load study materials.') + '</p>';
+    });
+  }
+
+  function loadMaterials(slug) {
     authFetch('/api/schedule/' + encodeURIComponent(slug) + '/materials').then(function (data) {
       scheduleState.materials = data.materials || [];
       var btn = document.getElementById('scheduleMaterialsBtn');
@@ -141,7 +163,17 @@
     }).catch(function () { /* silently no-op - materials are additive, not required */ });
   }
 
-  function loadScheduleForCategory(category) {
+  function openScheduleModal(slug, name) {
+    showModalFor(slug, name);
+    loadScheduleForCategory(null);
+    // Fetched separately (empty array for every non-शौर्य-Batch program) so
+    // it never blocks or breaks the existing test-schedule flow while
+    // waiting on it - the "Study Materials" button just doesn't appear
+    // until this resolves for programs that have any.
+    loadMaterials(slug);
+  }
+
+  function loadScheduleForCategory(category, afterLoad) {
     var bodyEl = document.getElementById('scheduleModalBody');
     bodyEl.innerHTML = '<p class="profile-empty">Loading schedule…</p>';
     var path = '/api/schedule/' + encodeURIComponent(scheduleState.slug) + (category ? '?category=' + encodeURIComponent(category) : '');
@@ -149,7 +181,9 @@
       scheduleState.categories = data.categories || [];
       scheduleState.tests = data.tests || [];
       scheduleState.category = category;
-      if (scheduleState.categories.length && !category) {
+      if (afterLoad) {
+        afterLoad();
+      } else if (scheduleState.categories.length && !category) {
         renderTrackPicker();
       } else {
         renderScheduleList();
@@ -204,6 +238,7 @@
     bodyEl.innerHTML = '<button id="scheduleBackBtn" style="background:none;border:none;color:#0F766E;font-weight:700;cursor:pointer;margin-bottom:14px;">&larr; Back to schedule</button>' +
       (sections || '<p class="profile-empty">No study materials uploaded yet - check back soon.</p>');
     document.getElementById('scheduleBackBtn').addEventListener('click', function () {
+      if (!scheduleState.tests.length && !scheduleState.categories.length) { loadScheduleForCategory(null); return; }
       scheduleState.categories.length && !scheduleState.category ? renderTrackPicker() : renderScheduleList();
     });
     bodyEl.querySelectorAll('[data-view-material]').forEach(function (btn) {
@@ -299,11 +334,11 @@
       : tests.map(function (t) {
         return '<div style="display:flex;align-items:center;justify-content:space-between;border:1px solid #eee;border-radius:10px;padding:12px 16px;margin-bottom:10px;">' +
           '<div>' +
-            '<div style="font-weight:700;color:#1A1A2E;">' + esc(t.test_date || ('Test ' + t.test_number)) + '</div>' +
-            '<div style="font-size:12.5px;color:#6b6b8a;">Test no: ' + t.test_number + (t.syllabus ? ' &middot; ' + esc(t.syllabus) : '') +
-              (t.questions ? ' &middot; ' + t.questions + ' Qs' : '') + (t.marks ? ' &middot; ' + t.marks + ' marks' : '') + (t.duration_minutes ? ' &middot; ' + t.duration_minutes + ' min' : '') + '</div>' +
+            '<div style="font-weight:700;color:#1A1A2E;">Test ' + t.test_number + (t.test_date ? ' &middot; ' + esc(t.test_date) : '') + '</div>' +
+            '<div style="font-size:12.5px;color:#6b6b8a;">' + [t.syllabus ? esc(t.syllabus) : '', t.questions ? t.questions + ' Qs' : '', t.marks ? t.marks + ' marks' : '', t.duration_minutes ? t.duration_minutes + ' min' : ''].filter(Boolean).join(' &middot; ') + '</div>' +
+            statusChipHtml(t) +
           '</div>' +
-          '<button class="btn" data-schedule-view="' + t.id + '" style="background:#0F766E;color:#fff;border:none;border-radius:20px;padding:8px 18px;font-size:12.5px;font-weight:700;cursor:pointer;">Next &rarr;</button>' +
+          '<button class="btn" data-schedule-view="' + t.id + '" style="background:#0F766E;color:#fff;border:none;border-radius:20px;padding:8px 18px;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;">Open &rarr;</button>' +
         '</div>';
       }).join(''));
     var trackSwitchBtn = document.getElementById('scheduleTrackSwitch');
@@ -315,6 +350,16 @@
         renderScheduleDetail(test);
       });
     });
+  }
+
+  function statusChipHtml(t) {
+    if (!window.LearnerDashboard) return '';
+    var st = window.LearnerDashboard.testStatus(t);
+    return '<div style="margin-top:6px;"><span class="ld-chip ld-chip--' + st.tone + '"><i class="fas ' + st.icon + '"></i> ' + esc(st.label) + '</span></div>';
+  }
+
+  function fmtWhen(iso) {
+    return iso ? new Date(iso).toLocaleString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Kolkata' }) : '';
   }
 
   function scheduleCard(label, iconClass, enabled, onClick) {
@@ -331,7 +376,15 @@
     var bodyEl = document.getElementById('scheduleModalBody');
     bodyEl.innerHTML = '<button id="scheduleBackBtn" style="background:none;border:none;color:#0F766E;font-weight:700;cursor:pointer;margin-bottom:14px;">&larr; Back to schedule</button>' +
       '<div style="font-weight:700;color:#1A1A2E;margin-bottom:2px;">Test ' + test.test_number + (test.test_date ? ' &middot; ' + esc(test.test_date) : '') + '</div>' +
-      '<div style="font-size:12.5px;color:#6b6b8a;margin-bottom:14px;">' + [test.questions ? test.questions + ' questions' : '', test.marks ? test.marks + ' marks' : '', test.duration_minutes ? test.duration_minutes + ' minutes' : ''].filter(Boolean).join(' &middot; ') + '</div>' +
+      '<div style="font-size:12.5px;color:#6b6b8a;margin-bottom:6px;">' + [test.questions ? test.questions + ' questions' : '', test.marks ? test.marks + ' marks' : '', test.duration_minutes ? test.duration_minutes + ' minutes' : ''].filter(Boolean).join(' &middot; ') + '</div>' +
+      (test.requires_omr_upload && (test.paper_release_at || test.omr_upload_deadline)
+        ? '<div style="font-size:12.5px;color:#374151;margin-bottom:6px;">' +
+            (test.paper_release_at ? '<i class="fas fa-unlock" style="color:#0F766E;"></i> Paper unlocks ' + esc(fmtWhen(test.paper_release_at)) : '') +
+            (test.paper_release_at && test.omr_upload_deadline ? ' &nbsp;&middot;&nbsp; ' : '') +
+            (test.omr_upload_deadline ? '<i class="fas fa-hourglass-end" style="color:#C81240;"></i> Upload by ' + esc(fmtWhen(test.omr_upload_deadline)) : '') +
+          '</div>'
+        : '') +
+      '<div style="margin-bottom:14px;">' + statusChipHtml(test) + '</div>' +
       '<div id="scheduleCardsGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"></div>' +
       '<div id="scheduleOmrUploadArea" style="margin-top:16px;"></div>' +
       '<div id="scheduleResultArea" style="margin-top:16px;"></div>';
@@ -397,7 +450,8 @@
       return;
     }
     area.innerHTML = alreadySubmittedNote +
-      '<label style="font-weight:700;font-size:13px;color:#1A1A2E;display:block;margin-bottom:8px;">' + (test.my_upload ? 'Re-upload your answer sheet' : 'Upload your answer sheet (photo or PDF)') + '</label>' +
+      '<label style="font-weight:700;font-size:13px;color:#1A1A2E;display:block;margin-bottom:4px;">' + (test.my_upload ? 'Re-upload your answer sheet' : 'Upload your answer sheet (photo or PDF)') + '</label>' +
+      '<p style="font-size:12px;color:#6b6b8a;margin:0 0 10px;">Lay the OMR sheet flat in good light and capture all four corners. Max 20 MB.' + (test.omr_upload_deadline ? ' Deadline: <strong>' + esc(fmtWhen(test.omr_upload_deadline)) + '</strong>.' : '') + '</p>' +
       '<input type="file" id="scheduleOmrFile" accept="image/*,application/pdf" style="display:block;margin-bottom:10px;">' +
       '<button id="scheduleOmrSubmit" style="background:#C81240;color:#fff;border:none;border-radius:20px;padding:9px 20px;font-size:12.5px;font-weight:700;cursor:pointer;">Submit</button>' +
       '<div id="scheduleOmrMsg" style="margin-top:8px;font-size:12.5px;"></div>';
@@ -411,13 +465,15 @@
       msgEl.textContent = 'Uploading…'; msgEl.style.color = '#6b6b8a';
       authFetch('/api/schedule/' + encodeURIComponent(scheduleState.slug) + '/tests/' + test.id + '/submit-omr', { method: 'POST', body: fd })
         .then(function () {
-          msgEl.textContent = 'Submitted!'; msgEl.style.color = '#0F766E';
+          msgEl.textContent = 'Submitted! We have received your answer sheet.'; msgEl.style.color = '#0F766E';
           document.getElementById('scheduleOmrSubmit').disabled = true;
+          // Lets the dashboard behind the modal refresh its status chips.
+          try { window.dispatchEvent(new CustomEvent('learner:upload-done')); } catch (e) { /* old browsers */ }
         })
         .catch(function (err) { msgEl.textContent = err.message || 'Upload failed.'; msgEl.style.color = '#C81240'; });
     });
   }
 
-  window.ScheduleModal = { open: openScheduleModal };
+  window.ScheduleModal = { open: openScheduleModal, openTest: openTest, openMaterials: openMaterials };
 
 })();

@@ -10,6 +10,7 @@ const jwt      = require('jsonwebtoken');
 const { query } = require('../config/db');
 const { protectLearner } = require('../middleware/learnerAuth');
 const { canonicalize, slugsFor } = require('../utils/programSlugAliases');
+const { resolveFulfillment } = require('../services/paymentEmailService');
 
 /* ── Program slug → clean display label (admin UI only) ──
    The stored program_name text is identical for Offline Degree and
@@ -199,17 +200,19 @@ router.get('/my-enrollments', protectLearner, async (req, res) => {
     );
 
     const result = await query(
-      `SELECT order_id, program_slug, program_name, amount, status, paid_at, coupon_code, roll_number,
-              admit_card_status,
-              CASE WHEN admit_card_status = 'approved' THEN admit_card_pdf_url END AS admit_card_pdf_url,
-              CASE WHEN admit_card_status = 'rejected' THEN admit_card_rejection_reason END AS admit_card_rejection_reason
-       FROM enrollments
-       WHERE status = 'paid'
-         AND refund_status != 'initiated'
-         AND (learner_id = $1
-              OR LOWER(TRIM(student_email)) = LOWER(TRIM($2))
-              OR RIGHT(REGEXP_REPLACE(student_phone, '\\D', '', 'g'), 10) = $3)
-       ORDER BY paid_at DESC`,
+      `SELECT e.order_id, e.program_slug, e.program_name, e.amount, e.status, e.paid_at, e.coupon_code, e.roll_number,
+              e.admit_card_status, e.form_used, e.form_token, e.student_name, e.student_email, e.student_phone,
+              CASE WHEN e.admit_card_status = 'approved' THEN e.admit_card_pdf_url END AS admit_card_pdf_url,
+              CASE WHEN e.admit_card_status = 'rejected' THEN e.admit_card_rejection_reason END AS admit_card_rejection_reason,
+              p.category AS program_category
+       FROM enrollments e
+       LEFT JOIN programs p ON p.slug = e.program_slug
+       WHERE e.status = 'paid'
+         AND e.refund_status != 'initiated'
+         AND (e.learner_id = $1
+              OR LOWER(TRIM(e.student_email)) = LOWER(TRIM($2))
+              OR RIGHT(REGEXP_REPLACE(e.student_phone, '\\D', '', 'g'), 10) = $3)
+       ORDER BY e.paid_at DESC`,
       [learner.id, learner.email, learner.phone]
     );
 
@@ -217,7 +220,32 @@ router.get('/my-enrollments', protectLearner, async (req, res) => {
     // current programs/program_schedule slug convention - canonical_slug
     // is what every new link (Schedule, View Program) should be built
     // from, so the frontend never has to special-case old enrollments.
-    const enrollments = result.rows.map(row => ({ ...row, canonical_slug: canonicalize(row.program_slug) }));
+    //
+    // admit_form_url / wa_groups power the dashboard's "what to do next"
+    // steps: the same Tally form and WhatsApp group(s) the welcome email
+    // links to (resolveFulfillment), so a learner who lost that email can
+    // still find them. The form link is only exposed while it's actually
+    // the next step (not yet submitted, no card issued) - form_token and
+    // the raw contact fields never leave this handler on their own.
+    const enrollments = await Promise.all(result.rows.map(async (row) => {
+      const { form_token, student_name, student_email, student_phone, form_used, ...pub } = row;
+      let fulfillment = { formUrl: null, needsManualFulfillment: false, waGroups: [] };
+      try {
+        fulfillment = await resolveFulfillment(row);
+      } catch (err) {
+        console.error('[my-enrollments] resolveFulfillment failed for', row.order_id, err.message);
+      }
+      const formIsNextStep = !form_used && !row.roll_number && (row.admit_card_status || 'none') === 'none'
+        && !fulfillment.needsManualFulfillment && row.program_category !== 'interview';
+      return {
+        ...pub,
+        canonical_slug: canonicalize(row.program_slug),
+        form_submitted: !!form_used,
+        admit_form_url: formIsNextStep ? fulfillment.formUrl : null,
+        manual_followup: !!fulfillment.needsManualFulfillment,
+        wa_groups: fulfillment.waGroups || [],
+      };
+    }));
 
     res.json({ enrollments });
   } catch (err) {

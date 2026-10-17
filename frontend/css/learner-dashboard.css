@@ -1,0 +1,172 @@
+/* ============================================================
+   learner-dashboard.css  -  Paid learner dashboard (/profile, /my-programs)
+   Pairs with js/learner-dashboard.js. Brand: magenta #C81240,
+   teal #0F766E, navy #1A1A2E.
+   ============================================================ */
+
+.ld-head h2 {
+  font-family: var(--font-heading, 'Plus Jakarta Sans', sans-serif);
+  font-size: 20px; font-weight: 800; color: #1A1A2E;
+  display: flex; align-items: center; gap: 10px; margin: 0 0 14px;
+}
+.ld-head h2 i { color: #C81240; }
+
+.ld-loading { display: flex; flex-direction: column; gap: 10px; }
+
+/* ── Action needed ── */
+.ld-action {
+  background: #FFF7ED; border: 1px solid #FED7AA; border-radius: 16px;
+  padding: 16px 18px; margin-bottom: 20px;
+}
+.ld-action-head { font-weight: 800; color: #C2410C; font-size: 14px; margin-bottom: 8px; display: flex; gap: 8px; align-items: center; }
+.ld-action ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.ld-action li a {
+  display: flex; align-items: center; gap: 12px; text-decoration: none; color: #1A1A2E;
+  background: #fff; border: 1px solid #FDE3C8; border-radius: 12px; padding: 11px 14px;
+  font-size: 14px; font-weight: 600; transition: border-color .15s, transform .15s;
+}
+.ld-action li a:hover { border-color: #F97316; transform: translateX(2px); }
+.ld-action li a > i:first-child { color: #EA580C; width: 18px; text-align: center; }
+.ld-action li span { flex: 1; min-width: 0; }
+.ld-action li small { display: block; font-size: 12px; color: #9a6b4b; font-weight: 500; margin-top: 2px; }
+.ld-action-go { color: #FDBA74; font-size: 12px; }
+.ld-action--clear {
+  background: #F0FDF4; border-color: #BBF7D0; color: #166534; font-weight: 700; font-size: 14px;
+  display: flex; align-items: center; gap: 10px;
+}
+
+/* ── Program card ── */
+.ld-program {
+  background: #fff; border: 1px solid rgba(26,26,46,.08); border-radius: 18px;
+  box-shadow: 0 2px 16px rgba(26,26,46,.06); padding: 22px 22px 16px; margin-bottom: 20px;
+  scroll-margin-top: calc(var(--header-h, 72px) + 16px);
+}
+.ld-program-name {
+  font-family: var(--font-heading, 'Plus Jakarta Sans', sans-serif);
+  font-size: 17px; font-weight: 800; color: #1A1A2E; margin: 0 0 8px; line-height: 1.35;
+}
+.ld-program-sub { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; font-size: 12.5px; color: #6b6b8a; }
+.ld-mode {
+  display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 12px;
+  color: #0F766E; background: rgba(15,118,110,.08); border-radius: 20px; padding: 4px 11px;
+}
+.ld-mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #1A1A2E; }
+
+/* ── Steps ── */
+.ld-steps {
+  list-style: none; margin: 18px 0 14px; padding: 0; display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px;
+}
+.ld-step {
+  display: flex; align-items: center; gap: 10px; background: #F8F8FB; border-radius: 12px;
+  padding: 10px 12px; font-size: 13px; font-weight: 700; color: #1A1A2E;
+}
+.ld-step small { display: block; font-size: 11.5px; color: #9999b0; font-weight: 500; margin-top: 1px; }
+.ld-step-dot {
+  flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 12px; font-weight: 800; background: #E5E7EB; color: #6b6b8a;
+}
+.ld-step--done .ld-step-dot { background: #0F766E; color: #fff; }
+.ld-step--todo { background: #FFF1F2; }
+.ld-step--todo .ld-step-dot { background: #C81240; color: #fff; }
+.ld-step--wait .ld-step-dot { background: #FEF3C7; color: #B45309; }
+
+/* ── Admit card block ── */
+.ld-admit {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; border: 1px solid #eee;
+}
+.ld-admit-text { display: flex; gap: 12px; align-items: flex-start; font-size: 13.5px; color: #1A1A2E; min-width: 0; flex: 1 1 240px; }
+.ld-admit-text > i { color: #0F766E; font-size: 18px; margin-top: 2px; }
+.ld-admit-text span { display: block; font-size: 12.5px; color: #6b6b8a; margin-top: 2px; }
+.ld-admit--todo { background: #FFF1F2; border-color: #FECDD3; }
+.ld-admit--todo .ld-admit-text > i { color: #C81240; }
+.ld-admit--done { background: #F0FDFA; border-color: #CCFBF1; }
+.ld-admit--wait { background: #FFFBEB; border-color: #FDE68A; }
+.ld-admit--wait .ld-admit-text > i { color: #B45309; }
+
+/* ── Next up ── */
+.ld-next {
+  border: 1.5px solid #0F766E; border-radius: 14px; padding: 14px 16px; margin-bottom: 12px;
+  background: linear-gradient(180deg, rgba(15,118,110,.05), rgba(15,118,110,0));
+}
+.ld-next-label { font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #0F766E; margin-bottom: 6px; }
+.ld-next-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.ld-next-info { min-width: 0; flex: 1 1 220px; }
+.ld-next-status { margin-top: 8px; }
+.ld-rel { font-size: 12px; color: #B45309; font-weight: 700; margin-left: 4px; }
+.ld-next--empty { border-style: dashed; border-color: #D1D5DB; background: #FAFAFC; color: #6b6b8a; font-size: 13.5px; display: flex; gap: 10px; align-items: center; }
+
+/* ── Tests list ── */
+.ld-fold { border-top: 1px solid #F0F0F5; }
+.ld-fold > summary {
+  cursor: pointer; list-style: none; padding: 12px 2px; font-size: 13.5px; font-weight: 700; color: #1A1A2E;
+  display: flex; align-items: center; gap: 8px;
+}
+.ld-fold > summary::-webkit-details-marker { display: none; }
+.ld-fold > summary::after { content: '\f078'; font-family: 'Font Awesome 6 Free'; font-weight: 900; font-size: 11px; color: #9999b0; margin-left: auto; transition: transform .2s; }
+.ld-fold[open] > summary::after { transform: rotate(180deg); }
+.ld-fold > summary i { color: #0F766E; width: 16px; text-align: center; }
+
+.ld-tests { display: flex; flex-direction: column; gap: 8px; padding-bottom: 12px; }
+.ld-test {
+  display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;
+  border: 1px solid #EEF0F4; border-radius: 12px; padding: 11px 14px;
+}
+.ld-test-info { min-width: 0; flex: 1 1 200px; display: flex; flex-direction: column; gap: 4px; }
+.ld-test-title { font-weight: 800; color: #1A1A2E; font-size: 14px; }
+.ld-test-meta { font-size: 12.5px; color: #6b6b8a; line-height: 1.45; }
+.ld-track { font-size: 11px; font-weight: 700; color: #4338CA; background: #EEF2FF; border-radius: 6px; padding: 1px 7px; margin-left: 4px; vertical-align: 1px; }
+
+/* ── Chips ── */
+.ld-chip {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700;
+  border-radius: 20px; padding: 3px 10px; line-height: 1.5;
+}
+.ld-chip i { font-size: 11px; }
+.ld-chip--green { color: #166534; background: #DCFCE7; }
+.ld-chip--blue  { color: #1D4ED8; background: #DBEAFE; }
+.ld-chip--amber { color: #9A3412; background: #FFEDD5; }
+.ld-chip--grey  { color: #4B5563; background: #F3F4F6; }
+.ld-chip--red   { color: #B91C1C; background: #FEE2E2; }
+
+/* ── Buttons ── */
+.ld-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.ld-btn {
+  display: inline-flex; align-items: center; gap: 6px; border-radius: 20px; padding: 8px 14px;
+  font-size: 12.5px; font-weight: 700; text-decoration: none; cursor: pointer; border: 1.5px solid transparent;
+  font-family: inherit; line-height: 1.2; white-space: nowrap; transition: background .15s, border-color .15s, color .15s;
+}
+.ld-btn--primary { background: #C81240; color: #fff; }
+.ld-btn--primary:hover { background: #A50F35; color: #fff; }
+.ld-btn--ghost { background: #fff; color: #0F766E; border-color: rgba(15,118,110,.35); }
+.ld-btn--ghost:hover { border-color: #0F766E; background: rgba(15,118,110,.05); }
+.ld-btn--wa { background: #25D366; color: #fff; }
+.ld-btn--wa:hover { background: #1DA851; color: #fff; }
+.ld-btn--link { background: none; color: #6b6b8a; padding-left: 4px; padding-right: 4px; }
+.ld-btn--link:hover { color: #C81240; }
+
+/* ── How it works ── */
+.ld-howto { margin: 0 0 14px; padding-left: 22px; display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; color: #374151; line-height: 1.55; }
+.ld-howto strong { color: #1A1A2E; }
+
+.ld-footer { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; border-top: 1px solid #F0F0F5; padding-top: 14px; }
+
+/* ── Profile page: account details fold ── */
+.pf-fold > summary { cursor: pointer; list-style: none; }
+.pf-fold > summary::-webkit-details-marker { display: none; }
+.pf-fold:not([open]) > summary { border-bottom: none; }
+.pf-fold > summary h2::after { content: '\f078'; font-family: 'Font Awesome 6 Free'; font-weight: 900; font-size: 12px; color: #9999b0; margin-left: auto; transition: transform .2s; }
+.pf-fold[open] > summary h2::after { transform: rotate(180deg); }
+.pf-fold > summary h2 { width: 100%; }
+
+@media (max-width: 600px) {
+  .ld-program { padding: 18px 14px 12px; border-radius: 14px; }
+  .ld-steps { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .ld-step { flex-direction: column; text-align: center; gap: 6px; padding: 10px 6px; font-size: 12px; line-height: 1.3; }
+  .ld-step small { font-size: 11px; }
+  .ld-next-row, .ld-test { flex-direction: column; align-items: stretch; }
+  .ld-next-info, .ld-test-info, .ld-admit-text { flex: 0 0 auto; }
+  .ld-actions .ld-btn { flex: 1 1 auto; justify-content: center; }
+  .ld-admit .ld-btn { width: 100%; justify-content: center; }
+}

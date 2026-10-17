@@ -245,6 +245,7 @@
       return;
     }
     document.getElementById('profileContent').style.display = 'block';
+    loadDashboard();
     loadProfile();
     loadReferralCode();
     loadFreeResources();
@@ -258,6 +259,27 @@
     });
 
     document.getElementById('profileForm').addEventListener('submit', onSave);
+  }
+
+  /* ── Paid learner dashboard (tests, admit card, next steps) ──
+     Shown first for anyone with a paid program; Account Details folds
+     away so it no longer pushes their tests below the fold. */
+  function loadDashboard() {
+    var el = document.getElementById('learnerDashboard');
+    if (!el || !window.LearnerDashboard) return;
+    window.LearnerDashboard.render(el, {
+      onHasPrograms: function () {
+        var details = document.getElementById('accountDetails');
+        if (details) details.removeAttribute('open');
+        // The "Still unsure? ... before enrolling" chat nudge (chat-tab.js)
+        // is a pre-purchase prompt - it only covers the dashboard for
+        // someone who has already paid. The dashboard has its own Need help.
+        var hideNudge = document.createElement('style');
+        hideNudge.textContent = '.jct-desktop,.jct-mobile{display:none!important;}';
+        document.head.appendChild(hideNudge);
+      },
+      onEmpty: function () { el.style.display = 'none'; },
+    });
   }
 
   /* ── Photo upload ────────────────────────────────────────── */
