@@ -20,7 +20,7 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100
 router.post('/', protect, upload.single('pdf'), async (req, res, next) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
-    const { title, description, gating_type } = req.body;
+    const { title, description, gating_type, category } = req.body;
     if (!title) return res.status(400).json({ error: 'Title is required.' });
 
     const safeName = req.file.originalname
@@ -38,9 +38,9 @@ router.post('/', protect, upload.single('pdf'), async (req, res, next) => {
     const publicUrl = `${process.env.R2_PUBLIC_URL}/${key}`;
 
     const result = await query(
-      `INSERT INTO free_resources (title, description, pdf_url, r2_key, visible, gating_type)
-       VALUES ($1, $2, $3, $4, TRUE, $5) RETURNING *`,
-      [title, description || null, publicUrl, key, gating_type || null]
+      `INSERT INTO free_resources (title, description, pdf_url, r2_key, visible, gating_type, category)
+       VALUES ($1, $2, $3, $4, TRUE, $5, $6) RETURNING *`,
+      [title, description || null, publicUrl, key, gating_type || null, category || null]
     );
 
     res.json(result.rows[0]);
@@ -102,7 +102,7 @@ router.get('/rpsc-verify-status', protectLearner, async (req, res, next) => {
 router.get('/', protectLearner, async (req, res, next) => {
   try {
     const result = await query(
-      `SELECT id, title, description, gating_type, created_at
+      `SELECT id, title, description, gating_type, category, created_at
        FROM free_resources WHERE visible = TRUE ORDER BY created_at DESC`
     );
     res.json(result.rows);
@@ -195,6 +195,7 @@ router.patch('/:id', protect, async (req, res, next) => {
     const vals = [];
     if (req.body.visible !== undefined) { fields.push(`visible = $${fields.length + 1}`); vals.push(req.body.visible); }
     if (req.body.gating_type !== undefined) { fields.push(`gating_type = $${fields.length + 1}`); vals.push(req.body.gating_type || null); }
+    if (req.body.category !== undefined) { fields.push(`category = $${fields.length + 1}`); vals.push(req.body.category || null); }
     if (!fields.length) return res.status(400).json({ error: 'Nothing to update.' });
     vals.push(req.params.id);
     const result = await query(
