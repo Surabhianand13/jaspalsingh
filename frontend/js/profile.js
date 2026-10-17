@@ -249,7 +249,6 @@
     loadProfile();
     loadReferralCode();
     loadFreeResources();
-    loadDownloads();
     setupPhotoUpload();
 
     document.getElementById('profileLogoutBtn').addEventListener('click', function () {
@@ -457,40 +456,6 @@
     }).finally(function () {
       btn.disabled  = false;
       btn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
-    });
-  }
-
-  /* ── Load downloads ──────────────────────────────────────── */
-  function loadDownloads() {
-    authFetch('/api/learners/downloads').then(function (data) {
-      var downloads = data.downloads || [];
-      var body = document.getElementById('downloadsBody');
-
-      if (!downloads.length) {
-        body.innerHTML = '<p class="profile-empty"><i class="fas fa-inbox"></i> No downloads yet.<br>' +
-          '<a href="/resources">Browse resources &rarr;</a></p>';
-        return;
-      }
-
-      var rows = downloads.map(function (d) {
-        var date = d.downloaded_at
-          ? new Date(d.downloaded_at).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' }) : '';
-        return '<tr>' +
-          '<td><span class="dl-title">' + esc(d.title) + '</span><br>' +
-               '<span class="dl-sub">' + esc(d.subject) + ' · ' + esc(d.resource_type) + '</span></td>' +
-          '<td class="dl-date">' + date + '</td>' +
-          '<td><a href="' + esc(d.file_url) + '" target="_blank" rel="noopener" class="btn btn-sm">' +
-               '<i class="fas fa-download"></i> Open</a></td>' +
-          '</tr>';
-      }).join('');
-
-      body.innerHTML = '<div class="dl-table-wrap"><table class="dl-table">' +
-        '<thead><tr><th>Resource</th><th>Date</th><th></th></tr></thead>' +
-        '<tbody>' + rows + '</tbody></table></div>';
-
-    }).catch(function () {
-      document.getElementById('downloadsBody').innerHTML =
-        '<p class="profile-empty">Could not load download history.</p>';
     });
   }
 
