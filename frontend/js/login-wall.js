@@ -435,7 +435,7 @@
     };
     if (window.LearnerDashboard) return run();
     var sc = document.createElement('script');
-    sc.src = '/js/learner-dashboard.js?v=2';
+    sc.src = '/js/learner-dashboard.js?v=3';
     sc.onload = run;
     document.head.appendChild(sc);
   }
