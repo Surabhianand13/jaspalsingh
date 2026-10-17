@@ -118,7 +118,7 @@ async function processGenericSubmission(fields, program) {
       name:       name || 'Student',
       govtId:     govtId || 'N/A',
       rollNumber,
-      centre:     centreInfo ? centreInfo.name : 'Home',
+      centre:     centreInfo ? centreInfo.name : 'Offline (Printed OMR)',
       targetExam: targetExam || seriesName,
       phone:      phone || 'N/A',
       email:      email || 'N/A',

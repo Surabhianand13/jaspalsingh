@@ -337,7 +337,7 @@
 
       var highlightsHtml = '';
       if (p.total_tests) highlightsHtml += '<div class="ph-item"><i class="fas fa-file-alt"></i><span class="ph-num">' + p.total_tests + '</span><span class="ph-label">Tests</span></div>';
-      if (p.omr_enabled) highlightsHtml += '<div class="ph-item"><i class="fas fa-house"></i><span class="ph-num" style="font-size:13px;">Printed OMR Offline</span><span class="ph-label">OMR Format</span></div>';
+      if (p.omr_enabled) highlightsHtml += '<div class="ph-item"><i class="fas fa-location-dot"></i><span class="ph-num" style="font-size:13px;">Printed OMR Offline</span><span class="ph-label">OMR Format</span></div>';
       if (p.centre_name) highlightsHtml += '<div class="ph-item"><i class="fas fa-map-marker-alt"></i><span class="ph-num" style="font-size:13px;">' + esc(p.centre_name) + '</span><span class="ph-label">Location</span></div>';
       document.getElementById('pvHighlights').innerHTML = highlightsHtml;
 

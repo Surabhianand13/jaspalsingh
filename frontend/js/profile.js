@@ -343,7 +343,7 @@
         el.innerHTML = '<div class="profile-card ph-empty">' +
           '<i class="fas fa-graduation-cap"></i>' +
           '<h3>No enrolled courses yet</h3>' +
-          '<p>Your offline test series, home OMR tests and batches will appear here once you enroll.</p>' +
+          '<p>Your offline test series, Printed OMR tests and batches will appear here once you enroll.</p>' +
           '<a class="btn" href="/programs">Browse test series &amp; batches &rarr;</a>' +
         '</div>';
         // Free learners: land on Free Resources unless a link asked for a tab.

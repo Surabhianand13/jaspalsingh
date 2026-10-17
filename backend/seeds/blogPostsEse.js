@@ -130,7 +130,7 @@ module.exports = [
   <li>Practise Paper 1 in timed conditions from Month 3 of your preparation.</li>
 </ol>
 
-<p>Dr. Jaspal Singh's ESE 2027 Prelims test series covers Paper 1 on the same Sunday as Paper 2 - so candidates practise both papers back-to-back exactly as in the actual exam. Tests are held at Jaipur (Tonk Road) and Delhi (Lado Sarai) centres, and a printed OMR home-based option is available for candidates outside these cities. Enrol at <a href="https://jaspalsingh.in/programs">jaspalsingh.in</a> or call <strong>+91 98291 33317</strong>.</p>
+<p>Dr. Jaspal Singh's ESE 2027 Prelims test series covers Paper 1 on the same Sunday as Paper 2 - so candidates practise both papers back-to-back exactly as in the actual exam. Tests are held at Jaipur (Tonk Road) and Delhi (Lado Sarai) centres, and a Printed OMR Offline option is available for candidates outside these cities. Enrol at <a href="https://jaspalsingh.in/programs">jaspalsingh.in</a> or call <strong>+91 98291 33317</strong>.</p>
 `,
   },
 
@@ -310,7 +310,7 @@ module.exports = [
 <h2>How to Prepare for Paper 2</h2>
 <p>For ESE Prelims Paper 2, depth matters more than coverage. The questions go beyond definition-level - they test application, design principles, and code-based calculations. Practising under timed conditions is essential.</p>
 
-<p>Dr. Jaspal Singh's ESE 2027 test series covers Paper 2 Civil Engineering with tests every Sunday at Jaipur (Tonk Road) and Delhi (Lado Sarai) centres. The P1+P2 combined test series runs Paper 1 and Paper 2 on the same Sunday - exactly the ESE prelims format. Printed OMR home-based option is available. Enrol at <a href="https://jaspalsingh.in/programs">jaspalsingh.in</a> or call <strong>+91 98291 33317</strong>.</p>
+<p>Dr. Jaspal Singh's ESE 2027 test series covers Paper 2 Civil Engineering with tests every Sunday at Jaipur (Tonk Road) and Delhi (Lado Sarai) centres. The P1+P2 combined test series runs Paper 1 and Paper 2 on the same Sunday - exactly the ESE prelims format. Printed OMR Offline option is available. Enrol at <a href="https://jaspalsingh.in/programs">jaspalsingh.in</a> or call <strong>+91 98291 33317</strong>.</p>
 `,
   },
 
@@ -469,7 +469,7 @@ module.exports = [
   <li>Maintain an error log: write down each concept you got wrong and revisit it weekly.</li>
 </ul>
 
-<p>Dr. Jaspal Singh's ESE 2027 Prelims test series is the only test series that conducts Paper 1 and Paper 2 Civil together on the same Sunday - mirroring the actual ESE day. Tests start from October 2026 at both Jaipur (Tonk Road) and Delhi (Lado Sarai) centres, with a printed OMR home-based option for candidates elsewhere.</p>
+<p>Dr. Jaspal Singh's ESE 2027 Prelims test series is the only test series that conducts Paper 1 and Paper 2 Civil together on the same Sunday - mirroring the actual ESE day. Tests start from October 2026 at both Jaipur (Tonk Road) and Delhi (Lado Sarai) centres, with a Printed OMR Offline option for candidates elsewhere.</p>
 
 <h2>Months 10-11: Full Mock Tests</h2>
 
@@ -495,7 +495,7 @@ module.exports = [
   <li>Morning 1 hour before work: Engineering Mathematics + Paper 1 reading</li>
   <li>Evening 2 hours after work: Technical subject study</li>
   <li>Weekend: 8-10 hours of focused study + test series</li>
-  <li>Use weekends for the test series - Sunday test days at the Jaipur and Delhi centres, or the home-based printed OMR option, fit well into a working schedule</li>
+  <li>Use weekends for the test series - Sunday test days at the Jaipur and Delhi centres, or the Printed OMR Offline option, fit well into a working schedule</li>
 </ul>
 
 <p>For ESE 2027 Prelims test series details, visit <a href="https://jaspalsingh.in/programs">jaspalsingh.in</a> or call <strong>+91 98291 33317</strong>.</p>
@@ -555,7 +555,7 @@ module.exports = [
 
 <p>The best way to know if you will clear the cutoff is consistent performance in full-length mock tests under exam conditions. If you take Paper 1 and Paper 2 together (as in the actual ESE) and track your score trend, you will know months in advance whether you are on track.</p>
 
-<p>Dr. Jaspal Singh's ESE 2027 Prelims test series conducts Paper 1 and Paper 2 Civil Engineering together every Sunday - exactly as the real exam - so your mock test scores are directly comparable. Centres at Jaipur (Tonk Road) and Delhi (Lado Sarai), with a printed OMR home-based option. Visit <a href="https://jaspalsingh.in">jaspalsingh.in</a> or call <strong>+91 98291 33317</strong>.</p>
+<p>Dr. Jaspal Singh's ESE 2027 Prelims test series conducts Paper 1 and Paper 2 Civil Engineering together every Sunday - exactly as the real exam - so your mock test scores are directly comparable. Centres at Jaipur (Tonk Road) and Delhi (Lado Sarai), with a Printed OMR Offline option. Visit <a href="https://jaspalsingh.in">jaspalsingh.in</a> or call <strong>+91 98291 33317</strong>.</p>
 `,
   },
 
@@ -623,7 +623,7 @@ module.exports = [
 <h2>Where to Check the Official Notification</h2>
 <p>The official ESE 2027 notification will be released by UPSC on the official website: <strong>upsc.gov.in</strong>. All eligibility conditions, application dates, exam dates, and syllabus are specified in this notification. Always read the official notification before applying - never rely solely on third-party summaries.</p>
 
-<p>For ESE 2027 Prelims test series details - offline at Jaipur (Tonk Road) and Delhi (Lado Sarai), or printed OMR home-based - visit <a href="https://jaspalsingh.in">jaspalsingh.in</a> or call <strong>+91 98291 33317</strong>.</p>
+<p>For ESE 2027 Prelims test series details - offline at Jaipur (Tonk Road) and Delhi (Lado Sarai), or Printed OMR Offline - visit <a href="https://jaspalsingh.in">jaspalsingh.in</a> or call <strong>+91 98291 33317</strong>.</p>
 `,
   },
 
@@ -739,7 +739,7 @@ module.exports = [
   <li>Use test series to identify which chapters need more revision - then revisit just those chapters, not the whole book</li>
 </ol>
 
-<p>For ESE 2027 Prelims test series - Paper 1 and Paper 2 Civil together every Sunday - at Jaipur (Tonk Road) and Delhi (Lado Sarai), or printed OMR home-based option, visit <a href="https://jaspalsingh.in">jaspalsingh.in</a> or call <strong>+91 98291 33317</strong>.</p>
+<p>For ESE 2027 Prelims test series - Paper 1 and Paper 2 Civil together every Sunday - at Jaipur (Tonk Road) and Delhi (Lado Sarai), or Printed OMR Offline option, visit <a href="https://jaspalsingh.in">jaspalsingh.in</a> or call <strong>+91 98291 33317</strong>.</p>
 `,
   },
 
@@ -770,7 +770,7 @@ module.exports = [
 <h3>What You Receive</h3>
 <ul>
   <li>Roll-number-based admit card before every test</li>
-  <li>Printed OMR sheet (at offline centre, or by post for home-based option)</li>
+  <li>Printed OMR sheet (at offline centre, or by post for the Printed OMR Offline option)</li>
   <li>Full solution booklet after every test with detailed explanations</li>
   <li>Score report after result declaration</li>
 </ul>
@@ -778,13 +778,13 @@ module.exports = [
 <h3>Test Formats Available</h3>
 <ul>
   <li><strong>Offline (at centre):</strong> Give the test at the Jaipur Tonk Road or Delhi Lado Sarai centre on Sundays</li>
-  <li><strong>Printed OMR home-based:</strong> Question paper and OMR sheet are sent to your postal address. You give the test at home, photograph and upload your OMR, and receive your solutions and score. This option is for candidates who cannot travel to Jaipur or Delhi every Sunday.</li>
+  <li><strong>Printed OMR Offline:</strong> Question paper and OMR sheet are sent to your postal address. You take the test wherever you are, photograph and upload your OMR, and receive your solutions and score. This option is for candidates who cannot travel to Jaipur or Delhi every Sunday.</li>
 </ul>
 
 <h3>Pricing (ESE 2027 Prelims P1+P2 Combined)</h3>
 <ul>
   <li>Offline (at centre): Rs 2,499</li>
-  <li>Printed OMR home-based: Rs 1,499</li>
+  <li>Printed OMR Offline: Rs 1,499</li>
 </ul>
 
 <h2>Who is This Test Series Best For?</h2>
@@ -805,13 +805,13 @@ module.exports = [
 <ul>
   <li>If you need classroom teaching from scratch: various coaching institutes in Delhi offer full-course programmes covering concepts and tests together</li>
   <li>If you have studied the concepts and need structured test practice with real OMR feedback: Dr. Jaspal Singh's test series is specifically built for this phase</li>
-  <li>If you are outside Delhi and Jaipur: the printed OMR home-based option provides a structured test environment that most institutes do not offer outside their cities</li>
+  <li>If you are outside Delhi and Jaipur: the Printed OMR Offline option provides a structured test environment that most institutes do not offer outside their cities</li>
 </ul>
 
 <p>Dr. Jaspal Singh's specific differentiation is the <strong>P1+P2 combined Sunday test format</strong> - covering both ESE papers on the same day in the same session - which no other test series provider replicates. This is important because ESE day itself requires 5 hours of continuous exam performance, and practising this format is valuable.</p>
 
 <h2>How to Enrol</h2>
-<p>Visit <a href="https://jaspalsingh.in/programs">jaspalsingh.in</a> and look for the ESE 2027 Prelims programmes, or call <strong>+91 98291 33317</strong>. Both offline (Jaipur and Delhi centre) and printed OMR home-based options can be enrolled from the website.</p>
+<p>Visit <a href="https://jaspalsingh.in/programs">jaspalsingh.in</a> and look for the ESE 2027 Prelims programmes, or call <strong>+91 98291 33317</strong>. Both offline (Jaipur and Delhi centre) and Printed OMR Offline options can be enrolled from the website.</p>
 `,
   },
 
@@ -894,7 +894,7 @@ module.exports = [
   <li>Attempting all 100 questions blindly without considering negative marking - be selective on uncertain questions</li>
 </ul>
 
-<p>Dr. Jaspal Singh's ESE 2027 test series includes Paper 1 in every Sunday session alongside Paper 2 Civil Engineering - so you get regular practice on the full 500-mark exam. Jaipur (Tonk Road) and Delhi (Lado Sarai) centres; printed OMR home-based option also available. Visit <a href="https://jaspalsingh.in">jaspalsingh.in</a> or call <strong>+91 98291 33317</strong>.</p>
+<p>Dr. Jaspal Singh's ESE 2027 test series includes Paper 1 in every Sunday session alongside Paper 2 Civil Engineering - so you get regular practice on the full 500-mark exam. Jaipur (Tonk Road) and Delhi (Lado Sarai) centres; Printed OMR Offline option also available. Visit <a href="https://jaspalsingh.in">jaspalsingh.in</a> or call <strong>+91 98291 33317</strong>.</p>
 `,
   },
 
@@ -949,7 +949,7 @@ module.exports = [
 
 <p>The 4 months before ESE 2027 Prelims (roughly October 2026 to January 2027) are the most important for competitive ranking. This is when candidates who have prepared well convert their knowledge into scores through structured testing. Candidates who skip this phase and rely only on self-study typically underperform relative to their preparation level.</p>
 
-<p>Dr. Jaspal Singh's ESE 2027 Prelims test series is specifically scheduled for this window - 13 tests from October 2026 to January 2027, every Sunday, covering Paper 1 and Paper 2 Civil Engineering together. Centres at Jaipur (Tonk Road) and Delhi (Lado Sarai), with a printed OMR home-based option. For enrollment, visit <a href="https://jaspalsingh.in/programs">jaspalsingh.in</a> or call <strong>+91 98291 33317</strong>.</p>
+<p>Dr. Jaspal Singh's ESE 2027 Prelims test series is specifically scheduled for this window - 13 tests from October 2026 to January 2027, every Sunday, covering Paper 1 and Paper 2 Civil Engineering together. Centres at Jaipur (Tonk Road) and Delhi (Lado Sarai), with a Printed OMR Offline option. For enrollment, visit <a href="https://jaspalsingh.in/programs">jaspalsingh.in</a> or call <strong>+91 98291 33317</strong>.</p>
 
 <h2>Where to Track Official ESE 2027 Dates</h2>
 
