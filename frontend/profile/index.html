@@ -21,7 +21,7 @@
   <link rel="stylesheet" href="/css/additions.css?v=8" />
   <link rel="stylesheet" href="/css/animations.css?v=8" />
   <link rel="stylesheet" href="/css/learner-auth.css" />
-  <link rel="stylesheet" href="/css/profile.css" />
+  <link rel="stylesheet" href="/css/profile.css?v=2" />
   <link rel="stylesheet" href="/css/learner-dashboard.css?v=2" />
 <script src="/js/loader.js"></script>
 </head>
@@ -675,8 +675,9 @@
 
         <!-- Free Resources card -->
         <section class="profile-card" id="free-resources" aria-label="Free Resources">
-          <div class="profile-card-header">
-            <h2><i class="fas fa-file-pdf"></i> Free Resources</h2>
+          <div class="profile-card-header frx-head">
+            <h2><i class="fas fa-book-open-reader"></i> Free Study Resources <span class="frx-total" id="frTotalCount" style="display:none;"></span></h2>
+            <p class="frx-sub">Notes, test papers and solutions by Jaspal Sir - free for registered learners.</p>
           </div>
           <div id="freeResourcesBody">
             <div class="profile-skeleton-list">
@@ -795,7 +796,7 @@
   <script src="/js/learner-auth.js?v=2"></script>
   <script src="/js/schedule-modal.js?v=3"></script>
   <script src="/js/learner-dashboard.js?v=4"></script>
-  <script src="/js/profile.js?v=2"></script>
+  <script src="/js/profile.js?v=3"></script>
   <script src="/js/login-wall.js" defer></script>
   <script src="/js/track.js" defer></script>
   <a href="https://wa.me/919829133317" target="_blank" rel="noopener" aria-label="Chat on WhatsApp" class="whatsapp-float"><i class="fab fa-whatsapp"></i></a>

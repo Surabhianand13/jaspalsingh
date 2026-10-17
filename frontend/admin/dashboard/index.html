@@ -917,6 +917,19 @@
           <input type="text" id="fr-desc" placeholder="e.g. Full solutions with explanations" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;box-sizing:border-box;" />
         </div>
         <div style="margin-bottom:14px;">
+          <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:5px;">Exam Category (learner tiles)</label>
+          <select id="fr-category" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;box-sizing:border-box;">
+            <option value="">Auto (guess from title)</option>
+            <option value="rssb-je">RSSB JE</option>
+            <option value="rpsc-ae">RPSC AE / RVUNL</option>
+            <option value="ese">ESE</option>
+            <option value="gate">GATE</option>
+            <option value="ukpsc">UKPSC AE/JE</option>
+            <option value="up-poly">UP Polytechnic</option>
+            <option value="general">General / Civil Engineering</option>
+          </select>
+        </div>
+        <div style="margin-bottom:14px;">
           <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:5px;">Access Restriction</label>
           <select id="fr-gating" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;box-sizing:border-box;">
             <option value="">Open to all logged-in learners</option>
@@ -1355,6 +1368,7 @@ const FR_API = location.hostname === 'localhost' ? 'http://localhost:5000' : 'ht
 function openUploadModal() {
   document.getElementById('freeResourceModal').style.display = 'flex';
   document.getElementById('fr-gating').value = '';
+  document.getElementById('fr-category').value = '';
   document.getElementById('fr-title').value = '';
   document.getElementById('fr-desc').value = '';
   document.getElementById('fr-file').value = '';
@@ -1385,6 +1399,8 @@ async function uploadFreeResource() {
   if (desc) formData.append('description', desc);
   const gating = document.getElementById('fr-gating').value;
   if (gating) formData.append('gating_type', gating);
+  const category = document.getElementById('fr-category').value;
+  if (category) formData.append('category', category);
 
   try {
     const r = await fetch(`${FR_API}/api/free-resources`, {
@@ -1423,13 +1439,18 @@ async function loadFreeResources() {
 
     el.innerHTML = `<table class="admin-table" style="width:100%;">
       <thead><tr>
-        <th>Title</th><th>Description</th><th>Gating</th><th>Visible</th><th>Shareable URL</th><th>Actions</th>
+        <th>Title</th><th>Description</th><th>Category</th><th>Gating</th><th>Visible</th><th>Shareable URL</th><th>Actions</th>
       </tr></thead>
       <tbody>${rows.map(res => {
         const shareUrl = `https://jaspalsingh.in/resource?id=${res.id}`;
         return `<tr>
           <td><strong>${res.title}</strong></td>
           <td style="color:#64748b;font-size:13px;">${res.description || '-'}</td>
+          <td>
+            <select onchange="setResourceCategory(${res.id}, this.value)" style="padding:5px 8px;border:1.5px solid #e2e8f0;border-radius:6px;font-size:12px;">
+              ${FR_CATEGORIES.map(([v, l]) => `<option value="${v}" ${(res.category || '') === v ? 'selected' : ''}>${l}</option>`).join('')}
+            </select>
+          </td>
           <td>${res.gating_type === 'rpsc_ae' ? '<span style="font-size:11px;background:#fef3c7;color:#92400e;padding:3px 8px;border-radius:20px;font-weight:700;">RPSC AE only</span>' : '<span style="font-size:11px;color:#94a3b8;">Open</span>'}</td>
           <td>
             <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
@@ -1462,6 +1483,21 @@ async function loadFreeResources() {
   } catch (e) {
     el.innerHTML = '<p class="admin-empty">Failed to load resources.</p>';
   }
+}
+
+/* Exam category shown as tiles on the learner profile - keep in sync with
+   FR_CATEGORIES in frontend/js/profile.js. '' = guessed from the title. */
+const FR_CATEGORIES = [
+  ['', 'Auto (from title)'], ['rssb-je', 'RSSB JE'], ['rpsc-ae', 'RPSC AE / RVUNL'], ['ese', 'ESE'],
+  ['gate', 'GATE'], ['ukpsc', 'UKPSC AE/JE'], ['up-poly', 'UP Polytechnic'], ['general', 'General / Civil Engg'],
+];
+async function setResourceCategory(id, category) {
+  const r = await fetch(`${FR_API}/api/free-resources/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('jaspal_admin_token')}` },
+    body: JSON.stringify({ category: category || null }),
+  });
+  if (!r.ok) alert('Could not update category.');
 }
 
 async function toggleResource(id, visible) {

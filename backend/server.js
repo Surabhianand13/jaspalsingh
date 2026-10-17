@@ -408,6 +408,10 @@ async function migrate() {
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`);
   await query(`ALTER TABLE free_resources ADD COLUMN IF NOT EXISTS gating_type TEXT DEFAULT NULL`);
+  // Exam category for the learner-side tiles (rssb-je, rpsc-ae, ese, gate,
+  // ukpsc, up-poly, general). NULL = not set yet: the frontend infers one
+  // from the title until an admin picks it in the dashboard.
+  await query(`ALTER TABLE free_resources ADD COLUMN IF NOT EXISTS category TEXT DEFAULT NULL`);
   await query(`CREATE TABLE IF NOT EXISTS rpsc_ae_verifications (
     id                 SERIAL PRIMARY KEY,
     learner_id         INTEGER NOT NULL UNIQUE,

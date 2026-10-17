@@ -494,41 +494,72 @@
     });
   }
 
+  /* ── Free Resources: exam tiles + searchable card grid ──
+     Category comes from free_resources.category (set in admin); until an
+     admin sets it, it's inferred from the title so nothing is untagged.
+     Keep keys in sync with FR_CATEGORIES in admin/dashboard/index.html. */
+  var FR_CATEGORIES = [
+    { key: 'rssb-je', label: 'RSSB JE',        icon: 'fa-drafting-compass',  color: '#0284C7', bg: '#E0F2FE' },
+    { key: 'rpsc-ae', label: 'RPSC AE',        icon: 'fa-building',          color: '#16A34A', bg: '#DCFCE7' },
+    { key: 'ese',     label: 'ESE',            icon: 'fa-graduation-cap',    color: '#7C3AED', bg: '#EDE9FE' },
+    { key: 'gate',    label: 'GATE',           icon: 'fa-atom',              color: '#EA580C', bg: '#FFEDD5' },
+    { key: 'ukpsc',   label: 'UKPSC AE/JE',    icon: 'fa-mountain',          color: '#0D9488', bg: '#CCFBF1' },
+    { key: 'up-poly', label: 'UP Polytechnic', icon: 'fa-chalkboard-teacher', color: '#DB2777', bg: '#FCE7F3' },
+    { key: 'general', label: 'Civil Engg Notes', icon: 'fa-book-open',       color: '#475569', bg: '#F1F5F9' },
+  ];
+  var FR_CAT_BY_KEY = {};
+  FR_CATEGORIES.forEach(function (c) { FR_CAT_BY_KEY[c.key] = c; });
+
+  function frCategory(r) {
+    if (r.category && FR_CAT_BY_KEY[r.category]) return r.category;
+    var t = (r.title + ' ' + (r.description || '')).toLowerCase();
+    if (/\b(rssb|rrsb|jen)\b|rssb je/.test(t)) return 'rssb-je';
+    if (/\b(rpsc|rvunl)\b/.test(t)) return 'rpsc-ae';
+    if (/\b(ese|ies|upsc)\b/.test(t)) return 'ese';
+    if (/\bgate\b/.test(t)) return 'gate';
+    if (/\bukpsc\b/.test(t)) return 'ukpsc';
+    if (/polytechnic|up poly/.test(t)) return 'up-poly';
+    return 'general';
+  }
+
+  function frKind(r) {
+    var t = r.title.toLowerCase();
+    if (/solution|test|booklet|paper/.test(t)) return { label: 'Test + Solutions', icon: 'fa-file-circle-check' };
+    if (/interview|question bank|guidance/.test(t)) return { label: 'Guide', icon: 'fa-user-tie' };
+    return { label: 'Notes', icon: 'fa-book' };
+  }
+
+  var frState = { all: [], cat: 'all', q: '' };
+
   function loadFreeResources() {
     var body = document.getElementById('freeResourcesBody');
     if (!body) return;
     authFetch('/api/free-resources').then(function (resources) {
+      var countEl = document.getElementById('frTotalCount');
       if (!resources.length) {
         body.innerHTML = '<p class="profile-empty"><i class="fas fa-inbox"></i> No free resources available yet. Check back soon!</p>';
         return;
       }
-      var cards = resources.map(function (r) {
-        frGatingTypes[r.id] = r.gating_type || null;
-        return '<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-bottom:1px solid rgba(26,26,46,.07);">' +
-          '<div style="display:flex;align-items:center;gap:12px;">' +
-            '<div style="width:36px;height:36px;border-radius:10px;background:#fff0f4;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
-              '<i class="fas fa-file-pdf" style="color:#c81240;font-size:15px;"></i>' +
-            '</div>' +
-            '<div>' +
-              '<div style="font-size:14px;font-weight:700;color:#0f172a;">' + esc(r.title) + '</div>' +
-              (r.description ? '<div style="font-size:12px;color:#64748b;margin-top:2px;">' + esc(r.description) + '</div>' : '') +
-            '</div>' +
-          '</div>' +
-          '<button onclick="window.__openFreeResource(' + r.id + ')" ' +
-             'style="flex-shrink:0;display:inline-flex;align-items:center;gap:6px;background:#c81240;color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;border:none;cursor:pointer;">' +
-            '<i class="fas fa-eye"></i> View' +
-          '</button>' +
-        '</div>';
-      }).join('');
-      body.innerHTML = '<div style="padding:0 4px;">' + cards + '</div>' +
-        '<div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(26,26,46,.07);text-align:center;">' +
-          '<a href="/" style="font-size:13px;font-weight:600;color:#c81240;text-decoration:none;">' +
-            '<i class="fas fa-arrow-left"></i> Explore Programs &rarr;' +
-          '</a>' +
-        '</div>';
+      resources.forEach(function (r) { frGatingTypes[r.id] = r.gating_type || null; r._cat = frCategory(r); });
+      frState.all = resources;
+      if (countEl) { countEl.textContent = resources.length + ' PDFs'; countEl.style.display = ''; }
 
-      /* Auto-scroll if arriving from resource page */
-      window.__openFreeResource = function(id) { openFreeResourceViewer(id, frGatingTypes[id] || null); };
+      body.innerHTML =
+        '<div class="frx-tiles" id="frxTiles"></div>' +
+        '<div class="frx-toolbar">' +
+          '<div class="frx-search"><i class="fas fa-magnifying-glass"></i><input type="search" id="frxSearch" placeholder="Search notes, tests, solutions…" aria-label="Search free resources" /></div>' +
+          '<span class="frx-showing" id="frxShowing"></span>' +
+        '</div>' +
+        '<div class="frx-grid" id="frxGrid"></div>';
+
+      document.getElementById('frxSearch').addEventListener('input', function (e) {
+        frState.q = e.target.value.trim().toLowerCase();
+        drawFrGrid();
+      });
+      drawFrTiles();
+      drawFrGrid();
+
+      window.__openFreeResource = function (id) { openFreeResourceViewer(id, frGatingTypes[id] || null); };
 
       /* Auto-open a specific resource from ?open_resource=<id> (e.g. from /resource page) */
       var autoOpen = new URLSearchParams(location.search).get('open_resource');
@@ -546,6 +577,69 @@
     }).catch(function () {
       body.innerHTML = '<p class="profile-empty">Could not load free resources.</p>';
     });
+  }
+
+  function drawFrTiles() {
+    var counts = {};
+    frState.all.forEach(function (r) { counts[r._cat] = (counts[r._cat] || 0) + 1; });
+    var tile = function (key, label, icon, color, bg, n) {
+      return '<button type="button" class="frx-tile' + (frState.cat === key ? ' is-active' : '') + '" data-frx-cat="' + key + '" style="--frx-c:' + color + ';--frx-bg:' + bg + ';">' +
+        '<span class="frx-tile-icon"><i class="fas ' + icon + '"></i></span>' +
+        '<span class="frx-tile-name">' + esc(label) + '</span>' +
+        '<span class="frx-tile-count">' + n + ' material' + (n === 1 ? '' : 's') + '</span>' +
+      '</button>';
+    };
+    var html = tile('all', 'All resources', 'fa-layer-group', '#C81240', '#FFE4EA', frState.all.length);
+    FR_CATEGORIES.forEach(function (c) {
+      if (counts[c.key]) html += tile(c.key, c.label, c.icon, c.color, c.bg, counts[c.key]);
+    });
+    var el = document.getElementById('frxTiles');
+    el.innerHTML = html;
+    el.querySelectorAll('[data-frx-cat]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        frState.cat = b.getAttribute('data-frx-cat');
+        drawFrTiles();
+        drawFrGrid();
+      });
+    });
+  }
+
+  function drawFrGrid() {
+    var list = frState.all.filter(function (r) {
+      if (frState.cat !== 'all' && r._cat !== frState.cat) return false;
+      if (frState.q && (r.title + ' ' + (r.description || '')).toLowerCase().indexOf(frState.q) === -1) return false;
+      return true;
+    });
+    var catLabel = frState.cat === 'all' ? 'all categories' : FR_CAT_BY_KEY[frState.cat].label;
+    document.getElementById('frxShowing').textContent = list.length + ' of ' + frState.all.length + ' · ' + catLabel;
+
+    var grid = document.getElementById('frxGrid');
+    if (!list.length) {
+      grid.innerHTML = '<p class="frx-empty"><i class="fas fa-magnifying-glass"></i> Nothing matches "' + esc(frState.q) + '" here. Try another word or category.</p>';
+      return;
+    }
+    var fresh = Date.now() - 14 * 24 * 3600 * 1000;
+    grid.innerHTML = list.map(function (r) {
+      var cat = FR_CAT_BY_KEY[r._cat];
+      var kind = frKind(r);
+      var isNew = r.created_at && new Date(r.created_at).getTime() > fresh;
+      return '<article class="frx-card" style="--frx-c:' + cat.color + ';--frx-bg:' + cat.bg + ';">' +
+        '<div class="frx-card-top">' +
+          '<span class="frx-card-icon"><i class="fas ' + kind.icon + '"></i></span>' +
+          '<div class="frx-card-tags">' +
+            '<span class="frx-tag">' + esc(cat.label) + '</span>' +
+            '<span class="frx-tag frx-tag--kind">' + kind.label + '</span>' +
+            (isNew ? '<span class="frx-tag frx-tag--new">NEW</span>' : '') +
+          '</div>' +
+        '</div>' +
+        '<h3 class="frx-card-title">' + esc(r.title) + '</h3>' +
+        (r.description ? '<p class="frx-card-desc">' + esc(r.description) + '</p>' : '') +
+        '<div class="frx-card-foot">' +
+          (r.gating_type === 'rpsc_ae' ? '<span class="frx-lock"><i class="fas fa-lock"></i> RPSC AE candidates</span>' : '<span class="frx-free"><i class="fas fa-circle-check"></i> Free</span>') +
+          '<button type="button" class="frx-view" onclick="window.__openFreeResource(' + r.id + ')"><i class="fas fa-eye"></i> View PDF</button>' +
+        '</div>' +
+      '</article>';
+    }).join('');
   }
 
   /* ── Helpers ─────────────────────────────────────────────── */
