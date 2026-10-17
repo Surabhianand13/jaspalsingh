@@ -284,7 +284,7 @@
       '<ol class="ld-steps">' +
         '<li class="ld-step ld-step--done"><span class="ld-step-dot"><i class="fas fa-check"></i></span><span>Enrolled<small>' + esc(fmtDay(e.paid_at)) + '</small></span></li>' +
         (admit ? '<li class="ld-step ld-step--' + admit.state + '"><span class="ld-step-dot">' + (admit.state === 'done' ? '<i class="fas fa-check"></i>' : '2') + '</span><span>' + esc(admit.label) + '</span></li>' : '') +
-        (mode !== 'interview' ? '<li class="ld-step ' + (tests.length && doneCount === tests.length ? 'ld-step--done' : 'ld-step--wait') + '"><span class="ld-step-dot">' + (admit ? '3' : '2') + '</span><span>Tests<small>' + (tests.length ? doneCount + ' of ' + tests.length + ' done' : 'schedule soon') + '</small></span></li>' : '') +
+        (mode !== 'interview' ? '<li class="ld-step ' + (tests.length && doneCount === tests.length ? 'ld-step--done' : 'ld-step--wait') + '"><span class="ld-step-dot">' + (admit ? '3' : '2') + '</span><span>Tests<small>' + (sched.loading ? 'loading…' : tests.length ? doneCount + ' of ' + tests.length + ' done' : 'schedule soon') + '</small></span></li>' : '') +
       '</ol>';
 
     var admitBlock = admit && (admit.note || admit.action)
@@ -310,6 +310,8 @@
             '<div class="ld-actions">' + testActions(e, next, true) + '</div>' +
           '</div>' +
         '</div>';
+    } else if (sched.loading) {
+      nextBlock = '<div class="ld-next ld-next--empty"><i class="fas fa-spinner fa-spin"></i> Loading your tests…</div>';
     } else if (sched.unavailable || !tests.length) {
       nextBlock = mode === 'interview' ? '' : '<div class="ld-next ld-next--empty"><i class="fas fa-calendar-plus"></i> Your test schedule will appear here as soon as it is published.</div>';
     } else {
@@ -354,12 +356,12 @@
       '<header class="ld-program-head">' +
         '<div>' +
           '<h3 class="ld-program-name">' + esc(e.program_name) + '</h3>' +
-          '<div class="ld-program-sub"><span class="ld-mode">' + info.chip + '</span>' +
+          '<div class="ld-program-sub">' + (sched.loading ? '' : '<span class="ld-mode">' + info.chip + '</span>') +
             (e.roll_number ? '<span class="ld-roll">Roll no: ' + rollDisplay(e.roll_number) + '</span>' : '') +
           '</div>' +
         '</div>' +
       '</header>' +
-      steps + admitBlock + nextBlock + testList + howTo + footer +
+      steps + admitBlock + nextBlock + testList + (sched.loading ? '' : howTo) + footer +
     '</article>';
   }
 
@@ -425,30 +427,118 @@
     });
   }
 
+  /* ── Fast first paint ──
+     The API runs on a free Render instance that cold-starts (can take up
+     to a minute), and a full load is 1 + 2-4 requests per program. So:
+       1. paint the last dashboard this browser saw, instantly;
+       2. paint program cards as soon as the enrollment list arrives,
+          with a "Loading your tests" line per card;
+       3. swap each card in as its own schedule arrives.
+     Cached per login token, cleared on logout. ── */
+  var DASH_KEY = 'jaspal_learner_dash';
+  var DASH_MAX_AGE = 7 * 24 * 3600 * 1000;
+
+  function tokenTag() {
+    var t = (window.LearnerAuth && window.LearnerAuth.getToken()) || localStorage.getItem('jaspal_learner_token') || '';
+    return t.slice(-24);
+  }
+  function readDashCache() {
+    try {
+      var c = JSON.parse(localStorage.getItem(DASH_KEY));
+      if (!c || c.tok !== tokenTag() || Date.now() - c.at > DASH_MAX_AGE) return null;
+      return c;
+    } catch (e) { return null; }
+  }
+  function writeDashCache(enrollments, schedules) {
+    try { localStorage.setItem(DASH_KEY, JSON.stringify({ tok: tokenTag(), at: Date.now(), enrollments: enrollments, schedules: schedules })); }
+    catch (e) { /* quota / private mode - just no instant paint next time */ }
+  }
+
+  function headingHtml(opts) {
+    return opts.hideHeading ? '' : '<div class="ld-head"><h2><i class="fas fa-graduation-cap"></i> My Tests &amp; Programs</h2></div>';
+  }
+
+  function paint(container, opts, enrollments, schedules) {
+    container.innerHTML = headingHtml(opts) +
+      enrollments.map(function (e, i) { return renderProgram(e, schedules[i], i); }).join('');
+    wire(container);
+  }
+
+  /* Replace one program card in place, keeping any folds the learner opened. */
+  function repaintCard(container, e, sched, idx) {
+    var old = document.getElementById(programAnchor(e));
+    var tmp = document.createElement('div');
+    tmp.innerHTML = renderProgram(e, sched, idx);
+    var fresh = tmp.firstChild;
+    if (old) {
+      var wasOpen = Array.prototype.map.call(old.querySelectorAll('details'), function (d) { return d.open; });
+      fresh.querySelectorAll('details').forEach(function (d, i) { if (wasOpen[i]) d.open = true; });
+      old.parentNode.replaceChild(fresh, old);
+    } else {
+      container.appendChild(fresh);
+    }
+    wire(fresh);
+  }
+
+  function scrollToHash() {
+    var target = window.location.hash && document.getElementById(window.location.hash.slice(1));
+    if (target) setTimeout(function () { target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50);
+  }
+
   function render(container, opts) {
     opts = opts || {};
-    container.innerHTML = '<div class="ld-loading"><div class="pskel"></div><div class="pskel"></div><div class="pskel"></div></div>';
+    var cached = readDashCache();
+    var painted = false;
 
-    loadAll().then(function (d) {
-      var enrollments = d.enrollments;
+    if (cached && cached.enrollments.length) {
+      if (opts.onHasPrograms) opts.onHasPrograms(cached.enrollments);
+      paint(container, opts, cached.enrollments, cached.schedules);
+      painted = true;
+      scrollToHash();
+    } else {
+      container.innerHTML = headingHtml(opts) +
+        '<div class="ld-next ld-next--empty"><i class="fas fa-spinner fa-spin"></i> Loading your programs and tests… the first load can take up to a minute.</div>';
+    }
+
+    authFetch('/api/enrollment/my-enrollments').then(function (data) {
+      var enrollments = data.enrollments || [];
       if (!enrollments.length) {
         container.innerHTML = '';
         publishActions([], false);
+        try { localStorage.removeItem(DASH_KEY); } catch (e) { /* ignore */ }
         if (opts.onEmpty) opts.onEmpty();
         return;
       }
-      if (opts.onHasPrograms) opts.onHasPrograms(enrollments);
-      publishActions(actionItems(enrollments, d.schedules), true);
+      if (!painted && opts.onHasPrograms) opts.onHasPrograms(enrollments);
 
-      container.innerHTML =
-        (opts.hideHeading ? '' : '<div class="ld-head"><h2><i class="fas fa-graduation-cap"></i> My Tests &amp; Programs</h2></div>') +
-        enrollments.map(function (e, i) { return renderProgram(e, d.schedules[i], i); }).join('');
-      wire(container);
+      // Reuse cached schedules for programs already known (no flash back to
+      // "loading"); brand-new programs show the loading line.
+      var known = {};
+      if (cached) cached.enrollments.forEach(function (e, i) { known[e.order_id] = cached.schedules[i]; });
+      var schedules = enrollments.map(function (e) {
+        return known[e.order_id] || { loading: true, tests: [], categories: [], materialsCount: 0 };
+      });
+      var sameSet = painted && cached.enrollments.length === enrollments.length &&
+        enrollments.every(function (e) { return !!known[e.order_id]; });
+      if (!sameSet) {
+        paint(container, opts, enrollments, schedules);
+        if (!painted) scrollToHash();
+      }
 
-      // Arrived from a header-bell item: bring that program into view.
-      var target = window.location.hash && document.getElementById(window.location.hash.slice(1));
-      if (target) setTimeout(function () { target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50);
+      return Promise.all(enrollments.map(function (e, i) {
+        var p = e.program_category === 'interview'
+          ? Promise.resolve({ tests: [], categories: [], materialsCount: 0 })
+          : loadSchedule(e.canonical_slug || e.program_slug);
+        return p.then(function (sched) {
+          schedules[i] = sched;
+          repaintCard(container, e, sched, i);
+        });
+      })).then(function () {
+        publishActions(actionItems(enrollments, schedules), true);
+        writeDashCache(enrollments, schedules);
+      });
     }).catch(function (err) {
+      if (painted) return; // keep showing the last known dashboard
       container.innerHTML = '<p class="profile-empty">Could not load your programs. ' +
         (err && err.status === 401 ? 'Please log in again.' : 'Please refresh the page.') + '</p>';
     });

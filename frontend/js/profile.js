@@ -255,6 +255,8 @@
     document.getElementById('profileLogoutBtn').addEventListener('click', function () {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(USER_KEY);
+      localStorage.removeItem('jaspal_learner_dash');
+      localStorage.removeItem('jaspal_learner_actions');
       window.location.href = '/';
     });
 
@@ -278,7 +280,12 @@
         hideNudge.textContent = '.jct-desktop,.jct-mobile{display:none!important;}';
         document.head.appendChild(hideNudge);
       },
-      onEmpty: function () { el.style.display = 'none'; },
+      onEmpty: function () {
+        el.style.display = 'none';
+        // No paid program: the profile form is the main content, show it.
+        var details = document.getElementById('accountDetails');
+        if (details) details.setAttribute('open', '');
+      },
     });
   }
 

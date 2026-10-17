@@ -341,6 +341,7 @@
         localStorage.removeItem('jaspal_learner_token');
         localStorage.removeItem('jaspal_learner');
         localStorage.removeItem('jaspal_learner_actions');
+        localStorage.removeItem('jaspal_learner_dash');
         window.location.href = '/';
       });
     }
@@ -435,7 +436,7 @@
     };
     if (window.LearnerDashboard) return run();
     var sc = document.createElement('script');
-    sc.src = '/js/learner-dashboard.js?v=3';
+    sc.src = '/js/learner-dashboard.js?v=4';
     sc.onload = run;
     document.head.appendChild(sc);
   }

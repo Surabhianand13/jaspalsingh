@@ -40,6 +40,8 @@
   function clearSession() {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    localStorage.removeItem('jaspal_learner_dash');
+    localStorage.removeItem('jaspal_learner_actions');
   }
 
   /* ── API helpers ────────────────────────────────────────── */
