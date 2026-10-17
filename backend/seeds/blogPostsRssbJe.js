@@ -133,7 +133,7 @@ module.exports = [
 
 <p>Cover the technical subjects topic by topic - do not rush. For each topic, understand the concepts, solve numericals (for structural and geotechnical subjects), and practice with multiple-choice questions that match the RSSB JE pattern. Give special attention to Rajasthan GK which is often underestimated.</p>
 
-<p>A structured test series - where you take tests on specific topics and then full-length papers - is the most effective way to benchmark your preparation. Dr. Jaspal Singh's <strong>Jaspal Sir Ki Test Series</strong> for RSSB JE covers both degree and diploma holder patterns, with tests every Sunday at the Jaipur centre (Tonk Road). A printed OMR home-based option is also available if you are outside Jaipur.</p>
+<p>A structured test series - where you take tests on specific topics and then full-length papers - is the most effective way to benchmark your preparation. Dr. Jaspal Singh's <strong>Jaspal Sir Ki Test Series</strong> for RSSB JE covers both degree and diploma holder patterns, with tests every Sunday at the Jaipur centre (Tonk Road). A Printed OMR Offline option is also available if you are outside Jaipur.</p>
 
 <p>For more details, visit <a href="https://jaspalsingh.in/programs">jaspalsingh.in</a> or call <strong>+91 98291 33317</strong>.</p>
 `,
@@ -310,7 +310,7 @@ module.exports = [
     title:        'What is a Printed OMR Test Series for RSSB JE - and Why It Works Better Than Screen-based Tests',
     category:     'strategy',
     published_at: '2026-09-26',
-    excerpt:      'Printed OMR Test Series sends you real question papers and OMR sheets by courier. You give the test at home exactly as in an exam hall. Here is how it works and why it is more effective for RSSB JE preparation.',
+    excerpt:      'Printed OMR Test Series sends you real question papers and OMR sheets by courier. You take the test exactly as in an exam hall. Here is how it works and why it is more effective for RSSB JE preparation.',
     content: `
 <p>Most RSSB JE aspirants rely on screen-based practice questions for their mock test preparation. There is a significant problem with that approach - the actual RSSB JE examination is a <strong>pen-and-paper based exam</strong> with an OMR sheet. Practising on a screen is fundamentally different from filling bubbles under time pressure with negative marking. This is exactly the gap that a <strong>Printed OMR Test Series</strong> solves.</p>
 
@@ -320,7 +320,7 @@ module.exports = [
 
 <ol>
   <li>A physical <strong>question paper and OMR sheet</strong> are sent to your address - no screen involved.</li>
-  <li>You sit at home at a fixed time, just like an exam hall, and answer the questions on paper.</li>
+  <li>You sit at a fixed time, just like an exam hall, and answer the questions on paper.</li>
   <li>You fill your answers in the OMR sheet using a pen (blue or black ballpoint, as required in the actual exam).</li>
   <li>After the test window, you photograph or scan your OMR sheet and submit it.</li>
   <li>You receive <strong>detailed solutions</strong> and your score - so you can review every question you got wrong.</li>
@@ -352,10 +352,10 @@ module.exports = [
 
 <h2>Dr. Jaspal Singh's Printed OMR Test Series for RSSB JE</h2>
 
-<p><strong>Jaspal Sir Ki Test Series</strong> for RSSB JE is available in both offline (at the Jaipur Tonk Road centre) and printed OMR home-based formats. The printed OMR version:</p>
+<p><strong>Jaspal Sir Ki Test Series</strong> for RSSB JE is available in both offline (at the Jaipur Tonk Road centre) and Printed OMR Offline formats. The printed OMR version:</p>
 
 <ul>
-  <li>Sends question papers and OMR sheets to your home before each test date</li>
+  <li>Sends question papers and OMR sheets to your address before each test date</li>
   <li>Covers both degree holder and diploma holder patterns</li>
   <li>Tests are held on Sundays - same schedule as the offline centre</li>
   <li>Detailed solution booklets after every test</li>
@@ -440,7 +440,7 @@ module.exports = [
   <li><strong>Current Affairs</strong> - national and Rajasthan-level news, government schemes</li>
 </ul>
 
-<p>Dr. Jaspal Singh's Jaspal Sir Ki Test Series for RSSB JE runs separate test schedules for degree and diploma holders, matching the exact pattern for each category. Offline tests at the Jaipur Tonk Road centre and printed OMR home-based options are both available.</p>
+<p>Dr. Jaspal Singh's Jaspal Sir Ki Test Series for RSSB JE runs separate test schedules for degree and diploma holders, matching the exact pattern for each category. Offline tests at the Jaipur Tonk Road centre and Printed OMR Offline options are both available.</p>
 
 <p>For details, visit <a href="https://jaspalsingh.in">jaspalsingh.in</a> or call <strong>+91 98291 33317</strong>.</p>
 `,
@@ -472,7 +472,7 @@ module.exports = [
 
 <p>The RSSB JE examination is a pen-and-paper OMR-based test. Answering questions on paper by shading bubbles is a specific skill. Errors like double-shading, shading the wrong bubble, or losing your position when moving between sections happen regularly in exams - and they cannot be undone.</p>
 
-<p><strong>The fix:</strong> Give at least a few full-length tests with a physical OMR sheet before the exam. The Jaspal Sir Ki Test Series provides printed OMR sheets for every test - whether you attend the Jaipur centre or give the home-based test - so you build this skill systematically over weeks, not days.</p>
+<p><strong>The fix:</strong> Give at least a few full-length tests with a physical OMR sheet before the exam. The Jaspal Sir Ki Test Series provides printed OMR sheets for every test - whether you attend the Jaipur centre or take the Printed OMR Offline test - so you build this skill systematically over weeks, not days.</p>
 
 <h2>Mistake 4 - Spreading Preparation Across Too Many Books</h2>
 
@@ -490,7 +490,7 @@ module.exports = [
 
 <p>Do not compare your preparation pace with others. Some people in your batch may appear to study more hours, or claim to have completed topics you have not touched. Focus on your own schedule and review cycle. Steady, structured preparation with regular testing beats anxious cramming every time.</p>
 
-<p>For a structured test series for RSSB JE Civil - offline at Jaipur (Tonk Road) or printed OMR home-based - visit <a href="https://jaspalsingh.in">jaspalsingh.in</a> or call <strong>+91 98291 33317</strong>.</p>
+<p>For a structured test series for RSSB JE Civil - offline at Jaipur (Tonk Road) or Printed OMR Offline - visit <a href="https://jaspalsingh.in">jaspalsingh.in</a> or call <strong>+91 98291 33317</strong>.</p>
 `,
   },
 
@@ -571,7 +571,7 @@ module.exports = [
   <li>In the test series, track which of these topics you are getting wrong - spend extra revision time there.</li>
 </ol>
 
-<p>For structured test series with topic-wise and full-length tests for RSSB JE Civil, visit <a href="https://jaspalsingh.in">jaspalsingh.in</a> or call <strong>+91 98291 33317</strong>. Offline tests at Jaipur (Tonk Road) and printed OMR home-based option both available.</p>
+<p>For structured test series with topic-wise and full-length tests for RSSB JE Civil, visit <a href="https://jaspalsingh.in">jaspalsingh.in</a> or call <strong>+91 98291 33317</strong>. Offline tests at Jaipur (Tonk Road) and Printed OMR Offline option both available.</p>
 `,
   },
 
@@ -641,7 +641,7 @@ module.exports = [
   <li>Track and fix weak areas 2-3 months before the exam - not in the final week.</li>
 </ol>
 
-<p>For RSSB JE test series - offline at Jaipur Tonk Road centre or printed OMR home-based - visit <a href="https://jaspalsingh.in">jaspalsingh.in</a> or call <strong>+91 98291 33317</strong>.</p>
+<p>For RSSB JE test series - offline at Jaipur Tonk Road centre or Printed OMR Offline - visit <a href="https://jaspalsingh.in">jaspalsingh.in</a> or call <strong>+91 98291 33317</strong>.</p>
 `,
   },
 

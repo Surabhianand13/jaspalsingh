@@ -499,9 +499,9 @@ function generateAdmitCard({ name, govtId, rollNumber, centre, targetExam, phone
 
     const instructions = mode === 'home' ? [
       'Question Paper & OMR Sheet PDFs emailed on each test morning.',
-      'Print both PDFs and attempt the test on paper at home.',
+      'Print both PDFs and attempt the test on paper.',
       'Fill your answers using a blue or black ballpoint pen only.',
-      'Reply to the test email with a clear photo of your filled OMR sheet.',
+      'Upload a clear photo of your filled OMR sheet at jaspalsingh.in/profile.',
       'Submit before 10:00 PM on the same day - no evaluation after that.',
       'Negative Marking: 0.33 marks deducted per wrong answer.',
     ] : [

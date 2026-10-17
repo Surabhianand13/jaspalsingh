@@ -114,7 +114,7 @@ module.exports = [
 <h2>Where to Get Authentic RSSB JE Civil Previous Year Papers</h2>
 <p>Always source PYQs from authentic materials. The official RSSB website (rsmssb.rajasthan.gov.in) is the authoritative source for official notifications. For actual question papers, use materials from established publishers that source directly from official exam papers - not from unofficial forums where questions may be inaccurate or incomplete.</p>
 
-<p>Dr. Jaspal Singh's RSSB JE Civil test series is modelled on the actual RSSB JE pattern - same subject distribution, same difficulty level, OMR-based answer sheets. Tests are held every Sunday at Jaipur (Tonk Road) and Delhi (Lado Sarai) centres, with a printed OMR home-based option. For details visit <a href="https://jaspalsingh.in/programs">jaspalsingh.in</a> or call <strong>+91 98291 33317</strong>.</p>
+<p>Dr. Jaspal Singh's RSSB JE Civil test series is modelled on the actual RSSB JE pattern - same subject distribution, same difficulty level, OMR-based answer sheets. Tests are held every Sunday at Jaipur (Tonk Road) and Delhi (Lado Sarai) centres, with a Printed OMR Offline option. For details visit <a href="https://jaspalsingh.in/programs">jaspalsingh.in</a> or call <strong>+91 98291 33317</strong>.</p>
 `,
   },
 
@@ -242,7 +242,7 @@ module.exports = [
   <li><strong>Hydrology:</strong> Many civil engineering graduates have weaker hydrology preparation because it is not heavily tested in state-level exams. ESE tests hydrology at depth - unit hydrograph, flood routing, and groundwater questions appear regularly.</li>
 </ol>
 
-<p>Dr. Jaspal Singh's ESE 2027 Prelims test series covers Paper 2 Civil Engineering every Sunday alongside Paper 1 - replicating the actual ESE format. Tests at Jaipur (Tonk Road) and Delhi (Lado Sarai) centres, plus printed OMR home-based option. Visit <a href="https://jaspalsingh.in/programs">jaspalsingh.in</a> or call <strong>+91 98291 33317</strong>.</p>
+<p>Dr. Jaspal Singh's ESE 2027 Prelims test series covers Paper 2 Civil Engineering every Sunday alongside Paper 1 - replicating the actual ESE format. Tests at Jaipur (Tonk Road) and Delhi (Lado Sarai) centres, plus Printed OMR Offline option. Visit <a href="https://jaspalsingh.in/programs">jaspalsingh.in</a> or call <strong>+91 98291 33317</strong>.</p>
 `,
   },
 
@@ -323,7 +323,7 @@ module.exports = [
 
 <p>Many successful ESE candidates use a hybrid: independent study for concepts (using standard textbooks) combined with a structured test series for the testing phase. This gives the flexibility and cost efficiency of independent preparation while still getting the realistic exam practice that a good test series provides.</p>
 
-<p>Dr. Jaspal Singh's ESE 2027 Prelims test series is designed specifically for this: it provides a structured Sunday test programme - Paper 1 and Paper 2 Civil together, on a real OMR sheet, every Sunday from October 2026 to January 2027. For candidates outside Jaipur and Delhi, the printed OMR home-based option delivers question papers and OMR sheets to your address so you can test at home in controlled conditions. Visit <a href="https://jaspalsingh.in/programs">jaspalsingh.in</a> or call <strong>+91 98291 33317</strong>.</p>
+<p>Dr. Jaspal Singh's ESE 2027 Prelims test series is designed specifically for this: it provides a structured Sunday test programme - Paper 1 and Paper 2 Civil together, on a real OMR sheet, every Sunday from October 2026 to January 2027. For candidates outside Jaipur and Delhi, the Printed OMR Offline option delivers question papers and OMR sheets to your address so you can test in controlled conditions wherever you are. Visit <a href="https://jaspalsingh.in/programs">jaspalsingh.in</a> or call <strong>+91 98291 33317</strong>.</p>
 `,
   },
 
@@ -510,7 +510,7 @@ module.exports = [
 
 <p>Dr. Jaspal Singh's test series for RSSB JE Civil, UKPSC JE Civil, and ESE 2027 Prelims uses real printed OMR sheets - the same format as the actual exam. Tests are conducted every Sunday at the Jaipur (Tonk Road) and Delhi (Lado Sarai) centres.</p>
 
-<p>For candidates outside Jaipur and Delhi: the home-based printed OMR option delivers the printed question booklet and OMR sheet to your postal address. You take the test at home under timed conditions, photograph and upload your completed OMR sheet, and receive the solutions booklet and your score. This option allows candidates anywhere in India to practise on real printed OMR sheets without travelling to a test centre.</p>
+<p>For candidates outside Jaipur and Delhi: the Printed OMR Offline option delivers the printed question booklet and OMR sheet to your postal address. You take the test under timed conditions, photograph and upload your completed OMR sheet, and receive the solutions booklet and your score. This option allows candidates anywhere in India to practise on real printed OMR sheets without travelling to a test centre.</p>
 
 <p>For details and enrollment visit <a href="https://jaspalsingh.in/programs">jaspalsingh.in</a> or call <strong>+91 98291 33317</strong>.</p>
 `,
@@ -567,7 +567,7 @@ module.exports = [
 <ul>
   <li><strong>RSSB JE Civil</strong> - test series conducted at the Jaipur Tonk Road centre every Sunday</li>
   <li><strong>UKPSC JE Civil</strong> - test series at the same centre, targeted specifically at UKPSC JE pattern</li>
-  <li><strong>ESE 2027 Prelims</strong> - Paper 1 and Paper 2 Civil Engineering together every Sunday, at Jaipur (Tonk Road) and Delhi (Lado Sarai); printed OMR home-based option for candidates outside these cities</li>
+  <li><strong>ESE 2027 Prelims</strong> - Paper 1 and Paper 2 Civil Engineering together every Sunday, at Jaipur (Tonk Road) and Delhi (Lado Sarai); Printed OMR Offline option for candidates outside these cities</li>
 </ul>
 
 <p>All tests use real printed OMR sheets with negative marking - the same format as the actual RSSB JE and ESE Prelims exams. Every test is followed by a complete solution booklet.</p>
@@ -580,7 +580,7 @@ module.exports = [
 
 <p>Visit <a href="https://jaspalsingh.in/programs">jaspalsingh.in</a> to view the current programmes for RSSB JE Civil, UKPSC JE Civil, and ESE 2027 Prelims. You can enrol directly from the website. For queries, call <strong>+91 98291 33317</strong>.</p>
 
-<p>The printed OMR home-based option is available for all programmes - question papers and OMR sheets are dispatched to your postal address and you take the test at home under timed conditions. This is particularly useful for aspirants in other Rajasthan cities - Jodhpur, Kota, Udaipur, Ajmer, Bikaner - who cannot come to Jaipur every Sunday.</p>
+<p>The Printed OMR Offline option is available for all programmes - question papers and OMR sheets are dispatched to your postal address and you take the test under timed conditions. This is particularly useful for aspirants in other Rajasthan cities - Jodhpur, Kota, Udaipur, Ajmer, Bikaner - who cannot come to Jaipur every Sunday.</p>
 `,
   },
 

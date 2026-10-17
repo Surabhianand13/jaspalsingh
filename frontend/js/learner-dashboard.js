@@ -6,7 +6,7 @@
      - what to do next (admit card form, upload due, result out)
      - admit card status / download
      - every test with its live status and direct actions
-     - how tests work for THIS program (home OMR vs test centre)
+     - how tests work for THIS program (Printed OMR vs test centre)
    Rendered at the top of /profile and on /my-programs.
 
    Requires learner-auth.js (token) and schedule-modal.js (upload /
@@ -133,10 +133,10 @@
 
   var MODE_INFO = {
     omr: {
-      chip: '<i class="fas fa-house"></i> Home test · OMR upload',
+      chip: '<i class="fas fa-file-pen"></i> Printed OMR Offline',
       steps: [
         '<strong>Paper unlocks here</strong> at the release time shown on each test - download the question paper and the blank OMR sheet.',
-        '<strong>Take the test at home</strong> within the time limit. Mark your answers on the OMR sheet (print the blank sheet, or use the printed one you received).',
+        '<strong>Take the test</strong> within the time limit. Mark your answers on the OMR sheet (print the blank sheet, or use the printed one you received).',
         '<strong>Upload a clear photo or PDF</strong> of your filled OMR sheet here before the deadline. You can re-upload until the deadline closes.',
         '<strong>Solutions unlock</strong> after the deadline. Your marks and rank appear here once results are published.',
       ],
@@ -456,7 +456,7 @@
 
   function headingHtml(opts) {
     return opts.hideHeading ? '' : '<div class="ld-head"><h2><i class="fas fa-graduation-cap"></i> My Enrolled Courses &amp; Programs</h2>' +
-      '<p class="ld-sub">See all your enrolled offline test series, home OMR tests, batches and admit cards here.</p></div>';
+      '<p class="ld-sub">See all your enrolled offline test series, Printed OMR tests, batches and admit cards here.</p></div>';
   }
 
   function paint(container, opts, enrollments, schedules) {

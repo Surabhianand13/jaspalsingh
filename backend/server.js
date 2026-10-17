@@ -1183,11 +1183,11 @@ async function migrate() {
       who_for: [
         'Graduates in Chemistry/Environmental Science/Civil/Environmental/Public Health Engg./Bio Technology/Planning/Architecture applying under BPSC Advt. 108/2025',
         'Candidates outside Patna/Delhi who still want a proctored-style OMR practice routine',
-        'Aspirants who want to build OMR-sheet speed and accuracy at home',
+        'Aspirants who want to build OMR-sheet speed and accuracy without travelling to a centre',
         'Anyone who wants a structured subject-wise + full-length test progression',
       ],
       faqs: [
-        { question: 'How does the printed OMR offline test series work?', answer: 'You receive the question paper and a blank OMR sheet on each test date, attempt it at home within the time limit, and upload your filled sheet before the deadline.' },
+        { question: 'How does the printed OMR offline test series work?', answer: 'You receive the question paper and a blank OMR sheet on each test date, attempt it within the time limit, and upload your filled sheet before the deadline.' },
         { question: 'What is the paper pattern?', answer: 'Two compulsory objective papers held on the same day: Paper I General Studies (125 questions / 100 marks / 2 hours) and Paper II Solid & Liquid Waste Management (125 questions / 100 marks / 2 hours).' },
         { question: 'When does this batch start?', answer: 'Tentatively September 2026. Exact dates are shared with enrolled learners in advance.' },
       ],
@@ -1204,7 +1204,7 @@ async function migrate() {
       short_desc: '12 printed OMR offline tests (Hindi + Civil Paper I, GS + Civil Paper II) for the UP Technical Education (Teaching) Service Exam - Civil branch.',
       who_for: [
         'Candidates applying for Lecturer (Civil Engineering), Govt. Polytechnics under UPPSC Advt. A-11/E-1/2025',
-        'Aspirants who want the exact UPPSC two-paper pattern practiced at home',
+        'Aspirants who want the exact UPPSC two-paper pattern practiced on printed OMR sheets',
         'Anyone who wants a fixed, date-wise test calendar to plan around',
         'Candidates who want both Hindi/GS and core Civil subject practice in one series',
       ],
@@ -1286,7 +1286,7 @@ async function migrate() {
   await query(
     `UPDATE programs SET faqs = $1 WHERE slug = 'bpsc-sanitary-officer-2026-jaspalsirki-testseries-omr'`,
     [JSON.stringify([
-      { question: 'How does the printed OMR offline test series work?', answer: 'You receive the question paper and a blank OMR sheet on each test date, attempt it at home within the time limit, and upload your filled sheet before the deadline.' },
+      { question: 'How does the printed OMR offline test series work?', answer: 'You receive the question paper and a blank OMR sheet on each test date, attempt it within the time limit, and upload your filled sheet before the deadline.' },
       { question: 'What is the paper pattern?', answer: 'Two compulsory objective papers held on the same day: Paper I General Studies (125 questions / 100 marks / 2 hours) and Paper II Solid & Liquid Waste Management (125 questions / 100 marks / 2 hours).' },
       { question: 'When does this batch start?', answer: 'Tentatively September 2026. Exact dates are shared with enrolled learners in advance.' },
     ])]
@@ -1301,6 +1301,53 @@ async function migrate() {
     ])]
   );
   console.log('✅ Corrected "Home-Based OMR" -> "Printed OMR Offline" wording on 8 already-live program rows');
+
+  /* ── "Home-based" sweep (2026-10-17): the 2026-08-26 rebrand above only
+     fixed 8 titles, so "home-based" / "from home" copy survived in other
+     live rows (tags such as 'Home-Based Printed OMR', faqs, who_for,
+     launch_config.seriesName shown on admit cards, and seeded blog posts,
+     which are insert-only). Owner rule: never "Home Based" - always
+     "Printed OMR Offline", and "from anywhere" instead of "from home".
+     Idempotent: rows stop matching once fixed. JSONB columns are edited
+     as text - the replacements contain no quotes, so the JSON stays valid. */
+  {
+    const HOME_FIXES = [
+      ['home[- ]based printed omr', 'Printed OMR Offline', 'gi'],
+      ['printed omr[ -]+home[- ]based', 'Printed OMR Offline', 'gi'],
+      ['home[- ]based omr', 'Printed OMR Offline', 'gi'],
+      ['home[- ]based', 'Printed OMR Offline', 'gi'],
+      ['(attempted )?entirely from home', '\\1from anywhere', 'gi'],
+      ['From Home', 'From Anywhere', 'g'],
+      ['from home', 'from anywhere', 'gi'],
+    ];
+    const fix = (expr) => HOME_FIXES.reduce((acc, [pat, rep, fl]) => `regexp_replace(${acc}, '${pat}', '${rep}', '${fl}')`, expr);
+    const HOME_RE = `'(home[- ]based|from home)'`;
+    try {
+      const r1 = await query(
+        `UPDATE programs SET
+           title         = ${fix('title')},
+           level         = ${fix('level')},
+           short_desc    = ${fix('short_desc')},
+           short_name    = ${fix('short_name')},
+           tags          = (${fix('tags::text')})::jsonb,
+           who_for       = (${fix('who_for::text')})::jsonb,
+           faqs          = (${fix('faqs::text')})::jsonb,
+           launch_config = (${fix('launch_config::text')})::jsonb
+         WHERE concat_ws(' ', title, level, short_desc, short_name, tags::text, who_for::text, faqs::text, launch_config::text) ~* ${HOME_RE}`
+      );
+      const r2 = await query(
+        `UPDATE blog_posts SET
+           title   = ${fix('title')},
+           content = ${fix('content')},
+           excerpt = ${fix('excerpt')}
+         WHERE concat_ws(' ', title, content, excerpt) ~* ${HOME_RE}
+           AND concat_ws(' ', title, content, excerpt) ~* 'omr'`
+      );
+      if (r1.rowCount || r2.rowCount) console.log(`✅ Home-based wording sweep: ${r1.rowCount} program rows, ${r2.rowCount} blog posts`);
+    } catch (err) {
+      console.error('[migrate] home-based wording sweep failed (non-fatal):', err.message);
+    }
+  }
 
   /* ── UP Polytechnic Lecturer (Civil, Printed OMR Offline): real Tally form
      wired 2026-08-10 - only sets launch_config the first time so any
@@ -1725,7 +1772,7 @@ async function migrate() {
       level: 'Degree (Civil)', price: 999, mrp: 1999, sort_order: 32,
       short_name: 'शौर्य Printed OMR - Degree',
       thumb: '/assets/images/program-thumbs/shaurya-offline-degree.jpg',
-      tags: ['Same Question Paper as Offline', 'Full-length + Subject-wise Tests', 'Post-test Expert Review', 'Attempt From Home'],
+      tags: ['Same Question Paper as Offline', 'Full-length + Subject-wise Tests', 'Post-test Expert Review', 'Attempt From Anywhere'],
     },
     {
       slug: 'shaurya-omr-rssb-je-2026-diploma',
@@ -1733,7 +1780,7 @@ async function migrate() {
       level: 'Diploma (Civil)', price: 999, mrp: 1999, sort_order: 33,
       short_name: 'शौर्य Printed OMR - Diploma',
       thumb: '/assets/images/program-thumbs/shaurya-offline-diploma.jpg',
-      tags: ['Same Question Paper as Offline', 'Full-length + Subject-wise Tests', 'Post-test Expert Review', 'Attempt From Home'],
+      tags: ['Same Question Paper as Offline', 'Full-length + Subject-wise Tests', 'Post-test Expert Review', 'Attempt From Anywhere'],
     },
   ];
   for (const p of shauryaOmrLaunches) {
@@ -2098,7 +2145,7 @@ async function migrate() {
       1499, 2999,
       '/assets/images/thumb-ukpsc-je-2026-civil-omr.jpg',
       'UKPSC JE Civil - Printed OMR',
-      JSON.stringify(['Home-Based Printed OMR', '112 Tests Over 28 Weeks', 'Subject-Wise + Full-Length', 'Post-Test Solution PDF']),
+      JSON.stringify(['Printed OMR Offline', '112 Tests Over 28 Weeks', 'Subject-Wise + Full-Length', 'Post-Test Solution PDF']),
       '/programs/ukpsc-je-2026-civil-omr/',
     ]
   );
@@ -2373,7 +2420,7 @@ async function migrate() {
       1999, 4999,
       '/assets/images/thumb-ukpsc-ae-2026-civil-omr.jpg',
       'UKPSC AE Civil - Printed OMR',
-      JSON.stringify(['Home-Based Printed OMR', '155 Tests Over 31 Weeks', 'Subject-Wise + Full-Length', 'Post-Test Solution PDF']),
+      JSON.stringify(['Printed OMR Offline', '155 Tests Over 31 Weeks', 'Subject-Wise + Full-Length', 'Post-Test Solution PDF']),
       '/programs/ukpsc-ae-2026-civil-omr/',
     ]
   );
@@ -2618,7 +2665,7 @@ async function migrate() {
     {
       slug: 'rssb-je-2026-4oct-flt-degree-omr',
       title: "4th Oct'26 - RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Degree OMR",
-      short_desc: '15 full-length tests every Sunday from 4 Oct 2026, printed OMR from home - Degree level',
+      short_desc: '15 full-length tests every Sunday from 4 Oct 2026, printed OMR from anywhere - Degree level',
       price: 599,
       mrp: 1999,
       sort_order: 40,
@@ -2637,7 +2684,7 @@ async function migrate() {
     {
       slug: 'rssb-je-2026-4oct-flt-diploma-omr',
       title: "4th Oct'26 - RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil Diploma OMR",
-      short_desc: '15 full-length tests every Sunday from 4 Oct 2026, printed OMR from home - Diploma level',
+      short_desc: '15 full-length tests every Sunday from 4 Oct 2026, printed OMR from anywhere - Diploma level',
       price: 599,
       mrp: 1999,
       sort_order: 41,
