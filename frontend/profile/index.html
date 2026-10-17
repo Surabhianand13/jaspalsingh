@@ -21,7 +21,7 @@
   <link rel="stylesheet" href="/css/additions.css?v=8" />
   <link rel="stylesheet" href="/css/animations.css?v=8" />
   <link rel="stylesheet" href="/css/learner-auth.css" />
-  <link rel="stylesheet" href="/css/profile.css?v=2" />
+  <link rel="stylesheet" href="/css/profile.css?v=3" />
   <link rel="stylesheet" href="/css/learner-dashboard.css?v=2" />
 <script src="/js/loader.js"></script>
 </head>
@@ -578,12 +578,34 @@
 
       <div class="container profile-body">
 
+        <!-- Profile hub: one tile per area, only the chosen one is shown
+             (see setupProfileTabs in profile.js) - no long scroll to find
+             referral code, free PDFs or account details. -->
+        <nav class="ph-tabs" id="profileTabs" aria-label="Profile sections">
+          <button type="button" class="ph-tab" data-tab="courses" style="--ph-c:#0F766E;--ph-bg:#CCFBF1;">
+            <span class="ph-tab-icon"><i class="fas fa-graduation-cap"></i></span>
+            <span class="ph-tab-text"><strong>My Courses &amp; Programs</strong><small id="phSubCourses">Tests, batches, admit card</small></span>
+          </button>
+          <button type="button" class="ph-tab" data-tab="free" style="--ph-c:#C81240;--ph-bg:#FFE4EA;">
+            <span class="ph-tab-icon"><i class="fas fa-book-open-reader"></i></span>
+            <span class="ph-tab-text"><strong>Free Resources</strong><small id="phSubFree">Notes, tests &amp; solutions</small></span>
+          </button>
+          <button type="button" class="ph-tab" data-tab="referral" style="--ph-c:#EA580C;--ph-bg:#FFEDD5;">
+            <span class="ph-tab-icon"><i class="fas fa-gift"></i></span>
+            <span class="ph-tab-text"><strong>Refer &amp; Earn</strong><small>&#8377;100 per friend</small></span>
+          </button>
+          <button type="button" class="ph-tab" data-tab="account" style="--ph-c:#4338CA;--ph-bg:#E0E7FF;">
+            <span class="ph-tab-icon"><i class="fas fa-user-pen"></i></span>
+            <span class="ph-tab-text"><strong>Account Details</strong><small>Name, mobile, exam</small></span>
+          </button>
+        </nav>
+
         <!-- Paid learners: tests, admit card and next steps come first.
              Stays empty (and hidden) for learners with no paid programs. -->
-        <section id="learnerDashboard" aria-label="My Tests & Programs"></section>
+        <section id="learnerDashboard" data-panel="courses" aria-label="My Enrolled Courses & Programs"></section>
 
         <!-- Edit form card - starts folded; opened for learners with no paid program (see profile.js) -->
-        <details class="profile-card pf-fold" id="accountDetails" aria-label="Account Details">
+        <details class="profile-card pf-fold" id="accountDetails" data-panel="account" aria-label="Account Details">
           <summary class="profile-card-header">
             <h2><i class="fas fa-user-edit"></i> Account Details</h2>
           </summary>
@@ -661,7 +683,7 @@
         </details>
 
         <!-- Referral Code card -->
-        <section class="profile-card" id="referral" aria-label="My Referral Code">
+        <section class="profile-card" id="referral" data-panel="referral" aria-label="My Referral Code">
           <div class="profile-card-header">
             <h2><i class="fas fa-gift"></i> Refer & Earn ₹100</h2>
           </div>
@@ -674,7 +696,7 @@
 
 
         <!-- Free Resources card -->
-        <section class="profile-card" id="free-resources" aria-label="Free Resources">
+        <section class="profile-card" id="free-resources" data-panel="free" aria-label="Free Resources">
           <div class="profile-card-header frx-head">
             <h2><i class="fas fa-book-open-reader"></i> Free Study Resources <span class="frx-total" id="frTotalCount" style="display:none;"></span></h2>
             <p class="frx-sub">Notes, test papers and solutions by Jaspal Sir - free for registered learners.</p>
@@ -784,8 +806,8 @@
   <script src="/js/api.js?v=2"></script>
   <script src="/js/learner-auth.js?v=2"></script>
   <script src="/js/schedule-modal.js?v=3"></script>
-  <script src="/js/learner-dashboard.js?v=4"></script>
-  <script src="/js/profile.js?v=4"></script>
+  <script src="/js/learner-dashboard.js?v=5"></script>
+  <script src="/js/profile.js?v=5"></script>
   <script src="/js/login-wall.js" defer></script>
   <script src="/js/track.js" defer></script>
   <a href="https://wa.me/919829133317" target="_blank" rel="noopener" aria-label="Chat on WhatsApp" class="whatsapp-float"><i class="fab fa-whatsapp"></i></a>

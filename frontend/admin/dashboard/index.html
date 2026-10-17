@@ -924,9 +924,9 @@
             <option value="rpsc-ae">RPSC AE / RVUNL</option>
             <option value="ese">ESE</option>
             <option value="gate">GATE</option>
+            <option value="syllabus">Syllabus</option>
             <option value="ukpsc">UKPSC AE/JE</option>
             <option value="up-poly">UP Polytechnic</option>
-            <option value="general">General / Civil Engineering</option>
           </select>
         </div>
         <div style="margin-bottom:14px;">
@@ -1489,7 +1489,7 @@ async function loadFreeResources() {
    FR_CATEGORIES in frontend/js/profile.js. '' = guessed from the title. */
 const FR_CATEGORIES = [
   ['', 'Auto (from title)'], ['rssb-je', 'RSSB JE'], ['rpsc-ae', 'RPSC AE / RVUNL'], ['ese', 'ESE'],
-  ['gate', 'GATE'], ['ukpsc', 'UKPSC AE/JE'], ['up-poly', 'UP Polytechnic'], ['general', 'General / Civil Engg'],
+  ['gate', 'GATE'], ['syllabus', 'Syllabus'], ['ukpsc', 'UKPSC AE/JE'], ['up-poly', 'UP Polytechnic'],
 ];
 async function setResourceCategory(id, category) {
   const r = await fetch(`${FR_API}/api/free-resources/${id}`, {

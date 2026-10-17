@@ -455,7 +455,8 @@
   }
 
   function headingHtml(opts) {
-    return opts.hideHeading ? '' : '<div class="ld-head"><h2><i class="fas fa-graduation-cap"></i> My Tests &amp; Programs</h2></div>';
+    return opts.hideHeading ? '' : '<div class="ld-head"><h2><i class="fas fa-graduation-cap"></i> My Enrolled Courses &amp; Programs</h2>' +
+      '<p class="ld-sub">See all your enrolled offline test series, home OMR tests, batches and admit cards here.</p></div>';
   }
 
   function paint(container, opts, enrollments, schedules) {

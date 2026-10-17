@@ -10,6 +10,8 @@
   display: flex; align-items: center; gap: 10px; margin: 0 0 14px;
 }
 .ld-head h2 i { color: #C81240; }
+.ld-head h2 { margin-bottom: 4px; }
+.ld-sub { margin: 0 0 16px; font-size: 13.5px; color: #6b6b8a; }
 
 .ld-loading { display: flex; flex-direction: column; gap: 10px; }
 
