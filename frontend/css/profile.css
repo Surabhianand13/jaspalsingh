@@ -491,3 +491,32 @@
   .frx-tile { scroll-snap-align: start; }
   .frx-grid { grid-template-columns: 1fr; }
 }
+
+/* ── Profile hub tabs ───────────────────────────────────────── */
+[data-panel][hidden] { display: none !important; }
+.ph-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: -8px; }
+.ph-tab {
+  display: flex; align-items: center; gap: 12px; text-align: left; cursor: pointer; font-family: inherit;
+  background: #fff; border: 1.5px solid rgba(26,26,46,.08); border-radius: 16px; padding: 14px;
+  box-shadow: 0 2px 12px rgba(26,26,46,.05); transition: border-color .15s, box-shadow .15s, transform .15s;
+}
+.ph-tab:hover { border-color: var(--ph-c); transform: translateY(-2px); }
+.ph-tab.is-active { border-color: var(--ph-c); background: var(--ph-bg); box-shadow: 0 6px 20px rgba(26,26,46,.08); }
+.ph-tab-icon { width: 42px; height: 42px; flex-shrink: 0; border-radius: 12px; display: grid; place-items: center; background: var(--ph-bg); color: var(--ph-c); font-size: 18px; }
+.ph-tab.is-active .ph-tab-icon { background: var(--ph-c); color: #fff; }
+.ph-tab-text { display: flex; flex-direction: column; min-width: 0; }
+.ph-tab-text strong { font-family: var(--font-heading, 'Plus Jakarta Sans', sans-serif); font-size: 14px; font-weight: 800; color: #1A1A2E; line-height: 1.25; }
+.ph-tab-text small { font-size: 12px; color: #6b6b8a; margin-top: 3px; line-height: 1.3; }
+
+.ph-empty { text-align: center; padding: 36px 24px; }
+.ph-empty > i { font-size: 34px; color: #C81240; margin-bottom: 12px; }
+.ph-empty h3 { font-family: var(--font-heading, 'Plus Jakarta Sans', sans-serif); font-size: 18px; font-weight: 800; color: #1A1A2E; margin: 0 0 6px; }
+.ph-empty p { font-size: 14px; color: #6b6b8a; margin: 0 0 18px; }
+
+@media (max-width: 860px) { .ph-tabs { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 420px) {
+  .ph-tabs { gap: 8px; }
+  .ph-tab { flex-direction: column; align-items: flex-start; gap: 8px; padding: 12px; }
+  .ph-tab-icon { width: 36px; height: 36px; font-size: 16px; }
+  .ph-tab-text strong { font-size: 13px; }
+}

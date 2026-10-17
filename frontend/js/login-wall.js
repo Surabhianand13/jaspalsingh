@@ -289,9 +289,10 @@
             '<div class="lw-menu-name">'+esc(user.name||'Student')+'</div>' +
             (user.email ? '<div class="lw-menu-email">'+esc(user.email)+'</div>' : '') +
           '</div>' +
-          '<a href="/profile" class="lw-menu-item"><i class="fas fa-user"></i> My Profile</a>' +
-          '<a href="/profile#enrolled" class="lw-menu-item"><i class="fas fa-graduation-cap"></i> My Programs</a>' +
-          '<a href="/profile#enrolled" class="lw-menu-item"><i class="fas fa-receipt"></i> Purchase History</a>' +
+          '<a href="/profile#account" class="lw-menu-item"><i class="fas fa-user"></i> Account Details</a>' +
+          '<a href="/profile#courses" class="lw-menu-item"><i class="fas fa-graduation-cap"></i> My Courses &amp; Programs</a>' +
+          '<a href="/profile#free-resources" class="lw-menu-item"><i class="fas fa-book-open-reader"></i> Free Resources</a>' +
+          '<a href="/profile#referral" class="lw-menu-item"><i class="fas fa-gift"></i> Refer &amp; Earn</a>' +
           '<a href="/programs" class="lw-menu-item"><i class="fas fa-layer-group"></i> Browse Programs</a>' +
           '<div class="lw-menu-divider"></div>' +
           '<button class="lw-menu-item lw-logout" id="lwLogoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</button>' +
@@ -423,6 +424,7 @@
         if (!target) return;
         e.preventDefault();
         menu.classList.remove('open');
+        if (window.__profileShowTab) window.__profileShowTab('courses');
         target.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
     });
@@ -436,7 +438,7 @@
     };
     if (window.LearnerDashboard) return run();
     var sc = document.createElement('script');
-    sc.src = '/js/learner-dashboard.js?v=4';
+    sc.src = '/js/learner-dashboard.js?v=5';
     sc.onload = run;
     document.head.appendChild(sc);
   }

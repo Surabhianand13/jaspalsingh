@@ -245,6 +245,7 @@
       return;
     }
     document.getElementById('profileContent').style.display = 'block';
+    setupProfileTabs();
     loadDashboard();
     loadProfile();
     loadReferralCode();
@@ -262,6 +263,65 @@
     document.getElementById('profileForm').addEventListener('submit', onSave);
   }
 
+  /* ── Profile hub tabs ──
+     Four tiles (courses / free / referral / account); only the chosen
+     panel ([data-panel]) is shown. Deep links: #courses or #enrolled or a
+     dashboard program anchor (#ld-...) -> courses, #free-resources -> free,
+     #referral, #account. ?open_resource=<id> -> free. ── */
+  var HASH_FOR_TAB = { courses: 'courses', free: 'free-resources', referral: 'referral', account: 'account' };
+  var explicitTab = null;
+
+  function tabFromLocation() {
+    var h = (window.location.hash || '').slice(1);
+    if (new URLSearchParams(location.search).get('open_resource')) return 'free';
+    if (h === 'free-resources' || h === 'free') return 'free';
+    if (h === 'referral') return 'referral';
+    if (h === 'account') return 'account';
+    if (h === 'courses' || h === 'enrolled' || h.indexOf('ld-') === 0) return 'courses';
+    return null;
+  }
+
+  function showTab(name, fromUser) {
+    document.querySelectorAll('[data-panel]').forEach(function (p) {
+      p.hidden = p.getAttribute('data-panel') !== name;
+    });
+    document.querySelectorAll('#profileTabs [data-tab]').forEach(function (b) {
+      var on = b.getAttribute('data-tab') === name;
+      b.classList.toggle('is-active', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    if (name === 'account') {
+      var details = document.getElementById('accountDetails');
+      if (details) details.setAttribute('open', '');
+    }
+    if (fromUser) {
+      explicitTab = name;
+      try { history.replaceState(null, '', location.pathname + location.search + '#' + HASH_FOR_TAB[name]); } catch (e) { /* ignore */ }
+      var tabs = document.getElementById('profileTabs');
+      var top = tabs.getBoundingClientRect().top;
+      if (top < 0 || top > window.innerHeight * 0.6) tabs.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  function setupProfileTabs() {
+    document.querySelectorAll('#profileTabs [data-tab]').forEach(function (b) {
+      b.addEventListener('click', function () { showTab(b.getAttribute('data-tab'), true); });
+    });
+    explicitTab = tabFromLocation();
+    showTab(explicitTab || 'courses');
+    // Header bell / other links on this same page.
+    window.__profileShowTab = function (name) { showTab(name, false); };
+    window.addEventListener('hashchange', function () {
+      var t = tabFromLocation();
+      if (t) showTab(t);
+    });
+  }
+
+  function setTabSub(id, text) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = text;
+  }
+
   /* ── Paid learner dashboard (tests, admit card, next steps) ──
      Shown first for anyone with a paid program; Account Details folds
      away so it no longer pushes their tests below the fold. */
@@ -269,9 +329,8 @@
     var el = document.getElementById('learnerDashboard');
     if (!el || !window.LearnerDashboard) return;
     window.LearnerDashboard.render(el, {
-      onHasPrograms: function () {
-        var details = document.getElementById('accountDetails');
-        if (details) details.removeAttribute('open');
+      onHasPrograms: function (enrollments) {
+        setTabSub('phSubCourses', enrollments.length + ' enrolled');
         // The "Still unsure? ... before enrolling" chat nudge (chat-tab.js)
         // is a pre-purchase prompt - it only covers the dashboard for
         // someone who has already paid. The dashboard has its own Need help.
@@ -280,10 +339,15 @@
         document.head.appendChild(hideNudge);
       },
       onEmpty: function () {
-        el.style.display = 'none';
-        // No paid program: the profile form is the main content, show it.
-        var details = document.getElementById('accountDetails');
-        if (details) details.setAttribute('open', '');
+        setTabSub('phSubCourses', 'No courses yet');
+        el.innerHTML = '<div class="profile-card ph-empty">' +
+          '<i class="fas fa-graduation-cap"></i>' +
+          '<h3>No enrolled courses yet</h3>' +
+          '<p>Your offline test series, home OMR tests and batches will appear here once you enroll.</p>' +
+          '<a class="btn" href="/programs">Browse test series &amp; batches &rarr;</a>' +
+        '</div>';
+        // Free learners: land on Free Resources unless a link asked for a tab.
+        if (!explicitTab) showTab('free');
       },
     });
   }
@@ -468,9 +532,12 @@
     { key: 'rpsc-ae', label: 'RPSC AE',        icon: 'fa-building',          color: '#16A34A', bg: '#DCFCE7' },
     { key: 'ese',     label: 'ESE',            icon: 'fa-graduation-cap',    color: '#7C3AED', bg: '#EDE9FE' },
     { key: 'gate',    label: 'GATE',           icon: 'fa-atom',              color: '#EA580C', bg: '#FFEDD5' },
+    { key: 'syllabus', label: 'Syllabus',      icon: 'fa-list-check',        color: '#CA8A04', bg: '#FEF9C3' },
     { key: 'ukpsc',   label: 'UKPSC AE/JE',    icon: 'fa-mountain',          color: '#0D9488', bg: '#CCFBF1' },
     { key: 'up-poly', label: 'UP Polytechnic', icon: 'fa-chalkboard-teacher', color: '#DB2777', bg: '#FCE7F3' },
-    { key: 'general', label: 'Civil Engg Notes', icon: 'fa-book-open',       color: '#475569', bg: '#F1F5F9' },
+    // Fallback only (not offered in admin): anything untagged that the
+    // title doesn't match - its tile only appears if it has items.
+    { key: 'general', label: 'Other Notes',    icon: 'fa-book-open',         color: '#475569', bg: '#F1F5F9' },
   ];
   var FR_CAT_BY_KEY = {};
   FR_CATEGORIES.forEach(function (c) { FR_CAT_BY_KEY[c.key] = c; });
@@ -478,6 +545,7 @@
   function frCategory(r) {
     if (r.category && FR_CAT_BY_KEY[r.category]) return r.category;
     var t = (r.title + ' ' + (r.description || '')).toLowerCase();
+    if (/syllabus/.test(r.title.toLowerCase())) return 'syllabus';
     if (/\b(rssb|rrsb|jen)\b|rssb je/.test(t)) return 'rssb-je';
     if (/\b(rpsc|rvunl)\b/.test(t)) return 'rpsc-ae';
     if (/\b(ese|ies|upsc)\b/.test(t)) return 'ese';
@@ -508,6 +576,7 @@
       resources.forEach(function (r) { frGatingTypes[r.id] = r.gating_type || null; r._cat = frCategory(r); });
       frState.all = resources;
       if (countEl) { countEl.textContent = resources.length + ' PDFs'; countEl.style.display = ''; }
+      setTabSub('phSubFree', resources.length + ' free PDFs');
 
       body.innerHTML =
         '<div class="frx-tiles" id="frxTiles"></div>' +
@@ -533,12 +602,6 @@
         if (aoId) setTimeout(function () { window.__openFreeResource(aoId); }, 600);
       }
 
-      if (window.location.hash === '#free-resources') {
-        setTimeout(function () {
-          var sec = document.getElementById('free-resources');
-          if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 400);
-      }
     }).catch(function () {
       body.innerHTML = '<p class="profile-empty">Could not load free resources.</p>';
     });
