@@ -582,8 +582,8 @@
              Stays empty (and hidden) for learners with no paid programs. -->
         <section id="learnerDashboard" aria-label="My Tests & Programs"></section>
 
-        <!-- Edit form card - folded away for paid learners (see profile.js) -->
-        <details class="profile-card pf-fold" id="accountDetails" open aria-label="Account Details">
+        <!-- Edit form card - starts folded; opened for learners with no paid program (see profile.js) -->
+        <details class="profile-card pf-fold" id="accountDetails" aria-label="Account Details">
           <summary class="profile-card-header">
             <h2><i class="fas fa-user-edit"></i> Account Details</h2>
           </summary>
@@ -794,7 +794,7 @@
   <script src="/js/api.js?v=2"></script>
   <script src="/js/learner-auth.js?v=2"></script>
   <script src="/js/schedule-modal.js?v=3"></script>
-  <script src="/js/learner-dashboard.js?v=3"></script>
+  <script src="/js/learner-dashboard.js?v=4"></script>
   <script src="/js/profile.js?v=2"></script>
   <script src="/js/login-wall.js" defer></script>
   <script src="/js/track.js" defer></script>
