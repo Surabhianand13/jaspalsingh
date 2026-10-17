@@ -2738,6 +2738,42 @@ async function migrate() {
   }
   console.log('✅ Wired Tally forms for RSSB JE 2026 FLT (4 Oct) programs');
 
+  /* ── 4 Oct FLT schedules (2026-10-17): the admin had entered only the
+     first tests (with their papers uploaded) for these 4 programs. Add the
+     rest of the published 15-test schedule (every Sunday, 4 Oct 2026 -
+     10 Jan 2027, same as the program pages) without touching any test
+     number that already exists. Runs ONCE (marker in site_settings) so a
+     test the admin later deletes on purpose is not re-created on deploy. */
+  {
+    const marker = await query(`SELECT 1 FROM site_settings WHERE key = 'seed_4oct_flt_schedule_v1'`);
+    if (!marker.rows.length) {
+      const fltDates = ['4 Oct 2026', '11 Oct 2026', '18 Oct 2026', '25 Oct 2026', '1 Nov 2026', '8 Nov 2026', '15 Nov 2026',
+        '22 Nov 2026', '29 Nov 2026', '6 Dec 2026', '13 Dec 2026', '20 Dec 2026', '27 Dec 2026', '3 Jan 2027', '10 Jan 2027'];
+      const fltSlugs = ['rssb-je-2026-4oct-flt-degree-offline', 'rssb-je-2026-4oct-flt-diploma-offline',
+        'rssb-je-2026-4oct-flt-degree-omr', 'rssb-je-2026-4oct-flt-diploma-omr'];
+      let added = 0;
+      for (const slug of fltSlugs) {
+        for (const [i, date] of fltDates.entries()) {
+          const n = i + 1;
+          const r = await query(
+            `INSERT INTO program_schedule (program_slug, test_number, test_date, syllabus, questions, marks, sort_order, category)
+             SELECT $1::varchar, $2::int, $3::varchar, $4::text, 120, 120, $5::int, NULL
+             WHERE NOT EXISTS (
+               SELECT 1 FROM program_schedule WHERE program_slug = $1::varchar AND test_number = $2::int AND category IS NULL
+             )`,
+            [slug, n, date, `Full Length Test - ${String(n).padStart(2, '0')}`, i]
+          );
+          added += r.rowCount;
+        }
+      }
+      await query(
+        `INSERT INTO site_settings (key, value, updated_by) VALUES ('seed_4oct_flt_schedule_v1', $1, 'migrate') ON CONFLICT (key) DO NOTHING`,
+        [JSON.stringify({ added, at: new Date().toISOString() })]
+      );
+      console.log(`✅ 4 Oct FLT schedules: added ${added} missing test rows (existing tests untouched)`);
+    }
+  }
+
   // Seed RSSB JE blog posts (idempotent - ON CONFLICT (slug) DO NOTHING)
   const rssbJePosts = require('./seeds/blogPostsRssbJe');
   for (const post of rssbJePosts) {
