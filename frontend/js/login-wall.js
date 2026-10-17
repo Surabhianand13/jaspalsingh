@@ -14,6 +14,10 @@
   var path = window.location.pathname;
   var token = localStorage.getItem('jaspal_learner_token');
   var wallActive = false;
+  // Header bell cache (see renderActionBell) - declared up here because the
+  // header renders immediately below, before later var assignments run.
+  var ACTIONS_KEY = 'jaspal_learner_actions';
+  var ACTIONS_MAX_AGE = 15 * 60 * 1000;
 
   /* ── RSSB JE 2026 Free Test campaign window (IST) ──
      Live 11:59 PM 3 Jul 2026 through 11:59 PM 4 Jul 2026.
@@ -27,6 +31,7 @@
   /* ── Header auth UI (Login button / avatar) - runs on EVERY page ── */
   injectHeaderStyles();
   renderHeaderAuth();
+  renderActionBell();
 
   /* ── Wall logic only below (respects noWallPaths) ── */
   var noWallPaths = ['/checkout', '/payment-success', '/admin', '/profile', '/reset-password'];
@@ -220,12 +225,37 @@
       .lw-menu-item.lw-logout { color:#C81240; }
       .lw-menu-item.lw-logout i { color:#C81240; }
 
+      .lw-bell { position:relative; width:40px; height:40px; border-radius:50%; border:1.5px solid rgba(26,26,46,.12);
+        background:#fff; color:#1A1A2E; display:none; align-items:center; justify-content:center; cursor:pointer;
+        font-size:16px; margin-left:10px; flex-shrink:0; transition:border-color .15s, color .15s; }
+      .lw-bell.show { display:flex; }
+      .lw-bell:hover { border-color:#C81240; color:#C81240; }
+      .lw-bell-badge { position:absolute; top:-5px; right:-5px; min-width:19px; height:19px; padding:0 5px; border-radius:10px;
+        background:#C81240; color:#fff; font-size:11px; font-weight:800; line-height:19px; text-align:center;
+        font-family:'Plus Jakarta Sans',sans-serif; box-shadow:0 0 0 2px #fff; }
+      .lw-bell-menu { position:absolute; top:calc(100% + 12px); right:0; width:340px; max-height:70vh; overflow-y:auto;
+        background:#fff; border:1px solid rgba(26,26,46,.08); border-radius:14px; box-shadow:0 16px 48px rgba(26,26,46,.16);
+        z-index:10000; font-family:'Plus Jakarta Sans',sans-serif; text-align:left; cursor:default;
+        opacity:0; visibility:hidden; transform:translateY(-8px); transition:opacity .18s, transform .18s, visibility .18s; }
+      .lw-bell-menu.open { opacity:1; visibility:visible; transform:translateY(0); }
+      .lw-bell-head { padding:14px 16px; border-bottom:1px solid rgba(26,26,46,.07); font-size:14px; font-weight:800; color:#1A1A2E; }
+      .lw-bell-item { display:flex; gap:12px; align-items:flex-start; padding:12px 16px; text-decoration:none; color:#1A1A2E;
+        border-bottom:1px solid rgba(26,26,46,.05); font-size:13px; font-weight:600; line-height:1.4; }
+      .lw-bell-item:hover { background:#FFF7ED; }
+      .lw-bell-item > i { color:#EA580C; width:16px; text-align:center; margin-top:2px; }
+      .lw-bell-item small { display:block; font-size:11.5px; color:#9999b0; font-weight:500; margin-top:2px; }
+      .lw-bell-empty { padding:18px 16px; font-size:13px; color:#166534; font-weight:700; display:flex; gap:8px; align-items:center; }
+      .lw-bell-foot { display:block; padding:12px 16px; font-size:13px; font-weight:700; color:#0F766E; text-decoration:none; text-align:center; }
+      .lw-bell-foot:hover { background:#F0FDFA; }
+
       @media (max-width:900px){
         .lw-btn-login, .lw-btn-signup { display:none !important; }
         .lw-h-wrap { display:none !important; }
       }
       @media (max-width:600px){
         .lw-menu { right:-8px; }
+        .lw-bell { width:36px; height:36px; font-size:15px; margin-left:6px; }
+        .lw-bell-menu { position:fixed; top:calc(var(--header-h, 64px) + 6px); left:8px; right:8px; width:auto; }
       }
     `;
     document.head.appendChild(s);
@@ -310,9 +340,104 @@
       if (logout) logout.addEventListener('click', function(){
         localStorage.removeItem('jaspal_learner_token');
         localStorage.removeItem('jaspal_learner');
+        localStorage.removeItem('jaspal_learner_actions');
         window.location.href = '/';
       });
     }
+  }
+
+  /* ── Header notification bell (paid learners) ──
+     Shows the dashboard's "action needed" items (upload due, admit card
+     form to fill/fix) on every page. Items are computed by
+     learner-dashboard.js and cached in localStorage: /profile and
+     /my-programs refresh it on every visit; on any other page the script
+     is lazy-loaded to refresh a cache older than 15 minutes. Hidden for
+     learners with no paid program. ── */
+  function readActions() {
+    try { return JSON.parse(localStorage.getItem(ACTIONS_KEY)); } catch (e) { return null; }
+  }
+
+  function renderActionBell() {
+    if (!token || path.indexOf('/admin') === 0) return;
+    var authWrap = document.getElementById('lwHeaderAuth');
+    if (!authWrap || document.getElementById('lwBell')) return;
+
+    var bell = document.createElement('div');
+    bell.className = 'lw-bell';
+    bell.id = 'lwBell';
+    bell.setAttribute('role', 'button');
+    bell.setAttribute('tabindex', '0');
+    bell.setAttribute('aria-label', 'Notifications');
+    bell.innerHTML = '<i class="fas fa-bell"></i><span class="lw-bell-badge" id="lwBellBadge" style="display:none;"></span>' +
+      '<div class="lw-bell-menu" id="lwBellMenu"></div>';
+    authWrap.parentNode.insertBefore(bell, authWrap);
+
+    var menu = document.getElementById('lwBellMenu');
+    bell.addEventListener('click', function (e) {
+      if (menu.contains(e.target)) return;
+      e.stopPropagation();
+      menu.classList.toggle('open');
+    });
+    bell.addEventListener('keydown', function (e) { if (e.key === 'Enter') menu.classList.toggle('open'); });
+    document.addEventListener('click', function (e) { if (!bell.contains(e.target)) menu.classList.remove('open'); });
+
+    drawBell(readActions());
+    window.addEventListener('learner:actions', function () { drawBell(readActions()); });
+
+    // /profile and /my-programs render the dashboard themselves (which
+    // refreshes the cache); elsewhere refresh quietly if stale.
+    var cache = readActions();
+    var onDashboard = path.indexOf('/profile') === 0 || path.indexOf('/my-programs') === 0;
+    if (!onDashboard && (!cache || Date.now() - cache.at > ACTIONS_MAX_AGE)) {
+      setTimeout(refreshBellInBackground, 2500);
+    }
+  }
+
+  function drawBell(cache) {
+    var bell = document.getElementById('lwBell');
+    if (!bell) return;
+    if (!cache || !cache.hasPrograms) { bell.classList.remove('show'); return; }
+    bell.classList.add('show');
+    var items = cache.items || [];
+    var badge = document.getElementById('lwBellBadge');
+    badge.style.display = items.length ? '' : 'none';
+    badge.textContent = items.length > 9 ? '9+' : String(items.length);
+    bell.setAttribute('aria-label', items.length ? items.length + ' notifications' : 'Notifications');
+
+    var menu = document.getElementById('lwBellMenu');
+    menu.innerHTML =
+      '<div class="lw-bell-head">' + (items.length ? 'Action needed (' + items.length + ')' : 'Notifications') + '</div>' +
+      (items.length
+        ? items.map(function (it) {
+            return '<a class="lw-bell-item" href="/profile#' + esc(it.anchor) + '" data-anchor="' + esc(it.anchor) + '">' +
+              '<i class="fas ' + esc(it.icon) + '"></i><span>' + esc(it.text) + (it.sub ? '<small>' + esc(it.sub) + '</small>' : '') + '</span></a>';
+          }).join('')
+        : '<div class="lw-bell-empty"><i class="fas fa-circle-check"></i> You are all caught up.</div>') +
+      '<a class="lw-bell-foot" href="/profile">Go to My Tests &amp; Programs &rarr;</a>';
+
+    // Already on the dashboard: scroll instead of reloading.
+    menu.querySelectorAll('[data-anchor]').forEach(function (a) {
+      a.addEventListener('click', function (e) {
+        var target = document.getElementById(a.getAttribute('data-anchor'));
+        if (!target) return;
+        e.preventDefault();
+        menu.classList.remove('open');
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+  }
+
+  function refreshBellInBackground() {
+    var run = function () {
+      if (window.LearnerDashboard && window.LearnerDashboard.refreshActions) {
+        window.LearnerDashboard.refreshActions().catch(function () { /* keep showing the old cache */ });
+      }
+    };
+    if (window.LearnerDashboard) return run();
+    var sc = document.createElement('script');
+    sc.src = '/js/learner-dashboard.js?v=2';
+    sc.onload = run;
+    document.head.appendChild(sc);
   }
 
   function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }

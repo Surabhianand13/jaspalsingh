@@ -101,7 +101,10 @@
         return { key: 'soon', tone: 'grey', icon: 'fa-clock', label: 'Paper unlocks ' + fmtWhen(t.paper_release_at) };
       }
       if (t.paper_available) {
-        return { key: 'paper', tone: 'amber', icon: 'fa-file-arrow-down', label: 'Paper available', urgent: true };
+        // Released with no upload window set: the learner can practise it, but
+        // there is nothing to submit - informational, never an action item
+        // (otherwise every old test in a series shows up as "action needed").
+        return { key: 'paper', tone: 'blue', icon: 'fa-file-lines', label: 'Paper available' };
       }
       return { key: 'soon', tone: 'grey', icon: 'fa-clock', label: 'Upcoming' };
     }
@@ -254,11 +257,15 @@
   }
 
   function pickNext(tests) {
-    // Most urgent first: anything needing action now, then the earliest not-yet-done test.
-    var urgent = tests.filter(function (t) { return testStatus(t).urgent; });
-    if (urgent.length) return urgent[0];
-    var pending = tests.filter(function (t) { return !testStatus(t).done; });
-    return pending[0] || null;
+    // 1) anything needing action now, 2) the next upcoming test,
+    // 3) the most recently released paper - never an old Test 1.
+    var withSt = tests.map(function (t) { return { t: t, st: testStatus(t) }; });
+    var urgent = withSt.filter(function (x) { return x.st.urgent; });
+    if (urgent.length) return urgent[0].t;
+    var soon = withSt.filter(function (x) { return x.st.key === 'soon'; });
+    if (soon.length) return soon[0].t;
+    var papers = withSt.filter(function (x) { return x.st.key === 'paper'; });
+    return papers.length ? papers[papers.length - 1].t : null;
   }
 
   function renderProgram(e, sched, idx) {
@@ -340,7 +347,7 @@
         '<a class="ld-btn ld-btn--link" href="' + WA_HELP + '?text=' + encodeURIComponent('Hi, I need help with ' + e.program_name + (e.roll_number ? ' (Roll no ' + e.roll_number + ')' : '')) + '" target="_blank" rel="noopener"><i class="fas fa-headset"></i> Need help?</a>' +
       '</div>';
 
-    return '<article class="ld-program" id="ld-program-' + idx + '">' +
+    return '<article class="ld-program" id="' + esc(programAnchor(e)) + '">' +
       '<header class="ld-program-head">' +
         '<div>' +
           '<h3 class="ld-program-name">' + esc(e.program_name) + '</h3>' +
@@ -353,22 +360,55 @@
     '</article>';
   }
 
-  /* Cross-program "do this now" list, shown above all program cards. */
+  function programAnchor(e) {
+    return 'ld-' + String(e.canonical_slug || e.program_slug || e.order_id).replace(/[^a-z0-9-]/gi, '');
+  }
+
+  /* Cross-program "do this now" list, shown in the header notification bell
+     (login-wall.js). Only things the learner can act on right now. */
   function actionItems(enrollments, schedules) {
     var items = [];
     enrollments.forEach(function (e, i) {
+      var anchor = programAnchor(e);
       var admit = admitStep(e);
-      if (admit && admit.urgent) items.push({ idx: i, icon: 'fa-id-card', text: admit.label + ' - ' + e.program_name });
+      if (admit && admit.urgent) items.push({ anchor: anchor, icon: 'fa-id-card', text: admit.label, sub: e.program_name });
       schedules[i].tests.forEach(function (t) {
-        var st = testStatus(t);
-        if (st.key === 'upload') items.push({ idx: i, icon: 'fa-upload', text: 'Upload Test ' + t.test_number + ' answer sheet - due ' + fmtWhen(t.omr_upload_deadline), sub: e.program_name });
-        else if (st.key === 'paper') items.push({ idx: i, icon: 'fa-file-arrow-down', text: 'Test ' + t.test_number + ' paper is available', sub: e.program_name });
+        if (testStatus(t).key === 'upload') {
+          items.push({ anchor: anchor, icon: 'fa-upload', text: 'Upload Test ' + t.test_number + ' answer sheet - due ' + fmtWhen(t.omr_upload_deadline), sub: e.program_name });
+        }
       });
     });
     return items;
   }
 
-  function wire(container, enrollments) {
+  /* Cached for the header bell on every other page, and broadcast so a bell
+     already on screen updates immediately. */
+  var ACTIONS_KEY = 'jaspal_learner_actions';
+  function publishActions(items, hasPrograms) {
+    try { localStorage.setItem(ACTIONS_KEY, JSON.stringify({ at: Date.now(), items: items, hasPrograms: !!hasPrograms })); } catch (e) { /* private mode */ }
+    try { window.dispatchEvent(new CustomEvent('learner:actions', { detail: items })); } catch (e) { /* old browsers */ }
+  }
+
+  function loadAll() {
+    return authFetch('/api/enrollment/my-enrollments').then(function (data) {
+      var enrollments = data.enrollments || [];
+      return Promise.all(enrollments.map(function (e) {
+        if (e.program_category === 'interview') return Promise.resolve({ tests: [], categories: [], materialsCount: 0 });
+        return loadSchedule(e.canonical_slug || e.program_slug);
+      })).then(function (schedules) { return { enrollments: enrollments, schedules: schedules }; });
+    });
+  }
+
+  /* Header bell on non-dashboard pages: data only, no rendering. */
+  function refreshActions() {
+    return loadAll().then(function (d) {
+      var items = actionItems(d.enrollments, d.schedules);
+      publishActions(items, d.enrollments.length > 0);
+      return items;
+    });
+  }
+
+  function wire(container) {
     container.querySelectorAll('[data-ld-open]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         if (!window.ScheduleModal) return;
@@ -380,47 +420,31 @@
         if (window.ScheduleModal) window.ScheduleModal.openMaterials(btn.getAttribute('data-ld-schedule'), btn.getAttribute('data-ld-name'));
       });
     });
-    container.querySelectorAll('[data-ld-jump]').forEach(function (a) {
-      a.addEventListener('click', function (ev) {
-        ev.preventDefault();
-        var el = document.getElementById('ld-program-' + a.getAttribute('data-ld-jump'));
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      });
-    });
   }
 
   function render(container, opts) {
     opts = opts || {};
     container.innerHTML = '<div class="ld-loading"><div class="pskel"></div><div class="pskel"></div><div class="pskel"></div></div>';
 
-    authFetch('/api/enrollment/my-enrollments').then(function (data) {
-      var enrollments = data.enrollments || [];
+    loadAll().then(function (d) {
+      var enrollments = d.enrollments;
       if (!enrollments.length) {
         container.innerHTML = '';
+        publishActions([], false);
         if (opts.onEmpty) opts.onEmpty();
         return;
       }
       if (opts.onHasPrograms) opts.onHasPrograms(enrollments);
+      publishActions(actionItems(enrollments, d.schedules), true);
 
-      return Promise.all(enrollments.map(function (e) {
-        if (e.program_category === 'interview') return Promise.resolve({ tests: [], categories: [], materialsCount: 0 });
-        return loadSchedule(e.canonical_slug || e.program_slug);
-      })).then(function (schedules) {
-        var items = actionItems(enrollments, schedules);
-        var actionHtml = items.length
-          ? '<section class="ld-action"><div class="ld-action-head"><i class="fas fa-bell"></i> Action needed (' + items.length + ')</div><ul>' +
-              items.map(function (it) {
-                return '<li><a href="#ld-program-' + it.idx + '" data-ld-jump="' + it.idx + '"><i class="fas ' + it.icon + '"></i><span>' + esc(it.text) + (it.sub ? '<small>' + esc(it.sub) + '</small>' : '') + '</span><i class="fas fa-chevron-right ld-action-go"></i></a></li>';
-              }).join('') +
-            '</ul></section>'
-          : '<section class="ld-action ld-action--clear"><i class="fas fa-circle-check"></i> You are all caught up - nothing pending right now.</section>';
+      container.innerHTML =
+        (opts.hideHeading ? '' : '<div class="ld-head"><h2><i class="fas fa-graduation-cap"></i> My Tests &amp; Programs</h2></div>') +
+        enrollments.map(function (e, i) { return renderProgram(e, d.schedules[i], i); }).join('');
+      wire(container);
 
-        container.innerHTML =
-          (opts.hideHeading ? '' : '<div class="ld-head"><h2><i class="fas fa-graduation-cap"></i> My Tests &amp; Programs</h2></div>') +
-          actionHtml +
-          enrollments.map(function (e, i) { return renderProgram(e, schedules[i], i); }).join('');
-        wire(container, enrollments);
-      });
+      // Arrived from a header-bell item: bring that program into view.
+      var target = window.location.hash && document.getElementById(window.location.hash.slice(1));
+      if (target) setTimeout(function () { target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50);
     }).catch(function (err) {
       container.innerHTML = '<p class="profile-empty">Could not load your programs. ' +
         (err && err.status === 401 ? 'Please log in again.' : 'Please refresh the page.') + '</p>';
@@ -436,5 +460,5 @@
     if (lastRender) _render(lastRender.container, lastRender.opts);
   });
 
-  window.LearnerDashboard = { render: render, testStatus: testStatus };
+  window.LearnerDashboard = { render: render, testStatus: testStatus, refreshActions: refreshActions };
 })();
