@@ -98,7 +98,7 @@
         return { key: 'missed', tone: 'red', icon: 'fa-xmark', label: 'Not submitted', done: true };
       }
       if (release && now < release) {
-        return { key: 'soon', tone: 'grey', icon: 'fa-clock', label: 'Paper unlocks ' + fmtWhen(t.paper_release_at) };
+        return { key: 'soon', tone: 'violet', icon: 'fa-lock-open', label: 'Paper unlocks ' + fmtWhen(t.paper_release_at) };
       }
       if (t.paper_available) {
         // Released with no upload window set: the learner can practise it, but
@@ -243,14 +243,17 @@
     return html;
   }
 
+  /* "Test 1 · <name>" - the syllabus is effectively the test's name, so it
+     sits in the title; the line below keeps date / questions / time. */
   function testTitle(t, showTrack) {
-    return 'Test ' + t.test_number + (showTrack && t.category ? ' <span class="ld-track">' + esc(categoryLabel(t.category)) + '</span>' : '');
+    return 'Test ' + t.test_number +
+      (t.syllabus ? ' <span class="ld-test-name">&middot; ' + esc(t.syllabus) + '</span>' : '') +
+      (showTrack && t.category ? ' <span class="ld-track">' + esc(categoryLabel(t.category)) + '</span>' : '');
   }
 
   function testMeta(t) {
     return [
       t.test_date ? esc(t.test_date) : '',
-      t.syllabus ? esc(t.syllabus) : '',
       t.questions ? t.questions + ' Qs' : '',
       t.duration_minutes ? t.duration_minutes + ' min' : '',
     ].filter(Boolean).join(' · ');

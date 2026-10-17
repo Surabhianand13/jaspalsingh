@@ -334,8 +334,8 @@
       : tests.map(function (t) {
         return '<div style="display:flex;align-items:center;justify-content:space-between;border:1px solid #eee;border-radius:10px;padding:12px 16px;margin-bottom:10px;">' +
           '<div>' +
-            '<div style="font-weight:700;color:#1A1A2E;">Test ' + t.test_number + (t.test_date ? ' &middot; ' + esc(t.test_date) : '') + '</div>' +
-            '<div style="font-size:12.5px;color:#6b6b8a;">' + [t.syllabus ? esc(t.syllabus) : '', t.questions ? t.questions + ' Qs' : '', t.marks ? t.marks + ' marks' : '', t.duration_minutes ? t.duration_minutes + ' min' : ''].filter(Boolean).join(' &middot; ') + '</div>' +
+            '<div style="font-weight:700;color:#1A1A2E;">Test ' + t.test_number + (t.syllabus ? ' &middot; ' + esc(t.syllabus) : '') + '</div>' +
+            '<div style="font-size:12.5px;color:#6b6b8a;">' + [t.test_date ? esc(t.test_date) : '', t.questions ? t.questions + ' Qs' : '', t.marks ? t.marks + ' marks' : '', t.duration_minutes ? t.duration_minutes + ' min' : ''].filter(Boolean).join(' &middot; ') + '</div>' +
             statusChipHtml(t) +
           '</div>' +
           '<button class="btn" data-schedule-view="' + t.id + '" style="background:#0F766E;color:#fff;border:none;border-radius:20px;padding:8px 18px;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;">Open &rarr;</button>' +
@@ -375,7 +375,8 @@
   function renderScheduleDetail(test) {
     var bodyEl = document.getElementById('scheduleModalBody');
     bodyEl.innerHTML = '<button id="scheduleBackBtn" style="background:none;border:none;color:#0F766E;font-weight:700;cursor:pointer;margin-bottom:14px;">&larr; Back to schedule</button>' +
-      '<div style="font-weight:700;color:#1A1A2E;margin-bottom:2px;">Test ' + test.test_number + (test.test_date ? ' &middot; ' + esc(test.test_date) : '') + '</div>' +
+      '<div style="font-weight:700;color:#1A1A2E;margin-bottom:2px;">Test ' + test.test_number + (test.syllabus ? ' &middot; ' + esc(test.syllabus) : '') + '</div>' +
+      (test.test_date ? '<div style="font-size:12.5px;color:#6b6b8a;margin-bottom:2px;">' + esc(test.test_date) + '</div>' : '') +
       '<div style="font-size:12.5px;color:#6b6b8a;margin-bottom:6px;">' + [test.questions ? test.questions + ' questions' : '', test.marks ? test.marks + ' marks' : '', test.duration_minutes ? test.duration_minutes + ' minutes' : ''].filter(Boolean).join(' &middot; ') + '</div>' +
       (test.requires_omr_upload && (test.paper_release_at || test.omr_upload_deadline)
         ? '<div style="font-size:12.5px;color:#374151;margin-bottom:6px;">' +
