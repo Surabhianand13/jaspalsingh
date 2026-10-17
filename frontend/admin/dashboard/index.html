@@ -132,6 +132,11 @@
           <i class="fas fa-house" aria-hidden="true"></i>
           Homepage Content
         </button>
+
+        <button class="admin-nav-link" data-section="navmenu">
+          <i class="fas fa-bars-staggered" aria-hidden="true"></i>
+          Navigation Menu
+        </button>
       </div>
     </nav>
 
@@ -866,6 +871,49 @@
       </section>
 
       <!-- ── HOMEPAGE CONTENT ── -->
+      <section class="admin-section" id="section-navmenu" aria-label="Header navigation menu">
+        <div class="section-header">
+          <h2 class="section-title">Navigation Menu</h2>
+          <div class="section-actions">
+            <span id="navMenuDirty" style="display:none;font-size:12.5px;font-weight:700;color:#B45309;margin-right:8px;">Unsaved changes</span>
+            <button class="btn-admin-secondary" id="navMenuDiscardBtn"><i class="fas fa-rotate-left"></i> Discard</button>
+            <button class="btn" id="navMenuSaveBtn" disabled><i class="fas fa-floppy-disk"></i> Save menu</button>
+          </div>
+        </div>
+        <p style="color:#6b6b8a;font-size:14px;margin-bottom:6px;max-width:760px;">Controls the exam menus in the website header (RSSB JE, UKPSC AE/JE, ESE ...) and the mobile menu on every page. For each link set its <strong>name</strong>, the <strong>landing page</strong> it opens, a <strong>NEW</strong> badge, show/hide, and the <strong>order</strong> (arrows). Live on all pages within about a minute of saving.</p>
+        <p id="navMenuMsg" style="font-size:13px;font-weight:700;margin:0 0 14px;"></p>
+        <div id="navMenuBody"><p class="admin-empty">Loading…</p></div>
+        <p style="margin-top:24px;font-size:12.5px;color:#9999b0;">Something went wrong? <button type="button" id="navMenuResetBtn" style="background:none;border:none;color:#C81240;font-weight:700;cursor:pointer;padding:0;">Reset to the built-in menu</button></p>
+        <style>
+          .nm-source { font-size: 12.5px; color: #6b6b8a; background: #F8FAFC; border: 1px dashed #CBD5E1; border-radius: 8px; padding: 8px 12px; margin: 0 0 16px; }
+          .nm-exam { border: 1.5px solid #E2E8F0; border-radius: 12px; padding: 14px; margin-bottom: 14px; background: #fff; }
+          .nm-exam-head, .nm-col-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+          .nm-exam-head { margin-bottom: 10px; }
+          .nm-order { width: 26px; height: 26px; border-radius: 50%; background: #1A1A2E; color: #fff; font-size: 12px; font-weight: 800; display: grid; place-items: center; flex-shrink: 0; }
+          .nm-input { padding: 8px 10px; border: 1.5px solid #E2E8F0; border-radius: 8px; font-size: 13.5px; font-family: inherit; min-width: 0; }
+          .nm-input:focus { border-color: #C81240; outline: none; }
+          .nm-exam-label { font-weight: 800; font-size: 15px; flex: 0 1 220px; }
+          .nm-url { flex: 1 1 260px; width: 100%; font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; }
+          .nm-small { flex: 0 0 auto; }
+          .nm-check { font-size: 12.5px; font-weight: 700; color: #374151; display: inline-flex; gap: 5px; align-items: center; }
+          .nm-actions { display: inline-flex; gap: 4px; margin-left: auto; }
+          .nm-col { background: #F8FAFC; border-radius: 10px; padding: 10px 12px; margin: 10px 0 0 34px; }
+          .nm-col-head > i { color: #94A3B8; }
+          .nm-col-head .nm-input:first-of-type { font-weight: 700; flex: 0 1 220px; }
+          .nm-items { width: 100%; border-collapse: collapse; margin: 8px 0; }
+          .nm-items th { text-align: left; font-size: 11px; color: #94A3B8; text-transform: uppercase; letter-spacing: .04em; padding: 4px 6px; }
+          .nm-items td { padding: 4px 6px; vertical-align: middle; }
+          .nm-items td:nth-child(2) .nm-input { width: 100%; }
+          .nm-items td:nth-child(3) { display: flex; align-items: center; gap: 6px; }
+          .nm-order-cell { font-size: 12px; font-weight: 800; color: #94A3B8; width: 20px; }
+          .nm-open { color: #0F766E; font-size: 12px; }
+          .nm-hidden { opacity: .5; }
+          .nm-add-col { margin: 10px 0 0 34px; }
+          .nm-footer-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+          @media (max-width: 760px) { .nm-col, .nm-add-col { margin-left: 0; } .nm-items thead { display: none; } .nm-items tr { display: grid; grid-template-columns: 1fr; border-bottom: 1px solid #E2E8F0; padding: 6px 0; } }
+        </style>
+      </section>
+
       <section class="admin-section" id="section-homepage" aria-label="Homepage content management">
         <div class="section-header">
           <h2 class="section-title">Homepage Content</h2>
@@ -1360,6 +1408,7 @@
 
 <!-- Admin JS -->
 <script src="/admin/js/admin.js"></script>
+<script src="/admin/js/nav-menu-admin.js"></script>
 
 <script>
 /* ── Free Resources ── */

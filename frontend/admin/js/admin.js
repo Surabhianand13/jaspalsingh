@@ -206,6 +206,7 @@
   var currentSection = 'dashboard';
 
   var sectionTitles = {
+    'navmenu':      'Navigation Menu',
     'dashboard':    'Dashboard',
     'resources':    'Resources',
     'blog':         'Blog',
@@ -276,6 +277,7 @@
       case 'omr-checker':  loadOmrChecker();   break;
       case 'coupons':      loadCoupons();      break;
       case 'homepage':     loadHomepageContent('carousel'); loadHomepageContent('ticker'); loadHomepageContent('quicklinks'); break;
+      case 'navmenu':      if (window.NavMenuAdmin) window.NavMenuAdmin.load(); break;
     }
   }
 

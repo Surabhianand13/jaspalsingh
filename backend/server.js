@@ -138,6 +138,7 @@ app.use('/api/schedule',         require('./routes/learner-schedule'));
 app.use('/api/free-resources',   require('./routes/free-resources'));
 app.use('/api/coupons',          require('./routes/coupons'));
 app.use('/api/homepage-content', require('./routes/homepage-content'));
+app.use('/api/site-settings',    require('./routes/site-settings'));
 
 /* ── Health Check ────────────────────────────────────────── */
 
@@ -823,6 +824,16 @@ async function migrate() {
       sort_order  INTEGER NOT NULL DEFAULT 0,
       is_visible  BOOLEAN NOT NULL DEFAULT TRUE,
       created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+  /* ── Site-wide admin-editable settings (one JSONB doc per key), e.g.
+     'nav_menu' = the header exam dropdowns - see routes/site-settings.js ── */
+  await query(`
+    CREATE TABLE IF NOT EXISTS site_settings (
+      key         VARCHAR(60) PRIMARY KEY,
+      value       JSONB NOT NULL,
+      updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_by  VARCHAR(255)
     )
   `);
   await query(`
