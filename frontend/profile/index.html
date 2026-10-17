@@ -22,6 +22,7 @@
   <link rel="stylesheet" href="/css/animations.css?v=8" />
   <link rel="stylesheet" href="/css/learner-auth.css" />
   <link rel="stylesheet" href="/css/profile.css" />
+  <link rel="stylesheet" href="/css/learner-dashboard.css?v=1" />
 <script src="/js/loader.js"></script>
 </head>
 <body>
@@ -577,11 +578,15 @@
 
       <div class="container profile-body">
 
-        <!-- Edit form card -->
-        <section class="profile-card" aria-label="Edit Profile">
-          <div class="profile-card-header">
-            <h2><i class="fas fa-user-edit"></i> Edit Profile</h2>
-          </div>
+        <!-- Paid learners: tests, admit card and next steps come first.
+             Stays empty (and hidden) for learners with no paid programs. -->
+        <section id="learnerDashboard" aria-label="My Tests & Programs"></section>
+
+        <!-- Edit form card - folded away for paid learners (see profile.js) -->
+        <details class="profile-card pf-fold" id="accountDetails" open aria-label="Account Details">
+          <summary class="profile-card-header">
+            <h2><i class="fas fa-user-edit"></i> Account Details</h2>
+          </summary>
 
           <div id="profileFormMsg" class="profile-msg" style="display:none;"></div>
 
@@ -653,7 +658,7 @@
             </div>
 
           </form>
-        </section>
+        </details>
 
         <!-- Referral Code card -->
         <section class="profile-card" id="referral" aria-label="My Referral Code">
@@ -667,13 +672,6 @@
           </div>
         </section>
 
-        <!-- Enrolled Programs now live on their own page -->
-        <a href="/my-programs/" class="profile-card" style="display:flex;align-items:center;justify-content:space-between;text-decoration:none;color:inherit;">
-          <div class="profile-card-header" style="margin:0;">
-            <h2><i class="fas fa-graduation-cap"></i> My Enrolled Programs</h2>
-          </div>
-          <i class="fas fa-arrow-right" style="color:#0F766E;font-size:18px;margin-right:4px;"></i>
-        </a>
 
         <!-- Free Resources card -->
         <section class="profile-card" id="free-resources" aria-label="Free Resources">
@@ -795,7 +793,9 @@
   <script src="/js/chat-tab.js" defer></script>
   <script src="/js/api.js?v=2"></script>
   <script src="/js/learner-auth.js?v=2"></script>
-  <script src="/js/profile.js"></script>
+  <script src="/js/schedule-modal.js?v=2"></script>
+  <script src="/js/learner-dashboard.js?v=1"></script>
+  <script src="/js/profile.js?v=2"></script>
   <script src="/js/login-wall.js" defer></script>
   <script src="/js/track.js" defer></script>
   <a href="https://wa.me/919829133317" target="_blank" rel="noopener" aria-label="Chat on WhatsApp" class="whatsapp-float"><i class="fab fa-whatsapp"></i></a>

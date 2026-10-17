@@ -143,6 +143,10 @@ router.get('/:program_slug', protectLearner, async (req, res, next) => {
         marks: row.marks,
         duration_minutes: row.duration_minutes,
         requires_omr_upload: row.requires_omr_upload,
+        // Exposed so the dashboard can show "releases at" / "due by" times -
+        // the gating itself is still computed here (flags), never client-side.
+        paper_release_at: row.paper_release_at,
+        omr_upload_deadline: row.omr_upload_deadline,
         ...flags,
         question_paper_url: flags.paper_available ? row.question_paper_url : null,
         blank_omr_url:      flags.blank_omr_available ? row.blank_omr_url : null,

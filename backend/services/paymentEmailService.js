@@ -197,9 +197,11 @@ async function sendInvoiceEmail(enrollment) {
 
 /* ── 2. Welcome + Details Form Email ────────────────────────── */
 
-async function sendWelcomePaymentEmail(enrollment) {
-  const firstName = esc((enrollment.student_name || 'there').split(' ')[0]);
-
+/* ── Which admit-card (Tally) form and WhatsApp group(s) a paid enrollment
+   uses. Shared by the welcome email and the learner dashboard
+   (GET /api/enrollment/my-enrollments) so both always point at the same
+   form - a learner who lost the welcome email can still find it. ── */
+async function resolveFulfillment(enrollment) {
   const slug = enrollment.program_slug || '';
 
   /* Hybrid-launched programs (created entirely from the admin dashboard,
@@ -259,6 +261,14 @@ async function sendWelcomePaymentEmail(enrollment) {
       :                                                    WA_GROUP_RPSC_AE;
     waGroups = singleGroup ? [{ label: null, link: singleGroup }] : [];
   }
+
+  return { formUrl, needsManualFulfillment, waGroups };
+}
+
+async function sendWelcomePaymentEmail(enrollment) {
+  const firstName = esc((enrollment.student_name || 'there').split(' ')[0]);
+
+  const { formUrl, needsManualFulfillment, waGroups } = await resolveFulfillment(enrollment);
 
   const normPhone = (enrollment.student_phone || '').replace(/\D/g, '').slice(-10);
 
@@ -739,4 +749,4 @@ async function sendAdmitCardDigestEmail(cards) {
   }, PRIORITY.ADMIN_NOTIFY);
 }
 
-module.exports = { sendInvoiceEmail, sendWelcomePaymentEmail, sendAdminPaymentNotification, sendReferralCodeEmail, sendReferralPayoutDigestEmail, sendAdmitCardDigestEmail };
+module.exports = { resolveFulfillment, sendInvoiceEmail, sendWelcomePaymentEmail, sendAdminPaymentNotification, sendReferralCodeEmail, sendReferralPayoutDigestEmail, sendAdmitCardDigestEmail };
