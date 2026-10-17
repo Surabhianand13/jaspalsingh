@@ -2774,6 +2774,58 @@ async function migrate() {
     }
   }
 
+  /* ── ESE 2027 Prelims P1+P2 Civil (4 Oct) schedules (2026-10-17): the
+     admin entered the first test days only. Each test day is two rows -
+     odd test number = Paper 1 (50 Qs / 100 marks), even = Paper 2
+     (75 Qs / 150 marks); the 4 Full Tests are P1 100 Qs / 200 marks and
+     P2 150 Qs / 300 marks. Same 13 dates as both program pages. Only test
+     numbers that don't exist yet are added; runs ONCE (site_settings
+     marker) so deliberately deleted tests aren't re-created. */
+  {
+    const marker = await query(`SELECT 1 FROM site_settings WHERE key = 'seed_ese_p1p2_schedule_v1'`);
+    if (!marker.rows.length) {
+      const days = [
+        ['4 Oct 2026',  'Current Issues', 'Design of Concrete & Masonry Structures'],
+        ['11 Oct 2026', 'Engineering Aptitude + Engineering Mathematics', 'Solid Mechanics'],
+        ['18 Oct 2026', 'Standards & Quality Practices', 'Environmental Engineering'],
+        ['25 Oct 2026', 'Basics of Energy & Environment', 'Structural Analysis'],
+        ['1 Nov 2026',  'Information & Communication Technology (ICT)', 'Transportation, Water Resources & Hydrology'],
+        ['15 Nov 2026', 'Ethics & Values in Engineering Profession', 'Fluid Mechanics, Hydraulic Machines & Hydro Power'],
+        ['22 Nov 2026', 'Basics of Project Management', 'Geotechnical Engineering, Foundation Engineering & Geology'],
+        ['29 Nov 2026', 'Design, Drawing & Safety Principles', 'Construction Practice, Planning & Management + BMC'],
+        ['6 Dec 2026',  'Basics of Material Science & Engineering', 'Design of Steel Structures + Surveying'],
+        ['13 Dec 2026', null, null, 1],
+        ['27 Dec 2026', null, null, 2],
+        ['11 Jan 2027', null, null, 3],
+        ['17 Jan 2027', null, null, 4],
+      ];
+      const rows = [];
+      days.forEach(([date, p1, p2, full], i) => {
+        rows.push({ n: 2 * i + 1, date, syllabus: full ? `Full Test ${full} - P1` : `P1: ${p1}`, qs: full ? 100 : 50, marks: full ? 200 : 100 });
+        rows.push({ n: 2 * i + 2, date, syllabus: full ? `Full Test ${full} - P2` : `P2: ${p2}`, qs: full ? 150 : 75, marks: full ? 300 : 150 });
+      });
+      let added = 0;
+      for (const slug of ['ese-2027-prelims-jaspalsirki-testseries-p1p2-offline', 'ese-2027-prelims-jaspalsirki-testseries-p1p2-omr']) {
+        for (const r of rows) {
+          const res = await query(
+            `INSERT INTO program_schedule (program_slug, test_number, test_date, syllabus, questions, marks, sort_order, category)
+             SELECT $1::varchar, $2::int, $3::varchar, $4::text, $5::int, $6::int, $7::int, NULL
+             WHERE NOT EXISTS (
+               SELECT 1 FROM program_schedule WHERE program_slug = $1::varchar AND test_number = $2::int AND category IS NULL
+             )`,
+            [slug, r.n, r.date, r.syllabus, r.qs, r.marks, r.n - 1]
+          );
+          added += res.rowCount;
+        }
+      }
+      await query(
+        `INSERT INTO site_settings (key, value, updated_by) VALUES ('seed_ese_p1p2_schedule_v1', $1, 'migrate') ON CONFLICT (key) DO NOTHING`,
+        [JSON.stringify({ added, at: new Date().toISOString() })]
+      );
+      console.log(`✅ ESE P1+P2 (4 Oct) schedules: added ${added} missing test rows (existing tests untouched)`);
+    }
+  }
+
   // Seed RSSB JE blog posts (idempotent - ON CONFLICT (slug) DO NOTHING)
   const rssbJePosts = require('./seeds/blogPostsRssbJe');
   for (const post of rssbJePosts) {
