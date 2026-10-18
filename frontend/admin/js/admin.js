@@ -2659,8 +2659,8 @@
   }
 
   function loadPaidLearners() {
-    var tabBtn = document.querySelector('#paidLearnerProgramTabs .filter-tab.active');
-    var program = tabBtn ? tabBtn.getAttribute('data-program') : '';
+    var progSel = $('paidLearnerProgram');
+    var program = progSel ? progSel.value : '';
     var searchEl = $('paidLearnerSearch');
     var search = searchEl ? searchEl.value.trim() : '';
     var body = $('paidLearnersBody');
@@ -2674,14 +2674,15 @@
       var s = d.summary || {};
       var byProgram = d.byProgram || [];
 
+      var activeTotal = byProgram.reduce(function (n, p) { return n + (p.active != null ? p.active : p.count); }, 0);
+      var newTotal = byProgram.reduce(function (n, p) { return n + (p.new_7d || 0); }, 0);
       var statsHtml =
-        bigStatCard('fa-user-graduate', '#7c3aed', 'rgba(124,58,237,0.1)', 'Total Paid Learners', s.total_paid || 0) +
+        bigStatCard('fa-user-graduate', '#7c3aed', 'rgba(124,58,237,0.1)', 'Active Learners', activeTotal) +
         bigStatCard('fa-indian-rupee-sign', '#16a34a', 'rgba(22,163,74,0.1)', 'Net Revenue (Rs)', inrIndian(s.net_revenue || 0)) +
+        bigStatCard('fa-arrow-trend-up', '#0891b2', 'rgba(8,145,178,0.1)', 'New in Last 7 Days', newTotal) +
         bigStatCard('fa-rotate-left', '#dc2626', 'rgba(220,38,38,0.1)', 'Refunds Initiated', s.refunded_count || 0);
-      byProgram.forEach(function (p) {
-        statsHtml += bigStatCard('fa-layer-group', '#0891b2', 'rgba(8,145,178,0.1)', p.program_label, p.count);
-      });
       $('paidLearnersStats').innerHTML = statsHtml;
+      renderActiveByProgram(byProgram, program);
 
       if (!allPaidLearners.length) {
         body.innerHTML = '<p class="admin-empty">No paid learners match the selected filters.</p>';
@@ -2689,6 +2690,91 @@
       }
       renderPaidLearnerRows(allPaidLearners, body);
     }).catch(function (err) { body.innerHTML = '<p class="admin-empty">' + e(err.message) + '</p>'; });
+  }
+
+  /* ── Active subscriptions by program: grouped by exam, bar per program,
+     click a row to filter the learner list to it. ── */
+  var PL_EXAM_STYLE = [
+    [/rssb/i,        'RSSB JE',        '#0284C7', '#EFF6FF', 'fa-drafting-compass'],
+    [/ese/i,         'ESE',            '#7C3AED', '#F5F3FF', 'fa-graduation-cap'],
+    [/rpsc|rvunl/i,  'RPSC / RVUNL',   '#16A34A', '#F0FDF4', 'fa-building'],
+    [/ukpsc/i,       'UKPSC',          '#0D9488', '#F0FDFA', 'fa-mountain'],
+    [/poly/i,        'UP Polytechnic', '#DB2777', '#FDF2F8', 'fa-chalkboard-teacher'],
+    [/gate/i,        'GATE',           '#EA580C', '#FFF7ED', 'fa-atom'],
+  ];
+  function plGroupFor(p) {
+    var key = (p.exam || '') + ' ' + (p.program_slug || '');
+    for (var i = 0; i < PL_EXAM_STYLE.length; i++) {
+      if (PL_EXAM_STYLE[i][0].test(key)) return { name: PL_EXAM_STYLE[i][1], c: PL_EXAM_STYLE[i][2], bg: PL_EXAM_STYLE[i][3], icon: PL_EXAM_STYLE[i][4] };
+    }
+    return { name: 'Other', c: '#475569', bg: '#F8FAFC', icon: 'fa-layer-group' };
+  }
+  function shortInr(n) {
+    n = Number(n) || 0;
+    if (n >= 100000) return '₹' + (n / 100000).toFixed(n >= 1000000 ? 0 : 1).replace(/\.0$/, '') + 'L';
+    if (n >= 1000) return '₹' + (n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/, '') + 'k';
+    return '₹' + n;
+  }
+
+  function renderActiveByProgram(byProgram, selected) {
+    var wrap = $('paidLearnersByProgram');
+    var sel = $('paidLearnerProgram');
+    if (!wrap) return;
+    var list = byProgram.map(function (p) {
+      var x = Object.assign({}, p);
+      x.active = p.active != null ? p.active : p.count;
+      x.name = p.short_name || p.title || p.program_label || p.program_slug;
+      x.group = plGroupFor(p);
+      return x;
+    });
+
+    // Program dropdown for the learner list (every program that has learners)
+    if (sel) {
+      var cur = sel.value;
+      sel.innerHTML = '<option value="">All programs</option>' + list.slice().sort(function (a, b) { return a.name.localeCompare(b.name); })
+        .map(function (p) { return '<option value="'+e(p.program_slug)+'"'+(p.program_slug === cur ? ' selected' : '')+'>'+e(p.name)+' ('+p.active+')</option>'; }).join('');
+    }
+
+    var groups = {};
+    list.forEach(function (p) {
+      var g = groups[p.group.name] || (groups[p.group.name] = { meta: p.group, items: [], active: 0, revenue: 0 });
+      g.items.push(p); g.active += p.active; g.revenue += (p.revenue || 0);
+    });
+    var ordered = Object.keys(groups).map(function (k) { return groups[k]; }).sort(function (a, b) { return b.active - a.active; });
+    var max = Math.max.apply(null, list.map(function (p) { return p.active; }).concat([1]));
+    var programsWithLearners = list.filter(function (p) { return p.active > 0; }).length;
+    var totalActive = list.reduce(function (n, p) { return n + p.active; }, 0);
+
+    wrap.innerHTML =
+      '<div class="pl-panel">' +
+        '<div class="pl-panel-head"><h3>Active subscriptions by program</h3>' +
+          '<span>' + totalActive + ' active learners across ' + programsWithLearners + ' programs &middot; refunds excluded &middot; click a program to see its learners</span></div>' +
+        '<div class="pl-groups">' + ordered.map(function (g) {
+          g.items.sort(function (a, b) { return b.active - a.active; });
+          return '<div class="pl-group" style="--pl-c:'+g.meta.c+';--pl-bg:'+g.meta.bg+';">' +
+            '<div class="pl-group-head"><i class="fas '+g.meta.icon+'"></i><strong>'+e(g.meta.name)+'</strong><span>'+g.active+' learners &middot; '+shortInr(g.revenue)+'</span></div>' +
+            g.items.map(function (p) {
+              return '<button type="button" class="pl-row'+(p.program_slug === selected ? ' is-active' : '')+'" data-pl-program="'+e(p.program_slug)+'" title="'+e(p.title || p.name)+'">' +
+                '<span class="pl-name">'+e(p.name)+(p.new_7d ? '<span class="pl-new">+'+p.new_7d+' this week</span>' : '') +
+                  '<small>'+e(p.program_slug)+(p.refunded ? ' &middot; <span class="pl-ref">'+p.refunded+' refunded</span>' : '')+'</small></span>' +
+                '<span class="pl-bar"><i style="width:'+Math.max(4, Math.round(p.active / max * 100))+'%"></i></span>' +
+                '<span class="pl-count">'+p.active+'</span>' +
+                '<span class="pl-rev">'+shortInr(p.revenue)+'</span>' +
+              '</button>';
+            }).join('') +
+          '</div>';
+        }).join('') + '</div>' +
+      '</div>';
+
+    wrap.querySelectorAll('[data-pl-program]').forEach(function (row) {
+      row.addEventListener('click', function () {
+        var slug = row.getAttribute('data-pl-program');
+        if (sel) sel.value = (sel.value === slug) ? '' : slug; // click again to clear
+        loadPaidLearners();
+        var listbar = document.querySelector('.pl-listbar');
+        if (listbar) listbar.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
   }
 
   function renderPaidLearnerRows(rows, body) {
@@ -2843,14 +2929,8 @@
       });
     }
 
-    var tabs = document.querySelectorAll('#paidLearnerProgramTabs .filter-tab');
-    tabs.forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        tabs.forEach(function (b) { b.classList.remove('active'); });
-        btn.classList.add('active');
-        loadPaidLearners();
-      });
-    });
+    var progSel = $('paidLearnerProgram');
+    if (progSel) progSel.addEventListener('change', loadPaidLearners);
   }
 
   /* ── Admit Card modal ── */
