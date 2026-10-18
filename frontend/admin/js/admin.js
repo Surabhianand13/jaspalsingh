@@ -1805,24 +1805,96 @@
   var STATUS_LABELS = { enrolling:'Enrolling', coming_soon:'Coming Soon', closed:'Closed' };
 
   /* ── PROGRAMS ── */
+  /* Filters for the Programs table (search, type, exam, status, visible).
+     Kept in sessionStorage so they survive the reload after Edit/Delete. */
+  var PROG_FILTER_KEY = 'jaspal_admin_prog_filters';
+  function progFilters() {
+    try { return JSON.parse(sessionStorage.getItem(PROG_FILTER_KEY)) || {}; } catch (er) { return {}; }
+  }
+  function saveProgFilters(f) {
+    try { sessionStorage.setItem(PROG_FILTER_KEY, JSON.stringify(f)); } catch (er) { /* ignore */ }
+  }
+
   function loadPrograms() {
     var body = document.getElementById('programsBody');
     adminFetch('GET', '/api/programs/admin/all').then(function(d){
       var ps = d.programs || [];
       if (!ps.length) { body.innerHTML = '<p class="admin-empty">No programs yet.</p>'; return; }
-      var rows = ps.map(function(p){
-        return '<tr>' +
-          '<td><strong>'+e(p.title)+'</strong><br><span style="color:#9999b0;font-size:12px;">'+e(p.slug)+'</span></td>' +
-          '<td>'+e(p.category)+'</td>' +
-          '<td>'+(p.price?inr(p.price):'-')+(p.mrp?' <s style="color:#aaa">'+inr(p.mrp)+'</s>':'')+'</td>' +
-          '<td><span class="admin-badge admin-badge--'+(p.status==='enrolling'?'green':p.status==='coming_soon'?'orange':'grey')+'">'+(STATUS_LABELS[p.status]||p.status)+'</span></td>' +
-          '<td><label class="admin-switch"><input type="checkbox" data-prog-vis="'+p.id+'" '+(p.is_visible?'checked':'')+'><span></span></label></td>' +
-          '<td><button class="btn btn-sm" data-prog-edit="'+p.id+'">Edit</button> <button class="btn btn-sm btn-ghost" data-prog-schedule="'+e(p.slug)+'" data-prog-title="'+e(p.title)+'">Schedule</button> <button class="btn btn-sm btn-ghost" data-prog-content="'+e(p.slug)+'" data-prog-title="'+e(p.title)+'">Page Content</button> <button class="btn btn-sm btn-ghost" data-prog-del="'+p.id+'">Delete</button></td>' +
-          '</tr>';
-      }).join('');
-      body.innerHTML = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Program</th><th>Type</th><th>Price</th><th>Status</th><th>Visible</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+      var f = progFilters();
+      var exams = ps.map(function(p){ return p.exam; }).filter(Boolean)
+        .filter(function(x, i, arr){ return arr.indexOf(x) === i; }).sort();
+      var cats = ps.map(function(p){ return p.category; }).filter(Boolean)
+        .filter(function(x, i, arr){ return arr.indexOf(x) === i; }).sort();
+      var opt = function(v, label, cur){ return '<option value="'+e(v)+'"'+(cur===v?' selected':'')+'>'+e(label)+'</option>'; };
+      body.innerHTML =
+        '<div class="prog-filters">' +
+          '<div class="prog-filter-search"><i class="fas fa-magnifying-glass"></i><input type="search" id="pfQ" placeholder="Search name or slug…" value="'+e(f.q||'')+'"></div>' +
+          '<select id="pfCat" class="admin-input">'+opt('','All types',f.cat||'')+cats.map(function(c){ return opt(c, c, f.cat); }).join('')+'</select>' +
+          '<select id="pfExam" class="admin-input">'+opt('','All exams',f.exam||'')+exams.map(function(x){ return opt(x, x, f.exam); }).join('')+'</select>' +
+          '<select id="pfStatus" class="admin-input">'+opt('','All statuses',f.status||'')+Object.keys(STATUS_LABELS).map(function(k){ return opt(k, STATUS_LABELS[k], f.status); }).join('')+'</select>' +
+          '<select id="pfVis" class="admin-input">'+opt('','Visible + hidden',f.vis||'')+opt('visible','Visible only',f.vis)+opt('hidden','Hidden only',f.vis)+'</select>' +
+          '<button type="button" class="btn btn-sm btn-ghost" id="pfClear">Clear</button>' +
+          '<span class="prog-filter-count" id="pfCount"></span>' +
+        '</div>' +
+        '<div id="progTableWrap"></div>' +
+        '<style>' +
+          '.prog-filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px;background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:10px;position:sticky;top:0;z-index:5;}' +
+          '.prog-filters select{width:auto;min-width:130px;padding:8px 10px;font-size:13px;}' +
+          '.prog-filter-search{flex:1 1 240px;display:flex;align-items:center;gap:8px;border:1.5px solid #E2E8F0;border-radius:8px;padding:0 10px;background:#F8FAFC;}' +
+          '.prog-filter-search:focus-within{border-color:#C81240;background:#fff;}' +
+          '.prog-filter-search i{color:#94A3B8;font-size:13px;}' +
+          '.prog-filter-search input{flex:1;border:none;background:none;outline:none;padding:9px 0;font-size:13.5px;min-width:0;}' +
+          '.prog-filter-count{font-size:12.5px;color:#64748B;font-weight:700;margin-left:auto;}' +
+        '</style>';
       body._data = ps;
-      bindProgramRowActions(ps);
+
+      function current() {
+        return {
+          q: document.getElementById('pfQ').value.trim(),
+          cat: document.getElementById('pfCat').value,
+          exam: document.getElementById('pfExam').value,
+          status: document.getElementById('pfStatus').value,
+          vis: document.getElementById('pfVis').value,
+        };
+      }
+      function render() {
+        var fl = current();
+        saveProgFilters(fl);
+        var q = fl.q.toLowerCase();
+        var shown = ps.filter(function(p){
+          if (q && ((p.title||'') + ' ' + (p.slug||'') + ' ' + (p.short_name||'')).toLowerCase().indexOf(q) === -1) return false;
+          if (fl.cat && p.category !== fl.cat) return false;
+          if (fl.exam && p.exam !== fl.exam) return false;
+          if (fl.status && p.status !== fl.status) return false;
+          if (fl.vis === 'visible' && !p.is_visible) return false;
+          if (fl.vis === 'hidden' && p.is_visible) return false;
+          return true;
+        });
+        document.getElementById('pfCount').textContent = 'Showing ' + shown.length + ' of ' + ps.length;
+        var rows = shown.map(function(p){
+          return '<tr>' +
+            '<td><strong>'+e(p.title)+'</strong><br><span style="color:#9999b0;font-size:12px;">'+e(p.slug)+'</span>'+(p.exam?' <span style="color:#64748B;font-size:11px;font-weight:700;background:#F1F5F9;border-radius:10px;padding:1px 7px;">'+e(p.exam)+'</span>':'')+'</td>' +
+            '<td>'+e(p.category)+'</td>' +
+            '<td>'+(p.price?inr(p.price):'-')+(p.mrp?' <s style="color:#aaa">'+inr(p.mrp)+'</s>':'')+'</td>' +
+            '<td><span class="admin-badge admin-badge--'+(p.status==='enrolling'?'green':p.status==='coming_soon'?'orange':'grey')+'">'+(STATUS_LABELS[p.status]||p.status)+'</span></td>' +
+            '<td><label class="admin-switch"><input type="checkbox" data-prog-vis="'+p.id+'" '+(p.is_visible?'checked':'')+'><span></span></label></td>' +
+            '<td><button class="btn btn-sm" data-prog-edit="'+p.id+'">Edit</button> <button class="btn btn-sm btn-ghost" data-prog-schedule="'+e(p.slug)+'" data-prog-title="'+e(p.title)+'">Schedule</button> <button class="btn btn-sm btn-ghost" data-prog-content="'+e(p.slug)+'" data-prog-title="'+e(p.title)+'">Page Content</button> <button class="btn btn-sm btn-ghost" data-prog-del="'+p.id+'">Delete</button></td>' +
+            '</tr>';
+        }).join('');
+        document.getElementById('progTableWrap').innerHTML = shown.length
+          ? '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Program</th><th>Type</th><th>Price</th><th>Status</th><th>Visible</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'
+          : '<p class="admin-empty">No programs match these filters.</p>';
+        bindProgramRowActions(ps);
+      }
+
+      document.getElementById('pfQ').addEventListener('input', render);
+      ['pfCat','pfExam','pfStatus','pfVis'].forEach(function(id){ document.getElementById(id).addEventListener('change', render); });
+      document.getElementById('pfClear').addEventListener('click', function(){
+        document.getElementById('pfQ').value = '';
+        ['pfCat','pfExam','pfStatus','pfVis'].forEach(function(id){ document.getElementById(id).value = ''; });
+        render();
+      });
+      render();
     }).catch(function(err){ body.innerHTML = '<p class="admin-empty">'+e(err.message)+'</p>'; });
   }
 
