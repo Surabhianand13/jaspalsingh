@@ -335,6 +335,7 @@ router.get('/admin/paid-learners', protect, async (req, res, next) => {
               COUNT(*) FILTER (WHERE e.refund_status != 'initiated')::int AS active,
               COUNT(*) FILTER (WHERE e.refund_status = 'initiated')::int AS refunded,
               COUNT(*) FILTER (WHERE e.refund_status != 'initiated' AND e.paid_at > NOW() - INTERVAL '7 days')::int AS new_7d,
+              COUNT(*) FILTER (WHERE e.refund_status != 'initiated' AND e.paid_at > NOW() - INTERVAL '30 days')::int AS new_30d,
               COALESCE(SUM(e.amount) FILTER (WHERE e.refund_status != 'initiated'), 0)::int AS revenue,
               MAX(e.paid_at) AS last_paid_at,
               MAX(e.program_name) AS enrollment_name,
@@ -355,6 +356,7 @@ router.get('/admin/paid-learners', protect, async (req, res, next) => {
       active: r.active,
       refunded: r.refunded,
       new_7d: r.new_7d,
+      new_30d: r.new_30d,
       revenue: r.revenue,
       last_paid_at: r.last_paid_at,
     }));
