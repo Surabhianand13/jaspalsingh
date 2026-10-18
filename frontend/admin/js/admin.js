@@ -3037,7 +3037,8 @@
 
   /* ── शौर्य BATCH MATERIALS (DPPs / formula sheets, shared by track
      across all 6 course options) ── */
-  var BM_TRACK_LABEL = { 'technical-degree': 'Technical - Degree', 'technical-diploma': 'Technical - Diploma', 'non-technical': 'Non-Technical' };
+  var BM_TRACK_LABEL = { 'technical-degree': 'Technical - Degree', 'technical-diploma': 'Technical - Diploma', 'non-technical': 'Non-Technical',
+    'practice-degree': 'Practice Batch - Degree', 'practice-diploma': 'Practice Batch - Diploma' };
   function loadBatchMaterials(){
     var body = document.getElementById('batchMaterialsBody');
     if (!body) return;
