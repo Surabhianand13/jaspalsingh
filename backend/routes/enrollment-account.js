@@ -324,13 +324,39 @@ router.get('/admin/paid-learners', protect, async (req, res, next) => {
          COUNT(*) FILTER (WHERE refund_status = 'initiated')::int AS refunded_count
        FROM enrollments WHERE status = 'paid'`);
 
+    /* Active subscriptions per program for the admin summary panel.
+       "active" excludes refunded enrollments (refund is an internal flag -
+       a refunded learner is not a subscriber); count = all paid, kept for
+       backwards compatibility. Name/exam come from the programs row when
+       one exists for the slug, else the label map / enrollment name. */
     const byProgramRes = await query(
-      `SELECT program_slug, COUNT(*)::int AS count
-       FROM enrollments WHERE status = 'paid' GROUP BY program_slug ORDER BY count DESC`);
+      `SELECT e.program_slug,
+              COUNT(*)::int AS count,
+              COUNT(*) FILTER (WHERE e.refund_status != 'initiated')::int AS active,
+              COUNT(*) FILTER (WHERE e.refund_status = 'initiated')::int AS refunded,
+              COUNT(*) FILTER (WHERE e.refund_status != 'initiated' AND e.paid_at > NOW() - INTERVAL '7 days')::int AS new_7d,
+              COALESCE(SUM(e.amount) FILTER (WHERE e.refund_status != 'initiated'), 0)::int AS revenue,
+              MAX(e.paid_at) AS last_paid_at,
+              MAX(e.program_name) AS enrollment_name,
+              MAX(p.title) AS title, MAX(p.short_name) AS short_name, MAX(p.exam) AS exam, MAX(p.category) AS category
+       FROM enrollments e
+       LEFT JOIN programs p ON p.slug = e.program_slug
+       WHERE e.status = 'paid'
+       GROUP BY e.program_slug
+       ORDER BY active DESC, count DESC`);
     const byProgram = byProgramRes.rows.map(r => ({
       program_slug: r.program_slug,
-      program_label: programLabel(r.program_slug, null),
+      program_label: programLabel(r.program_slug, r.title || r.enrollment_name),
+      title: r.title || r.enrollment_name || programLabel(r.program_slug, null),
+      short_name: r.short_name || null,
+      exam: r.exam || null,
+      category: r.category || null,
       count: r.count,
+      active: r.active,
+      refunded: r.refunded,
+      new_7d: r.new_7d,
+      revenue: r.revenue,
+      last_paid_at: r.last_paid_at,
     }));
 
     res.json({
