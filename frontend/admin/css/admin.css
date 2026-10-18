@@ -316,6 +316,10 @@ ul, ol { list-style: none; }
 /* ── Main content wrapper ────────────────────── */
 .admin-main {
   flex: 1;
+  /* min-width:0 - without it this flex item grows to its widest table and
+     pushes every section (search, buttons, right-hand columns) off-screen;
+     wide tables scroll inside .admin-table-wrap instead. */
+  min-width: 0;
   margin-left: var(--admin-sidebar-width);
   min-height: 100vh;
   display: flex;
@@ -422,6 +426,7 @@ ul, ol { list-style: none; }
 .admin-content {
   padding: 24px 28px;
   flex: 1;
+  min-width: 0;
 }
 
 /* Section visibility */
@@ -540,7 +545,8 @@ ul, ol { list-style: none; }
   border-radius: var(--admin-radius-lg);
   box-shadow: var(--admin-shadow-sm);
   border: 1px solid rgba(0,0,0,0.04);
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .admin-table-toolbar {

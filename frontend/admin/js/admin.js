@@ -2809,13 +2809,13 @@
       function cellHtml(exam, type, c, strong) {
         var on = plView.exam === exam && plView.type === type;
         if (!c || !c.active) return '<td class="pl-mx-cell pl-mx-empty">-</td>';
-        return '<td class="pl-mx-cell'+(on ? ' is-on' : '')+(strong ? ' pl-mx-strong' : '')+'" data-pl-cell="'+e(exam)+'|'+e(type)+'">' +
-          '<b>'+c.active+'</b>'+(c.new_7d ? '<span class="pl-up">+'+c.new_7d+'</span>' : '')+'<small>'+inr(c.revenue)+'</small></td>';
+        return '<td class="pl-mx-cell'+(on ? ' is-on' : '')+(strong ? ' pl-mx-strong' : '')+'" data-pl-cell="'+e(exam)+'|'+e(type)+'" title="'+c.active+' active · '+c.new_7d+' new this week · '+inr(c.revenue)+' net">' +
+          '<b>'+c.active+'</b>'+(c.new_7d ? '<span class="pl-up">+'+c.new_7d+'</span>' : '')+'<small>'+shortInr(c.revenue)+'</small></td>';
       }
       var colTotals = {};
       var matrix = '<div class="pl-mx-wrap"><table class="pl-mx"><thead><tr><th>Exam</th>' +
         usedTypes.map(function (t) { return '<th><i class="fas '+t[2]+'"></i> '+t[1]+'</th>'; }).join('') + '<th>Total</th></tr></thead><tbody>' +
-        groupList.map(function (g) {
+        groupList.filter(function (g) { return g.active > 0; }).map(function (g) {
           var rowT = { active: 0, revenue: 0, new_7d: 0 };
           var tds = usedTypes.map(function (t) {
             var c = cell[g.meta.name + '|' + t[0]];
