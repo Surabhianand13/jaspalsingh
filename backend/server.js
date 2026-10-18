@@ -1893,6 +1893,29 @@ async function migrate() {
       }), p.slug]
     );
   }
+  /* The materialTracks above (added 2026-10-16) sit inside a
+     "launch_config IS NULL" seed, so they never reached these two rows -
+     already live since 2026-08-30 with a launch_config - and learners got
+     an empty Study Materials list even though admin had uploaded PDFs to
+     the practice-degree / practice-diploma tracks. Set them explicitly
+     (idempotent: merges into the existing batch object, keeps every other
+     key). */
+  await query(
+    `UPDATE programs
+       SET launch_config = jsonb_set(COALESCE(launch_config, '{}'::jsonb), '{batch}',
+             COALESCE(launch_config->'batch', '{}'::jsonb) || jsonb_build_object('materialTracks', $1::jsonb))
+     WHERE slug = $2
+       AND (launch_config->'batch'->'materialTracks') IS DISTINCT FROM $1::jsonb`,
+    [JSON.stringify(['practice-degree']), 'shaurya-practice-batch-rssb-je-2026-degree']
+  );
+  await query(
+    `UPDATE programs
+       SET launch_config = jsonb_set(COALESCE(launch_config, '{}'::jsonb), '{batch}',
+             COALESCE(launch_config->'batch', '{}'::jsonb) || jsonb_build_object('materialTracks', $1::jsonb))
+     WHERE slug = $2
+       AND (launch_config->'batch'->'materialTracks') IS DISTINCT FROM $1::jsonb`,
+    [JSON.stringify(['practice-diploma']), 'shaurya-practice-batch-rssb-je-2026-diploma']
+  );
   console.log('✅ Seeded/updated 2 शौर्य Offline Practice Batch Course - RSSB JE 2026 rows (Degree/Diploma)');
 
   /* ── Shared शौर्य Batch Tally forms wired 2026-08-30 - the owner built

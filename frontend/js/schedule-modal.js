@@ -91,7 +91,8 @@
 
   /* शौर्य Batch subject-track labels for the Study Materials list - matches
      backend/routes/programs.js's BM_TRACK_LABEL. */
-  var TRACK_LABEL = { 'technical-degree': 'Technical - Degree', 'technical-diploma': 'Technical - Diploma', 'non-technical': 'Non-Technical' };
+  var TRACK_LABEL = { 'technical-degree': 'Technical - Degree', 'technical-diploma': 'Technical - Diploma', 'non-technical': 'Non-Technical',
+    'practice-degree': 'Practice Batch - Degree', 'practice-diploma': 'Practice Batch - Diploma' };
 
   /* Combo programs (RSSB Degree/Diploma, ESE Civil/General Studies) bundle
      two tracks under one program_slug - matches backend/routes/learner-
