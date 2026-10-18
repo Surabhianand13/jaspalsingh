@@ -2481,17 +2481,28 @@
   })();
   </script>
 
-  <!-- ── Sync the embedded program carousel (#progsCarousel) with admin-
-       created programs - mirrors frontend/programs/index.html's buildCard()/
-       syncPrograms() exactly (same .op-card markup, same CSS), scoped to
-       this carousel instead of the full grid. Without this, a program
-       created purely from the admin dashboard never appears anywhere on
-       the homepage, even though it already shows on /programs. ── -->
+  <!-- ── Homepage program cards: "Offline Test Series" tabbed carousel
+       (#progsCarousel) + "Offline Batches" carousel (#batchesCarousel).
+
+       Admin-managed mode (Admin -> Homepage Programs, saved at
+       /api/site-settings/homepage-programs): the saved tabs, and the
+       programs in each tab / in Offline Batches, in that order. A program
+       that has a hand-designed card in this page's HTML keeps it; any other
+       program gets the standard card built from its admin data (same
+       buildCard() as /programs). Hidden programs never show. Cached for an
+       instant first paint (the API can cold-start).
+
+       Built-in mode (nothing saved yet, or API unreachable): exactly the
+       previous behaviour - sync #progsCarousel with /api/programs, bucket
+       cards into tabs by exam name, pin the 4 Oct FLT cards first. ── -->
   <script>
   (function () {
     var API = location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://jaspalsingh.onrender.com';
     var carousel = document.getElementById('progsCarousel');
+    var batches  = document.getElementById('batchesCarousel');
+    var tabsWrap = document.querySelector('.progs-cat-tabs');
     if (!carousel) return;
+    var CACHE_KEY = 'jaspal_home_progs';
 
     var ACCENTS = {
       blue:   { grad:'#0369A1,#0284C7', fi:'op-fi-blue'   },
@@ -2512,11 +2523,17 @@
 
     function esc(s) { var d = document.createElement('div'); d.textContent = (s == null ? '' : String(s)); return d.innerHTML; }
     function inr(n) { return '₹' + Number(n).toLocaleString('en-IN'); }
-    function slugFromHref(href) { var m = (href || '').match(/\/programs\/([^\/]+)\/?$/); return m ? m[1] : ''; }
     function statusBits(status) {
       if (status === 'coming_soon') return { dot:'seat-soon', text:'Coming Soon' };
       if (status === 'closed')      return { dot:'seat-warn', text:'Enrollment Closed' };
       return { dot:'seat-ok', text:'Enrolling Now' };
+    }
+    function slugFromCard(card) {
+      if (card.getAttribute('data-slug')) return card.getAttribute('data-slug');
+      var cta = card.querySelector('.op-card-cta');
+      var href = cta ? cta.getAttribute('href') : '';
+      var m = (href || '').match(/[?&]slug=([^&]+)/) || (href || '').match(/\/programs\/([^\/]+)\/?$/);
+      return m ? decodeURIComponent(m[1]) : '';
     }
 
     function buildCard(p) {
@@ -2540,11 +2557,8 @@
         priceRow = (p.mrp ? '<span class="op-price-mrp">' + inr(p.mrp) + '</span>' : '') +
                    '<span class="op-price-offer">' + inr(p.price) + '</span>' +
                    (save ? '<span class="op-price-save">Save ' + save + '%</span>' : '');
-        // Same rolling daily 6AM-2AM countdown every hardcoded .op-card
-        // already has - admin-launched programs (synced here via the API)
-        // were missing this FOMO element entirely. tick() re-queries
-        // .op-countdown every second, so this works even though the span
-        // is added to the DOM after page load.
+        // Same rolling daily countdown every hardcoded .op-card has; the
+        // ticker re-queries .op-countdown every second, so late-added spans work.
         timerHtml = '<div class="op-card-timer">Offer ends in <span class="op-countdown"></span></div>';
       } else {
         priceRow = '<span class="op-price-offer" style="font-size:16px;color:var(--magenta);">Launching Soon</span>';
@@ -2553,6 +2567,7 @@
       var art = document.createElement('article');
       art.className = 'op-card';
       art.setAttribute('data-cat', cat);
+      art.setAttribute('data-slug', p.slug);
       art.innerHTML =
         '<div class="op-thumb" style="background:linear-gradient(145deg,' + acc.grad + ')">' +
           (p.thumbnail_url ? '<img class="op-thumb-img" src="' + esc(p.thumbnail_url) + '" alt="" loading="lazy" onload="this.parentElement.classList.add(\'has-img\')" onerror="this.remove()">' : '') +
@@ -2574,126 +2589,171 @@
       return art;
     }
 
-    fetch(API + '/api/programs')
-      .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
-      .then(function (data) {
-        var list = (data && data.programs) || [];
-        if (!list.length) return;
-        var visible = {};
-        list.forEach(function (p) { visible[p.slug] = p; });
-
-        var existing = {};
-        carousel.querySelectorAll('.op-card').forEach(function (card) {
-          var cta = card.querySelector('.op-card-cta');
-          var slug = card.getAttribute('data-slug') || (cta ? slugFromHref(cta.getAttribute('href')) : '');
-          if (slug) existing[slug] = card;
-          if (slug && !visible[slug]) card.remove();
-        });
-
-        var HOMEPAGE_HIDDEN_SLUGS = [
-          'shaurya-offline-rssb-je-2026-degree',
-          'shaurya-offline-rssb-je-2026-diploma',
-          'shaurya-omr-rssb-je-2026-degree',
-          'shaurya-omr-rssb-je-2026-diploma'
-        ];
-        list.forEach(function (p) {
-          if (!existing[p.slug] && HOMEPAGE_HIDDEN_SLUGS.indexOf(p.slug) === -1) carousel.appendChild(buildCard(p));
-        });
-        if (window.__progCatFilter) window.__progCatFilter();
-      })
-      .catch(function () {
-        /* homepage carousel stays exactly as-is if this fails */
-        if (window.__progCatFilter) window.__progCatFilter();
+    /* Hand-designed cards in this page's HTML, captured before anything moves. */
+    var staticCards = {};
+    [carousel, batches].forEach(function (c) {
+      if (!c) return;
+      c.querySelectorAll('.op-card').forEach(function (card) {
+        var s = slugFromCard(card);
+        if (s && !staticCards[s]) staticCards[s] = card;
       });
-  })();
-  </script>
+    });
 
-  <!-- ── Category tabs (ESE 2027 / RSSB JE + RPSC AE) for the embedded
-       program carousel above - buckets every .op-card by its existing
-       .op-thumb-exam text, so it works for both the static cards here
-       and any admin-added cards the sync script above appends. Exposes
-       window.__progCatFilter so that script can re-filter once its
-       async fetch actually finishes adding/removing cards. ── -->
-  <script>
-  (function () {
-    var carousel = document.getElementById('progsCarousel');
-    var tabsWrap = document.querySelector('.progs-cat-tabs');
-    if (!carousel || !tabsWrap) return;
+    /* ── Tabs (shared by both modes) ── */
+    var currentTab = 'ese';
+    var configMode = false;
 
-    var current = 'ese';
+    function filterCards() {
+      carousel.querySelectorAll('.op-card').forEach(function (card) {
+        card.style.display = (card.getAttribute('data-bucket') === currentTab) ? '' : 'none';
+      });
+    }
+    function selectTab(btn) {
+      tabsWrap.querySelectorAll('.progs-cat-tab').forEach(function (b) {
+        b.classList.toggle('active', b === btn);
+        b.setAttribute('aria-selected', b === btn ? 'true' : 'false');
+      });
+      currentTab = btn.getAttribute('data-cat-tab');
+      configMode ? filterCards() : legacyFilter();
+    }
+    function wireTab(btn) { btn.addEventListener('click', function () { selectTab(btn); }); }
+    if (tabsWrap) tabsWrap.querySelectorAll('.progs-cat-tab').forEach(wireTab);
 
-    // शौर्य Offline Test Series is the lead offer, pinned to the front of
-    // the RSSB JE tab, followed immediately by its शौर्य Printed OMR
-    // Offline sibling (same schedule, attempted from anywhere) - Degree
-    // before Diploma within each pair. Dynamically-added cards (from the
-    // admin-managed /api/programs sync above) don't carry a data-slug
-    // attribute, only the static ones do, so slugFromCard() falls back to
-    // parsing it out of the CTA href either way.
+    /* ── Built-in mode (previous behaviour) ── */
     var PINNED_RSSB_SLUGS = [
       'rssb-je-2026-4oct-flt-degree-offline',
       'rssb-je-2026-4oct-flt-diploma-offline',
       'rssb-je-2026-4oct-flt-degree-omr',
       'rssb-je-2026-4oct-flt-diploma-omr'
     ];
-
-    function slugFromCard(card) {
-      if (card.getAttribute('data-slug')) return card.getAttribute('data-slug');
-      var cta = card.querySelector('.op-card-cta');
-      var href = cta ? cta.getAttribute('href') : '';
-      var m = (href || '').match(/[?&]slug=([^&]+)/) || (href || '').match(/\/programs\/([^\/]+)\/?$/);
-      return m ? decodeURIComponent(m[1]) : '';
-    }
-
+    var HOMEPAGE_HIDDEN_SLUGS = [
+      'shaurya-offline-rssb-je-2026-degree',
+      'shaurya-offline-rssb-je-2026-diploma',
+      'shaurya-omr-rssb-je-2026-degree',
+      'shaurya-omr-rssb-je-2026-diploma'
+    ];
     function bucketFor(examText) {
       var t = (examText || '').toLowerCase();
       if (t.indexOf('rssb') !== -1 || t.indexOf('rpsc') !== -1) return 'rssb';
       if (t.indexOf('ese') !== -1) return 'ese';
       return 'other';
     }
-
-    function applyFilter() {
+    function legacySync(list) {
+      var visible = {};
+      list.forEach(function (p) { visible[p.slug] = p; });
+      var existing = {};
+      carousel.querySelectorAll('.op-card').forEach(function (card) {
+        var slug = slugFromCard(card);
+        if (slug) existing[slug] = card;
+        if (slug && !visible[slug]) card.remove();
+      });
+      list.forEach(function (p) {
+        if (!existing[p.slug] && HOMEPAGE_HIDDEN_SLUGS.indexOf(p.slug) === -1) carousel.appendChild(buildCard(p));
+      });
+    }
+    function legacyFilter() {
       var hasOther = false;
       carousel.querySelectorAll('.op-card').forEach(function (card) {
         var examEl = card.querySelector('.op-thumb-exam');
         var bucket = bucketFor(examEl ? examEl.textContent : '');
         card.setAttribute('data-bucket', bucket);
         if (bucket === 'other') hasOther = true;
-        card.style.display = (bucket === current) ? '' : 'none';
       });
-
       for (var i = PINNED_RSSB_SLUGS.length - 1; i >= 0; i--) {
         carousel.querySelectorAll('.op-card').forEach(function (card) {
           if (slugFromCard(card) === PINNED_RSSB_SLUGS[i]) carousel.prepend(card);
         });
       }
-
-      if (hasOther && !tabsWrap.querySelector('[data-cat-tab="other"]')) {
+      if (tabsWrap && hasOther && !tabsWrap.querySelector('[data-cat-tab="other"]')) {
         var otherTab = document.createElement('button');
         otherTab.className = 'progs-cat-tab';
         otherTab.setAttribute('data-cat-tab', 'other');
         otherTab.setAttribute('role', 'tab');
         otherTab.setAttribute('aria-selected', 'false');
         otherTab.textContent = 'More Programs';
-        otherTab.addEventListener('click', function () { selectTab(otherTab); });
+        wireTab(otherTab);
         tabsWrap.appendChild(otherTab);
+      }
+      filterCards();
+    }
+
+    /* ── Admin-managed mode ── */
+    function applyConfig(config, programs) {
+      var bySlug = {};
+      (programs || []).forEach(function (p) { bySlug[p.slug] = p; });
+      var used = {};
+      function cardFor(slug) {
+        if (!bySlug[slug]) return null; // hidden / deleted program never shows
+        var card = staticCards[slug] || buildCard(bySlug[slug]);
+        if (used[slug]) card = card.cloneNode(true); // same program in two places
+        used[slug] = true;
+        card.style.display = '';
+        return card;
+      }
+
+      var tabs = ((config.tests && config.tests.tabs) || []).map(function (t) {
+        return { key: t.key, label: t.label, cards: (t.slugs || []).map(cardFor).filter(Boolean) };
+      }).filter(function (t) { return t.cards.length; });
+
+      carousel.innerHTML = '';
+      tabs.forEach(function (t) {
+        t.cards.forEach(function (card) { card.setAttribute('data-bucket', t.key); carousel.appendChild(card); });
+      });
+      if (tabsWrap) {
+        if (!tabs.some(function (t) { return t.key === currentTab; })) currentTab = tabs.length ? tabs[0].key : '';
+        tabsWrap.innerHTML = '';
+        tabs.forEach(function (t) {
+          var b = document.createElement('button');
+          b.className = 'progs-cat-tab' + (t.key === currentTab ? ' active' : '');
+          b.setAttribute('data-cat-tab', t.key);
+          b.setAttribute('role', 'tab');
+          b.setAttribute('aria-selected', t.key === currentTab ? 'true' : 'false');
+          b.textContent = t.label;
+          wireTab(b);
+          tabsWrap.appendChild(b);
+        });
+        tabsWrap.style.display = tabs.length > 1 ? '' : 'none';
+      }
+      configMode = true;
+      filterCards();
+
+      if (batches) {
+        batches.innerHTML = '';
+        ((config.batches && config.batches.slugs) || []).map(cardFor).filter(Boolean).forEach(function (card) {
+          card.removeAttribute('data-bucket');
+          batches.appendChild(card);
+        });
       }
     }
 
-    function selectTab(btn) {
-      tabsWrap.querySelectorAll('.progs-cat-tab').forEach(function (b) {
-        b.classList.toggle('active', b === btn);
-        b.setAttribute('aria-selected', b === btn ? 'true' : 'false');
-      });
-      current = btn.getAttribute('data-cat-tab');
-      applyFilter();
+    var cachedRaw = null;
+    try { cachedRaw = localStorage.getItem(CACHE_KEY); } catch (e) { /* storage blocked */ }
+    if (cachedRaw) {
+      try { var c = JSON.parse(cachedRaw); if (c && c.config) applyConfig(c.config, c.programs); } catch (e) { /* bad cache */ }
     }
 
-    tabsWrap.querySelectorAll('.progs-cat-tab').forEach(function (btn) {
-      btn.addEventListener('click', function () { selectTab(btn); });
-    });
+    window.__progCatFilter = function () { configMode ? filterCards() : legacyFilter(); };
+    if (!configMode) legacyFilter(); // filter the built-in cards right away, before the API answers
 
-    window.__progCatFilter = applyFilter;
-    applyFilter();
+    Promise.all([
+      fetch(API + '/api/programs').then(function (r) { return r.ok ? r.json() : Promise.reject(); }),
+      fetch(API + '/api/site-settings/homepage-programs').then(function (r) { return r.ok ? r.json() : { config: null }; }).catch(function () { return { config: null }; }),
+    ]).then(function (res) {
+      var list = (res[0] && res[0].programs) || [];
+      var config = res[1] && res[1].config;
+      if (config && list.length) {
+        var fresh = JSON.stringify({ config: config, programs: list });
+        try { localStorage.setItem(CACHE_KEY, fresh); } catch (e) { /* ignore */ }
+        if (fresh !== cachedRaw) applyConfig(config, list);
+        return;
+      }
+      try { localStorage.removeItem(CACHE_KEY); } catch (e) { /* ignore */ }
+      if (configMode) return; // admin just reset - built-in layout returns on next load
+      if (list.length) legacySync(list);
+      legacyFilter();
+    }).catch(function () {
+      if (!configMode) legacyFilter(); // homepage stays as built
+    });
   })();
   </script>
 </body>

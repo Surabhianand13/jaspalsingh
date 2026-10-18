@@ -2,8 +2,9 @@
    routes/site-settings.js  -  Admin-editable site-wide settings
    Stored as one JSONB document per key in site_settings.
 
-   PUBLIC:  GET /api/site-settings/nav-menu   - header exam menu (or null)
-   ADMIN:   PUT /api/site-settings/nav-menu   - replace the whole menu
+   PUBLIC:  GET /api/site-settings/nav-menu          - header exam menu (or null)
+            GET /api/site-settings/homepage-programs - homepage program cards (or null)
+   ADMIN:   PUT/DELETE the same paths
 
    The nav menu is rendered on every page by frontend/js/main.js. Until
    an admin saves one, GET returns { menu: null } and every page keeps
@@ -127,5 +128,72 @@ router.delete('/nav-menu', protect, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/* ── Homepage program cards ──────────────────────────────────
+   { tests:   { tabs: [ { key, label, slugs: [program slug, ...] } ] },
+     batches: { slugs: [ ... ] } }
+   Drives the "Offline Test Series" tabbed carousel and the "Offline
+   Batches" carousel on the homepage (frontend/index.html): which program
+   cards show, under which tab, in what order. */
+const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,119}$/;
+
+function cleanSlugs(list, where) {
+  if (!Array.isArray(list)) return [];
+  const seen = new Set();
+  return list.slice(0, 40).map(s => str(s, 120)).filter(s => {
+    if (!SLUG_RE.test(s)) throw new Error(`Invalid program in ${where}: "${s}"`);
+    if (seen.has(s)) return false;
+    seen.add(s);
+    return true;
+  });
+}
+
+function cleanHomePrograms(input) {
+  if (!input || typeof input !== 'object') throw new Error('Missing homepage programs.');
+  const tabsIn = (input.tests && Array.isArray(input.tests.tabs)) ? input.tests.tabs : [];
+  if (tabsIn.length > 6) throw new Error('At most 6 tabs.');
+  const keys = new Set();
+  const tabs = tabsIn.map((t, i) => {
+    const label = str(t.label, 30);
+    if (!label) throw new Error(`Tab ${i + 1} needs a name.`);
+    let key = str(t.key, 20).toLowerCase().replace(/[^a-z0-9-]/g, '') || ('tab' + (i + 1));
+    while (keys.has(key)) key += 'x';
+    keys.add(key);
+    return { key, label, slugs: cleanSlugs(t.slugs, `tab "${label}"`) };
+  });
+  const batches = { slugs: cleanSlugs(input.batches && input.batches.slugs, 'Offline Batches') };
+  return { tests: { tabs }, batches };
+}
+
+router.get('/homepage-programs', async (req, res, next) => {
+  try {
+    const r = await query(`SELECT value, updated_at FROM site_settings WHERE key = 'homepage_programs'`);
+    res.set('Cache-Control', 'public, max-age=60');
+    res.json(r.rows.length ? { config: r.rows[0].value, updated_at: r.rows[0].updated_at } : { config: null });
+  } catch (err) { next(err); }
+});
+
+router.put('/homepage-programs', protect, async (req, res, next) => {
+  let config;
+  try { config = cleanHomePrograms(req.body && req.body.config); }
+  catch (err) { return res.status(400).json({ error: err.message }); }
+  try {
+    const r = await query(
+      `INSERT INTO site_settings (key, value, updated_at, updated_by) VALUES ('homepage_programs', $1, NOW(), $2)
+       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW(), updated_by = EXCLUDED.updated_by
+       RETURNING value, updated_at`,
+      [JSON.stringify(config), (req.admin && req.admin.email) || null]
+    );
+    res.json({ config: r.rows[0].value, updated_at: r.rows[0].updated_at });
+  } catch (err) { next(err); }
+});
+
+router.delete('/homepage-programs', protect, async (req, res, next) => {
+  try {
+    await query(`DELETE FROM site_settings WHERE key = 'homepage_programs'`);
+    res.json({ config: null });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;
 module.exports.cleanMenu = cleanMenu;
+module.exports.cleanHomePrograms = cleanHomePrograms;

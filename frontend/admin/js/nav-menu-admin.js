@@ -16,7 +16,7 @@
   'use strict';
 
   var API = location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://jaspalsingh.onrender.com';
-  var state = { menu: null, savedJson: null, source: '' };
+  var state = { menu: null, savedJson: null, source: '', programs: [] };
 
   function token() { return localStorage.getItem('jaspal_admin_token'); }
   function api(method, path, body) {
@@ -104,13 +104,19 @@
     var body = document.getElementById('navMenuBody');
     if (!body) return;
     body.innerHTML = '<p class="admin-empty">Loading menu…</p>';
+    // Active programs for the "pick a program" dropdown on each link.
+    fetch(API + '/api/programs').then(function (r) { return r.json(); }).then(function (d) {
+      state.programs = (d.programs || []).slice().sort(function (a, b) { return (a.title || '').localeCompare(b.title || ''); });
+      if (state.menu) draw();
+    }).catch(function () { /* typing the link by hand still works */ });
     api('GET', '/api/site-settings/nav-menu').then(function (d) {
-      if (d.menu) return { menu: d.menu, source: 'Saved menu (last updated ' + new Date(d.updated_at).toLocaleString('en-IN') + ')' };
+      if (d.menu) return { menu: d.menu, saved: true, source: 'Saved menu (last updated ' + new Date(d.updated_at).toLocaleString('en-IN') + ')' };
       return parseLiveMenu().then(function (m) { return { menu: m, source: 'Not saved yet - showing the menu that is live on the site today. Saving will switch every page to this editable menu.' }; });
     }).then(function (r) {
       state.menu = r.menu;
       state.source = r.source;
-      state.savedJson = JSON.stringify(r.menu);
+      // Nothing saved yet: keep Save enabled so the starting menu can be saved as-is.
+      state.savedJson = r.saved ? JSON.stringify(r.menu) : null;
       draw();
     }).catch(function (err) {
       body.innerHTML = '<p class="admin-empty">Could not load the menu: ' + esc(err.message) + '</p>';
@@ -124,6 +130,14 @@
     return '<button type="button" class="btn-admin-secondary btn-admin-sm" data-nm-move="' + path + '" data-dir="-1" ' + (idx === 0 ? 'disabled' : '') + ' title="Move up"><i class="fas fa-arrow-up"></i></button>' +
       '<button type="button" class="btn-admin-secondary btn-admin-sm" data-nm-move="' + path + '" data-dir="1" ' + (idx === len - 1 ? 'disabled' : '') + ' title="Move down"><i class="fas fa-arrow-down"></i></button>' +
       '<button type="button" class="btn-admin-danger btn-admin-sm" data-nm-del="' + path + '" title="Remove"><i class="fas fa-trash"></i></button>';
+  }
+
+  /* Picking a program fills the link's landing page (and its name if empty). */
+  function programPicker(path) {
+    if (!state.programs.length) return '';
+    return '<select class="nm-input nm-small nm-pick" data-nm-pick="' + path + '" title="Pick a program to link to"><option value="">Pick program…</option>' +
+      state.programs.map(function (p, i) { return '<option value="' + i + '">' + esc(p.short_name || p.title) + '</option>'; }).join('') +
+    '</select>';
   }
 
   function draw() {
@@ -158,7 +172,7 @@
                   return '<tr class="' + (it.visible === false ? 'nm-hidden' : '') + '">' +
                     '<td class="nm-order-cell">' + (ii + 1) + '</td>' +
                     '<td><input class="nm-input" data-nm-field="' + ip + '.label" value="' + esc(it.label) + '" placeholder="e.g. RSSB JE Diploma" /></td>' +
-                    '<td><input class="nm-input nm-url" data-nm-field="' + ip + '.url" value="' + esc(it.url) + '" placeholder="/programs/... or https://..." />' +
+                    '<td>' + programPicker(ip) + '<input class="nm-input nm-url" data-nm-field="' + ip + '.url" value="' + esc(it.url) + '" placeholder="/programs/... or https://..." />' +
                       (it.url ? ' <a href="' + esc(it.url) + '" target="_blank" rel="noopener" class="nm-open" title="Open landing page"><i class="fas fa-arrow-up-right-from-square"></i></a>' : '') + '</td>' +
                     '<td><input type="checkbox" data-nm-bool="' + ip + '.isNew" ' + (it.isNew ? 'checked' : '') + '></td>' +
                     '<td><input type="checkbox" data-nm-bool="' + ip + '.visible" ' + (it.visible !== false ? 'checked' : '') + '></td>' +
@@ -192,6 +206,17 @@
   }
 
   function wire(body) {
+    body.querySelectorAll('[data-nm-pick]').forEach(function (sel) {
+      sel.addEventListener('change', function () {
+        var p = state.programs[+sel.value];
+        if (!p) return;
+        var r = resolve(sel.getAttribute('data-nm-pick'));
+        var item = r.parent[r.key];
+        item.url = p.detail_url || ('/programs/' + p.slug + '/');
+        if (!item.label) item.label = p.short_name || p.title;
+        draw();
+      });
+    });
     body.querySelectorAll('[data-nm-field]').forEach(function (el) {
       el.addEventListener('input', function () {
         var r = resolve(el.getAttribute('data-nm-field'));

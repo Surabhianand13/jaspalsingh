@@ -137,6 +137,11 @@
           <i class="fas fa-bars-staggered" aria-hidden="true"></i>
           Navigation Menu
         </button>
+
+        <button class="admin-nav-link" data-section="homeprograms">
+          <i class="fas fa-table-cells-large" aria-hidden="true"></i>
+          Homepage Programs
+        </button>
       </div>
     </nav>
 
@@ -871,6 +876,46 @@
       </section>
 
       <!-- ── HOMEPAGE CONTENT ── -->
+      <section class="admin-section" id="section-homeprograms" aria-label="Homepage program cards">
+        <div class="section-header">
+          <h2 class="section-title">Homepage Programs</h2>
+          <div class="section-actions">
+            <span id="homeProgDirty" style="display:none;font-size:12.5px;font-weight:700;color:#B45309;margin-right:8px;">Unsaved changes</span>
+            <button class="btn-admin-secondary" id="homeProgDiscardBtn"><i class="fas fa-rotate-left"></i> Discard</button>
+            <button class="btn" id="homeProgSaveBtn" disabled><i class="fas fa-floppy-disk"></i> Save layout</button>
+          </div>
+        </div>
+        <p style="color:#6b6b8a;font-size:14px;margin-bottom:6px;max-width:780px;">Choose which program cards appear on the homepage, under which tab, and in what order - for the <strong>Offline Test Series</strong> carousel (with its tabs) and the <strong>Offline Batches</strong> carousel. Pick programs from the <strong>+ Add a program</strong> dropdown (active programs only); use the arrows to reorder and &times; to remove. Programs with a hand-designed card keep it; others get the standard card. Live within about a minute of saving.</p>
+        <p id="homeProgMsg" style="font-size:13px;font-weight:700;margin:0 0 14px;"></p>
+        <div id="homeProgBody"><p class="admin-empty">Loading…</p></div>
+        <p style="margin-top:24px;font-size:12.5px;color:#9999b0;">Something went wrong? <button type="button" id="homeProgResetBtn" style="background:none;border:none;color:#C81240;font-weight:700;cursor:pointer;padding:0;">Reset to the built-in homepage layout</button></p>
+        <style>
+          .hp-section { background:#fff; border:1.5px solid #E2E8F0; border-radius:12px; padding:16px; margin-bottom:18px; }
+          .hp-section > h3 { font-size:15px; font-weight:800; margin:0 0 12px; display:flex; gap:8px; align-items:center; }
+          .hp-section > h3 i { color:#C81240; }
+          .hp-section > h3 small { font-weight:500; color:#94A3B8; font-size:12px; }
+          .hp-tab { background:#F8FAFC; border-radius:10px; padding:12px; margin-bottom:12px; }
+          .hp-tab-head { display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap; }
+          .hp-tab-label { font-weight:800; flex:0 1 240px; }
+          .hp-count { font-size:12px; color:#64748B; font-weight:700; }
+          .hp-list { list-style:none; margin:0 0 8px; padding:0; display:flex; flex-direction:column; gap:6px; }
+          .hp-row { display:flex; align-items:center; gap:10px; background:#fff; border:1px solid #E2E8F0; border-radius:8px; padding:8px 10px; flex-wrap:wrap; }
+          .hp-row--gone { opacity:.6; border-style:dashed; }
+          .hp-num { width:22px; height:22px; border-radius:50%; background:#1A1A2E; color:#fff; font-size:11px; font-weight:800; display:grid; place-items:center; flex-shrink:0; }
+          .hp-title { flex:1 1 260px; font-size:13.5px; font-weight:700; color:#1A1A2E; min-width:0; }
+          .hp-title small { display:block; font-size:11px; color:#94A3B8; font-weight:500; font-family:ui-monospace,Menlo,monospace; }
+          .hp-meta { display:flex; gap:6px; flex-wrap:wrap; }
+          .hp-chip { font-size:11px; font-weight:700; background:#F1F5F9; color:#475569; border-radius:20px; padding:2px 9px; }
+          .hp-chip--enrolling { background:#DCFCE7; color:#166534; }
+          .hp-chip--coming_soon { background:#FEF3C7; color:#92400E; }
+          .hp-chip--closed { background:#FEE2E2; color:#B91C1C; }
+          .hp-actions { display:inline-flex; gap:4px; margin-left:auto; }
+          .hp-empty { font-size:13px; color:#94A3B8; padding:6px 2px; }
+          .hp-picker { width:100%; max-width:520px; padding:9px 10px; border:1.5px dashed #CBD5E1; border-radius:8px; font-size:13.5px; background:#fff; cursor:pointer; }
+          .hp-picker:focus { border-color:#C81240; outline:none; }
+        </style>
+      </section>
+
       <section class="admin-section" id="section-navmenu" aria-label="Header navigation menu">
         <div class="section-header">
           <h2 class="section-title">Navigation Menu</h2>
@@ -1409,6 +1454,7 @@
 <!-- Admin JS -->
 <script src="/admin/js/admin.js"></script>
 <script src="/admin/js/nav-menu-admin.js"></script>
+<script src="/admin/js/home-programs-admin.js"></script>
 
 <script>
 /* ── Free Resources ── */

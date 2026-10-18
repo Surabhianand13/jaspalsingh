@@ -207,6 +207,7 @@
 
   var sectionTitles = {
     'navmenu':      'Navigation Menu',
+    'homeprograms': 'Homepage Programs',
     'dashboard':    'Dashboard',
     'resources':    'Resources',
     'blog':         'Blog',
@@ -278,6 +279,7 @@
       case 'coupons':      loadCoupons();      break;
       case 'homepage':     loadHomepageContent('carousel'); loadHomepageContent('ticker'); loadHomepageContent('quicklinks'); break;
       case 'navmenu':      if (window.NavMenuAdmin) window.NavMenuAdmin.load(); break;
+      case 'homeprograms': if (window.HomeProgramsAdmin) window.HomeProgramsAdmin.load(); break;
     }
   }
 
