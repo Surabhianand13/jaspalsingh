@@ -2716,65 +2716,203 @@
     return '₹' + n;
   }
 
+  /* Panel state survives reloads of the learner list (search / filter). */
+  var plView = { exam: '', type: '', sort: 'active', dir: -1, showEmpty: false };
+  /* Program type from programs.category - Test Series vs Offline Batch etc. */
+  var PL_TYPES = [
+    ['test-series', 'Test Series',   'fa-clipboard-list'],
+    ['course',      'Offline Batch', 'fa-chalkboard-teacher'],
+    ['interview',   'Interview',     'fa-user-tie'],
+  ];
+  function plTypeOf(p) {
+    // Fallback only when the slug has no programs row: match real batch /
+    // course slugs, not test series that merely say "main-batch".
+    var slug = p.program_slug || '';
+    var c = p.category || ((/shaurya-batch|practice-batch|crash-course|foundation|-batch-rssb/i).test(slug) ? 'course' : (/interview/i).test(slug) ? 'interview' : 'test-series');
+    return PL_TYPES.some(function (t) { return t[0] === c; }) ? c : 'test-series';
+  }
+  function plTypeLabel(c) { var t = PL_TYPES.filter(function (x) { return x[0] === c; })[0]; return t ? t[1] : c; }
+
+  function humanizeSlug(slug) {
+    return String(slug || '').replace(/-/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+  }
+  function relDays(iso) {
+    if (!iso) return '-';
+    var d = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+    return d <= 0 ? 'Today' : d === 1 ? 'Yesterday' : d < 30 ? d + ' days ago' : new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  }
+
   function renderActiveByProgram(byProgram, selected) {
     var wrap = $('paidLearnersByProgram');
     var sel = $('paidLearnerProgram');
     if (!wrap) return;
+    // An older backend only sends {program_slug, program_label, count}.
+    var legacyApi = byProgram.length && byProgram[0].active == null;
     var list = byProgram.map(function (p) {
       var x = Object.assign({}, p);
       x.active = p.active != null ? p.active : p.count;
-      x.name = p.short_name || p.title || p.program_label || p.program_slug;
+      x.refunded = p.refunded || 0;
+      x.new_7d = p.new_7d || 0;
+      x.new_30d = p.new_30d || 0;
+      x.revenue = p.revenue || 0;
+      x.avg = x.active ? Math.round(x.revenue / x.active) : 0;
+      x.name = p.short_name || p.title || (p.program_label && p.program_label !== p.program_slug ? p.program_label : humanizeSlug(p.program_slug));
       x.group = plGroupFor(p);
+      x.type = plTypeOf(p);
       return x;
     });
 
-    // Program dropdown for the learner list (every program that has learners)
     if (sel) {
       var cur = sel.value;
       sel.innerHTML = '<option value="">All programs</option>' + list.slice().sort(function (a, b) { return a.name.localeCompare(b.name); })
         .map(function (p) { return '<option value="'+e(p.program_slug)+'"'+(p.program_slug === cur ? ' selected' : '')+'>'+e(p.name)+' ('+p.active+')</option>'; }).join('');
     }
 
-    var groups = {};
-    list.forEach(function (p) {
-      var g = groups[p.group.name] || (groups[p.group.name] = { meta: p.group, items: [], active: 0, revenue: 0 });
-      g.items.push(p); g.active += p.active; g.revenue += (p.revenue || 0);
-    });
-    var ordered = Object.keys(groups).map(function (k) { return groups[k]; }).sort(function (a, b) { return b.active - a.active; });
-    var max = Math.max.apply(null, list.map(function (p) { return p.active; }).concat([1]));
-    var programsWithLearners = list.filter(function (p) { return p.active > 0; }).length;
-    var totalActive = list.reduce(function (n, p) { return n + p.active; }, 0);
-
-    wrap.innerHTML =
-      '<div class="pl-panel">' +
-        '<div class="pl-panel-head"><h3>Active subscriptions by program</h3>' +
-          '<span>' + totalActive + ' active learners across ' + programsWithLearners + ' programs &middot; refunds excluded &middot; click a program to see its learners</span></div>' +
-        '<div class="pl-groups">' + ordered.map(function (g) {
-          g.items.sort(function (a, b) { return b.active - a.active; });
-          return '<div class="pl-group" style="--pl-c:'+g.meta.c+';--pl-bg:'+g.meta.bg+';">' +
-            '<div class="pl-group-head"><i class="fas '+g.meta.icon+'"></i><strong>'+e(g.meta.name)+'</strong><span>'+g.active+' learners &middot; '+shortInr(g.revenue)+'</span></div>' +
-            g.items.map(function (p) {
-              return '<button type="button" class="pl-row'+(p.program_slug === selected ? ' is-active' : '')+'" data-pl-program="'+e(p.program_slug)+'" title="'+e(p.title || p.name)+'">' +
-                '<span class="pl-name">'+e(p.name)+(p.new_7d ? '<span class="pl-new">+'+p.new_7d+' this week</span>' : '') +
-                  '<small>'+e(p.program_slug)+(p.refunded ? ' &middot; <span class="pl-ref">'+p.refunded+' refunded</span>' : '')+'</small></span>' +
-                '<span class="pl-bar"><i style="width:'+Math.max(4, Math.round(p.active / max * 100))+'%"></i></span>' +
-                '<span class="pl-count">'+p.active+'</span>' +
-                '<span class="pl-rev">'+shortInr(p.revenue)+'</span>' +
-              '</button>';
-            }).join('') +
-          '</div>';
-        }).join('') + '</div>' +
-      '</div>';
-
-    wrap.querySelectorAll('[data-pl-program]').forEach(function (row) {
-      row.addEventListener('click', function () {
-        var slug = row.getAttribute('data-pl-program');
-        if (sel) sel.value = (sel.value === slug) ? '' : slug; // click again to clear
-        loadPaidLearners();
-        var listbar = document.querySelector('.pl-listbar');
-        if (listbar) listbar.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    function draw() {
+      // exam chips
+      var groups = {};
+      list.forEach(function (p) {
+        var g = groups[p.group.name] || (groups[p.group.name] = { meta: p.group, active: 0 });
+        g.active += p.active;
       });
-    });
+      var groupList = Object.keys(groups).map(function (k) { return groups[k]; }).sort(function (a, b) { return b.active - a.active; });
+      var totalAll = list.reduce(function (n, p) { return n + p.active; }, 0);
+
+      var rows = list.filter(function (p) {
+        if (plView.exam && p.group.name !== plView.exam) return false;
+        if (plView.type && p.type !== plView.type) return false;
+        if (!plView.showEmpty && p.active === 0) return false;
+        return true;
+      });
+      var key = plView.sort;
+      rows.sort(function (a, b) {
+        var va = key === 'name' ? a.name.toLowerCase() : key === 'exam' ? a.group.name : key === 'type' ? a.type : key === 'last' ? (a.last_paid_at || '') : a[key];
+        var vb = key === 'name' ? b.name.toLowerCase() : key === 'exam' ? b.group.name : key === 'type' ? b.type : key === 'last' ? (b.last_paid_at || '') : b[key];
+        if (va < vb) return -1 * plView.dir;
+        if (va > vb) return 1 * plView.dir;
+        return b.active - a.active;
+      });
+      var T = rows.reduce(function (t, p) {
+        t.active += p.active; t.new_7d += p.new_7d; t.new_30d += p.new_30d; t.refunded += p.refunded; t.revenue += p.revenue; return t;
+      }, { active: 0, new_7d: 0, new_30d: 0, refunded: 0, revenue: 0 });
+      var maxActive = Math.max.apply(null, rows.map(function (p) { return p.active; }).concat([1]));
+      var hiddenEmpty = list.filter(function (p) { return p.active === 0 && (!plView.exam || p.group.name === plView.exam) && (!plView.type || p.type === plView.type); }).length;
+
+      /* Exam x Type summary grid (all programs, independent of filters) */
+      var usedTypes = PL_TYPES.filter(function (t) { return list.some(function (p) { return p.type === t[0] && p.active > 0; }); });
+      var cell = {};
+      list.forEach(function (p) {
+        var k = p.group.name + '|' + p.type;
+        var c = cell[k] || (cell[k] = { active: 0, revenue: 0, new_7d: 0 });
+        c.active += p.active; c.revenue += p.revenue; c.new_7d += p.new_7d;
+      });
+      function cellHtml(exam, type, c, strong) {
+        var on = plView.exam === exam && plView.type === type;
+        if (!c || !c.active) return '<td class="pl-mx-cell pl-mx-empty">-</td>';
+        return '<td class="pl-mx-cell'+(on ? ' is-on' : '')+(strong ? ' pl-mx-strong' : '')+'" data-pl-cell="'+e(exam)+'|'+e(type)+'">' +
+          '<b>'+c.active+'</b>'+(c.new_7d ? '<span class="pl-up">+'+c.new_7d+'</span>' : '')+'<small>'+inr(c.revenue)+'</small></td>';
+      }
+      var colTotals = {};
+      var matrix = '<div class="pl-mx-wrap"><table class="pl-mx"><thead><tr><th>Exam</th>' +
+        usedTypes.map(function (t) { return '<th><i class="fas '+t[2]+'"></i> '+t[1]+'</th>'; }).join('') + '<th>Total</th></tr></thead><tbody>' +
+        groupList.map(function (g) {
+          var rowT = { active: 0, revenue: 0, new_7d: 0 };
+          var tds = usedTypes.map(function (t) {
+            var c = cell[g.meta.name + '|' + t[0]];
+            if (c) { rowT.active += c.active; rowT.revenue += c.revenue; rowT.new_7d += c.new_7d;
+              var ct = colTotals[t[0]] || (colTotals[t[0]] = { active: 0, revenue: 0, new_7d: 0 }); ct.active += c.active; ct.revenue += c.revenue; ct.new_7d += c.new_7d; }
+            return cellHtml(g.meta.name, t[0], c);
+          }).join('');
+          return '<tr style="--pl-c:'+g.meta.c+';--pl-bg:'+g.meta.bg+';"><th class="pl-mx-exam"><i class="fas '+g.meta.icon+'"></i> '+e(g.meta.name)+'</th>' + tds + cellHtml(g.meta.name, '', rowT, true) + '</tr>';
+        }).join('') +
+        '<tr class="pl-mx-foot"><th>All exams</th>' + usedTypes.map(function (t) { return cellHtml('', t[0], colTotals[t[0]], true); }).join('') +
+          cellHtml('', '', usedTypes.reduce(function (a, t) { var c = colTotals[t[0]] || {}; a.active += c.active || 0; a.revenue += c.revenue || 0; a.new_7d += c.new_7d || 0; return a; }, { active: 0, revenue: 0, new_7d: 0 }), true) +
+        '</tr></tbody></table></div>';
+
+      function th(k, label, cls) {
+        var on = plView.sort === k;
+        return '<th class="'+(cls||'')+(on ? ' is-sorted' : '')+'" data-pl-sort="'+k+'">'+label+' <i class="fas '+(on ? (plView.dir < 0 ? 'fa-arrow-down' : 'fa-arrow-up') : 'fa-sort')+'"></i></th>';
+      }
+
+      wrap.innerHTML =
+        '<div class="pl-panel">' +
+          '<div class="pl-panel-head"><h3><i class="fas fa-chart-column"></i> Active subscriptions by program</h3>' +
+            '<span>Refunds excluded &middot; click a column to sort &middot; click a program to see its learners</span></div>' +
+          matrix +
+          (legacyApi ? '<div class="pl-warn"><i class="fas fa-circle-info"></i> The server is still updating - revenue and new-learner numbers will appear after a refresh in a minute.</div>' : '') +
+          '<div class="pl-chips">' +
+            '<button type="button" class="pl-chip'+(plView.exam ? '' : ' is-on')+'" data-pl-exam="">All <b>'+totalAll+'</b></button>' +
+            groupList.map(function (g) {
+              return '<button type="button" class="pl-chip'+(plView.exam === g.meta.name ? ' is-on' : '')+'" data-pl-exam="'+e(g.meta.name)+'" style="--pl-c:'+g.meta.c+';--pl-bg:'+g.meta.bg+';"><i class="fas '+g.meta.icon+'"></i> '+e(g.meta.name)+' <b>'+g.active+'</b></button>';
+            }).join('') +
+            '<span class="pl-chip-sep"></span>' +
+            '<button type="button" class="pl-chip'+(plView.type ? '' : ' is-on')+'" data-pl-type="">All types</button>' +
+            usedTypes.map(function (t) {
+              var n = list.filter(function (p) { return p.type === t[0] && (!plView.exam || p.group.name === plView.exam); }).reduce(function (a, p) { return a + p.active; }, 0);
+              return '<button type="button" class="pl-chip'+(plView.type === t[0] ? ' is-on' : '')+'" data-pl-type="'+t[0]+'"><i class="fas '+t[2]+'"></i> '+t[1]+' <b>'+n+'</b></button>';
+            }).join('') +
+            '<label class="pl-empty-toggle"><input type="checkbox" id="plShowEmpty"'+(plView.showEmpty ? ' checked' : '')+'> Show programs with no active learners'+(hiddenEmpty && !plView.showEmpty ? ' ('+hiddenEmpty+')' : '')+'</label>' +
+          '</div>' +
+          '<div class="admin-table-wrap pl-table-wrap"><table class="admin-table pl-table"><thead><tr>' +
+            th('name', 'Program') + th('exam', 'Exam') + th('type', 'Type') + th('active', 'Active', 'num') + th('new_7d', 'New 7d', 'num') + th('new_30d', 'New 30d', 'num') +
+            th('refunded', 'Refunded', 'num') + th('revenue', 'Net revenue', 'num') + '<th class="num">Share</th>' + th('avg', 'Avg / learner', 'num') + th('last', 'Last sale') +
+          '</tr></thead><tbody>' +
+            '<tr class="pl-total"><td>Total'+(plView.exam ? ' &middot; ' + e(plView.exam) : '')+(plView.type ? ' &middot; ' + e(plTypeLabel(plView.type)) : '')+' <small>'+rows.length+' programs</small></td><td></td><td></td>' +
+              '<td class="num"><b>'+T.active+'</b></td><td class="num">'+(T.new_7d ? '+'+T.new_7d : '0')+'</td><td class="num">'+(T.new_30d ? '+'+T.new_30d : '0')+'</td>' +
+              '<td class="num">'+T.refunded+'</td><td class="num"><b>'+inr(T.revenue)+'</b></td><td class="num">100%</td><td class="num">'+(T.active ? inr(Math.round(T.revenue / T.active)) : '-')+'</td><td></td></tr>' +
+            rows.map(function (p) {
+              var share = T.revenue ? Math.round(p.revenue / T.revenue * 1000) / 10 : 0;
+              return '<tr class="pl-trow'+(p.program_slug === selected ? ' is-active' : '')+'" data-pl-program="'+e(p.program_slug)+'" style="--pl-c:'+p.group.c+';--pl-bg:'+p.group.bg+';" title="Show learners of '+e(p.title || p.name)+'">' +
+                '<td><div class="pl-name">'+e(p.name)+'</div><div class="pl-slug">'+e(p.program_slug)+'</div></td>' +
+                '<td><span class="pl-exam">'+e(p.group.name)+'</span></td>' +
+                '<td><span class="pl-type">'+e(plTypeLabel(p.type))+'</span></td>' +
+                '<td class="num"><div class="pl-active"><span class="pl-bar"><i style="width:'+Math.max(4, Math.round(p.active / maxActive * 100))+'%"></i></span><b>'+p.active+'</b></div></td>' +
+                '<td class="num">'+(p.new_7d ? '<span class="pl-up">+'+p.new_7d+'</span>' : '<span class="pl-dim">0</span>')+'</td>' +
+                '<td class="num">'+(p.new_30d ? '+'+p.new_30d : '<span class="pl-dim">0</span>')+'</td>' +
+                '<td class="num">'+(p.refunded ? '<span class="pl-ref">'+p.refunded+'</span>' : '<span class="pl-dim">0</span>')+'</td>' +
+                '<td class="num"><b>'+inr(p.revenue)+'</b></td>' +
+                '<td class="num">'+share+'%</td>' +
+                '<td class="num">'+(p.avg ? inr(p.avg) : '-')+'</td>' +
+                '<td class="pl-dim">'+relDays(p.last_paid_at)+'</td>' +
+              '</tr>';
+            }).join('') +
+          '</tbody></table></div>' +
+        '</div>';
+
+      wrap.querySelectorAll('[data-pl-exam]').forEach(function (b) {
+        b.addEventListener('click', function () { plView.exam = b.getAttribute('data-pl-exam'); draw(); });
+      });
+      wrap.querySelectorAll('[data-pl-type]').forEach(function (b) {
+        b.addEventListener('click', function () { plView.type = b.getAttribute('data-pl-type'); draw(); });
+      });
+      wrap.querySelectorAll('[data-pl-cell]').forEach(function (c) {
+        c.addEventListener('click', function () {
+          var parts = c.getAttribute('data-pl-cell').split('|');
+          var same = plView.exam === parts[0] && plView.type === parts[1];
+          plView.exam = same ? '' : parts[0]; plView.type = same ? '' : parts[1];
+          draw();
+        });
+      });
+      wrap.querySelectorAll('[data-pl-sort]').forEach(function (h) {
+        h.addEventListener('click', function () {
+          var k = h.getAttribute('data-pl-sort');
+          if (plView.sort === k) plView.dir = -plView.dir; else { plView.sort = k; plView.dir = (k === 'name' || k === 'exam') ? 1 : -1; }
+          draw();
+        });
+      });
+      var se = document.getElementById('plShowEmpty');
+      if (se) se.addEventListener('change', function () { plView.showEmpty = se.checked; draw(); });
+      wrap.querySelectorAll('[data-pl-program]').forEach(function (row) {
+        row.addEventListener('click', function () {
+          var slug = row.getAttribute('data-pl-program');
+          if (sel) sel.value = (sel.value === slug) ? '' : slug; // click again to clear
+          loadPaidLearners();
+          var listbar = document.querySelector('.pl-listbar');
+          if (listbar) listbar.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      });
+    }
+    draw();
   }
 
   function renderPaidLearnerRows(rows, body) {
