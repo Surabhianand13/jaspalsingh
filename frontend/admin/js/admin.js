@@ -3229,9 +3229,9 @@
     document.getElementById('couponModalTitle').textContent = isEdit ? 'Edit Coupon' : 'New Coupon';
     document.getElementById('couponModalBody').innerHTML =
       fld('Code','cp_code',c.code||'', isEdit) +
-      sel('Type','cp_type',['fixed_discount','flat_price','program_price_map'],c.type||'fixed_discount') +
-      '<div class="admin-form-hint" style="margin-top:-8px;">fixed_discount = rupees off &middot; flat_price = every eligible program costs this flat price &middot; program_price_map = a specific final price per program (paste JSON below)</div>' +
-      fld('Discount amount / flat price (rupees)','cp_amount',c.discount_amount||'') +
+      sel('Type','cp_type',['fixed_discount','percent_discount','flat_price','program_price_map'],c.type||'fixed_discount') +
+      '<div class="admin-form-hint" style="margin-top:-8px;">fixed_discount = rupees off &middot; percent_discount = % off (enter 5 for 5%) &middot; flat_price = every eligible program costs this flat price &middot; program_price_map = a specific final price per program (paste JSON below)</div>' +
+      fld('Discount amount / flat price (fixed rupees, flat price rupees, or % for percent_discount)','cp_amount',c.discount_amount||'') +
       fld('Program price map (JSON, e.g. {"slug-a":999,"slug-b":1499}) - only for program_price_map type','cp_pricemap', c.program_prices?JSON.stringify(c.program_prices):'') +
       fld('Restrict to these program slugs (comma separated, blank = all programs)','cp_scope',(c.program_slugs||[]).join(', ')) +
       fld('Usage limit (blank = unlimited, 1 = one-time-use, N = limited)','cp_maxuses',c.max_uses==null?'':c.max_uses) +
