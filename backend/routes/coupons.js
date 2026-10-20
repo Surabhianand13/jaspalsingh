@@ -35,7 +35,7 @@ router.post('/', protect, async (req, res, next) => {
   try {
     const b = req.body || {};
     if (!b.code || !b.type) return res.status(400).json({ error: 'code and type are required.' });
-    if (!['fixed_discount', 'flat_price', 'program_price_map'].includes(b.type)) {
+    if (!['fixed_discount', 'flat_price', 'program_price_map', 'percent_discount'].includes(b.type)) {
       return res.status(400).json({ error: 'Invalid coupon type.' });
     }
     if (b.type === 'program_price_map' && (!b.program_prices || !Object.keys(b.program_prices).length)) {
