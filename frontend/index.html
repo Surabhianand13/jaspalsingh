@@ -387,6 +387,36 @@
     </div>
   </aside>
 
+  <!-- ─── DUSSEHRA FESTIVE BAR (auto-hides 22 Oct 12:00 AM IST) ─── -->
+  <div id="festive-bar" style="background:linear-gradient(90deg,#7c1200 0%,#c8390a 30%,#e8840a 60%,#c8390a 80%,#7c1200 100%);padding:0;overflow:hidden;position:relative;z-index:900;">
+    <div style="display:flex;align-items:center;justify-content:center;gap:12px;padding:8px 16px;flex-wrap:wrap;">
+      <span style="font-size:18px;">🪔</span>
+      <span style="color:#fff;font-weight:700;font-size:13px;letter-spacing:.3px;">Festive Special - Use coupon <span style="background:#FFD700;color:#7c1200;font-weight:900;padding:1px 8px;border-radius:4px;letter-spacing:.5px;">DUSSHERA</span> for 5% OFF on all programs</span>
+      <span style="color:#FFD700;font-size:12px;font-weight:600;">Ends in: <span id="festive-countdown" style="font-family:monospace;letter-spacing:.5px;">--:--:--</span></span>
+      <a href="/programs/" style="background:#FFD700;color:#7c1200;font-weight:800;font-size:11px;padding:3px 12px;border-radius:20px;text-decoration:none;white-space:nowrap;">Enroll Now &rarr;</a>
+      <button onclick="document.getElementById('festive-bar').remove()" aria-label="Close" style="background:none;border:none;color:rgba(255,255,255,.7);font-size:18px;cursor:pointer;padding:0 0 0 4px;line-height:1;">&times;</button>
+    </div>
+  </div>
+  <script>
+    (function () {
+      var deadline = new Date('2026-10-21T18:30:00Z'); /* 22 Oct 12:00 AM IST = 21 Oct 18:30 UTC */
+      var bar = document.getElementById('festive-bar');
+      if (!bar) return;
+      if (Date.now() >= deadline) { bar.remove(); return; }
+      var el = document.getElementById('festive-countdown');
+      function tick() {
+        var diff = deadline - Date.now();
+        if (diff <= 0) { bar.remove(); return; }
+        var h = Math.floor(diff / 3600000);
+        var m = Math.floor((diff % 3600000) / 60000);
+        var s = Math.floor((diff % 60000) / 1000);
+        el.textContent = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+        setTimeout(tick, 1000);
+      }
+      tick();
+    })();
+  </script>
+
   <main id="main-content">
 
     <!-- ─── PROMOTIONAL BANNER CAROUSEL ────────────── -->
@@ -395,8 +425,18 @@
       <div class="carousel-track-outer">
         <div class="carousel-track">
 
-          <!-- Slide 1: RPSC AE 2024 Interview Guidance Programme -->
-          <div class="carousel-slide" role="group" aria-label="Slide 1 of 10">
+          <!-- Slide 1: Dussehra Festive Special - 5% OFF with DUSSHERA coupon -->
+          <div class="carousel-slide" role="group" aria-label="Slide 1 of 11">
+            <a href="/programs/" class="cs-banner-link" aria-label="Festive Special - 5% off all programs with coupon DUSSHERA - ends 22nd Oct">
+              <picture>
+                <source media="(max-width: 640px)" srcset="/images/banners/banner-29-mobile.webp">
+                <img src="/images/banners/banner-29.webp" alt="Festive Special - Additional 5% OFF on all purchases - Coupon: DUSSHERA - Offer ends 22nd Oct 12:00 AM - by Dr. Jaspal Singh" class="cs-banner-img" loading="eager">
+              </picture>
+            </a>
+          </div>
+
+          <!-- Slide 2: RPSC AE 2024 Interview Guidance Programme -->
+          <div class="carousel-slide" role="group" aria-label="Slide 2 of 11">
             <a href="/programs/rpsc-ae-interview/" class="cs-banner-link" aria-label="Enrol in RPSC AE 2024 Interview Guidance Programme">
               <picture>
                 <source media="(max-width: 640px)" srcset="/images/banners/banner-28-mobile.jpg?v=1">
@@ -405,8 +445,8 @@
             </a>
           </div>
 
-          <!-- Slide 2: शौर्य Batch - RSSB JE 2026 Degree Civil (Offline Classroom Program, Jaipur) -->
-          <div class="carousel-slide" role="group" aria-label="Slide 2 of 10">
+          <!-- Slide 3: शौर्य Batch - RSSB JE 2026 Degree Civil (Offline Classroom Program, Jaipur) -->
+          <div class="carousel-slide" role="group" aria-label="Slide 3 of 11">
             <a href="/programs/rssb-je-2026-shaurya-batch-complete-degree/" class="cs-banner-link" aria-label="Explore शौर्य Batch - RSSB JE 2026 Degree Civil Offline Classroom Program in Jaipur">
               <picture>
                 <source media="(max-width: 640px)" srcset="/images/banners/banner-19-mobile.jpg?v=2">
@@ -415,8 +455,8 @@
             </a>
           </div>
 
-          <!-- Slide 3: शौर्य Batch - RSSB JE 2026 Diploma Civil (Offline Classroom Program, Jaipur) -->
-          <div class="carousel-slide" role="group" aria-label="Slide 3 of 10">
+          <!-- Slide 4: शौर्य Batch - RSSB JE 2026 Diploma Civil (Offline Classroom Program, Jaipur) -->
+          <div class="carousel-slide" role="group" aria-label="Slide 4 of 11">
             <a href="/programs/rssb-je-2026-shaurya-batch-complete-diploma/" class="cs-banner-link" aria-label="Explore शौर्य Batch - RSSB JE 2026 Diploma Civil Offline Classroom Program in Jaipur">
               <picture>
                 <source media="(max-width: 640px)" srcset="/images/banners/banner-20-mobile.jpg?v=2">
@@ -425,8 +465,8 @@
             </a>
           </div>
 
-          <!-- Slide 4: UKPSC JE - Jaspal Sir Ki Test Series - Civil (Printed OMR Offline) - Mega Launch -->
-          <div class="carousel-slide" role="group" aria-label="Slide 4 of 10">
+          <!-- Slide 5: UKPSC JE - Jaspal Sir Ki Test Series - Civil (Printed OMR Offline) - Mega Launch -->
+          <div class="carousel-slide" role="group" aria-label="Slide 5 of 11">
             <a href="/programs/ukpsc-je-2026-civil-omr/" class="cs-banner-link" aria-label="Explore UKPSC JE - Jaspal Sir Ki Test Series - Civil - Printed OMR Offline - Mega Launch">
               <picture>
                 <source media="(max-width: 640px)" srcset="/images/banners/banner-27-mobile.jpg?v=1">
@@ -435,8 +475,8 @@
             </a>
           </div>
 
-          <!-- Slide 5: शौर्य Offline Test Series - RSSB JE 2026 (Degree) -->
-          <div class="carousel-slide" role="group" aria-label="Slide 5 of 10">
+          <!-- Slide 6: शौर्य Offline Test Series - RSSB JE 2026 (Degree) -->
+          <div class="carousel-slide" role="group" aria-label="Slide 6 of 11">
             <a href="/programs/shaurya-offline-rssb-je-2026-degree/" class="cs-banner-link" aria-label="Explore शौर्य Offline Test Series - RSSB JE 2026 Degree Civil">
               <picture>
                 <source media="(max-width: 640px)" srcset="/images/banners/banner-21-mobile.jpg?v=1">
@@ -445,8 +485,8 @@
             </a>
           </div>
 
-          <!-- Slide 6: शौर्य Offline Test Series - RSSB JE 2026 (Diploma) -->
-          <div class="carousel-slide" role="group" aria-label="Slide 6 of 10">
+          <!-- Slide 7: शौर्य Offline Test Series - RSSB JE 2026 (Diploma) -->
+          <div class="carousel-slide" role="group" aria-label="Slide 7 of 11">
             <a href="/programs/shaurya-offline-rssb-je-2026-diploma/" class="cs-banner-link" aria-label="Explore शौर्य Offline Test Series - RSSB JE 2026 Diploma Civil">
               <picture>
                 <source media="(max-width: 640px)" srcset="/images/banners/banner-22-mobile.jpg?v=1">
@@ -455,8 +495,8 @@
             </a>
           </div>
 
-          <!-- Slide 7: शौर्य Printed OMR Offline Test Series - RSSB JE 2026 (Degree) -->
-          <div class="carousel-slide" role="group" aria-label="Slide 7 of 10">
+          <!-- Slide 8: शौर्य Printed OMR Offline Test Series - RSSB JE 2026 (Degree) -->
+          <div class="carousel-slide" role="group" aria-label="Slide 8 of 11">
             <a href="/programs/shaurya-omr-rssb-je-2026-degree/" class="cs-banner-link" aria-label="Explore शौर्य Printed OMR Offline Test Series - RSSB JE 2026 Degree Civil">
               <picture>
                 <source media="(max-width: 640px)" srcset="/images/banners/banner-23-mobile.jpg?v=1">
@@ -465,8 +505,8 @@
             </a>
           </div>
 
-          <!-- Slide 8: शौर्य Printed OMR Offline Test Series - RSSB JE 2026 (Diploma) -->
-          <div class="carousel-slide" role="group" aria-label="Slide 8 of 10">
+          <!-- Slide 9: शौर्य Printed OMR Offline Test Series - RSSB JE 2026 (Diploma) -->
+          <div class="carousel-slide" role="group" aria-label="Slide 9 of 11">
             <a href="/programs/shaurya-omr-rssb-je-2026-diploma/" class="cs-banner-link" aria-label="Explore शौर्य Printed OMR Offline Test Series - RSSB JE 2026 Diploma Civil">
               <picture>
                 <source media="(max-width: 640px)" srcset="/images/banners/banner-24-mobile.jpg?v=1">
@@ -475,8 +515,8 @@
             </a>
           </div>
 
-          <!-- Slide 9: ESE 2027 Prelims - Paper 1, Paper 2 & Combo (split click zones) -->
-          <div class="carousel-slide" role="group" aria-label="Slide 9 of 10" style="position:relative;">
+          <!-- Slide 10: ESE 2027 Prelims - Paper 1, Paper 2 & Combo (split click zones) -->
+          <div class="carousel-slide" role="group" aria-label="Slide 10 of 11" style="position:relative;">
             <picture>
               <source media="(max-width: 640px)" srcset="/images/banners/banner-1-mobile.jpg?v=3">
               <img src="/images/banners/banner-1.jpg?v=7" alt="ESE 2027 Prelims Jaspal Sir Ki Test Series - Paper 1, Paper 2 & Combo" class="cs-banner-img" loading="lazy">
@@ -487,8 +527,8 @@
                style="position:absolute;inset:0;left:50%;z-index:2;"></a>
           </div>
 
-          <!-- Slide 10: No link -->
-          <div class="carousel-slide" role="group" aria-label="Slide 10 of 10">
+          <!-- Slide 11: No link -->
+          <div class="carousel-slide" role="group" aria-label="Slide 11 of 11">
             <picture>
               <source media="(max-width: 640px)" srcset="/images/banners/banner-8-mobile.jpg?v=1">
               <img src="/images/banners/banner-8.jpg?v=1" alt="Jaspal Sir Ki Test Series" class="cs-banner-img" loading="lazy">
@@ -514,6 +554,7 @@
         <button class="carousel-dot-btn" role="tab" aria-label="Slide 8"></button>
         <button class="carousel-dot-btn" role="tab" aria-label="Slide 9"></button>
         <button class="carousel-dot-btn" role="tab" aria-label="Slide 10"></button>
+        <button class="carousel-dot-btn" role="tab" aria-label="Slide 11"></button>
       </div>
 
     </section>
@@ -529,6 +570,8 @@
     <div class="ticker-strip" aria-label="Latest announcements">
       <div class="ticker-track" id="tickerTrack">
         <div class="ticker-group">
+          <span class="ticker-item" style="color:#FFD700;font-weight:800;"><i class="fas fa-fire" style="color:#FF6B35;"></i> DUSSEHRA OFFER: Use code <strong>DUSSHERA</strong> for extra 5% OFF - Ends 22nd Oct 12AM</span>
+          <span class="ticker-dot">&bull;</span>
           <a href="/programs/shaurya-batch-rssb-je-2026/" class="ticker-item"><i class="fas fa-chalkboard-teacher"></i> शौर्य Batch - RSSB JE 2026 - Offline Classroom Program, Jaipur - 200 Seats Only <span style="font-size:9px;font-weight:800;color:#fff;background:#C2410C;border-radius:8px;padding:2px 7px;margin-left:4px;vertical-align:middle;">NEW</span></a>
           <span class="ticker-dot">&bull;</span>
           <a href="/programs/rssb-jen-2026-jaspalsirki-testseries-diploma-civil/" class="ticker-item"><i class="fas fa-map-marker-alt"></i> 60+ Offline Centres Now Live Across Rajasthan <span style="font-size:9px;font-weight:800;color:#fff;background:#059669;border-radius:8px;padding:2px 7px;margin-left:4px;vertical-align:middle;">LIVE</span></a>
