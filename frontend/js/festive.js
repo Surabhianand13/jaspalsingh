@@ -68,21 +68,21 @@
   document.head.appendChild(style);
 
   /* ── 2. FLOATING DIYA PARTICLES ───────────────────────── */
-  var DIYAS = ['🪔','🔥','✨','🌟','🎆','🪔'];
+  var DIYAS = ['🪔','🔥','✨','🌟','🪔'];
   function spawnDiya() {
     if (Date.now() >= DEADLINE) return;
     var el = document.createElement('span');
     el.className = 'diya-particle';
     el.textContent = DIYAS[Math.floor(Math.random() * DIYAS.length)];
-    var dur  = 5000 + Math.random() * 7000;
+    var dur  = 7000 + Math.random() * 9000;
     var left = 2 + Math.random() * 96;
     el.style.cssText = 'left:' + left + 'vw;bottom:-40px;' +
       'animation-duration:' + dur + 'ms;' +
-      'font-size:' + (14 + Math.random() * 20) + 'px;' +
-      'opacity:' + (0.5 + Math.random() * 0.5) + ';';
+      'font-size:' + (14 + Math.random() * 18) + 'px;' +
+      'opacity:' + (0.4 + Math.random() * 0.5) + ';';
     document.body.appendChild(el);
     setTimeout(function () { el.remove(); }, dur + 200);
-    setTimeout(spawnDiya, 700 + Math.random() * 1400);
+    setTimeout(spawnDiya, 1800 + Math.random() * 2500);
   }
   spawnDiya();
 
@@ -93,9 +93,9 @@
     if (Date.now() >= DEADLINE) return;
     var el = document.createElement('div');
     el.className = 'confetti-piece';
-    var dur = 3000 + Math.random() * 4000;
+    var dur = 4500 + Math.random() * 5000;
     var left = Math.random() * 100;
-    var size = 5 + Math.random() * 8;
+    var size = 5 + Math.random() * 7;
     el.style.cssText = [
       'left:' + left + 'vw;',
       'top:-10px;',
@@ -104,23 +104,23 @@
       'background:' + CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)] + ';',
       'border-radius:' + CONFETTI_SHAPES[Math.floor(Math.random() * CONFETTI_SHAPES.length)] + ';',
       'animation-duration:' + dur + 'ms;',
-      'animation-delay:' + Math.random() * 500 + 'ms;',
-      'opacity:.8;',
+      'animation-delay:' + Math.random() * 400 + 'ms;',
+      'opacity:.7;',
     ].join('');
     document.body.appendChild(el);
     setTimeout(function () { el.remove(); }, dur + 700);
-    setTimeout(spawnConfetti, 180 + Math.random() * 350);
+    setTimeout(spawnConfetti, 450 + Math.random() * 700);
   }
   spawnConfetti();
 
   /* ── 4. TWINKLING BACKGROUND STARS ───────────────────── */
   (function seedStars() {
-    var count = window.innerWidth < 600 ? 18 : 30;
+    var count = window.innerWidth < 600 ? 8 : 14;
     for (var i = 0; i < count; i++) {
       var star = document.createElement('span');
       star.className = 'twinkle-star';
       star.textContent = Math.random() > 0.5 ? '✦' : '✧';
-      var dur = 1500 + Math.random() * 2500;
+      var dur = 2500 + Math.random() * 3500;
       star.style.cssText = [
         'left:' + (Math.random() * 100) + 'vw;',
         'top:' + (10 + Math.random() * 80) + 'vh;',
