@@ -108,6 +108,15 @@ function iciciTxnDate() {
 
 /* ── POST /api/icici/create-order ─────────────────────────── */
 router.post('/create-order', createOrderLimiter, optionalLearner, async (req, res) => {
+  // Fail fast before consuming the Turnstile token so the frontend can
+  // fall back to Pay Now without needing to wait for Turnstile to reset.
+  if (!process.env.ICICI_PG_SECRET) {
+    return res.status(503).json({
+      error: 'EMI payment is temporarily unavailable. Please use the Pay Now button instead.',
+      skip_reset: true,
+    });
+  }
+
   try {
     const { program_slug, name, email: rawEmail, phone: rawPhone, turnstile_token } = req.body;
 
