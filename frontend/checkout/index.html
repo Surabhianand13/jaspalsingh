@@ -1107,7 +1107,7 @@
           btn.disabled = false;
           document.getElementById('payBtn').disabled = false;
           document.getElementById('emiBtnText').textContent = 'Pay via EMI - ICICI Bank';
-          resetTurnstile();
+          if (!data.skip_reset) resetTurnstile();
           return;
         }
 
