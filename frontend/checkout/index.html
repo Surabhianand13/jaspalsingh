@@ -1127,6 +1127,7 @@
       const el = document.getElementById('formError');
       el.textContent = msg;
       el.style.display = 'block';
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
     function showAccountExistsPrompt() {
