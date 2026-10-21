@@ -749,4 +749,4 @@ async function sendAdmitCardDigestEmail(cards) {
   }, PRIORITY.ADMIN_NOTIFY);
 }
 
-module.exports = { resolveFulfillment, sendInvoiceEmail, sendWelcomePaymentEmail, sendAdminPaymentNotification, sendReferralCodeEmail, sendReferralPayoutDigestEmail, sendAdmitCardDigestEmail };
+module.exports = { baseHtml, esc, FROM, SITE, ADMIN_EMAIL, resolveFulfillment, sendInvoiceEmail, sendWelcomePaymentEmail, sendAdminPaymentNotification, sendReferralCodeEmail, sendReferralPayoutDigestEmail, sendAdmitCardDigestEmail };

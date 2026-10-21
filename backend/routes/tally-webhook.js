@@ -92,7 +92,7 @@ const CENTRES = {
   },
   jaipur: {
     name: 'Jaipur',
-    address: '33, White House, Opp. Zone Tech, Tonk Road, Madhuvan Colony, Mansingh Pura, Jaipur, Rajasthan 302015',
+    address: '33, White House, Opp. Zone Tech, Tonk Road, Madhuvan Colony, Mansingh Pura, Jaipur, Rajasthan 302018',
     mapsLink: 'https://maps.app.goo.gl/UiYpXv447AWrfyMX8',
   },
   delhi: {

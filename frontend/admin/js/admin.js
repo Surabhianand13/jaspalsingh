@@ -208,6 +208,7 @@
   var sectionTitles = {
     'navmenu':      'Navigation Menu',
     'homeprograms': 'Homepage Programs',
+    'interviews':   'Interview Booking',
     'dashboard':    'Dashboard',
     'resources':    'Resources',
     'blog':         'Blog',
@@ -280,6 +281,7 @@
       case 'homepage':     loadHomepageContent('carousel'); loadHomepageContent('ticker'); loadHomepageContent('quicklinks'); break;
       case 'navmenu':      if (window.NavMenuAdmin) window.NavMenuAdmin.load(); break;
       case 'homeprograms': if (window.HomeProgramsAdmin) window.HomeProgramsAdmin.load(); break;
+      case 'interviews':   if (window.InterviewsAdmin) window.InterviewsAdmin.load(); break;
     }
   }
 
@@ -4798,4 +4800,7 @@
     });
   }
 
+  /* Shared with the standalone section modules (interviews-admin.js,
+     home-programs-admin.js) so they use the same toast. */
+  window.showToast = showToast;
 })();
