@@ -194,7 +194,7 @@ router.post('/create-order', createOrderLimiter, optionalLearner, async (req, re
 
     if (iciResponse.responseCode !== 'R1000' || !iciResponse.redirectURI || !iciResponse.tranCtx) {
       console.error('[icici/create-order] ICICI API error:', JSON.stringify(iciResponse));
-      return res.status(502).json({ error: 'EMI gateway error. Please use the standard payment option or try again later.' });
+      return res.status(502).json({ error: 'EMI gateway error. Please use the standard payment option or try again later.', skip_reset: true });
     }
 
     const redirect_url = iciResponse.redirectURI + '?tranCtx=' + encodeURIComponent(iciResponse.tranCtx);
@@ -203,7 +203,7 @@ router.post('/create-order', createOrderLimiter, optionalLearner, async (req, re
 
   } catch (err) {
     console.error('[icici/create-order]', err.message || err);
-    res.status(500).json({ error: 'Server error. Please try the standard payment option.' });
+    res.status(500).json({ error: 'Server error. Please try the standard payment option.', skip_reset: true });
   }
 });
 
