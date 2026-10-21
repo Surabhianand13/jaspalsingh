@@ -124,6 +124,7 @@ app.use('/api/learners',     require('./routes/learners'));
 app.use('/api/analytics',    require('./routes/analytics'));
 app.use('/api/upload',       require('./routes/upload'));
 app.use('/api/payment',      require('./routes/payment'));
+app.use('/api/icici',        require('./routes/icici-payment'));
 app.use('/api/leads',        require('./routes/leads'));
 app.use('/api/enrollment',   require('./routes/enrollment-account'));
 app.use('/api/admit-cards',  require('./routes/admit-card-review'));
