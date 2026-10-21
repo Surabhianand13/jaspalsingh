@@ -961,13 +961,6 @@
             contact: phone,
           },
           theme: { color: '#C81240' },
-          modal: {
-            ondismiss: function() {
-              btn.disabled = false;
-              document.getElementById('payBtnText').textContent = 'Pay ₹' + finalPrice.toLocaleString('en-IN');
-              resetTurnstile();
-            }
-          },
           handler: async function (response) {
             // Payment succeeded - verify with backend
             checkoutCompleted = true;
@@ -1100,10 +1093,9 @@
         const data = await res.json();
 
         if (!res.ok || !data.redirect_url) {
-          showError(data.error || 'EMI setup failed. Please use the standard Pay Now button instead.');
-          btn.disabled = false;
+          document.getElementById('emiSection').style.display = 'none';
+          showError(data.error || 'EMI setup failed. Please use the Pay Now button below.');
           document.getElementById('payBtn').disabled = false;
-          document.getElementById('emiBtnText').textContent = 'Pay via EMI - ICICI Bank';
           if (!data.skip_reset) resetTurnstile();
           return;
         }
@@ -1112,10 +1104,9 @@
         window.location.href = data.redirect_url;
 
       } catch (err) {
+        document.getElementById('emiSection').style.display = 'none';
         showError('Network error. Please check your connection and try again.');
-        btn.disabled = false;
         document.getElementById('payBtn').disabled = false;
-        document.getElementById('emiBtnText').textContent = 'Pay via EMI - ICICI Bank';
         resetTurnstile();
       }
     });
