@@ -560,33 +560,6 @@
       },
     };
 
-    // Turnstile callbacks must be on window BEFORE Turnstile fires (it fires
-    // within seconds, before the async IIFE resumes from the backend fetch).
-    window.onTurnstileSuccess = function() {
-      var btn    = document.getElementById('payBtn');
-      var emiBtn = document.getElementById('emiPayBtn');
-      if (btn && btn.dataset.awaitingToken) {
-        btn.disabled = false;
-        delete btn.dataset.awaitingToken;
-      }
-      if (emiBtn && emiBtn.dataset.awaitingToken) {
-        emiBtn.disabled = false;
-        delete emiBtn.dataset.awaitingToken;
-      }
-    };
-    window.onTurnstileError = function() {
-      var btn    = document.getElementById('payBtn');
-      var emiBtn = document.getElementById('emiPayBtn');
-      if (btn && btn.dataset.awaitingToken) {
-        btn.disabled = false;
-        delete btn.dataset.awaitingToken;
-      }
-      if (emiBtn && emiBtn.dataset.awaitingToken) {
-        emiBtn.disabled = false;
-        delete emiBtn.dataset.awaitingToken;
-      }
-    };
-
     /* Everything below is wrapped in an async IIFE so we can fetch the live
        program catalogue before rendering - DB values (admin edits) win per
        slug, FALLBACK_PROGRAMS covers anything missing (API hiccup, or a
