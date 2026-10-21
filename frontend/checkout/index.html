@@ -125,6 +125,34 @@
       color: #9999b0;
     }
 
+    .emi-divider {
+      display: flex; align-items: center; gap: 10px;
+      margin: 16px 0 10px;
+      font-size: 11px; color: #9999b0; font-weight: 600; text-transform: uppercase; letter-spacing: .5px;
+    }
+    .emi-divider::before, .emi-divider::after { content: ''; flex: 1; height: 1px; background: rgba(26,26,46,.1); }
+    .emi-btn {
+      width: 100%;
+      padding: 13px 16px;
+      background: #fff;
+      color: #1A1A2E;
+      border: 1.5px solid rgba(26,26,46,.16);
+      border-radius: 50px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .emi-btn:hover { border-color: #f97316; box-shadow: 0 2px 12px rgba(249,115,22,.15); }
+    .emi-btn:disabled { opacity: .6; cursor: not-allowed; }
+    .emi-btn img.icici-logo { height: 18px; vertical-align: middle; margin-right: 2px; }
+    .emi-note { font-size: 11px; color: #9999b0; text-align: center; margin-top: 6px; line-height: 1.5; }
+
     /* Right - Summary */
     .co-summary {
       background: #fff;
@@ -310,6 +338,16 @@
             <i class="fas fa-shield-alt"></i> 100% Secure &nbsp;|&nbsp;
             <i class="fab fa-cc-visa"></i>&nbsp;<i class="fab fa-cc-mastercard"></i>&nbsp;UPI &nbsp;|&nbsp;
             Powered by Razorpay
+          </div>
+
+          <!-- ICICI EMI option - shown only for programs above Rs 5000 -->
+          <div id="emiSection" style="display:none;">
+            <div class="emi-divider">or pay in easy EMI</div>
+            <button type="button" class="emi-btn" id="emiPayBtn" disabled data-awaiting-token="1">
+              <i class="fas fa-credit-card" style="color:#f97316;font-size:14px;"></i>
+              <span id="emiBtnText">Pay via EMI - ICICI Bank</span>
+            </button>
+            <div class="emi-note">0% processing fee &nbsp;&middot;&nbsp; ICICI credit/debit card EMI &nbsp;&middot;&nbsp; Redirects to ICICI secure page</div>
           </div>
         </form>
       </div>
@@ -497,17 +535,27 @@
     // Turnstile callbacks must be on window BEFORE Turnstile fires (it fires
     // within seconds, before the async IIFE resumes from the backend fetch).
     window.onTurnstileSuccess = function() {
-      var btn = document.getElementById('payBtn');
+      var btn    = document.getElementById('payBtn');
+      var emiBtn = document.getElementById('emiPayBtn');
       if (btn && btn.dataset.awaitingToken) {
         btn.disabled = false;
         delete btn.dataset.awaitingToken;
       }
+      if (emiBtn && emiBtn.dataset.awaitingToken) {
+        emiBtn.disabled = false;
+        delete emiBtn.dataset.awaitingToken;
+      }
     };
     window.onTurnstileError = function() {
-      var btn = document.getElementById('payBtn');
+      var btn    = document.getElementById('payBtn');
+      var emiBtn = document.getElementById('emiPayBtn');
       if (btn && btn.dataset.awaitingToken) {
         btn.disabled = false;
         delete btn.dataset.awaitingToken;
+      }
+      if (emiBtn && emiBtn.dataset.awaitingToken) {
+        emiBtn.disabled = false;
+        delete emiBtn.dataset.awaitingToken;
       }
     };
 
@@ -519,6 +567,14 @@
 
     const params = new URLSearchParams(window.location.search);
     const slug   = params.get('program');
+
+    // Show EMI failure notice when returning from a failed ICICI payment
+    if (params.get('icici_failed') === '1') {
+      var notice = document.createElement('div');
+      notice.style.cssText = 'background:#FFF7ED;border:1.5px solid #FDBA74;border-radius:10px;padding:14px 16px;margin-bottom:20px;font-size:13px;color:#92400E;';
+      notice.innerHTML = '<strong>EMI payment was not completed.</strong> You can try again or use the Pay Now button for instant full payment.';
+      document.getElementById('enrollForm').prepend(notice);
+    }
 
     let livePrograms = {};
     try {
@@ -558,6 +614,7 @@
       }
     });
 
+    const EMI_MIN_PRICE = 5000;
     let appliedCoupon   = null;
     let appliedReferral = null;
     let finalPrice    = program ? program.price : 0;
@@ -651,6 +708,11 @@
       document.title = 'Enroll - ' + program.name;
       document.getElementById('loadingState').style.display  = 'none';
       document.getElementById('checkoutGrid').style.display  = 'grid';
+
+      // Show ICICI EMI option only for programs above Rs 5000 with no tiered pricing
+      if (program.price >= EMI_MIN_PRICE && !program.pricingTiers) {
+        document.getElementById('emiSection').style.display = 'block';
+      }
 
       // Hide Locations row always (60+ cities - too many to show, shown on program page)
       document.getElementById('coRowLocations').style.display = 'none';
@@ -961,6 +1023,106 @@
       }
     });
 
+    /* ── EMI button: same form validation as main pay, then redirect to ICICI ── */
+    document.getElementById('emiPayBtn').addEventListener('click', async function() {
+      const btn      = this;
+      const errEl    = document.getElementById('formError');
+      const name     = document.getElementById('inp-name').value.trim();
+      const phone    = document.getElementById('inp-phone').value.trim().replace(/\D/g,'');
+      const email    = document.getElementById('inp-email').value.trim();
+      const password = document.getElementById('inp-password').value;
+      const tnc      = document.getElementById('inp-tnc').checked;
+      const company  = document.getElementById('inp-company').value;
+
+      const isTranslateProxy = window.location.hostname.endsWith('.translate.goog');
+      const turnstileToken = (typeof turnstile !== 'undefined') ? turnstile.getResponse() : '';
+
+      errEl.style.display = 'none';
+      if (company) return;
+      if (!name)               { showError('Please enter your name as per Aadhaar.'); return; }
+      if (phone.length !== 10) { showError('Please enter a valid 10-digit mobile number.'); return; }
+      if (!email)              { showError('Please enter your email ID.'); return; }
+      if (!_loggedIn && password.length < 6) { showError('Please set a password (min 6 characters) to create your account.'); return; }
+      if (!tnc)                { showError('Please read and accept the Terms & Conditions to proceed.'); return; }
+      if (!isTranslateProxy && !turnstileToken) { showError('Security check is still loading - please wait a moment and try again.'); return; }
+
+      btn.disabled = true;
+      document.getElementById('emiBtnText').textContent = 'Please wait...';
+      document.getElementById('payBtn').disabled = true;
+
+      try {
+        // Create learner account for guests (same as Razorpay flow)
+        if (!_loggedIn) {
+          document.getElementById('emiBtnText').textContent = 'Creating your account...';
+          const regRes  = await fetch(API + '/api/learners/register', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, email, phone, password, checkout_flow: true }),
+          });
+          const regData = await regRes.json();
+          if (regRes.ok && regData.token) {
+            localStorage.setItem('jaspal_learner_token', regData.token);
+            localStorage.setItem('jaspal_learner', JSON.stringify(regData.learner));
+          } else if (regRes.status === 409) {
+            document.getElementById('emiBtnText').textContent = 'Logging you in...';
+            const loginRes  = await fetch(API + '/api/learners/login', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email, password }),
+            });
+            const loginData = await loginRes.json();
+            if (loginRes.ok && loginData.token) {
+              localStorage.setItem('jaspal_learner_token', loginData.token);
+              localStorage.setItem('jaspal_learner', JSON.stringify(loginData.learner));
+            } else {
+              showAccountExistsPrompt();
+              showError('An account already exists with this email. Enter your existing password above to continue.');
+              btn.disabled = false;
+              document.getElementById('payBtn').disabled = false;
+              document.getElementById('emiBtnText').textContent = 'Pay via EMI - ICICI Bank';
+              resetTurnstile();
+              return;
+            }
+          } else {
+            showError(regData.error || 'Account creation failed. Please try again.');
+            btn.disabled = false;
+            document.getElementById('payBtn').disabled = false;
+            document.getElementById('emiBtnText').textContent = 'Pay via EMI - ICICI Bank';
+            resetTurnstile();
+            return;
+          }
+        }
+
+        document.getElementById('emiBtnText').textContent = 'Redirecting to ICICI...';
+        const token = localStorage.getItem('jaspal_learner_token') || '';
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = 'Bearer ' + token;
+
+        const res  = await fetch(API + '/api/icici/create-order', {
+          method: 'POST', headers,
+          body: JSON.stringify({ program_slug: slug, name, email, phone, turnstile_token: turnstileToken }),
+        });
+        const data = await res.json();
+
+        if (!res.ok || !data.redirect_url) {
+          showError(data.error || 'EMI setup failed. Please use the standard Pay Now button instead.');
+          btn.disabled = false;
+          document.getElementById('payBtn').disabled = false;
+          document.getElementById('emiBtnText').textContent = 'Pay via EMI - ICICI Bank';
+          resetTurnstile();
+          return;
+        }
+
+        checkoutCompleted = true;
+        window.location.href = data.redirect_url;
+
+      } catch (err) {
+        showError('Network error. Please check your connection and try again.');
+        btn.disabled = false;
+        document.getElementById('payBtn').disabled = false;
+        document.getElementById('emiBtnText').textContent = 'Pay via EMI - ICICI Bank';
+        resetTurnstile();
+      }
+    });
+
     function showError(msg) {
       const el = document.getElementById('formError');
       el.textContent = msg;
@@ -980,9 +1142,11 @@
 
     function resetTurnstile() {
       if (typeof turnstile !== 'undefined') {
-        // Disable Pay while the widget re-solves to prevent stale-token reuse.
-        var btn = document.getElementById('payBtn');
-        if (btn) { btn.dataset.awaitingToken = '1'; btn.disabled = true; }
+        // Disable Pay buttons while the widget re-solves to prevent stale-token reuse.
+        var btn    = document.getElementById('payBtn');
+        var emiBtn = document.getElementById('emiPayBtn');
+        if (btn)    { btn.dataset.awaitingToken = '1'; btn.disabled = true; }
+        if (emiBtn) { emiBtn.dataset.awaitingToken = '1'; emiBtn.disabled = true; }
         turnstile.reset();
       }
     }
