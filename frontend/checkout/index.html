@@ -916,14 +916,12 @@
               showError('An account already exists with this email. Enter your existing password above to continue.');
               btn.disabled = false;
               document.getElementById('payBtnText').textContent = 'Pay ₹' + finalPrice.toLocaleString('en-IN');
-              resetTurnstile();
               return;
             }
           } else {
             showError(regData.error || 'Account creation failed. Please try again.');
             btn.disabled = false;
             document.getElementById('payBtnText').textContent = 'Pay ₹' + finalPrice.toLocaleString('en-IN');
-            resetTurnstile();
             return;
           }
         }
@@ -1078,7 +1076,6 @@
               btn.disabled = false;
               document.getElementById('payBtn').disabled = false;
               document.getElementById('emiBtnText').textContent = 'Pay via EMI - ICICI Bank';
-              resetTurnstile();
               return;
             }
           } else {
@@ -1086,7 +1083,6 @@
             btn.disabled = false;
             document.getElementById('payBtn').disabled = false;
             document.getElementById('emiBtnText').textContent = 'Pay via EMI - ICICI Bank';
-            resetTurnstile();
             return;
           }
         }
