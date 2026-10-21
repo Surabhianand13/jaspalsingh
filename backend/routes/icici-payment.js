@@ -28,8 +28,8 @@ const { optionalLearner } = require('../middleware/learnerAuth');
 const { isObviousTestSubmission } = require('../utils/spamFilter');
 const { verifyTurnstile } = require('../utils/turnstile');
 
-const ICICI_MID          = '100000000539179';
-const ICICI_AGGREGATOR   = 'A100000000539178';
+const ICICI_MID          = process.env.ICICI_MID          || '100000000539179';
+const ICICI_AGGREGATOR   = process.env.ICICI_AGGREGATOR   || '';
 const ICICI_INITIATE_URL = 'https://pgpay.icicibank.com/pg/api/v2/initiateSale';
 const BACKEND_URL        = 'https://jaspalsingh.onrender.com';
 const FRONTEND_URL       = 'https://www.jaspalsingh.in';
@@ -110,7 +110,7 @@ function iciciTxnDate() {
 router.post('/create-order', createOrderLimiter, optionalLearner, async (req, res) => {
   // Fail fast before consuming the Turnstile token so the frontend can
   // fall back to Pay Now without needing to wait for Turnstile to reset.
-  if (!process.env.ICICI_PG_SECRET) {
+  if (!process.env.ICICI_PG_SECRET || !ICICI_AGGREGATOR) {
     return res.status(503).json({
       error: 'EMI payment is temporarily unavailable. Please use the Pay Now button instead.',
       skip_reset: true,
