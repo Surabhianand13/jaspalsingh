@@ -290,6 +290,17 @@ router.post('/return', async (req, res) => {
   }
 });
 
+/* ── GET /api/icici/available ────────────────────────────────
+   Used by checkout page on load to decide whether to show the
+   EMI section. Returns true only when both the secret and the
+   ICICI_EMI_ENABLED flag are set, so EMI can be toggled from
+   the Render dashboard without a code deploy. ── */
+router.get('/available', (req, res) => {
+  res.json({
+    available: process.env.ICICI_EMI_ENABLED === 'true' && !!process.env.ICICI_PG_SECRET,
+  });
+});
+
 /* ── GET /api/icici/status/:order_id ───────────────────────
    Thin status check used by the success page if needed.
    The main /api/payment/verify GET already handles generic
