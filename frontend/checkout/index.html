@@ -579,9 +579,20 @@
 
     let livePrograms = {};
     try {
-      const r = await fetch(API + '/api/payment/programs');
+      const ctrl        = new AbortController();
+      const warmupTimer = setTimeout(function() {
+        var el = document.getElementById('loadingState');
+        if (el && el.style.display !== 'none') {
+          var p = el.querySelector('p');
+          if (p) p.textContent = 'Server warming up - please wait a moment...';
+        }
+      }, 6000);
+      const killTimer = setTimeout(function() { ctrl.abort(); }, 45000);
+      const r = await fetch(API + '/api/payment/programs', { signal: ctrl.signal });
+      clearTimeout(warmupTimer);
+      clearTimeout(killTimer);
       if (r.ok) livePrograms = await r.json();
-    } catch (e) { /* network error - FALLBACK_PROGRAMS still covers us below */ }
+    } catch (e) { /* timeout or network error - FALLBACK_PROGRAMS covers us */ }
     const PROGRAMS = Object.assign({}, FALLBACK_PROGRAMS, livePrograms);
     const program = PROGRAMS[slug];
 
