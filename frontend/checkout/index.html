@@ -710,9 +710,13 @@
       document.getElementById('loadingState').style.display  = 'none';
       document.getElementById('checkoutGrid').style.display  = 'grid';
 
-      // Show ICICI EMI option only for programs above Rs 5000 with no tiered pricing
+      // Show ICICI EMI option only when backend confirms it is live
       if (program.price >= EMI_MIN_PRICE && !program.pricingTiers) {
-        document.getElementById('emiSection').style.display = 'block';
+        try {
+          const emiCheck = await fetch(API + '/api/icici/available');
+          const emiData  = emiCheck.ok ? await emiCheck.json() : { available: false };
+          if (emiData.available) document.getElementById('emiSection').style.display = 'block';
+        } catch (e) { /* network error - keep EMI hidden */ }
       }
 
       // Hide Locations row always (60+ cities - too many to show, shown on program page)
