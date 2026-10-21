@@ -1100,10 +1100,11 @@
         const data = await res.json();
 
         if (!res.ok || !data.redirect_url) {
-          showError(data.error || 'EMI setup failed. Please use the standard Pay Now button instead.');
-          btn.disabled = false;
+          // Hide EMI section so the user isn't left with a broken button;
+          // show a plain note above Pay Now instead.
+          document.getElementById('emiSection').style.display = 'none';
+          showError(data.error || 'EMI setup failed. Please use the Pay Now button below.');
           document.getElementById('payBtn').disabled = false;
-          document.getElementById('emiBtnText').textContent = 'Pay via EMI - ICICI Bank';
           if (!data.skip_reset) resetTurnstile();
           return;
         }
