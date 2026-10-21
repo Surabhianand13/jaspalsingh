@@ -11,6 +11,34 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" />
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script>
+  // Define Turnstile callbacks BEFORE the Turnstile script loads so they
+  // are always available even when the async script executes early (cached).
+  window.onTurnstileSuccess = function() {
+    var btn    = document.getElementById('payBtn');
+    var emiBtn = document.getElementById('emiPayBtn');
+    if (btn && btn.dataset.awaitingToken) {
+      btn.disabled = false;
+      delete btn.dataset.awaitingToken;
+    }
+    if (emiBtn && emiBtn.dataset.awaitingToken) {
+      emiBtn.disabled = false;
+      delete emiBtn.dataset.awaitingToken;
+    }
+  };
+  window.onTurnstileError = function() {
+    var btn    = document.getElementById('payBtn');
+    var emiBtn = document.getElementById('emiPayBtn');
+    if (btn && btn.dataset.awaitingToken) {
+      btn.disabled = false;
+      delete btn.dataset.awaitingToken;
+    }
+    if (emiBtn && emiBtn.dataset.awaitingToken) {
+      emiBtn.disabled = false;
+      delete emiBtn.dataset.awaitingToken;
+    }
+  };
+  </script>
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
