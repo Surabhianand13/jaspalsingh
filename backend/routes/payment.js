@@ -145,6 +145,11 @@ async function onEnrollmentPaid(enrollment) {
   await recordReferralCredit(enrollment);
   await cancelDuplicatePendingEnrollments(enrollment);
   await assignRollNumber(enrollment);
+  // Interview programs: learners who pay after the booking invites went
+  // out get their slot booking link right away (no-op for every other
+  // program - only fires when an open interview phase exists for it).
+  await require('../services/interviewService').inviteNewEnrollment(enrollment)
+    .catch(err => console.error('[interview invite on paid]', err.message));
 }
 
 /* ── Coupon catalogue ────────────────────────────────────────

@@ -140,6 +140,7 @@ app.use('/api/free-resources',   require('./routes/free-resources'));
 app.use('/api/coupons',          require('./routes/coupons'));
 app.use('/api/homepage-content', require('./routes/homepage-content'));
 app.use('/api/site-settings',    require('./routes/site-settings'));
+app.use('/api/interviews',       require('./routes/interviews'));
 
 /* ── Health Check ────────────────────────────────────────── */
 
@@ -1410,7 +1411,7 @@ async function migrate() {
      seed loop, which also retroactively fixes already-live rows). ── */
   const shauryaCentre = {
     name: 'Jaipur',
-    address: '33, White House, Opp. Zone Tech, Tonk Road, Madhuvan Colony, Mansingh Pura, Jaipur, Rajasthan 302015',
+    address: '33, White House, Opp. Zone Tech, Tonk Road, Madhuvan Colony, Mansingh Pura, Jaipur, Rajasthan 302018',
     mapsLink: 'https://maps.app.goo.gl/UiYpXv447AWrfyMX8',
   };
   const shauryaEducators = [
@@ -1505,7 +1506,7 @@ async function migrate() {
     },
   ];
   const shauryaFaqs = [
-    { question: 'Where are the classes held?', answer: 'At our offline centre in Jaipur - 33, White House, Opp. Zone Tech, Tonk Road, Madhuvan Colony, Mansingh Pura, Jaipur, Rajasthan 302015. This is currently the only city for शौर्य Batch.' },
+    { question: 'Where are the classes held?', answer: 'At our offline centre in Jaipur - 33, White House, Opp. Zone Tech, Tonk Road, Madhuvan Colony, Mansingh Pura, Jaipur, Rajasthan 302018. This is currently the only city for शौर्य Batch.' },
     { question: 'When does the batch start?', answer: 'Tentatively September 2026. Class timings will be announced to enrolled learners in advance.' },
     { question: 'Is there a seat limit?', answer: 'Yes - शौर्य Batch is capped at 200 seats to keep classroom sizes manageable. Enrollment closes once the batch is full.' },
     { question: 'Is recorded content provided?', answer: 'No, शौर्य Batch is a live offline classroom program - there are no recorded lectures. Subject-wise DPPs and formula sheets are shared as downloadable PDFs to support your offline preparation.' },
@@ -2040,7 +2041,7 @@ async function migrate() {
       lastTestDate: 'Starts last week of October 2026 - schedule notified via email & WhatsApp',
       centre: {
         name: 'Jaipur',
-        address: '33, White House, Opp. Zone Tech, Tonk Road, Madhuvan Colony, Mansingh Pura, Jaipur, Rajasthan 302015',
+        address: '33, White House, Opp. Zone Tech, Tonk Road, Madhuvan Colony, Mansingh Pura, Jaipur, Rajasthan 302018',
         mapsLink: 'https://maps.app.goo.gl/UiYpXv447AWrfyMX8',
       },
     })]
@@ -2962,6 +2963,21 @@ async function migrate() {
   }
   console.log('✅ Seeded ' + missingPosts.length + ' additional blog posts');
 
+  /* ── Interview slot booking (RPSC AE Interview Guidance, 2026-10-21) -
+     tables live in services/interviewService.js. ── */
+  await require('./services/interviewService').migrate();
+
+  /* ── White House centre PIN code correction (2026-10-21): the owner
+     confirmed the centre's PIN is 302018, not 302015. Fixes copies
+     already stored in programs rows (launch_config centre address,
+     FAQ answers); the source seeds were corrected alongside. ── */
+  await query(
+    `UPDATE programs SET
+       launch_config = CASE WHEN launch_config::text LIKE '%Rajasthan 302018%' THEN REPLACE(launch_config::text, 'Rajasthan 302018', 'Rajasthan 302018')::jsonb ELSE launch_config END,
+       faqs          = CASE WHEN faqs::text LIKE '%Rajasthan 302018%' THEN REPLACE(faqs::text, 'Rajasthan 302018', 'Rajasthan 302018')::jsonb ELSE faqs END
+     WHERE launch_config::text LIKE '%Rajasthan 302018%' OR faqs::text LIKE '%Rajasthan 302018%'`
+  );
+
   console.log('✅ Migration: enrollments, leads, events, programs, banners ensured');
 }
 
@@ -3076,6 +3092,10 @@ migrate()
       checkReferralDigest();
       setInterval(checkAdmitCardDigest, 15 * 60 * 1000);
       checkAdmitCardDigest();
+      // Interview booking: calendar retries, day-before reminders, 9 PM owner summary.
+      const interviewTick = () => require('./services/interviewService').tick().catch(err => console.error('[interview tick]', err.message));
+      setInterval(interviewTick, 15 * 60 * 1000);
+      interviewTick();
       backfillMissingRollNumbers();
     });
   });

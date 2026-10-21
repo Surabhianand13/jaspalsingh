@@ -161,8 +161,9 @@
     interview: {
       chip: '<i class="fas fa-user-tie"></i> Interview program',
       steps: [
-        '<strong>Our team schedules your sessions</strong> directly on WhatsApp.',
-        'Questions about timings? Tap <strong>Need help</strong> below.',
+        '<strong>Book your 3 interview slots</strong> with the Book / view slots button above - 3 different days, 15 minutes each.',
+        'Book them together or one at a time - you get a confirmation email every time, with how many are still pending.',
+        'Reach the venue 15 minutes early in formal attire with 4 copies of your DAF and a photo ID. Slots cannot be rescheduled or cancelled.',
       ],
     },
   };
@@ -313,7 +314,16 @@
     } else if (sched.loading) {
       nextBlock = '<div class="ld-next ld-next--empty"><i class="fas fa-spinner fa-spin"></i> Loading your tests…</div>';
     } else if (sched.unavailable || !tests.length) {
-      nextBlock = mode === 'interview' ? '' : '<div class="ld-next ld-next--empty"><i class="fas fa-calendar-plus"></i> Your test schedule will appear here as soon as it is published.</div>';
+      nextBlock = mode === 'interview'
+        ? '<div class="ld-next">' +
+            '<div class="ld-next-label">Interview slots</div>' +
+            '<div class="ld-next-row">' +
+              '<div class="ld-next-info"><div class="ld-test-title">Book your 3 offline interview slots</div>' +
+                '<div class="ld-test-meta">One per day, 15 min each, at the Jaipur centre. Book one now and the rest anytime.</div></div>' +
+              '<div class="ld-actions"><a class="ld-btn ld-btn--primary" href="/book-interview/?program=' + encodeURIComponent(e.canonical_slug || e.program_slug) + '"><i class="fas fa-calendar-check"></i> Book / view slots</a></div>' +
+            '</div>' +
+          '</div>'
+        : '<div class="ld-next ld-next--empty"><i class="fas fa-calendar-plus"></i> Your test schedule will appear here as soon as it is published.</div>';
     } else {
       nextBlock = '<div class="ld-next ld-next--empty"><i class="fas fa-trophy"></i> All tests done - great work! Review solutions and results below.</div>';
     }
@@ -337,7 +347,7 @@
 
     var howTo =
       '<details class="ld-fold">' +
-        '<summary><i class="fas fa-circle-question"></i> How tests work for this program</summary>' +
+        '<summary><i class="fas fa-circle-question"></i> ' + (mode === 'interview' ? 'How interview slots work' : 'How tests work for this program') + '</summary>' +
         '<ol class="ld-howto">' + info.steps.map(function (s) { return '<li>' + s + '</li>'; }).join('') + '</ol>' +
       '</details>';
 

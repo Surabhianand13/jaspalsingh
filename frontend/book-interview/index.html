@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Book Interview Slots - Dr. Jaspal Singh</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#0F1117" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon-32.png" />
+  <link rel="apple-touch-icon" href="/assets/images/apple-touch-icon.png" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <style>
+    :root {
+      --red: #C81240; --red-soft: #fdf0f3; --ink: #1A1A2E; --muted: #6b7280; --line: #e5e7eb;
+      --bg: #f4f5f8; --card: #fff; --green: #166534; --green-soft: #f0fdf4; --amber-soft: #fff8f0;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body { background: var(--bg); color: var(--ink); font-family: 'Plus Jakarta Sans', 'Segoe UI', Arial, sans-serif; font-size: 15px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+    a { color: var(--red); }
+    button { font-family: inherit; }
+
+    .bi-top { background: #0F1117; color: #fff; padding: 14px 16px; }
+    .bi-top-in { max-width: 720px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .bi-brand { color: #fff; text-decoration: none; font-weight: 800; font-size: 17px; letter-spacing: -.2px; }
+    .bi-brand span { color: var(--red); }
+    .bi-top small { color: rgba(255,255,255,.55); font-size: 12px; }
+
+    .bi-wrap { max-width: 720px; margin: 0 auto; padding: 20px 16px 140px; }
+    .bi-card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+    .bi-h1 { font-size: 22px; font-weight: 800; margin: 0 0 4px; letter-spacing: -.3px; }
+    .bi-sub { color: var(--muted); margin: 0; font-size: 14px; }
+    .bi-h2 { font-size: 16px; font-weight: 800; margin: 0 0 4px; display: flex; align-items: center; gap: 10px; }
+    .bi-step { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: var(--red); color: #fff; font-size: 13px; font-weight: 800; flex: none; }
+    .bi-step--done { background: var(--green); }
+    .bi-hint { color: var(--muted); font-size: 13.5px; margin: 0 0 14px; }
+
+    .bi-demo { background: #fef3c7; border: 1px solid #fcd34d; color: #92400e; border-radius: 12px; padding: 10px 14px; font-size: 13px; font-weight: 700; margin-bottom: 16px; }
+    .bi-learner { display: flex; gap: 8px 16px; flex-wrap: wrap; font-size: 13px; color: var(--muted); margin-top: 10px; }
+    .bi-learner strong { color: var(--ink); }
+
+    .bi-branches { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .bi-branch { border: 1.5px solid var(--line); background: #fff; border-radius: 12px; padding: 12px 6px; font-weight: 700; font-size: 14px; cursor: pointer; color: var(--ink); }
+    .bi-branch.is-on { border-color: var(--red); background: var(--red-soft); color: var(--red); }
+
+    .bi-days { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 10px; margin: 0 -2px 6px; scrollbar-width: thin; }
+    .bi-day { flex: none; min-width: 92px; border: 1.5px solid var(--line); background: #fff; border-radius: 12px; padding: 8px 10px; text-align: center; cursor: pointer; position: relative; }
+    .bi-day b { display: block; font-size: 13px; }
+    .bi-day span { display: block; font-size: 11.5px; color: var(--muted); }
+    .bi-day.is-on { border-color: var(--ink); background: var(--ink); color: #fff; }
+    .bi-day.is-on span { color: rgba(255,255,255,.7); }
+    .bi-day.is-full { opacity: .5; }
+    .bi-day .bi-tick { position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; border-radius: 50%; background: var(--green); color: #fff; font-size: 11px; display: none; align-items: center; justify-content: center; border: 2px solid #fff; }
+    .bi-day.has-pick .bi-tick { display: flex; }
+
+    .bi-period { font-size: 12px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin: 12px 0 8px; }
+    .bi-times { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+    .bi-time { border: 1.5px solid var(--line); background: #fff; border-radius: 10px; padding: 10px 4px; font-weight: 700; font-size: 13.5px; cursor: pointer; color: var(--ink); }
+    .bi-time:disabled { background: #f3f4f6; color: #b6bac2; text-decoration: line-through; cursor: not-allowed; border-color: #f3f4f6; }
+    .bi-time.is-on { border-color: var(--red); background: var(--red); color: #fff; }
+    .bi-dayrule { background: var(--amber-soft); border: 1px solid #fed7aa; border-radius: 10px; padding: 9px 12px; font-size: 13px; color: #9a3412; margin-top: 12px; display: none; }
+
+    .bi-bar { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; border-top: 1px solid var(--line); box-shadow: 0 -6px 24px rgba(15,17,23,.08); padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); z-index: 20; }
+    .bi-bar-in { max-width: 720px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
+    .bi-bar-info { flex: 1; min-width: 0; }
+    .bi-bar-count { font-weight: 800; font-size: 14px; }
+    .bi-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+    .bi-chip { font-size: 11.5px; font-weight: 700; background: var(--red-soft); color: var(--red); border-radius: 50px; padding: 3px 8px; display: inline-flex; gap: 6px; align-items: center; border: 0; cursor: pointer; }
+    .bi-btn { border: 0; background: var(--red); color: #fff; font-weight: 800; font-size: 15px; border-radius: 12px; padding: 13px 20px; cursor: pointer; white-space: nowrap; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; justify-content: center; }
+    .bi-btn:disabled { background: #d1d5db; cursor: not-allowed; }
+    .bi-btn--ghost { background: #fff; color: var(--ink); border: 1.5px solid var(--line); }
+    .bi-btn--wa { background: #25D366; }
+    .bi-btn--block { width: 100%; }
+
+    .bi-review { display: none; }
+    .bi-list { list-style: none; margin: 0 0 14px; padding: 0; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+    .bi-list li { display: flex; gap: 12px; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+    .bi-list li:last-child { border-bottom: 0; }
+    .bi-list .bi-no { font-size: 12px; font-weight: 800; color: var(--red); text-transform: uppercase; letter-spacing: .05em; min-width: 86px; }
+    .bi-list .bi-when b { display: block; font-size: 14.5px; }
+    .bi-list .bi-when span { font-size: 13px; color: var(--muted); }
+    .bi-warn { background: #fef2f2; border: 1px solid #fca5a5; color: #7f1d1d; border-radius: 12px; padding: 12px 14px; font-size: 13.5px; font-weight: 600; margin-bottom: 14px; }
+    .bi-agree { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; margin: 0 0 16px; cursor: pointer; }
+    .bi-agree input { width: 20px; height: 20px; margin-top: 1px; accent-color: var(--red); flex: none; }
+    .bi-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .bi-row > * { flex: 1 1 160px; }
+
+    .bi-fold { border-top: 1px solid var(--line); padding-top: 12px; margin-top: 12px; }
+    .bi-fold summary { cursor: pointer; font-weight: 700; font-size: 14px; list-style: none; display: flex; align-items: center; gap: 8px; }
+    .bi-fold summary::-webkit-details-marker { display: none; }
+    .bi-fold ol, .bi-fold ul, .bi-ul { margin: 10px 0 0; padding-left: 20px; font-size: 13.5px; color: #374151; }
+    .bi-fold li, .bi-ul li { margin-bottom: 4px; }
+
+    .bi-venue { display: flex; gap: 12px; align-items: flex-start; }
+    .bi-venue i { color: var(--red); font-size: 18px; margin-top: 3px; }
+    .bi-venue b { display: block; }
+    .bi-venue span { font-size: 13.5px; color: #374151; }
+
+    .bi-done-head { text-align: center; padding: 8px 0 4px; }
+    .bi-done-icon { width: 56px; height: 56px; border-radius: 50%; background: var(--green-soft); color: var(--green); display: inline-flex; align-items: center; justify-content: center; font-size: 26px; margin-bottom: 10px; }
+
+    .bi-state { text-align: center; padding: 36px 20px; }
+    .bi-state i.big { font-size: 34px; color: var(--muted); margin-bottom: 12px; display: block; }
+    .bi-state .bi-btn { margin-top: 16px; }
+    .bi-slow { font-size: 13px; color: var(--muted); margin-top: 10px; display: none; }
+
+    .bi-toast { position: fixed; left: 50%; bottom: 110px; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 11px 16px; border-radius: 12px; font-size: 13.5px; font-weight: 600; opacity: 0; transition: .2s; z-index: 40; max-width: calc(100% - 32px); text-align: center; pointer-events: none; }
+    .bi-toast.is-on { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 420px) {
+      .bi-card { padding: 16px; }
+      .bi-h1 { font-size: 20px; }
+      .bi-times { grid-template-columns: repeat(3, 1fr); }
+      .bi-bar .bi-btn { padding: 12px 14px; font-size: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="bi-top">
+    <div class="bi-top-in">
+      <a class="bi-brand" href="/">Dr. <span>Jaspal Singh</span></a>
+      <small>Interview slot booking</small>
+    </div>
+  </header>
+
+  <main class="bi-wrap" id="app">
+    <div class="bi-card bi-state" id="loading">
+      <i class="fas fa-spinner fa-spin big"></i>
+      <div>Loading your booking…</div>
+      <div class="bi-slow" id="slowNote">Waking up our server - this can take up to a minute the first time. Please keep this page open.</div>
+    </div>
+  </main>
+
+  <div class="bi-bar" id="bar" hidden>
+    <div class="bi-bar-in">
+      <div class="bi-bar-info">
+        <div class="bi-bar-count" id="barCount">0 of 3 selected</div>
+        <div class="bi-chips" id="barChips"></div>
+      </div>
+      <button class="bi-btn" id="reviewBtn" disabled>Review <i class="fas fa-arrow-right"></i></button>
+    </div>
+  </div>
+
+  <div class="bi-toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="/js/book-interview.js?v=1"></script>
+</body>
+</html>
