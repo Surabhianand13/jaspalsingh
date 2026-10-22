@@ -11,11 +11,12 @@
      GET    /api/interviews/admin/overview
      GET    /api/interviews/admin/calendar-check
      POST   /api/interviews/admin/phases                 - create + generate slots
-     PATCH  /api/interviews/admin/phases/:id             - status / name / venue
+     PATCH  /api/interviews/admin/phases/:id             - status / name / venue (+ venue_tba)
      DELETE /api/interviews/admin/phases/:id             - only with no bookings
      GET    /api/interviews/admin/phases/:id/schedule    - day-wise slots + learners
      GET    /api/interviews/admin/phases/:id/learners    - paid learners + status + links
      POST   /api/interviews/admin/phases/:id/invites     - { mode: 'new' | 'remind' }
+     POST   /api/interviews/admin/phases/:id/announce-venue - email the final venue to booked learners
      POST   /api/interviews/admin/slots/:id/block        - { blocked: bool }
      DELETE /api/interviews/admin/learners/:enrollmentId/bookings - release a learner
      POST   /api/interviews/admin/sample-emails          - { to } dummy copies of every email
@@ -74,7 +75,8 @@ function publicPhase(p) {
   return {
     id: p.id, name: p.name, slots_per_learner: p.slots_per_learner, slot_minutes: p.slot_minutes,
     date_from: p.date_from, date_to: p.date_to, windows: p.windows,
-    venue_name: p.venue_name, venue_address: p.venue_address, maps_link: p.maps_link,
+    venue_tba: !!p.venue_tba,
+    venue_name: p.venue_tba ? null : p.venue_name, venue_address: p.venue_tba ? null : p.venue_address, maps_link: p.venue_tba ? null : p.maps_link,
   };
 }
 
@@ -96,7 +98,8 @@ async function bookingState(enr) {
       remaining,
       bookings: bookings.map(b => ({
         id: b.id, interview_no: b.interview_no, starts_at: b.starts_at, ends_at: b.ends_at, phase_name: b.phase_name,
-        venue_name: b.venue_name, venue_address: b.venue_address, maps_link: b.maps_link,
+        venue_tba: !!b.venue_tba,
+        venue_name: b.venue_tba ? null : b.venue_name, venue_address: b.venue_tba ? null : b.venue_address, maps_link: b.venue_tba ? null : b.maps_link,
       })),
     },
     phases: remaining ? phases.map(p => Object.assign(publicPhase(p), { bookable: p.bookable, days: p.days })) : [],
@@ -159,10 +162,14 @@ router.post('/admin/phases', protect, async (req, res, next) => {
       slot_minutes: parseInt(b.slot_minutes, 10) || 15,
       slots_per_learner: parseInt(b.slots_per_learner, 10) || 3,
       skip_sundays: b.skip_sundays !== false,
-      venue_name: String(b.venue_name || DEFAULT_VENUE.name).trim(),
-      venue_address: String(b.venue_address || DEFAULT_VENUE.address).trim(),
-      maps_link: String(b.maps_link || DEFAULT_VENUE.mapsLink).trim(),
+      // Venue not finalised: learners see "venue details will be shared
+      // soon on email" until it is filled in from Edit venue.
+      venue_tba: b.venue_tba === true,
+      venue_name: String(b.venue_name || '').trim(),
+      venue_address: String(b.venue_address || '').trim(),
+      maps_link: String(b.maps_link || '').trim(),
     };
+    if (!phase.venue_tba && !phase.venue_address) return res.status(400).json({ error: 'Enter the venue address, or tick "Venue not finalised yet".' });
     if (!phase.name) return res.status(400).json({ error: 'Phase name is required.' });
     if (!DATE_RE.test(phase.date_from || '') || !DATE_RE.test(phase.date_to || '') || phase.date_to < phase.date_from) {
       return res.status(400).json({ error: 'Pick a valid From and To date.' });
@@ -178,10 +185,10 @@ router.post('/admin/phases', protect, async (req, res, next) => {
     if (!times.length) return res.status(400).json({ error: 'These settings produce no slots.' });
 
     const ins = await query(
-      `INSERT INTO interview_phases (program_slug, name, status, slots_per_learner, slot_minutes, date_from, date_to, windows, skip_sundays, venue_name, venue_address, maps_link)
-       VALUES ($1,$2,'draft',$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`,
+      `INSERT INTO interview_phases (program_slug, name, status, slots_per_learner, slot_minutes, date_from, date_to, windows, skip_sundays, venue_name, venue_address, maps_link, venue_tba)
+       VALUES ($1,$2,'draft',$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id`,
       [phase.program_slug, phase.name, phase.slots_per_learner, phase.slot_minutes, phase.date_from, phase.date_to,
-       JSON.stringify(phase.windows), phase.skip_sundays, phase.venue_name, phase.venue_address, phase.maps_link]
+       JSON.stringify(phase.windows), phase.skip_sundays, phase.venue_name, phase.venue_address, phase.maps_link, phase.venue_tba]
     );
     const id = ins.rows[0].id;
     await query(
@@ -204,11 +211,25 @@ router.patch('/admin/phases/:id', protect, async (req, res, next) => {
     ['name', 'venue_name', 'venue_address', 'maps_link'].forEach(k => {
       if (b[k] !== undefined) { vals.push(String(b[k]).trim()); sets.push(`${k} = $${vals.length}`); }
     });
+    if (b.venue_tba !== undefined) { vals.push(b.venue_tba === true); sets.push(`venue_tba = $${vals.length}`); }
+    if (b.venue_tba === false && b.venue_address !== undefined && !String(b.venue_address).trim()) {
+      return res.status(400).json({ error: 'Enter the venue address, or tick "Venue not finalised yet".' });
+    }
     if (!sets.length) return res.status(400).json({ error: 'Nothing to update.' });
     vals.push(req.params.id);
     const r = await query(`UPDATE interview_phases SET ${sets.join(', ')} WHERE id = $${vals.length} RETURNING id`, vals);
     if (!r.rows.length) return res.status(404).json({ error: 'Phase not found.' });
-    res.json({ ok: true });
+
+    // Venue changed: move existing calendar events to the new location
+    // (background), and tell the admin how many learners could be emailed.
+    const venueChanged = ['venue_name', 'venue_address', 'maps_link', 'venue_tba'].some(k => b[k] !== undefined);
+    let bookedLearners = 0;
+    if (venueChanged) {
+      const phase = await svc.getPhase(req.params.id);
+      svc.updateCalendarLocations(phase).catch(err => console.error('[interview calendar location]', err.message));
+      bookedLearners = (await query(`SELECT COUNT(DISTINCT enrollment_id)::int AS n FROM interview_bookings WHERE phase_id = $1`, [phase.id])).rows[0].n;
+    }
+    res.json({ ok: true, booked_learners: bookedLearners });
   } catch (err) { next(err); }
 });
 
@@ -251,6 +272,15 @@ router.get('/admin/phases/:id/learners', protect, async (req, res, next) => {
     const learners = await svc.eligibleLearners(phase);
     res.json({ learners: learners.map(l => Object.assign(l, { booking_link: svc.bookingLink(l.id) })) });
   } catch (err) { next(err); }
+});
+
+router.post('/admin/phases/:id/announce-venue', protect, async (req, res, next) => {
+  try {
+    const phase = await svc.getPhase(req.params.id);
+    if (!phase) return res.status(404).json({ error: 'Phase not found.' });
+    const count = await svc.announceVenue(phase);
+    res.json({ ok: true, queued: count });
+  } catch (err) { sendError(res, next, err); }
 });
 
 router.post('/admin/phases/:id/invites', protect, async (req, res, next) => {
@@ -306,7 +336,7 @@ router.post('/admin/sample-emails', protect, async (req, res, next) => {
     const all = svc.withDisplayNumbers(slots.map((s, i) => ({ id: 'sample-' + i, starts_at: s, ends_at: plus(s, phase.slot_minutes) })));
     const name = 'Rahul Sharma';
     const prefix = '[SAMPLE] ';
-    const demoLink = `${SITE}/book-interview/?demo=1`;
+    const demoLink = `${SITE}/book-interview/?demo=1${phase.venue_tba ? '&tba=1' : ''}`;
     const learner = { to, name, roll: 'RPSCAE0012', branch: 'Mechanical', phase, total: phase.slots_per_learner, link: demoLink, subjectPrefix: prefix };
 
     // 1. invite  2. "not booked yet" reminder
@@ -327,7 +357,12 @@ router.post('/admin/sample-emails', protect, async (req, res, next) => {
       tomorrow: [Object.assign({ student_name: name, student_phone: '98XXXXXX10', roll_number: 'RPSCAE0012', branch: 'Mechanical' }, all[1])],
       phases: [Object.assign({}, phase, { fully_booked: 1, partly_booked: 4, not_started: 59, eligible_learners: 64, slots_free: 180 })],
     });
-    res.json({ ok: true, sent: 7 });
+    // 8. venue confirmed (sent later from "Email venue to booked learners")
+    const finalVenue = phase.venue_tba || !phase.venue_address
+      ? Object.assign({}, phase, { venue_tba: false, venue_name: DEFAULT_VENUE.name, venue_address: DEFAULT_VENUE.address, maps_link: DEFAULT_VENUE.mapsLink })
+      : phase;
+    await emails.sendVenueAnnouncement({ to, name, bookings: all, phase: finalVenue, subjectPrefix: prefix });
+    res.json({ ok: true, sent: 8 });
   } catch (err) { next(err); }
 });
 

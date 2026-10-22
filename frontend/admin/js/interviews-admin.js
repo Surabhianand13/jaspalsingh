@@ -140,11 +140,18 @@
       actions.push('<button class="btn-admin-secondary iv-sm" data-status="closed" data-id="' + p.id + '"><i class="fas fa-lock"></i> Close booking</button>');
     }
     if (p.status === 'closed') actions.push('<button class="btn-admin-secondary iv-sm" data-status="open" data-id="' + p.id + '"><i class="fas fa-lock-open"></i> Reopen booking</button>');
+    actions.push('<button class="btn-admin-secondary iv-sm" data-venue-edit="' + p.id + '"><i class="fas fa-location-dot"></i> Edit venue</button>');
+    if (!p.venue_tba && s.learners_booked) actions.push('<button class="btn-admin-secondary iv-sm" data-venue-mail="' + p.id + '"><i class="fas fa-envelope-open-text"></i> Email venue to booked learners (' + s.learners_booked + ')</button>');
     if (!s.slots_booked) actions.push('<button class="btn-admin-secondary iv-sm iv-danger" data-delete="' + p.id + '"><i class="fas fa-trash"></i> Delete</button>');
 
     return '<div class="iv-phase' + (p.id === state.phaseId ? ' is-on' : '') + '" data-pick="' + p.id + '">' +
       '<div class="iv-phase-head"><div><h3>' + esc(p.name) + '</h3><div class="iv-meta">' + esc(range) + ' · ' + esc(windows) + ' · ' + p.slot_minutes + ' min · ' + p.slots_per_learner + ' per learner' + (p.skip_sundays ? ' · no Sundays' : '') + '</div>' +
-        '<div class="iv-meta">' + esc(p.venue_name) + ', ' + esc(p.venue_address) + '</div></div>' + statusBadge + '</div>' +
+        '<div class="iv-meta">' + (p.venue_tba
+          ? '<span class="iv-badge iv-badge--warn"><i class="fas fa-location-dot"></i> Venue not finalised - learners see "details will be shared soon on email"</span>'
+          : '<i class="fas fa-location-dot"></i> ' + esc(p.venue_name) + ', ' + esc(p.venue_address) +
+            (p.venue_announced_at ? ' <span class="iv-badge iv-badge--ok">Venue emailed ' + esc(new Date(p.venue_announced_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: TZ })) + '</span>' : '')) +
+        '</div></div>' + statusBadge + '</div>' +
+      '<div id="ivVenueEdit' + p.id + '"></div>' +
       '<div class="iv-stats">' +
         stat(s.slots_free, 'slots free', 'ok') + stat(s.slots_booked, 'booked') + stat(s.slots_blocked, 'blocked') +
         stat(s.fully_booked, 'learners: all ' + p.slots_per_learner + ' booked', 'ok') + stat(s.partly_booked, 'part booked') + stat(s.not_started, 'not started', s.not_started ? 'warn' : '') +
@@ -175,6 +182,12 @@
     root.querySelectorAll('[data-invite]').forEach(function (b) {
       b.addEventListener('click', function () { sendInvites(Number(b.getAttribute('data-id')), b.getAttribute('data-invite')); });
     });
+    root.querySelectorAll('[data-venue-edit]').forEach(function (b) {
+      b.addEventListener('click', function () { editVenue(Number(b.getAttribute('data-venue-edit'))); });
+    });
+    root.querySelectorAll('[data-venue-mail]').forEach(function (b) {
+      b.addEventListener('click', function () { announceVenue(Number(b.getAttribute('data-venue-mail'))); });
+    });
     root.querySelectorAll('[data-delete]').forEach(function (b) {
       b.addEventListener('click', function () { deletePhase(Number(b.getAttribute('data-delete'))); });
     });
@@ -202,7 +215,7 @@
   function sendSamples() {
     var to = $('ivSampleTo').value.trim();
     if (!to) return msg('Enter an email address.', 'error');
-    if (!confirm('Send 7 sample emails (with dummy learner data) to ' + to + '?')) return;
+    if (!confirm('Send 8 sample emails (with dummy learner data) to ' + to + '?')) return;
     var btn = $('ivSampleBtn');
     btn.disabled = true;
     api('POST', '/api/interviews/admin/sample-emails', { to: to })
@@ -239,6 +252,46 @@
     api('DELETE', '/api/interviews/admin/phases/' + id).then(function () { msg('Phase deleted.', 'success'); state.phaseId = null; load(); }).catch(function (e) { msg(e.message, 'error'); });
   }
 
+  /* ── Venue: edit + announce ── */
+  function editVenue(id) {
+    var p = state.overview.phases.filter(function (x) { return x.id === id; })[0];
+    var el = $('ivVenueEdit' + id);
+    if (el.innerHTML) { el.innerHTML = ''; return; }
+    var d = state.overview.defaults.venue;
+    // Pre-fill the usual centre when the venue was never filled in.
+    var v = p.venue_address ? p : Object.assign({}, p, { venue_name: d.name, venue_address: d.address, maps_link: d.mapsLink });
+    el.innerHTML = '<div class="iv-form" style="margin:12px 0 0;border-width:1.5px;">' +
+      '<div class="iv-grid">' + venueFields('ive' + id, v) + '</div>' +
+      '<p class="iv-help">Saving updates the booking page, every future email and sir\'s calendar events right away. Learners who already booked are only emailed when you click "Email venue to booked learners".</p>' +
+      '<div class="iv-actions"><button class="btn iv-sm" id="iveSave' + id + '"><i class="fas fa-check"></i> Save venue</button><button class="btn-admin-secondary iv-sm" id="iveCancel' + id + '">Cancel</button></div></div>';
+    wireVenueFields('ive' + id);
+    $('iveCancel' + id).addEventListener('click', function () { el.innerHTML = ''; });
+    $('iveSave' + id).addEventListener('click', function () {
+      var body = venueValues('ive' + id);
+      if (!body.venue_tba && !body.venue_address) return msg('Enter the venue address, or tick "Venue not finalised yet".', 'error');
+      if (body.venue_tba) { delete body.venue_name; delete body.venue_address; delete body.maps_link; }
+      this.disabled = true;
+      api('PATCH', '/api/interviews/admin/phases/' + id, body).then(function (r) {
+        msg('Venue saved.', 'success');
+        if (!body.venue_tba && r.booked_learners && confirm('Venue saved.\n\n' + r.booked_learners + ' learner(s) have already booked slots in "' + p.name + '". Email them the venue now?')) {
+          return api('POST', '/api/interviews/admin/phases/' + id + '/announce-venue').then(function (a) {
+            msg('Venue email queued to ' + a.queued + ' learner(s).', 'success');
+          });
+        }
+      }).catch(function (e) { msg(e.message, 'error'); }).then(load);
+    });
+  }
+
+  function announceVenue(id) {
+    var p = state.overview.phases.filter(function (x) { return x.id === id; })[0];
+    var again = p.venue_announced_at ? '\n\nNote: the venue was already emailed on ' + new Date(p.venue_announced_at).toLocaleString('en-IN', { timeZone: TZ }) + '. Only send again if it changed.' : '';
+    if (!confirm('Email the venue (' + p.venue_name + ') to the ' + p.stats.learners_booked + ' learner(s) who booked slots in "' + p.name + '"?' + again)) return;
+    api('POST', '/api/interviews/admin/phases/' + id + '/announce-venue').then(function (a) {
+      msg('Venue email queued to ' + a.queued + ' learner(s).', 'success');
+      setTimeout(load, 1200);
+    }).catch(function (e) { msg(e.message, 'error'); });
+  }
+
   /* ── New phase form ── */
   function showNewForm() {
     var d = state.overview;
@@ -262,15 +315,14 @@
           '<label>Slots per learner<input type="number" id="ivfPer" value="3" min="1" max="10" /></label>' +
           '<label class="iv-check"><input type="checkbox" id="ivfSun" checked /> Skip Sundays</label>' +
           '<span></span>' +
-          '<label class="iv-wide">Venue name<input id="ivfVName" value="' + esc(v.name) + '" /></label>' +
-          '<label class="iv-wide">Venue address<input id="ivfVAddr" value="' + esc(v.address) + '" /></label>' +
-          '<label class="iv-wide">Google Maps link<input id="ivfVMap" value="' + esc(v.mapsLink) + '" /></label>' +
+          venueFields('ivf', { venue_tba: false, venue_name: v.name, venue_address: v.address, maps_link: v.mapsLink }) +
         '</div>' +
         '<p class="iv-help" id="ivfPreview"></p>' +
         '<div class="iv-actions"><button class="btn" id="ivfSave"><i class="fas fa-check"></i> Create phase (as draft)</button><button class="btn-admin-secondary" id="ivfCancel">Cancel</button></div>' +
       '</div>';
     var inputs = el.querySelectorAll('input');
     inputs.forEach(function (i) { i.addEventListener('input', preview); i.addEventListener('change', preview); });
+    wireVenueFields('ivf');
     preview();
     $('ivfCancel').addEventListener('click', function () { el.style.display = 'none'; });
     $('ivfSave').addEventListener('click', createPhase);
@@ -281,11 +333,39 @@
     var windows = [];
     if ($('ivfW1s').value && $('ivfW1e').value) windows.push({ start: $('ivfW1s').value, end: $('ivfW1e').value });
     if ($('ivfW2s').value && $('ivfW2e').value) windows.push({ start: $('ivfW2s').value, end: $('ivfW2e').value });
-    return {
+    return Object.assign({
       name: $('ivfName').value.trim(), program_slug: $('ivfProgram').value.trim(),
       date_from: $('ivfFrom').value, date_to: $('ivfTo').value, windows: windows,
       slot_minutes: Number($('ivfMin').value), slots_per_learner: Number($('ivfPer').value), skip_sundays: $('ivfSun').checked,
-      venue_name: $('ivfVName').value.trim(), venue_address: $('ivfVAddr').value.trim(), maps_link: $('ivfVMap').value.trim(),
+    }, venueValues('ivf'));
+  }
+
+  /* ── Venue fields (new phase + Edit venue) ──
+     "Venue not finalised yet" makes learners see "Venue details will be
+     shared soon on email" everywhere until it is filled in. */
+  function venueFields(prefix, v) {
+    return '<label class="iv-check iv-wide"><input type="checkbox" id="' + prefix + 'Tba"' + (v.venue_tba ? ' checked' : '') + ' /> Venue not finalised yet - learners see "Venue details will be shared soon on email"</label>' +
+      '<label class="iv-wide">Venue name<input id="' + prefix + 'VName" value="' + esc(v.venue_name || '') + '" /></label>' +
+      '<label class="iv-wide">Venue address<input id="' + prefix + 'VAddr" value="' + esc(v.venue_address || '') + '" /></label>' +
+      '<label class="iv-wide">Google Maps link<input id="' + prefix + 'VMap" value="' + esc(v.maps_link || '') + '" /></label>';
+  }
+  function wireVenueFields(prefix) {
+    var tba = $(prefix + 'Tba');
+    function sync() {
+      ['VName', 'VAddr', 'VMap'].forEach(function (k) {
+        var i = $(prefix + k);
+        i.disabled = tba.checked;
+        i.parentNode.style.opacity = tba.checked ? '.45' : '1';
+      });
+    }
+    tba.addEventListener('change', sync);
+    sync();
+  }
+  function venueValues(prefix) {
+    var tba = $(prefix + 'Tba').checked;
+    return {
+      venue_tba: tba,
+      venue_name: $(prefix + 'VName').value.trim(), venue_address: $(prefix + 'VAddr').value.trim(), maps_link: $(prefix + 'VMap').value.trim(),
     };
   }
 
