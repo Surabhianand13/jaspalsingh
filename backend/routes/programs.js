@@ -575,7 +575,7 @@ router.get('/batch-materials', protect, async (req, res, next) => {
     const { track } = req.query;
     const where = track ? `WHERE track = $1` : '';
     const result = await query(
-      `SELECT id, track, kind, subject, title, file_url, sort_order FROM batch_materials
+      `SELECT id, track, kind, subject, title, file_url, sort_order, bulk_group_id FROM batch_materials
        ${where} ORDER BY track ASC, sort_order ASC, id ASC`,
       track ? [track] : []
     );
@@ -596,10 +596,36 @@ router.post('/batch-materials', protect, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/* Bulk-create: one row per track, all sharing the same bulk_group_id so a
+   single upload propagates to every row in the group. */
+router.post('/batch-materials/bulk', protect, async (req, res, next) => {
+  try {
+    const { tracks, kind, subject, title } = req.body;
+    if (!Array.isArray(tracks) || !tracks.length || !title) {
+      return res.status(400).json({ error: 'tracks (array) and title are required.' });
+    }
+    const { v4: uuidv4 } = require('crypto');
+    const groupId = require('crypto').randomUUID();
+    const kindVal = kind || 'dpp';
+    const subjectVal = subject || null;
+    const inserted = [];
+    for (const track of tracks) {
+      const maxSort = await query(`SELECT COALESCE(MAX(sort_order), -1) AS m FROM batch_materials WHERE track = $1`, [track]);
+      const r = await query(
+        `INSERT INTO batch_materials (track, kind, subject, title, sort_order, bulk_group_id)
+         VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+        [track, kindVal, subjectVal, title, maxSort.rows[0].m + 1, groupId]
+      );
+      inserted.push(r.rows[0]);
+    }
+    res.status(201).json({ materials: inserted, bulk_group_id: groupId });
+  } catch (err) { next(err); }
+});
+
 router.post('/batch-materials/:id/upload', protect, scheduleAssetUpload.single('file'), handleUploadError, async (req, res, next) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
-    const existing = await query(`SELECT file_key FROM batch_materials WHERE id = $1`, [req.params.id]);
+    const existing = await query(`SELECT file_key, bulk_group_id FROM batch_materials WHERE id = $1`, [req.params.id]);
     if (!existing.rows.length) return res.status(404).json({ error: 'Material not found.' });
 
     const key = `batch-materials/${req.params.id}-${Date.now()}-${req.file.originalname.replace(/\s+/g, '-')}`;
@@ -610,6 +636,15 @@ router.post('/batch-materials/:id/upload', protect, scheduleAssetUpload.single('
       `UPDATE batch_materials SET file_url = $1, file_key = $2 WHERE id = $3 RETURNING *`,
       [publicUrl, key, req.params.id]
     );
+
+    // Propagate to all other rows in the same bulk group (file_url only - they share the same R2 object)
+    const groupId = existing.rows[0].bulk_group_id;
+    if (groupId) {
+      await query(
+        `UPDATE batch_materials SET file_url = $1 WHERE bulk_group_id = $2 AND id != $3`,
+        [publicUrl, groupId, req.params.id]
+      );
+    }
 
     const oldKey = existing.rows[0].file_key;
     if (oldKey && oldKey !== key) {

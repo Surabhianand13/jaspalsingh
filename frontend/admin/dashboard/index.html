@@ -730,6 +730,7 @@
 
         <div id="paidLearnersBody"><p class="admin-empty">Loading…</p></div>
         <style>
+          #bm_track_dd.bm-dd-open { display:block !important; }
           .pl-panel { background:#fff; border:1px solid #E8EAF0; border-radius:16px; padding:18px; margin:4px 0 22px; box-shadow:0 1px 3px rgba(26,26,46,.04); }
           .pl-panel-head { display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
           .pl-panel-head h3 { margin:0; font-size:16px; font-weight:800; color:#1A1A2E; display:flex; gap:8px; align-items:center; }
@@ -846,14 +847,17 @@
         </div>
         <p style="color:#6b6b8a;font-size:14px;margin-bottom:16px;">DPPs and formula sheets for the offline शौर्य Batch (no recorded content is provided). Shared across all 6 course options by track - a learner only sees the track(s) their specific option includes.</p>
         <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px;padding:12px;background:rgba(15,118,110,.06);border-radius:8px;">
-          <label style="font-size:11.5px;">Track<br>
-            <select id="bm_add_track" class="admin-input" style="width:180px;">
-              <option value="technical-degree">Technical - Degree</option>
-              <option value="technical-diploma">Technical - Diploma</option>
-              <option value="non-technical">Non-Technical</option>
-              <option value="practice-degree">Practice Batch - Degree</option>
-              <option value="practice-diploma">Practice Batch - Diploma</option>
-            </select>
+          <label style="font-size:11.5px;">Track(s)<br>
+            <div id="bm_track_picker" style="position:relative;display:inline-block;">
+              <button type="button" id="bm_track_btn" class="admin-input" style="width:200px;text-align:left;cursor:pointer;padding:6px 10px;font-size:13px;" onclick="document.getElementById('bm_track_dd').classList.toggle('bm-dd-open')">Select tracks &#9660;</button>
+              <div id="bm_track_dd" style="display:none;position:absolute;top:100%;left:0;z-index:200;background:#fff;border:1px solid #d1d5db;border-radius:6px;padding:8px 12px;min-width:200px;box-shadow:0 4px 16px rgba(0,0,0,.12);">
+                <label style="display:flex;gap:8px;align-items:center;padding:4px 0;font-size:13px;cursor:pointer;"><input type="checkbox" class="bm-track-cb" value="technical-degree"> Technical - Degree</label>
+                <label style="display:flex;gap:8px;align-items:center;padding:4px 0;font-size:13px;cursor:pointer;"><input type="checkbox" class="bm-track-cb" value="technical-diploma"> Technical - Diploma</label>
+                <label style="display:flex;gap:8px;align-items:center;padding:4px 0;font-size:13px;cursor:pointer;"><input type="checkbox" class="bm-track-cb" value="non-technical"> Non-Technical</label>
+                <label style="display:flex;gap:8px;align-items:center;padding:4px 0;font-size:13px;cursor:pointer;"><input type="checkbox" class="bm-track-cb" value="practice-degree"> Practice Batch - Degree</label>
+                <label style="display:flex;gap:8px;align-items:center;padding:4px 0;font-size:13px;cursor:pointer;"><input type="checkbox" class="bm-track-cb" value="practice-diploma"> Practice Batch - Diploma</label>
+              </div>
+            </div>
           </label>
           <label style="font-size:11.5px;">Kind<br>
             <select id="bm_add_kind" class="admin-input" style="width:120px;">
