@@ -2123,8 +2123,8 @@
     if (panel.innerHTML) { panel.innerHTML = ''; return; } // toggle closed if already open
     panel.innerHTML =
       '<div style="margin:8px 0;padding:12px;background:rgba(200,18,64,.04);border-radius:8px;">' +
-        '<div class="admin-form-hint" style="margin-bottom:8px;">Paste one learner per line: <code>Roll Number | Total Marks | Correct | Wrong | Blank | Rank</code> (Correct, Wrong, Blank and Rank are optional). Re-pasting the same roll number updates that row.</div>' +
-        '<textarea class="admin-input" id="res_paste_'+row.id+'" rows="5" style="width:100%;font-family:monospace;font-size:12.5px;" placeholder="UPPOLY-48213 | 85 | 34 | 6 | 0 | 1\nUPPOLY-51902 | 72 | 29 | 11 | 0 | 2"></textarea>' +
+        '<div class="admin-form-hint" style="margin-bottom:8px;">Paste one learner per line: <code>Roll Number | Total Marks | Rank</code>. Re-pasting the same roll number updates that row.</div>' +
+        '<textarea class="admin-input" id="res_paste_'+row.id+'" rows="5" style="width:100%;font-family:monospace;font-size:12.5px;" placeholder="UPPOLY-48213 | 85 | 1\nUPPOLY-51902 | 72 | 2"></textarea>' +
         '<div style="display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap;">' +
           '<label style="font-size:12px;display:flex;align-items:center;gap:6px;"><input type="checkbox" id="res_publish_'+row.id+'" checked> Publish immediately (learners can see these results right away)</label>' +
           pillBtn('id="res_save_'+row.id+'"', 'Save Results', 'dark') +
@@ -2139,7 +2139,14 @@
       for (var i = 0; i < lines.length; i++) {
         var parts = lines[i].split('|').map(function(p){return p.trim();});
         if (!parts[0]) { showToast('Line '+(i+1)+': roll number is required', 'error'); return; }
-        rows.push({ roll_number: parts[0], total_marks: parts[1]||'', correct_count: parts[2]||'', wrong_count: parts[3]||'', blank_count: parts[4]||'', rank_position: parts[5]||'' });
+        // Roll | Marks | Rank. The old 6-column format (Roll | Marks |
+        // Correct | Wrong | Blank | Rank) is still accepted so an old
+        // copied sheet can't silently put the rank into "Correct".
+        var six = parts.length >= 6;
+        if (!six && parts.length > 3) { showToast('Line '+(i+1)+': use Roll Number | Total Marks | Rank', 'error'); return; }
+        rows.push(six
+          ? { roll_number: parts[0], total_marks: parts[1]||'', correct_count: parts[2]||'', wrong_count: parts[3]||'', blank_count: parts[4]||'', rank_position: parts[5]||'' }
+          : { roll_number: parts[0], total_marks: parts[1]||'', rank_position: parts[2]||'' });
       }
       var publish = document.getElementById('res_publish_'+row.id).checked;
       adminFetch('POST', '/api/programs/schedule/'+row.id+'/results/bulk', { rows: rows, publish: publish })
@@ -2160,14 +2167,13 @@
     adminFetch('GET', '/api/programs/schedule/'+scheduleId+'/results').then(function(d){
       var results = d.results || [];
       if (!results.length) { listEl.innerHTML = '<p class="admin-empty">No results entered yet for this test.</p>'; return; }
-      listEl.innerHTML = '<div class="admin-table-wrap" style="margin-top:8px;"><table class="admin-table"><thead><tr><th>Roll Number</th><th>Learner</th><th>Marks</th><th>Correct</th><th>Wrong</th><th>Blank</th><th>Rank</th><th>Status</th></tr></thead><tbody>' +
+      listEl.innerHTML = '<div class="admin-table-wrap" style="margin-top:8px;"><table class="admin-table"><thead><tr><th>Roll Number</th><th>Learner</th><th>Marks</th><th>Rank</th><th>Status</th></tr></thead><tbody>' +
         results.map(function(r){
           var statusBadge = r.published_at
             ? '<span class="admin-badge admin-badge--blue">Published</span>'
             : '<span class="admin-badge admin-badge--grey">Draft</span>';
           return '<tr><td style="font-family:monospace;">'+e(r.roll_number)+'</td><td>'+e(r.student_name)+'</td>' +
-            '<td>'+(r.total_marks!=null?r.total_marks:'-')+'</td><td>'+(r.correct_count!=null?r.correct_count:'-')+'</td>' +
-            '<td>'+(r.wrong_count!=null?r.wrong_count:'-')+'</td><td>'+(r.blank_count!=null?r.blank_count:'-')+'</td>' +
+            '<td>'+(r.total_marks!=null?r.total_marks:'-')+'</td>' +
             '<td>'+(r.rank_position!=null?r.rank_position:'-')+'</td><td>'+statusBadge+'</td></tr>';
         }).join('') + '</tbody></table></div>';
     }).catch(function(err){ listEl.innerHTML = '<p class="admin-empty">'+e(err.message)+'</p>'; });
