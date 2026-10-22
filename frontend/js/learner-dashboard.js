@@ -83,8 +83,10 @@
 
     if (t.result) {
       var bits = [];
-      if (t.result.total_marks != null) bits.push(t.result.total_marks + ' marks');
-      if (t.result.rank != null) bits.push('Rank ' + t.result.rank);
+      // Marks / rank can be text like "Absent" - only add "marks"/"Rank" to numbers.
+      var isNum = function (v) { return /^-?\d+(\.\d+)?$/.test(String(v)); };
+      if (t.result.total_marks != null) bits.push(isNum(t.result.total_marks) ? t.result.total_marks + ' marks' : t.result.total_marks);
+      if (t.result.rank != null && String(t.result.rank) !== String(t.result.total_marks)) bits.push(isNum(t.result.rank) ? 'Rank ' + t.result.rank : t.result.rank);
       return { key: 'result', tone: 'green', icon: 'fa-chart-simple', label: 'Result out' + (bits.length ? ': ' + bits.join(' · ') : ''), done: true };
     }
     if (t.requires_omr_upload) {

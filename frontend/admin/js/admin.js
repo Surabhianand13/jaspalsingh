@@ -2123,7 +2123,7 @@
     if (panel.innerHTML) { panel.innerHTML = ''; return; } // toggle closed if already open
     panel.innerHTML =
       '<div style="margin:8px 0;padding:12px;background:rgba(200,18,64,.04);border-radius:8px;">' +
-        '<div class="admin-form-hint" style="margin-bottom:8px;">Paste one learner per line: <code>Roll Number | Total Marks | Rank</code>. Re-pasting the same roll number updates that row.</div>' +
+        '<div class="admin-form-hint" style="margin-bottom:8px;">Paste one learner per line: <code>Roll Number | Total Marks | Rank</code>. Marks and Rank can be numbers or text (e.g. <code>Absent</code>). Re-pasting the same roll number updates that row.</div>' +
         '<textarea class="admin-input" id="res_paste_'+row.id+'" rows="5" style="width:100%;font-family:monospace;font-size:12.5px;" placeholder="UPPOLY-48213 | 85 | 1\nUPPOLY-51902 | 72 | 2"></textarea>' +
         '<div style="display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap;">' +
           '<label style="font-size:12px;display:flex;align-items:center;gap:6px;"><input type="checkbox" id="res_publish_'+row.id+'" checked> Publish immediately (learners can see these results right away)</label>' +
@@ -2173,8 +2173,8 @@
             ? '<span class="admin-badge admin-badge--blue">Published</span>'
             : '<span class="admin-badge admin-badge--grey">Draft</span>';
           return '<tr><td style="font-family:monospace;">'+e(r.roll_number)+'</td><td>'+e(r.student_name)+'</td>' +
-            '<td>'+(r.total_marks!=null?r.total_marks:'-')+'</td>' +
-            '<td>'+(r.rank_position!=null?r.rank_position:'-')+'</td><td>'+statusBadge+'</td></tr>';
+            '<td>'+e(r.marks_text!=null?r.marks_text:(r.total_marks!=null?r.total_marks:'-'))+'</td>' +
+            '<td>'+e(r.rank_text!=null?r.rank_text:(r.rank_position!=null?r.rank_position:'-'))+'</td><td>'+statusBadge+'</td></tr>';
         }).join('') + '</tbody></table></div>';
     }).catch(function(err){ listEl.innerHTML = '<p class="admin-empty">'+e(err.message)+'</p>'; });
   }

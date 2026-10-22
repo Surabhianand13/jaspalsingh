@@ -467,7 +467,7 @@ router.get('/schedule/:id/results', protect, async (req, res, next) => {
   try {
     const result = await query(
       `SELECT tr.id, tr.roll_number, tr.total_marks, tr.correct_count, tr.wrong_count, tr.blank_count,
-              tr.rank_position, tr.question_breakdown, tr.published_at, tr.entered_by,
+              tr.rank_position, tr.marks_text, tr.rank_text, tr.question_breakdown, tr.published_at, tr.entered_by,
               e.student_name
        FROM test_results tr
        JOIN enrollments e ON e.id = tr.enrollment_id
@@ -494,16 +494,22 @@ router.post('/schedule/:id/results/bulk', protect, async (req, res, next) => {
     // (e.g. "AB" in the rank column) crashed mid-loop with a raw
     // "invalid input syntax for type integer: NaN" after the earlier
     // lines were already saved and published.
-    const isNum = v => v == null || String(v).trim() === '' || /^-?\d+(\.\d+)?$/.test(String(v).trim());
-    const isInt = v => v == null || String(v).trim() === '' || /^\d+$/.test(String(v).trim());
+    // Marks and Rank may be text ("Absent", "AB") - stored as typed in
+    // marks_text/rank_text, with the numeric column filled only when the
+    // value is a number. Correct/Wrong/Blank (old 6-column paste) stay
+    // whole numbers.
+    const txt = v => (v == null ? '' : String(v).trim());
+    const NUM_RE = /^-?\d+(\.\d+)?$/;
+    const INT_RE = /^\d+$/;
     const problems = [];
     rows.forEach((row, i) => {
       const roll = (row.roll_number || '').trim();
       if (!roll) return;
       const where = `Line ${i + 1} (${roll})`;
-      if (!isNum(row.total_marks)) problems.push(`${where}: marks "${row.total_marks}" is not a number`);
-      [['correct_count', 'Correct'], ['wrong_count', 'Wrong'], ['blank_count', 'Blank'], ['rank_position', 'Rank']].forEach(([k, label]) => {
-        if (!isInt(row[k])) problems.push(`${where}: ${label} "${row[k]}" must be a whole number`);
+      if (txt(row.total_marks).length > 40) problems.push(`${where}: marks is too long (max 40 characters)`);
+      if (txt(row.rank_position).length > 40) problems.push(`${where}: rank is too long (max 40 characters)`);
+      [['correct_count', 'Correct'], ['wrong_count', 'Wrong'], ['blank_count', 'Blank']].forEach(([k, label]) => {
+        if (txt(row[k]) && !INT_RE.test(txt(row[k]))) problems.push(`${where}: ${label} "${row[k]}" must be a whole number`);
       });
     });
     if (problems.length) {
@@ -528,12 +534,15 @@ router.post('/schedule/:id/results/bulk', protect, async (req, res, next) => {
       if (!enrResult.rows.length) { skipped.push(rollNumber); continue; }
       const enrollmentId = enrResult.rows[0].id;
 
+      const marks = txt(row.total_marks), rank = txt(row.rank_position);
       const values = [
-        row.total_marks != null && String(row.total_marks).trim() !== '' ? Number(String(row.total_marks).trim()) : null,
-        row.correct_count != null && String(row.correct_count).trim() !== '' ? parseInt(row.correct_count, 10) : null,
-        row.wrong_count != null && String(row.wrong_count).trim() !== '' ? parseInt(row.wrong_count, 10) : null,
-        row.blank_count != null && String(row.blank_count).trim() !== '' ? parseInt(row.blank_count, 10) : null,
-        row.rank_position != null && String(row.rank_position).trim() !== '' ? parseInt(row.rank_position, 10) : null,
+        NUM_RE.test(marks) ? Number(marks) : null,
+        txt(row.correct_count) ? parseInt(row.correct_count, 10) : null,
+        txt(row.wrong_count) ? parseInt(row.wrong_count, 10) : null,
+        txt(row.blank_count) ? parseInt(row.blank_count, 10) : null,
+        INT_RE.test(rank) ? parseInt(rank, 10) : null,
+        marks || null,
+        rank || null,
       ];
 
       const existing = await query(
@@ -543,15 +552,15 @@ router.post('/schedule/:id/results/bulk', protect, async (req, res, next) => {
       if (existing.rows.length) {
         await query(
           `UPDATE test_results SET roll_number = $1, total_marks = $2, correct_count = $3, wrong_count = $4, blank_count = $5,
-                  rank_position = $6, entered_by = $7, updated_at = NOW()
+                  rank_position = $6, marks_text = $7, rank_text = $8, entered_by = $9, updated_at = NOW()
                   ${publish ? ', published_at = NOW()' : ''}
-           WHERE id = $8`,
+           WHERE id = $10`,
           [rollNumber, ...values, req.admin.email, existing.rows[0].id]
         );
       } else {
         await query(
-          `INSERT INTO test_results (schedule_id, enrollment_id, roll_number, total_marks, correct_count, wrong_count, blank_count, rank_position, entered_by, published_at)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,${publish ? 'NOW()' : 'NULL'})`,
+          `INSERT INTO test_results (schedule_id, enrollment_id, roll_number, total_marks, correct_count, wrong_count, blank_count, rank_position, marks_text, rank_text, entered_by, published_at)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,${publish ? 'NOW()' : 'NULL'})`,
           [scheduleId, enrollmentId, rollNumber, ...values, req.admin.email]
         );
       }
