@@ -424,10 +424,15 @@
     area.innerHTML =
       '<div style="border:1px solid #eee;border-radius:10px;padding:16px;">' +
         '<div style="font-weight:700;color:#1A1A2E;margin-bottom:12px;">Your Result</div>' +
-        '<div style="display:grid;grid-template-columns:repeat(' + (r.rank != null ? 4 : 3) + ',1fr);gap:10px;margin-bottom:' + (breakdownRows ? '16px' : '0') + ';">' +
-          stat('Marks', r.total_marks) + stat('Correct', r.correct_count) + stat('Wrong', r.wrong_count) +
-          (r.rank != null ? stat('Rank', r.rank) : '') +
-        '</div>' +
+        // Results are entered as Marks + Rank only; Correct/Wrong show
+        // only for older results that were entered with them.
+        (function () {
+          var stats = [stat('Marks', r.total_marks)];
+          if (r.correct_count != null) stats.push(stat('Correct', r.correct_count));
+          if (r.wrong_count != null) stats.push(stat('Wrong', r.wrong_count));
+          if (r.rank != null) stats.push(stat('Rank', r.rank));
+          return '<div style="display:grid;grid-template-columns:repeat(' + stats.length + ',1fr);gap:10px;margin-bottom:' + (breakdownRows ? '16px' : '0') + ';">' + stats.join('') + '</div>';
+        })() +
         (breakdownRows
           ? '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;"><thead><tr>' +
               '<th style="text-align:left;padding:6px 10px;font-size:11px;color:#9999b0;text-transform:uppercase;">Question</th>' +
