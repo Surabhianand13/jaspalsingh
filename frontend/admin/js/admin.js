@@ -3342,8 +3342,9 @@
         var viewLink = m.file_url
           ? '<a href="'+e(m.file_url)+'" target="_blank" rel="noopener" title="Open the uploaded file" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:20px;background:#f4f4f7;color:#444;"><i class="fas fa-eye" style="font-size:11px;"></i></a>'
           : '';
+        var sharedBadge = m.bulk_group_id ? ' <span title="Shared file - upload once applies to all linked tracks" style="font-size:10px;background:#ede9fe;color:#6d28d9;border-radius:4px;padding:1px 5px;font-weight:700;">SHARED</span>' : '';
         return '<tr>' +
-          '<td>'+e(BM_TRACK_LABEL[m.track] || m.track)+'</td>' +
+          '<td>'+e(BM_TRACK_LABEL[m.track] || m.track)+sharedBadge+'</td>' +
           '<td>'+e(m.kind === 'formula' ? 'Formula Sheet' : 'DPP')+'</td>' +
           '<td>'+e(m.subject||'-')+'</td>' +
           '<td>'+e(m.title)+'</td>' +
@@ -3965,18 +3966,39 @@
     var bmAddBtn=document.getElementById('bm_add_btn'); if(bmAddBtn) bmAddBtn.onclick=function(){
       var title = document.getElementById('bm_add_title').value.trim();
       if (!title) { showToast('Title is required', 'error'); return; }
-      adminFetch('POST', '/api/programs/batch-materials', {
-        track: document.getElementById('bm_add_track').value,
-        kind: document.getElementById('bm_add_kind').value,
-        subject: document.getElementById('bm_add_subject').value.trim(),
-        title: title,
-      }).then(function(){
-        showToast('Added - now upload the PDF', 'success');
+      var tracks = Array.from(document.querySelectorAll('.bm-track-cb:checked')).map(function(cb){ return cb.value; });
+      if (!tracks.length) { showToast('Select at least one track', 'error'); return; }
+      var kind = document.getElementById('bm_add_kind').value;
+      var subject = document.getElementById('bm_add_subject').value.trim();
+      var endpoint = tracks.length === 1 ? '/api/programs/batch-materials' : '/api/programs/batch-materials/bulk';
+      var payload = tracks.length === 1
+        ? { track: tracks[0], kind: kind, subject: subject, title: title }
+        : { tracks: tracks, kind: kind, subject: subject, title: title };
+      adminFetch('POST', endpoint, payload).then(function(){
+        var msg = tracks.length > 1
+          ? 'Added for '+tracks.length+' tracks - upload PDF once to any row and it copies to all'
+          : 'Added - now upload the PDF';
+        showToast(msg, 'success');
         document.getElementById('bm_add_subject').value = '';
         document.getElementById('bm_add_title').value = '';
+        document.querySelectorAll('.bm-track-cb').forEach(function(cb){ cb.checked = false; });
+        document.getElementById('bm_track_btn').textContent = 'Select tracks ▼';
+        document.getElementById('bm_track_dd').classList.remove('bm-dd-open');
         loadBatchMaterials();
       }).catch(function(err){ showToast(err.message, 'error'); });
     };
+    // Close track dropdown when clicking outside
+    document.addEventListener('click', function(ev){
+      var picker = document.getElementById('bm_track_picker');
+      if (picker && !picker.contains(ev.target)) document.getElementById('bm_track_dd').classList.remove('bm-dd-open');
+    });
+    // Update button label when checkboxes change
+    document.addEventListener('change', function(ev){
+      if (!ev.target.classList.contains('bm-track-cb')) return;
+      var checked = document.querySelectorAll('.bm-track-cb:checked');
+      var btn = document.getElementById('bm_track_btn');
+      if (btn) btn.textContent = checked.length === 0 ? 'Select tracks ▼' : checked.length+' track'+(checked.length>1?'s':'')+' selected ▼';
+    });
     var bbf=document.getElementById('btnBackfillReferralCodes'); if(bbf) bbf.onclick=function(){
       bbf.disabled = true; bbf.textContent = 'Generating...';
       adminFetch('POST', '/api/payment/admin/backfill-referral-codes').then(function(d){

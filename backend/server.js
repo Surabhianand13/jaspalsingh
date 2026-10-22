@@ -1000,7 +1000,9 @@ async function migrate() {
       created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
+  await query(`ALTER TABLE batch_materials ADD COLUMN IF NOT EXISTS bulk_group_id UUID`);
   await query(`CREATE INDEX IF NOT EXISTS idx_batch_materials_track ON batch_materials(track)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_batch_materials_bulk_group ON batch_materials(bulk_group_id)`);
 
   /* Offline CBT pilot (2026-08-09) - results synced in from air-gapped
      exam machines (see /offline-cbt) once a staff member connects that
