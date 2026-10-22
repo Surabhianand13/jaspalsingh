@@ -27,6 +27,7 @@
   var TOKEN = params.get('t');
   var PROGRAM = params.get('program') || 'rpsc-ae-interview';
   var DEMO = params.get('demo') === '1';
+  var DEMO_TBA = DEMO && params.get('tba') === '1'; // demo with the venue not finalised yet
 
   var app = document.getElementById('app');
   var bar = document.getElementById('bar');
@@ -147,9 +148,10 @@
       phases: [{
         id: 1, name: 'Phase 1', slots_per_learner: 3, slot_minutes: 15, date_from: '2026-11-02', date_to: '2026-11-07',
         windows: [{ start: '09:00', end: '13:00' }, { start: '14:00', end: '18:00' }],
-        venue_name: 'WHITE HOUSE',
-        venue_address: '33, Tonk Road, Opp. Zone Tech, Madhuvan Colony, Mansingh Pura, Tonk Phatak, Jaipur, Rajasthan 302018',
-        maps_link: 'https://maps.app.goo.gl/UiYpXv447AWrfyMX8',
+        venue_tba: DEMO_TBA,
+        venue_name: DEMO_TBA ? null : 'WHITE HOUSE',
+        venue_address: DEMO_TBA ? null : '33, Tonk Road, Opp. Zone Tech, Madhuvan Colony, Mansingh Pura, Tonk Phatak, Jaipur, Rajasthan 302018',
+        maps_link: DEMO_TBA ? null : 'https://maps.app.goo.gl/UiYpXv447AWrfyMX8',
         bookable: true, days: days,
       }],
     };
@@ -167,6 +169,12 @@
   }
   function venueCard(p) {
     if (!p) return '';
+    if (p.venue_tba) {
+      return '<div class="bi-card" style="border-color:#93c5fd;background:#eff6ff;"><div class="bi-venue"><i class="fas fa-location-dot" style="color:#1e40af;"></i><div>' +
+        '<b style="color:#1e3a8a;">Venue details will be shared soon on email</b>' +
+        '<span style="color:#1e40af;">Your slot date and time are confirmed as soon as you book - only the venue address is being finalised.</span>' +
+      '</div></div></div>';
+    }
     return '<div class="bi-card"><div class="bi-venue"><i class="fas fa-location-dot"></i><div>' +
       '<b>' + esc(p.venue_name) + '</b><span>' + esc(p.venue_address) + '</span>' +
       (p.maps_link ? '<div style="margin-top:8px;"><a href="' + esc(p.maps_link) + '" target="_blank" rel="noopener"><strong>Open in Google Maps &rarr;</strong></a></div>' : '') +
@@ -360,7 +368,7 @@
   function icsText(s) { return String(s || '').replace(/\\/g, '\\\\').replace(/;/g, '\;').replace(/,/g, '\\,').replace(/\n/g, '\\n'); }
   function icsDate(d) { return new Date(d).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, ''); }
   function downloadIcs(list, p) {
-    var loc = p ? [p.venue_name, p.venue_address].filter(Boolean).join(', ') : '';
+    var loc = !p ? '' : p.venue_tba ? 'Venue to be announced - details will be shared on email' : [p.venue_name, p.venue_address].filter(Boolean).join(', ');
     var lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//jaspalsingh.in//Interview Booking//EN', 'CALSCALE:GREGORIAN'];
     list.forEach(function (b) {
       lines.push('BEGIN:VEVENT', 'UID:interview-' + b.id + '@jaspalsingh.in', 'DTSTAMP:' + icsDate(new Date()),
@@ -519,7 +527,7 @@
     var ids = [];
     var all = b.bookings.concat(list.map(function (s, i) {
       var id = 'demo-' + s.id; ids.push(id);
-      return { id: id, starts_at: s.starts_at, ends_at: s.ends_at, venue_name: phase.venue_name, venue_address: phase.venue_address, maps_link: phase.maps_link };
+      return { id: id, starts_at: s.starts_at, ends_at: s.ends_at, venue_tba: phase.venue_tba, venue_name: phase.venue_name, venue_address: phase.venue_address, maps_link: phase.maps_link };
     })).sort(function (x, y) { return new Date(x.starts_at) - new Date(y.starts_at); })
       .map(function (x, i) { x.interview_no = i + 1; return x; });
     var takenDays = {};

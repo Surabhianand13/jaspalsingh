@@ -40,7 +40,7 @@ const { SITE } = require('./paymentEmailService');
 const TOKEN_PURPOSE = 'interview-booking';
 const PHASE_COLS = `p.id, p.program_slug, p.name, p.status, p.slots_per_learner, p.slot_minutes,
   p.date_from::text AS date_from, p.date_to::text AS date_to, p.windows, p.skip_sundays,
-  p.venue_name, p.venue_address, p.maps_link, p.created_at`;
+  p.venue_name, p.venue_address, p.maps_link, p.venue_tba, p.venue_announced_at, p.created_at`;
 
 /* ── Schema (called from server.js migrate()) ───────────────── */
 
@@ -88,6 +88,10 @@ async function migrate() {
     UNIQUE (enrollment_id, interview_no)
   )`);
   await query(`CREATE INDEX IF NOT EXISTS idx_interview_bookings_enrollment ON interview_bookings (enrollment_id)`);
+  // Venue not finalised yet (2026-10-22): learners see "venue details will
+  // be shared soon on email" until the admin fills it in and announces it.
+  await query(`ALTER TABLE interview_phases ADD COLUMN IF NOT EXISTS venue_tba BOOLEAN NOT NULL DEFAULT FALSE`);
+  await query(`ALTER TABLE interview_phases ADD COLUMN IF NOT EXISTS venue_announced_at TIMESTAMPTZ`);
   await query(`CREATE TABLE IF NOT EXISTS interview_invites (
     phase_id         INTEGER NOT NULL REFERENCES interview_phases(id) ON DELETE CASCADE,
     enrollment_id    INTEGER NOT NULL,
@@ -171,7 +175,7 @@ function withDisplayNumbers(bookings) {
 async function learnerBookings(enrollment) {
   const r = await query(
     `SELECT b.id, b.phase_id, b.slot_id, b.interview_no, b.branch, s.starts_at, s.ends_at,
-            p.name AS phase_name, p.venue_name, p.venue_address, p.maps_link, p.slots_per_learner
+            p.name AS phase_name, p.venue_name, p.venue_address, p.maps_link, p.venue_tba, p.slots_per_learner
      FROM interview_bookings b
      JOIN interview_slots s ON s.id = b.slot_id
      JOIN interview_phases p ON p.id = b.phase_id
@@ -320,7 +324,7 @@ async function afterBooking(enrollment, phase, allBookings, newIds) {
 
 async function syncCalendar(bookingId) {
   const r = await query(
-    `SELECT b.*, s.starts_at, s.ends_at, p.name AS phase_name, p.venue_name, p.venue_address, p.slots_per_learner
+    `SELECT b.*, s.starts_at, s.ends_at, p.name AS phase_name, p.venue_name, p.venue_address, p.venue_tba, p.slots_per_learner
      FROM interview_bookings b JOIN interview_slots s ON s.id = b.slot_id JOIN interview_phases p ON p.id = b.phase_id
      WHERE b.id = $1 AND b.calendar_event_id IS NULL`,
     [bookingId]
@@ -343,6 +347,59 @@ async function releaseLearner(enrollmentId) {
     await calendar.deleteEvent(r.calendar_event_id).catch(err => console.error('[interview calendar delete]', err.message));
   }
   return rows.length;
+}
+
+/* ── Venue finalised later ──────────────────────────────────── */
+
+/* After the admin edits a phase's venue: move sir's calendar events
+   for every booking in the phase to the new location. */
+async function updateCalendarLocations(phase) {
+  const rows = (await query(
+    `SELECT id, calendar_event_id FROM interview_bookings WHERE phase_id = $1 AND calendar_event_id IS NOT NULL`,
+    [phase.id]
+  )).rows;
+  const location = calendar.locationFor(phase);
+  for (const r of rows) {
+    await calendar.updateLocation(r.calendar_event_id, location)
+      .catch(err => console.error(`[interview calendar location] booking ${r.id}:`, err.message));
+  }
+  return rows.length;
+}
+
+/* Email the (now final) venue to every active learner holding slots in
+   this phase, listing their own slots. Background send, like invites. */
+async function announceVenue(phase) {
+  if (phase.venue_tba || !phase.venue_address) throw new BookingError('Fill in the venue first (untick "Venue not finalised").');
+  const rows = (await query(
+    `SELECT b.id, b.enrollment_id, b.student_name, b.student_email, b.branch, s.starts_at, s.ends_at
+     FROM interview_bookings b
+     JOIN interview_slots s ON s.id = b.slot_id
+     JOIN enrollments e ON e.id = b.enrollment_id
+     WHERE b.phase_id = $1 AND e.status = 'paid' AND e.refund_status != 'initiated'
+     ORDER BY s.starts_at`,
+    [phase.id]
+  )).rows;
+  const byLearner = {};
+  rows.forEach(r => { (byLearner[r.enrollment_id] = byLearner[r.enrollment_id] || []).push(r); });
+  const learners = Object.values(byLearner).filter(list => list[0].student_email);
+  await query(`UPDATE interview_phases SET venue_announced_at = NOW() WHERE id = $1`, [phase.id]);
+
+  (async () => {
+    for (const list of learners) {
+      // Number by date across ALL their bookings, not just this phase.
+      const all = (await query(
+        `SELECT b.id, s.starts_at FROM interview_bookings b JOIN interview_slots s ON s.id = b.slot_id WHERE b.enrollment_id = $1`,
+        [list[0].enrollment_id]
+      )).rows;
+      const numbers = {};
+      withDisplayNumbers(all).forEach(b => { numbers[b.id] = b.interview_no; });
+      const bookings = list.map(b => Object.assign({}, b, { interview_no: numbers[b.id] }));
+      await emails.sendVenueAnnouncement({ to: list[0].student_email, name: list[0].student_name, bookings, phase })
+        .catch(err => console.error(`[interview venue email] ${list[0].student_email}:`, err.message));
+    }
+    console.log(`[interview venue] announced to ${learners.length} learner(s) for phase ${phase.id}`);
+  })();
+  return learners.length;
 }
 
 /* ── Eligible learners + invites ────────────────────────────── */
@@ -523,6 +580,6 @@ module.exports = {
   migrate, generateSlotTimes, istDateKey,
   signBookingToken, bookingLink, verifyBookingToken, activeEnrollmentById,
   getPhase, learnerBookings, withDisplayNumbers, openPhasesWithAvailability, bookSlots, BookingError,
-  releaseLearner, eligibleLearners, sendInvites, inviteNewEnrollment, phaseStats,
+  releaseLearner, updateCalendarLocations, announceVenue, eligibleLearners, sendInvites, inviteNewEnrollment, phaseStats,
   syncCalendar, tick, PHASE_COLS,
 };

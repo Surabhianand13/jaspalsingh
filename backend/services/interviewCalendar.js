@@ -49,7 +49,7 @@ async function createEvent(b) {
       // order over time, so the number (by date) can change after this
       // event is created.
       summary: `RPSC AE Interview - ${b.student_name} (${b.branch})${b.roll_number ? ' - ' + b.roll_number : ''}`,
-      location: [b.venue_name, b.venue_address].filter(Boolean).join(', '),
+      location: locationFor(b),
       description: [
         `Learner: ${b.student_name}`,
         `Branch: ${b.branch}`,
@@ -67,6 +67,17 @@ async function createEvent(b) {
     },
   });
   return res.data.id;
+}
+
+/* Phase (or booking row carrying the phase's venue fields) -> event location. */
+function locationFor(p) {
+  if (p.venue_tba) return 'Venue to be announced';
+  return [p.venue_name, p.venue_address].filter(Boolean).join(', ');
+}
+
+async function updateLocation(eventId, location) {
+  if (!eventId || !isConfigured()) return;
+  await client().events.patch({ calendarId: calendarId(), eventId, requestBody: { location } });
 }
 
 async function deleteEvent(eventId) {
@@ -98,4 +109,4 @@ async function checkAccess() {
   }
 }
 
-module.exports = { createEvent, deleteEvent, checkAccess, isConfigured, calendarId };
+module.exports = { createEvent, deleteEvent, updateLocation, locationFor, checkAccess, isConfigured, calendarId };

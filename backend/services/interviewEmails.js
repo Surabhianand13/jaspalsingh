@@ -50,7 +50,17 @@ function sectionLabel(text) {
   return `<div style="font-size:12px;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:.08em;margin:0 0 10px;">${text}</div>`;
 }
 
+const VENUE_TBA_TEXT = 'Venue details will be shared soon on email.';
+
 function venueBlock(phase) {
+  if (phase.venue_tba) {
+    return `
+    <div style="background:#eff6ff;border:1px solid #93c5fd;border-radius:12px;padding:16px 20px;margin-bottom:22px;">
+      ${sectionLabel('Venue')}
+      <div style="font-size:15px;font-weight:800;color:#1e3a8a;">📍 ${VENUE_TBA_TEXT}</div>
+      <div style="font-size:13px;color:#1e40af;line-height:1.6;margin-top:4px;">Your slot date and time are confirmed - only the venue address is being finalised.</div>
+    </div>`;
+  }
   return `
     <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px 20px;margin-bottom:22px;">
       ${sectionLabel('Venue')}
@@ -102,7 +112,7 @@ function icsDate(d) {
 }
 function buildIcs(bookings, phase) {
   const now = icsDate(new Date());
-  const location = [phase.venue_name, phase.venue_address].filter(Boolean).join(', ');
+  const location = phase.venue_tba ? 'Venue to be announced - details will be shared on email' : [phase.venue_name, phase.venue_address].filter(Boolean).join(', ');
   const events = bookings.map(b => [
     'BEGIN:VEVENT',
     `UID:interview-${b.id || b.slot_id}@jaspalsingh.in`,
@@ -277,6 +287,46 @@ async function sendDayBeforeReminder({ to, name, booking, phase, subjectPrefix =
   }, PRIORITY.ACTION_REQUIRED);
 }
 
+/* ── 3b. Venue finalised (sent from admin once the venue is set) ── */
+
+async function sendVenueAnnouncement({ to, name, bookings, phase, subjectPrefix = '' }) {
+  const firstName = esc((name || 'there').split(' ')[0]);
+  const sorted = bookings.slice().sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
+  const rows = sorted.map(b => `
+    <tr>
+      <td style="padding:12px 14px;border-bottom:1px solid #e2e8f0;font-size:13px;font-weight:800;color:${RED};white-space:nowrap;">Interview ${b.interview_no}</td>
+      <td style="padding:12px 14px;border-bottom:1px solid #e2e8f0;font-size:14px;color:#1A1A2E;font-weight:700;">${esc(fmtDay(b.starts_at))}<br><span style="font-weight:600;color:#374151;">${esc(fmtTime(b.starts_at))} - ${esc(fmtTime(b.ends_at))}</span></td>
+    </tr>`).join('');
+  const body = `
+    <div style="text-align:center;margin-bottom:22px;">
+      <div style="display:inline-block;background:#f0fdf4;border:1px solid #86efac;border-radius:50px;padding:8px 22px;">
+        <span style="font-size:13px;font-weight:700;color:#166534;">📍 Venue confirmed</span>
+      </div>
+    </div>
+
+    <h2 style="margin:0 0 10px;font-size:22px;color:#1A1A2E;font-weight:800;text-align:center;">Your interview venue, ${firstName}</h2>
+    <p style="margin:0 0 22px;font-size:15px;color:#374151;line-height:1.7;text-align:center;">
+      The venue for your RPSC AE interview slots is now confirmed. Your slot dates and times stay exactly the same.
+    </p>
+
+    ${venueBlock(phase)}
+
+    ${sectionLabel('Your booked slots')}
+    <table cellpadding="0" cellspacing="0" style="width:100%;border:1px solid #e2e8f0;border-radius:12px;margin-bottom:10px;">${rows}</table>
+    <p style="margin:0 0 22px;font-size:12.5px;color:#6b7280;text-align:center;">📅 The attached <strong>.ics</strong> file updates these slots in your phone calendar with the venue.</p>
+
+    ${instructionsBlock()}
+    ${helpLine()}
+  `;
+  return resendSend({
+    from: FROM,
+    to,
+    subject: `${subjectPrefix}Venue confirmed for your RPSC AE interview slots`,
+    html: baseHtml(body),
+    attachments: [{ filename: 'rpsc-ae-interviews.ics', content: Buffer.from(buildIcs(sorted, phase)) }],
+  }, PRIORITY.ACTION_REQUIRED);
+}
+
 /* ── 4. Owner daily summary ───────────────────────────────── */
 
 async function sendDailyDigest({ newBookings, tomorrow, phases, to = ADMIN_EMAIL, subjectPrefix = '' }) {
@@ -300,7 +350,7 @@ async function sendDailyDigest({ newBookings, tomorrow, phases, to = ADMIN_EMAIL
     <td style="${td}">Interview ${b.interview_no}</td></tr>`).join('');
 
   const phaseRows = phases.map(p => `
-    <tr><td style="${td}"><strong>${esc(p.name)}</strong><br><span style="color:#64748b;">${esc(fmtRange(p.date_from, p.date_to))} · ${esc(p.status)}</span></td>
+    <tr><td style="${td}"><strong>${esc(p.name)}</strong><br><span style="color:#64748b;">${esc(fmtRange(p.date_from, p.date_to))} · ${esc(p.status)}</span>${p.venue_tba ? '<br><span style="color:#b45309;font-weight:700;">Venue not announced yet</span>' : ''}</td>
     <td style="${td}">${p.fully_booked} all slots booked<br>${p.partly_booked} part booked<br>${p.not_started} not started<br><span style="color:#64748b;">of ${p.eligible_learners} paid learners</span></td>
     <td style="${td}">${p.slots_free} slots free</td></tr>`).join('');
 
@@ -334,4 +384,4 @@ async function sendDailyDigest({ newBookings, tomorrow, phases, to = ADMIN_EMAIL
   }, PRIORITY.ADMIN_NOTIFY);
 }
 
-module.exports = { sendInviteEmail, sendConfirmationEmail, sendDayBeforeReminder, sendDailyDigest, buildIcs, fmtSlot, fmtDay, fmtTime, fmtRange };
+module.exports = { sendInviteEmail, sendConfirmationEmail, sendDayBeforeReminder, sendVenueAnnouncement, sendDailyDigest, VENUE_TBA_TEXT, buildIcs, fmtSlot, fmtDay, fmtTime, fmtRange };
