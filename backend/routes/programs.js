@@ -11,6 +11,9 @@
 const express = require('express');
 const router  = express.Router();
 const multer  = require('multer');
+const fs      = require('fs');
+const os      = require('os');
+const path    = require('path');
 const AdmZip = require('adm-zip');
 const { PutObjectCommand, DeleteObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
 const { r2, BUCKET } = require('../config/r2');
@@ -18,9 +21,23 @@ const { query } = require('../config/db');
 const { protect } = require('../middleware/auth');
 const { handleUploadError } = require('../middleware/upload');
 
-/* Shared by the workbook upload route and the schedule-asset upload route
-   below - both are admin PDF uploads to R2. */
-const scheduleAssetUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
+/* Disk storage - streams file to a temp directory instead of RAM.
+   After upload to R2, the temp file is deleted.
+   This keeps memory use flat regardless of file size. */
+const scheduleAssetUpload = multer({
+  storage: multer.diskStorage({
+    destination: os.tmpdir(),
+    filename: (_req, file, cb) => cb(null, Date.now() + '-' + file.originalname.replace(/\s+/g, '-')),
+  }),
+  limits: { fileSize: 100 * 1024 * 1024 },
+});
+
+/* Stream a file from disk to R2 and clean up the temp file. */
+async function streamFileToR2(localPath, key, contentType) {
+  const stream = fs.createReadStream(localPath);
+  await r2.send(new PutObjectCommand({ Bucket: BUCKET, Key: key, Body: stream, ContentType: contentType }));
+  try { fs.unlinkSync(localPath); } catch (_) {}
+}
 
 /* ── PUBLIC: visible programs ────────────────────────────── */
 router.get('/', async (req, res, next) => {
@@ -144,9 +161,7 @@ router.post('/:id/workbook', protect, scheduleAssetUpload.single('file'), handle
     if (!existing.rows.length) return res.status(404).json({ error: 'Program not found.' });
 
     const key = `workbooks/${req.params.id}-${Date.now()}-${req.file.originalname.replace(/\s+/g, '-')}`;
-    await r2.send(new PutObjectCommand({
-      Bucket: BUCKET, Key: key, Body: req.file.buffer, ContentType: 'application/pdf',
-    }));
+    await streamFileToR2(req.file.path, key, 'application/pdf');
     const publicUrl = `${process.env.R2_PUBLIC_URL}/${key}`;
 
     const result = await query(
@@ -334,9 +349,7 @@ router.post('/schedule/:id/assets/:kind', protect, scheduleAssetUpload.single('f
     if (!existing.rows.length) return res.status(404).json({ error: 'Schedule row not found.' });
 
     const key = `test-assets/${req.params.id}/${req.params.kind}-${Date.now()}-${req.file.originalname.replace(/\s+/g, '-')}`;
-    await r2.send(new PutObjectCommand({
-      Bucket: BUCKET, Key: key, Body: req.file.buffer, ContentType: 'application/pdf',
-    }));
+    await streamFileToR2(req.file.path, key, 'application/pdf');
     const publicUrl = `${process.env.R2_PUBLIC_URL}/${key}`;
 
     const result = await query(
@@ -629,7 +642,7 @@ router.post('/batch-materials/:id/upload', protect, scheduleAssetUpload.single('
     if (!existing.rows.length) return res.status(404).json({ error: 'Material not found.' });
 
     const key = `batch-materials/${req.params.id}-${Date.now()}-${req.file.originalname.replace(/\s+/g, '-')}`;
-    await r2.send(new PutObjectCommand({ Bucket: BUCKET, Key: key, Body: req.file.buffer, ContentType: 'application/pdf' }));
+    await streamFileToR2(req.file.path, key, 'application/pdf');
     const publicUrl = `${process.env.R2_PUBLIC_URL}/${key}`;
 
     const result = await query(
