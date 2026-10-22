@@ -20,7 +20,7 @@ const { handleUploadError } = require('../middleware/upload');
 
 /* Shared by the workbook upload route and the schedule-asset upload route
    below - both are admin PDF uploads to R2. */
-const scheduleAssetUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
+const scheduleAssetUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
 
 /* ── PUBLIC: visible programs ────────────────────────────── */
 router.get('/', async (req, res, next) => {
