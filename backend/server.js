@@ -977,6 +977,11 @@ async function migrate() {
   `);
   await query(`CREATE UNIQUE INDEX IF NOT EXISTS test_results_schedule_enrollment_uidx ON test_results(schedule_id, enrollment_id)`);
   await query(`CREATE INDEX IF NOT EXISTS idx_test_results_schedule ON test_results(schedule_id)`);
+  // Marks / Rank exactly as typed by admin (2026-10-23) - so "Absent",
+  // "AB" or "Disqualified" can be published. total_marks/rank_position
+  // still hold the number when it is one (sorting, older results).
+  await query(`ALTER TABLE test_results ADD COLUMN IF NOT EXISTS marks_text TEXT`);
+  await query(`ALTER TABLE test_results ADD COLUMN IF NOT EXISTS rank_text TEXT`);
 
   /* शौर्य Batch DPPs / formula sheets (2026-08-17): no recorded content is
      provided for the offline classroom program, only subject PDFs to

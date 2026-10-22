@@ -123,7 +123,8 @@ router.get('/:program_slug', protectLearner, async (req, res, next) => {
               su.id AS upload_id, su.file_url AS my_upload_url, su.uploaded_at AS my_upload_at,
               tr.id AS result_id, tr.total_marks AS result_total_marks, tr.correct_count AS result_correct_count,
               tr.wrong_count AS result_wrong_count, tr.blank_count AS result_blank_count,
-              tr.rank_position AS result_rank, tr.question_breakdown AS result_breakdown
+              tr.rank_position AS result_rank, tr.question_breakdown AS result_breakdown,
+              tr.marks_text AS result_marks_text, tr.rank_text AS result_rank_text
        FROM program_schedule ps
        LEFT JOIN schedule_uploads su ON su.schedule_id = ps.id AND su.enrollment_id = $2
        LEFT JOIN test_results tr ON tr.schedule_id = ps.id AND tr.enrollment_id = $2 AND tr.published_at IS NOT NULL
@@ -153,11 +154,12 @@ router.get('/:program_slug', protectLearner, async (req, res, next) => {
         solution_url:       flags.solution_available ? row.solution_url : null,
         my_upload: row.upload_id ? { url: row.my_upload_url, uploaded_at: row.my_upload_at } : null,
         result: row.result_id != null ? {
-          total_marks:   row.result_total_marks,
+          // As typed by admin ("Absent" etc.) when set, else the number.
+          total_marks:   row.result_marks_text != null ? row.result_marks_text : row.result_total_marks,
           correct_count: row.result_correct_count,
           wrong_count:   row.result_wrong_count,
           blank_count:   row.result_blank_count,
-          rank:          row.result_rank,
+          rank:          row.result_rank_text != null ? row.result_rank_text : row.result_rank,
           breakdown:     row.result_breakdown,
         } : null,
       };
