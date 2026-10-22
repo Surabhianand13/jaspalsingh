@@ -490,6 +490,29 @@ router.post('/schedule/:id/results/bulk', protect, async (req, res, next) => {
     const publish = !!req.body.publish;
     const scheduleId = req.params.id;
 
+    // Check every line before saving anything. Previously a bad value
+    // (e.g. "AB" in the rank column) crashed mid-loop with a raw
+    // "invalid input syntax for type integer: NaN" after the earlier
+    // lines were already saved and published.
+    const isNum = v => v == null || String(v).trim() === '' || /^-?\d+(\.\d+)?$/.test(String(v).trim());
+    const isInt = v => v == null || String(v).trim() === '' || /^\d+$/.test(String(v).trim());
+    const problems = [];
+    rows.forEach((row, i) => {
+      const roll = (row.roll_number || '').trim();
+      if (!roll) return;
+      const where = `Line ${i + 1} (${roll})`;
+      if (!isNum(row.total_marks)) problems.push(`${where}: marks "${row.total_marks}" is not a number`);
+      [['correct_count', 'Correct'], ['wrong_count', 'Wrong'], ['blank_count', 'Blank'], ['rank_position', 'Rank']].forEach(([k, label]) => {
+        if (!isInt(row[k])) problems.push(`${where}: ${label} "${row[k]}" must be a whole number`);
+      });
+    });
+    if (problems.length) {
+      return res.status(400).json({
+        error: `Nothing saved - fix ${problems.length === 1 ? 'this line' : 'these lines'} and paste again: ` + problems.slice(0, 5).join('; ') + (problems.length > 5 ? `; and ${problems.length - 5} more` : ''),
+        problems,
+      });
+    }
+
     const skipped = [];
     let saved = 0;
     for (const row of rows) {
@@ -506,11 +529,11 @@ router.post('/schedule/:id/results/bulk', protect, async (req, res, next) => {
       const enrollmentId = enrResult.rows[0].id;
 
       const values = [
-        row.total_marks != null && row.total_marks !== '' ? Number(row.total_marks) : null,
-        row.correct_count != null && row.correct_count !== '' ? parseInt(row.correct_count, 10) : null,
-        row.wrong_count != null && row.wrong_count !== '' ? parseInt(row.wrong_count, 10) : null,
-        row.blank_count != null && row.blank_count !== '' ? parseInt(row.blank_count, 10) : null,
-        row.rank_position != null && row.rank_position !== '' ? parseInt(row.rank_position, 10) : null,
+        row.total_marks != null && String(row.total_marks).trim() !== '' ? Number(String(row.total_marks).trim()) : null,
+        row.correct_count != null && String(row.correct_count).trim() !== '' ? parseInt(row.correct_count, 10) : null,
+        row.wrong_count != null && String(row.wrong_count).trim() !== '' ? parseInt(row.wrong_count, 10) : null,
+        row.blank_count != null && String(row.blank_count).trim() !== '' ? parseInt(row.blank_count, 10) : null,
+        row.rank_position != null && String(row.rank_position).trim() !== '' ? parseInt(row.rank_position, 10) : null,
       ];
 
       const existing = await query(
