@@ -286,12 +286,10 @@
     return papers.length ? papers[papers.length - 1].t : null;
   }
 
-  var INTERVIEW_DAYS = [
-    ['Session 1', 'Technical Session 1 - your branch (Civil technical for Civil, Electrical for Electrical, Mechanical for Mechanical)<br>Non-Technical Session - background, service choices, Rajasthan current affairs', 'Classroom Discussion'],
-    ['Session 2', 'Technical Session 2 - branch subjects continued, frequently asked board questions<br>Personality Development Session - body language, articulation, board etiquette', 'Classroom + Workshop'],
-    ['Session 3', 'Technical Session 3 - applied / field-level questions for your branch and department<br>Mock Interview 1 with Expert Panel', 'Classroom + Mock Panel'],
-    ['Session 4', 'Mock Interview 2 with Expert Panel', 'Mock Panel + Feedback'],
-    ['Session 5', 'Mock Interview 3 with Expert Panel', 'Mock Panel + Feedback'],
+  var INTERVIEW_SESSIONS = [
+    ['Sessions 1-3', '3 Technical Sessions', 'Branch-wise technical sessions - Civil candidates get Civil Engineering technical, Electrical candidates get Electrical Engineering technical and Mechanical candidates get Mechanical Engineering technical - with subject-wise question patterns, model answers and what the board expects to hear.'],
+    ['Session 4', '1 Non-Technical Session', 'Preparation for non-technical questions - your background, service choices, Rajasthan-specific current affairs, state projects, policies and situational questions.'],
+    ['Session 5', '1 Personality Development Session', 'Body language, confident articulation, structured response framing, dress code and board etiquette - aspects that directly influence interview scores.'],
   ];
 
   /* WhatsApp group (session dates/timings), the 5-session plan and the
@@ -318,11 +316,11 @@
     var plan =
       '<details class="ld-fold" open>' +
         '<summary><i class="fas fa-calendar-days"></i> Session details (5 sessions)</summary>' +
-        '<div class="ld-plan">' + INTERVIEW_DAYS.map(function (d) {
+        '<div class="ld-plan">' + INTERVIEW_SESSIONS.map(function (d) {
           return '<div class="ld-plan-row"><span class="ld-plan-day">' + d[0] + '</span>' +
-            '<div class="ld-plan-body"><div class="ld-plan-focus">' + d[1] + '</div><span class="ld-plan-format">' + d[2] + '</span></div></div>';
+            '<div class="ld-plan-body"><div class="ld-plan-title">' + d[1] + '</div><div class="ld-plan-focus">' + d[2] + '</div></div></div>';
         }).join('') + '</div>' +
-        '<p class="ld-plan-note"><i class="fab fa-whatsapp"></i> Exact dates and timings for each session are posted on the WhatsApp group.</p>' +
+        '<p class="ld-plan-note"><i class="fab fa-whatsapp"></i> Sessions can run on the same day. Exact dates and timings for each session are posted on the WhatsApp group. Your 3 mock interviews are separate - book them with the Book / view slots button above.</p>' +
       '</details>';
 
     return waBlock + bookBlock + plan;

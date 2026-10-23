@@ -171,9 +171,10 @@
 .ld-plan-row { display: flex; gap: 12px; border: 1px solid #EEF0F4; border-radius: 12px; padding: 11px 14px; }
 .ld-plan-day { flex-shrink: 0; white-space: nowrap; font-weight: 800; font-size: 12.5px; color: #0F766E; background: rgba(15,118,110,.08); border-radius: 8px; padding: 3px 9px; height: fit-content; }
 .ld-plan-body { min-width: 0; flex: 1; }
-.ld-plan-focus { font-size: 13.5px; color: #1A1A2E; line-height: 1.55; }
-.ld-plan-format { display: inline-block; margin-top: 6px; font-size: 11.5px; font-weight: 700; color: #4B5563; background: #F3F4F6; border-radius: 20px; padding: 2px 10px; }
-.ld-plan-note { margin: 0 0 12px; font-size: 12.5px; color: #166534; display: flex; gap: 8px; align-items: center; }
+.ld-plan-title { font-size: 14px; font-weight: 800; color: #1A1A2E; margin-bottom: 3px; }
+.ld-plan-focus { font-size: 13px; color: #4B5563; line-height: 1.55; }
+.ld-plan-note { margin: 0 0 12px; font-size: 12.5px; color: #166534; display: flex; gap: 8px; align-items: flex-start; line-height: 1.5; }
+.ld-plan-note i { margin-top: 3px; }
 
 .ld-footer { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; border-top: 1px solid #F0F0F5; padding-top: 14px; }
 
@@ -194,4 +195,6 @@
   .ld-next-info, .ld-test-info, .ld-admit-text { flex: 0 0 auto; }
   .ld-actions .ld-btn { flex: 1 1 auto; justify-content: center; }
   .ld-admit .ld-btn, .ld-info .ld-btn { width: 100%; justify-content: center; }
+  .ld-plan-row { flex-direction: column; gap: 8px; }
+  .ld-plan-day { align-self: flex-start; }
 }
