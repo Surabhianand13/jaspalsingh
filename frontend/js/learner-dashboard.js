@@ -229,6 +229,18 @@
     }).catch(function () { return { tests: [], categories: [], unavailable: true }; });
   }
 
+  /* Interview programs have no test schedule - just the online copy of the
+     RPSC AE Interview Guidance Book from Free Resources (the RPSC AE-gated
+     PDF; paid interview learners skip the application-number check). */
+  function loadInterview() {
+    return authFetch('/api/free-resources').then(function (list) {
+      var rpsc = (list || []).filter(function (r) { return r.gating_type === 'rpsc_ae'; });
+      var book = rpsc.filter(function (r) { return /book|guidance|question/i.test(r.title || ''); })[0] || rpsc[0] ||
+        (list || []).filter(function (r) { return /rpsc/i.test(r.title || '') && /interview/i.test(r.title || ''); })[0];
+      return { tests: [], categories: [], materialsCount: 0, bookId: book ? book.id : null };
+    }).catch(function () { return { tests: [], categories: [], materialsCount: 0, bookId: null }; });
+  }
+
   /* ── Rendering ── */
   function testActions(e, t, compact) {
     var slug = e.canonical_slug || e.program_slug;
@@ -272,6 +284,46 @@
     if (soon.length) return soon[0].t;
     var papers = withSt.filter(function (x) { return x.st.key === 'paper'; });
     return papers.length ? papers[papers.length - 1].t : null;
+  }
+
+  var INTERVIEW_SESSIONS = [
+    ['Sessions 1-3', '3 Technical Sessions', 'Branch-wise technical sessions - Civil candidates get Civil Engineering technical, Electrical candidates get Electrical Engineering technical and Mechanical candidates get Mechanical Engineering technical - with subject-wise question patterns, model answers and what the board expects to hear.'],
+    ['Session 4', '1 Non-Technical Session', 'Preparation for non-technical questions - your background, service choices, Rajasthan-specific current affairs, state projects, policies and situational questions.'],
+    ['Session 5', '1 Personality Development Session', 'Body language, confident articulation, structured response framing, dress code and board etiquette - aspects that directly influence interview scores.'],
+  ];
+
+  /* WhatsApp group (session dates/timings), the 5-session plan and the
+     Interview Guidance Book - interview programs only. */
+  function interviewBlock(e, sched) {
+    var groups = e.wa_groups || [];
+    var waBlock =
+      '<div class="ld-info ld-info--wa">' +
+        '<div class="ld-info-text"><i class="fab fa-whatsapp"></i><div><strong>Session dates and timings are shared on the WhatsApp group</strong>' +
+          '<span>Join the RPSC AE Interview group to get the schedule of every session, venue updates and reminders.</span></div></div>' +
+        (groups.length
+          ? groups.map(function (g) { return '<a class="ld-btn ld-btn--wa" href="' + esc(g.link) + '" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> Join WhatsApp group</a>'; }).join('')
+          : '<a class="ld-btn ld-btn--wa" href="' + WA_HELP + '?text=' + encodeURIComponent('Hi, please add me to the ' + e.program_name + ' WhatsApp group') + '" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> Ask for group link</a>') +
+      '</div>';
+
+    var bookBlock =
+      '<div class="ld-info ld-info--book">' +
+        '<div class="ld-info-text"><i class="fas fa-book"></i><div><strong>RPSC AE Interview Guidance Book <span class="ld-tag">Offline copy provided</span></strong>' +
+          '<span>A dedicated interview guidance book with 2500+ practice questions covering technical, non-technical and personality questions commonly asked by RPSC boards - your complete revision resource for the interview. ' +
+          'Your printed copy is given to you at the Jaipur centre' + (sched.bookId ? '; you can also read it online now.' : '.') + '</span></div></div>' +
+        (sched.bookId ? '<a class="ld-btn ld-btn--ghost" href="/profile/?open_resource=' + encodeURIComponent(sched.bookId) + '#free-resources"><i class="fas fa-book-open"></i> View online</a>' : '') +
+      '</div>';
+
+    var plan =
+      '<details class="ld-fold" open>' +
+        '<summary><i class="fas fa-calendar-days"></i> Session details (5 sessions)</summary>' +
+        '<div class="ld-plan">' + INTERVIEW_SESSIONS.map(function (d) {
+          return '<div class="ld-plan-row"><span class="ld-plan-day">' + d[0] + '</span>' +
+            '<div class="ld-plan-body"><div class="ld-plan-title">' + d[1] + '</div><div class="ld-plan-focus">' + d[2] + '</div></div></div>';
+        }).join('') + '</div>' +
+        '<p class="ld-plan-note"><i class="fab fa-whatsapp"></i> Sessions can run on the same day. Exact dates and timings for each session are posted on the WhatsApp group. Your 3 mock interviews are separate - book them with the Book / view slots button above.</p>' +
+      '</details>';
+
+    return waBlock + bookBlock + plan;
   }
 
   function renderProgram(e, sched, idx) {
@@ -330,6 +382,8 @@
       nextBlock = '<div class="ld-next ld-next--empty"><i class="fas fa-trophy"></i> All tests done - great work! Review solutions and results below.</div>';
     }
 
+    var interviewInfo = mode === 'interview' ? interviewBlock(e, sched) : '';
+
     var testList = tests.length
       ? '<details class="ld-fold"' + (tests.length <= 3 ? ' open' : '') + '>' +
           '<summary><i class="fas fa-list-check"></i> All tests (' + tests.length + ')</summary>' +
@@ -353,7 +407,7 @@
         '<ol class="ld-howto">' + info.steps.map(function (s) { return '<li>' + s + '</li>'; }).join('') + '</ol>' +
       '</details>';
 
-    var wa = (e.wa_groups || []).map(function (g) {
+    var wa = mode === 'interview' ? '' : (e.wa_groups || []).map(function (g) {
       return '<a class="ld-btn ld-btn--wa" href="' + esc(g.link) + '" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> ' + (g.label ? 'Join ' + esc(g.label) + ' group' : 'Join batch WhatsApp group') + '</a>';
     }).join('');
 
@@ -373,7 +427,7 @@
           '</div>' +
         '</div>' +
       '</header>' +
-      steps + admitBlock + nextBlock + testList + (sched.loading ? '' : howTo) + footer +
+      steps + admitBlock + nextBlock + interviewInfo + testList + (sched.loading ? '' : howTo) + footer +
     '</article>';
   }
 
@@ -410,7 +464,7 @@
     return authFetch('/api/enrollment/my-enrollments').then(function (data) {
       var enrollments = data.enrollments || [];
       return Promise.all(enrollments.map(function (e) {
-        if (e.program_category === 'interview') return Promise.resolve({ tests: [], categories: [], materialsCount: 0 });
+        if (e.program_category === 'interview') return loadInterview();
         return loadSchedule(e.canonical_slug || e.program_slug);
       })).then(function (schedules) { return { enrollments: enrollments, schedules: schedules }; });
     });
@@ -540,7 +594,7 @@
 
       return Promise.all(enrollments.map(function (e, i) {
         var p = e.program_category === 'interview'
-          ? Promise.resolve({ tests: [], categories: [], materialsCount: 0 })
+          ? loadInterview()
           : loadSchedule(e.canonical_slug || e.program_slug);
         return p.then(function (sched) {
           schedules[i] = sched;
