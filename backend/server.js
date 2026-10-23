@@ -2054,6 +2054,17 @@ async function migrate() {
     })]
   );
 
+  /* ── RPSC AE 2024 Interview Guidance: WhatsApp group added 2026-10-23.
+     launch_config.waGroupUrl feeds both the welcome email and the learner
+     dashboard (resolveFulfillment). Only fills it while it is still empty,
+     so a later admin-panel edit wins. ── */
+  await query(
+    `UPDATE programs SET launch_config = jsonb_set(launch_config, '{waGroupUrl}', $1::jsonb)
+     WHERE slug = 'rpsc-ae-interview' AND launch_config IS NOT NULL
+       AND COALESCE(launch_config->>'waGroupUrl', '') = ''`,
+    [JSON.stringify('https://chat.whatsapp.com/FzrWaa8rZlu2AexNwo4CSA')]
+  );
+
   /* ── UP Polytechnic roll-number backfill (2026-08-15): learners who
      paid before/without submitting the post-payment Tally details form
      have no roll_number yet and nothing to show in "My Programs" -

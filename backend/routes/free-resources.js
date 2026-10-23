@@ -16,6 +16,28 @@ const { protectLearner } = require('../middleware/learnerAuth');
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
 
+/* RPSC AE-gated PDFs open for a learner who verified their RPSC AE
+   application, or who paid for an interview program (RPSC AE Interview
+   Guidance) - those learners already proved candidacy at enrollment.
+   Paid-order matching mirrors GET /api/enrollment/my-enrollments. */
+async function isRpscVerified(learner) {
+  const v = await query(`SELECT 1 FROM rpsc_ae_verifications WHERE learner_id = $1`, [learner.id]);
+  if (v.rows.length) return true;
+  const lr = await query('SELECT email, phone FROM learners WHERE id = $1', [learner.id]);
+  const l = lr.rows[0] || { email: learner.email, phone: null };
+  const paid = await query(
+    `SELECT 1 FROM enrollments e
+     JOIN programs p ON p.slug = e.program_slug
+     WHERE p.category = 'interview' AND e.status = 'paid' AND e.refund_status != 'initiated'
+       AND (e.learner_id = $1
+            OR LOWER(TRIM(e.student_email)) = LOWER(TRIM($2))
+            OR RIGHT(REGEXP_REPLACE(e.student_phone, '\\D', '', 'g'), 10) = $3)
+     LIMIT 1`,
+    [learner.id, l.email, l.phone]
+  );
+  return paid.rows.length > 0;
+}
+
 /* ── POST /api/free-resources  (admin upload) ── */
 router.post('/', protect, upload.single('pdf'), async (req, res, next) => {
   try {
@@ -90,11 +112,7 @@ router.post('/rpsc-verify', protectLearner, async (req, res, next) => {
 /* ── GET /api/free-resources/rpsc-verify-status  (learner - check if verified) ── */
 router.get('/rpsc-verify-status', protectLearner, async (req, res, next) => {
   try {
-    const result = await query(
-      `SELECT id FROM rpsc_ae_verifications WHERE learner_id = $1`,
-      [req.learner.id]
-    );
-    res.json({ verified: result.rows.length > 0 });
+    res.json({ verified: await isRpscVerified(req.learner) });
   } catch (err) { next(err); }
 });
 
@@ -146,11 +164,7 @@ router.get('/:id/view', protectLearner, async (req, res, next) => {
     const { r2_key, gating_type } = result.rows[0];
 
     if (gating_type === 'rpsc_ae') {
-      const vResult = await query(
-        `SELECT id FROM rpsc_ae_verifications WHERE learner_id = $1`,
-        [learner.id]
-      );
-      if (!vResult.rows.length) {
+      if (!(await isRpscVerified(learner))) {
         return res.status(403).json({ error: 'RPSC_AE_VERIFY_REQUIRED' });
       }
     }
