@@ -7,9 +7,9 @@
 const express  = require('express');
 const router   = express.Router();
 const multer   = require('multer');
-const { PutObjectCommand, DeleteObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
-const { PDFDocument, StandardFonts, degrees, rgb } = require('pdf-lib');
+const { PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const { r2, BUCKET } = require('../config/r2');
+const { watermarkFromR2 } = require('../utils/pdfWatermark');
 const { query }      = require('../config/db');
 const { protect }    = require('../middleware/auth');
 const { protectLearner } = require('../middleware/learnerAuth');
@@ -169,28 +169,9 @@ router.get('/:id/view', protectLearner, async (req, res, next) => {
       }
     }
 
-    const obj = await r2.send(new GetObjectCommand({ Bucket: BUCKET, Key: r2_key }));
-    const chunks = [];
-    for await (const chunk of obj.Body) chunks.push(chunk);
-    const original = Buffer.concat(chunks);
-
-    let pdfDoc;
-    try { pdfDoc = await PDFDocument.load(original); }
-    catch (e) { return res.status(422).json({ error: 'This file could not be opened for viewing.' }); }
-
-    const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
     const stamp = `${learner.name || learner.email} · ${learner.email} · ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`;
-    const fontSize = 11;
-    const textWidth = font.widthOfTextAtSize(stamp, fontSize);
-    pdfDoc.getPages().forEach((page) => {
-      const { width, height } = page.getSize();
-      for (let row = 0; row < height + 400; row += 160) {
-        for (let col = -textWidth; col < width + textWidth; col += textWidth + 60) {
-          page.drawText(stamp, { x: col, y: row, size: fontSize, font, color: rgb(0.55, 0.1, 0.1), opacity: 0.15, rotate: degrees(30) });
-        }
-      }
-    });
-    const watermarked = await pdfDoc.save();
+    const watermarked = await watermarkFromR2(r2_key, stamp);
+    if (!watermarked) return res.status(422).json({ error: 'This file could not be opened for viewing.' });
 
     res.set({
       'Content-Type': 'application/pdf',
@@ -198,7 +179,7 @@ router.get('/:id/view', protectLearner, async (req, res, next) => {
       'Cache-Control': 'no-store, private',
       'Content-Length': watermarked.length,
     });
-    res.send(Buffer.from(watermarked));
+    res.send(watermarked);
   } catch (err) { next(err); }
 });
 

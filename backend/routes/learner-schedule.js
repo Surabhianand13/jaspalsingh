@@ -24,9 +24,9 @@
 const express = require('express');
 const router  = express.Router();
 const multer  = require('multer');
-const { PutObjectCommand, DeleteObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
-const { PDFDocument, StandardFonts, degrees, rgb } = require('pdf-lib');
+const { PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const { r2, BUCKET } = require('../config/r2');
+const { watermarkFromR2 } = require('../utils/pdfWatermark');
 const { query } = require('../config/db');
 const { protectLearner } = require('../middleware/learnerAuth');
 const { handleUploadError } = require('../middleware/upload');
@@ -233,30 +233,9 @@ router.get('/:program_slug/materials/:id/view', protectLearner, async (req, res,
     if (!material || !material.file_key) return res.status(404).json({ error: 'Material not found.' });
     if (!tracks.includes(material.track)) return res.status(403).json({ error: 'Not part of your enrolled track.' });
 
-    const obj = await r2.send(new GetObjectCommand({ Bucket: BUCKET, Key: material.file_key }));
-    const chunks = [];
-    for await (const chunk of obj.Body) chunks.push(chunk);
-    const original = Buffer.concat(chunks);
-
-    let pdfDoc;
-    try { pdfDoc = await PDFDocument.load(original); }
-    catch (e) { return res.status(422).json({ error: 'This file could not be opened for viewing.' }); }
-
-    const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
     const stamp = `${learner.name || 'Learner'} · ${learner.email}${learner.phone ? ' · ' + learner.phone : ''} · ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`;
-    pdfDoc.getPages().forEach((page) => {
-      const { width, height } = page.getSize();
-      const fontSize = 11;
-      const textWidth = font.widthOfTextAtSize(stamp, fontSize);
-      // Tiled diagonal grid (not one corner stamp) so cropping the page
-      // can't remove the watermark.
-      for (let row = 0; row < height + 400; row += 160) {
-        for (let col = -textWidth; col < width + textWidth; col += textWidth + 60) {
-          page.drawText(stamp, { x: col, y: row, size: fontSize, font, color: rgb(0.55, 0.1, 0.1), opacity: 0.15, rotate: degrees(30) });
-        }
-      }
-    });
-    const watermarked = await pdfDoc.save();
+    const watermarked = await watermarkFromR2(material.file_key, stamp);
+    if (!watermarked) return res.status(422).json({ error: 'This file could not be opened for viewing.' });
 
     res.set({
       'Content-Type': 'application/pdf',
@@ -264,7 +243,7 @@ router.get('/:program_slug/materials/:id/view', protectLearner, async (req, res,
       'Cache-Control': 'no-store, private',
       'Content-Length': watermarked.length,
     });
-    res.send(Buffer.from(watermarked));
+    res.send(watermarked);
   } catch (err) { next(err); }
 });
 
