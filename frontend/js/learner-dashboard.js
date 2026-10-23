@@ -287,14 +287,14 @@
   }
 
   var INTERVIEW_DAYS = [
-    ['Day 1', 'Technical Session 1 - your branch (Civil technical for Civil, Electrical for Electrical, Mechanical for Mechanical)<br>Non-Technical Session - background, service choices, Rajasthan current affairs', 'Classroom Discussion'],
-    ['Day 2', 'Technical Session 2 - branch subjects continued, frequently asked board questions<br>Personality Development Session - body language, articulation, board etiquette', 'Classroom + Workshop'],
-    ['Day 3', 'Technical Session 3 - applied / field-level questions for your branch and department<br>Mock Interview 1 with Expert Panel', 'Classroom + Mock Panel'],
-    ['Day 4', 'Mock Interview 2 with Expert Panel', 'Mock Panel + Feedback'],
-    ['Day 5', 'Mock Interview 3 with Expert Panel', 'Mock Panel + Feedback'],
+    ['Session 1', 'Technical Session 1 - your branch (Civil technical for Civil, Electrical for Electrical, Mechanical for Mechanical)<br>Non-Technical Session - background, service choices, Rajasthan current affairs', 'Classroom Discussion'],
+    ['Session 2', 'Technical Session 2 - branch subjects continued, frequently asked board questions<br>Personality Development Session - body language, articulation, board etiquette', 'Classroom + Workshop'],
+    ['Session 3', 'Technical Session 3 - applied / field-level questions for your branch and department<br>Mock Interview 1 with Expert Panel', 'Classroom + Mock Panel'],
+    ['Session 4', 'Mock Interview 2 with Expert Panel', 'Mock Panel + Feedback'],
+    ['Session 5', 'Mock Interview 3 with Expert Panel', 'Mock Panel + Feedback'],
   ];
 
-  /* WhatsApp group (session dates/timings), the 5-day plan and the
+  /* WhatsApp group (session dates/timings), the 5-session plan and the
      Interview Guidance Book - interview programs only. */
   function interviewBlock(e, sched) {
     var groups = e.wa_groups || [];
@@ -317,7 +317,7 @@
 
     var plan =
       '<details class="ld-fold" open>' +
-        '<summary><i class="fas fa-calendar-days"></i> Session details (5 days)</summary>' +
+        '<summary><i class="fas fa-calendar-days"></i> Session details (5 sessions)</summary>' +
         '<div class="ld-plan">' + INTERVIEW_DAYS.map(function (d) {
           return '<div class="ld-plan-row"><span class="ld-plan-day">' + d[0] + '</span>' +
             '<div class="ld-plan-body"><div class="ld-plan-focus">' + d[1] + '</div><span class="ld-plan-format">' + d[2] + '</span></div></div>';
