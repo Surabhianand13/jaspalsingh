@@ -8,6 +8,7 @@ const router   = express.Router();
 const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
 const { query } = require('../config/db');
+const { ensureGrants: ensureAdminPreviewGrants } = require('../utils/adminPreview');
 const { protectLearner } = require('../middleware/learnerAuth');
 const { canonicalize, slugsFor } = require('../utils/programSlugAliases');
 const { resolveFulfillment } = require('../services/paymentEmailService');
@@ -183,6 +184,9 @@ router.get('/my-enrollments', protectLearner, async (req, res) => {
     // may not yet be linked via learner_id (repeat purchases, etc.)
     const lr = await query('SELECT id, email, phone FROM learners WHERE id = $1', [decoded.id]);
     const learner = lr.rows[0] || { id: decoded.id, email: decoded.email, phone: null };
+
+    // Admin preview accounts: make sure they hold every program first.
+    await ensureAdminPreviewGrants(learner.email);
 
     // Backfill: link any unlinked paid orders for this learner now.
     // Matches are case/format-insensitive (LOWER on email, last-10-digits
