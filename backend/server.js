@@ -2065,6 +2065,36 @@ async function migrate() {
     [JSON.stringify('https://chat.whatsapp.com/FzrWaa8rZlu2AexNwo4CSA')]
   );
 
+  /* ── Admin preview learners (2026-10-23): these admin emails get a Rs 0
+     paid enrollment in every visible paid program, so they see exactly
+     what a paid learner sees (dashboard, tests, uploads, results,
+     interview booking) and can reproduce learner issues. Runs on every
+     boot and only adds programs they don't have yet, so new programs
+     are picked up automatically. Rows are tagged by order_id
+     (JSP-ADMINPREVIEW-...), amount 0 and student_name 'Admin Preview';
+     welcome_sent = TRUE so no welcome email is ever sent for them.
+     The phone is a placeholder (the column is NOT NULL); access is
+     matched on email. ── */
+  const ADMIN_PREVIEW_EMAILS = ['anand.surabhi.a@gmail.com', 'jaspalsingh.pec@gmail.com'];
+  for (const email of ADMIN_PREVIEW_EMAILS) {
+    const tag = email.split('@')[0].replace(/[^a-z0-9]/gi, '').slice(0, 24);
+    await query(
+      `INSERT INTO enrollments (order_id, program_slug, program_name, amount, student_name, student_email, student_phone,
+                                status, paid_at, welcome_sent, form_token)
+       SELECT 'JSP-ADMINPREVIEW-' || p.id || '-' || $2, p.slug, p.title, 0, 'Admin Preview', $1, '0000000000',
+              'paid', NOW(), TRUE, md5(random()::text || clock_timestamp()::text)
+       FROM programs p
+       WHERE p.is_visible = TRUE AND p.price IS NOT NULL
+         AND NOT EXISTS (
+           SELECT 1 FROM enrollments e
+           WHERE e.program_slug = p.slug AND e.status = 'paid' AND e.refund_status != 'initiated'
+             AND LOWER(TRIM(e.student_email)) = $1
+         )
+       ON CONFLICT (order_id) DO NOTHING`,
+      [email, tag]
+    );
+  }
+
   /* ── UP Polytechnic roll-number backfill (2026-08-15): learners who
      paid before/without submitting the post-payment Tally details form
      have no roll_number yet and nothing to show in "My Programs" -
