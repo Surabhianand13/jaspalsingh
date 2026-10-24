@@ -29,10 +29,40 @@
     return fetch(API_BASE + path, Object.assign({}, opts || {}, { headers: headers }))
       .then(function (res) {
         return res.json().then(function (data) {
-          if (!res.ok) throw new Error(data.error || 'Request failed (' + res.status + ')');
+          if (!res.ok) { var err = new Error(data.error || 'Request failed (' + res.status + ')'); err.status = res.status; throw err; }
           return data;
         });
       });
+  }
+
+  /* Answer-sheet upload. Tries the direct-to-R2 path first (presigned PUT,
+     the file never passes through the 512 MB backend), and falls back to
+     the multipart upload through the backend if the direct PUT can't be
+     made - e.g. R2 CORS not set up, or an older backend without the
+     upload-url route (404). Errors the learner must act on (window
+     closed, file too large) are shown as-is, never retried. */
+  function uploadAnswerSheet(slug, testId, file) {
+    var base = '/api/schedule/' + encodeURIComponent(slug) + '/tests/' + testId;
+    function viaBackend() {
+      var fd = new FormData();
+      fd.append('photo', file);
+      return authFetch(base + '/submit-omr', { method: 'POST', body: fd });
+    }
+    var contentType = file.type || (/\.pdf$/i.test(file.name) ? 'application/pdf' : 'image/jpeg');
+    return authFetch(base + '/upload-url', {
+      method: 'POST',
+      body: JSON.stringify({ filename: file.name, content_type: contentType, size: file.size }),
+    }).then(function (signed) {
+      return fetch(signed.url, { method: 'PUT', headers: { 'Content-Type': contentType }, body: file })
+        .then(function (res) { if (!res.ok) throw new Error('direct upload ' + res.status); },
+              function (e) { throw new Error('direct upload blocked'); })
+        .then(function () {
+          return authFetch(base + '/confirm-upload', { method: 'POST', body: JSON.stringify({ key: signed.key }) });
+        }, function () { return viaBackend(); });
+    }, function (err) {
+      if (err.status === 404 || !err.status) return viaBackend();
+      throw err;
+    });
   }
 
   /* Same auth/token handling as authFetch, but resolves a Blob for binary
@@ -467,10 +497,8 @@
       var fileInput = document.getElementById('scheduleOmrFile');
       var msgEl = document.getElementById('scheduleOmrMsg');
       if (!fileInput.files[0]) { msgEl.textContent = 'Choose a photo or PDF of your filled answer sheet first.'; msgEl.style.color = '#C81240'; return; }
-      var fd = new FormData();
-      fd.append('photo', fileInput.files[0]);
       msgEl.textContent = 'Uploading…'; msgEl.style.color = '#6b6b8a';
-      authFetch('/api/schedule/' + encodeURIComponent(scheduleState.slug) + '/tests/' + test.id + '/submit-omr', { method: 'POST', body: fd })
+      uploadAnswerSheet(scheduleState.slug, test.id, fileInput.files[0])
         .then(function () {
           msgEl.textContent = 'Submitted! We have received your answer sheet.'; msgEl.style.color = '#0F766E';
           document.getElementById('scheduleOmrSubmit').disabled = true;

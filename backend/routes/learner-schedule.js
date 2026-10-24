@@ -24,7 +24,8 @@
 const express = require('express');
 const router  = express.Router();
 const multer  = require('multer');
-const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const { PutObjectCommand, DeleteObjectCommand, HeadObjectCommand } = require('@aws-sdk/client-s3');
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const { r2, BUCKET } = require('../config/r2');
 const { watermarkFromR2 } = require('../utils/pdfWatermark');
 const { diskUpload, cleanupTempFile, putFileToR2 } = require('../utils/diskUpload');
@@ -247,66 +248,135 @@ router.get('/:program_slug/materials/:id/view', protectLearner, async (req, res,
   } catch (err) { next(err); }
 });
 
-/* ── POST /api/schedule/:program_slug/tests/:scheduleId/submit-omr ──
-   Self-serve answer-sheet upload, replacing "fill it, email it, admin
-   downloads it". Re-validates enrollment AND the upload window
-   server-side - the frontend hiding the button is not the enforcement.
-   Re-uploading before the deadline replaces the previous file. */
+/* ── Answer-sheet upload (learner OMR) ───────────────────────
+   Preferred path (2026-10-24): the browser uploads the file straight to
+   R2 with a short-lived presigned PUT URL, so the bytes never pass
+   through the 512 MB Render instance:
+     1. POST .../tests/:scheduleId/upload-url   -> { url, key }
+     2. browser PUTs the file to url
+     3. POST .../tests/:scheduleId/confirm-upload { key } -> saves it
+   POST .../submit-omr (multipart through Render) stays as the fallback
+   for when the direct PUT fails (e.g. R2 CORS not configured yet).
+   All three re-validate enrollment AND the upload window server-side -
+   the frontend hiding the button is not the enforcement. Re-uploading
+   before the deadline replaces the previous file. */
+const MAX_ANSWER_SHEET_BYTES = 20 * 1024 * 1024;
+const ANSWER_SHEET_TYPE = (t) => /^image\//.test(t || '') || t === 'application/pdf';
+
+/* Learner + active enrollment + open schedule row, or { status, error }. */
+async function uploadContext(req) {
+  const learner = await loadLearner(req.learner.id);
+  if (!learner) return { status: 401, error: 'Learner not found.' };
+  const enrollment = await getActiveEnrollment(learner.id, learner.email, learner.phone, req.params.program_slug);
+  if (!enrollment) {
+    return { status: 403, error: 'No active enrollment for this program. If you were refunded, this program is no longer accessible.' };
+  }
+  const scheduleRes = await query(
+    `SELECT * FROM program_schedule WHERE id = $1 AND program_slug = ANY($2::text[])`,
+    [req.params.scheduleId, slugsFor(req.params.program_slug)]
+  );
+  if (!scheduleRes.rows.length) return { status: 404, error: 'Test not found.' };
+  const row = scheduleRes.rows[0];
+  if (!computeFlags(row).upload_open) return { status: 403, error: 'The upload window for this test is closed.' };
+  return { learner, enrollment, row };
+}
+
+function answerSheetKey(row, enrollment, filename) {
+  return `answer-sheets/${row.id}/${enrollment.id}-${Date.now()}-${String(filename || 'sheet').replace(/[^a-zA-Z0-9._-]/g, '-').slice(-80)}`;
+}
+
+/* Insert or replace this learner's upload row, then delete the previous
+   file from R2. */
+async function saveAnswerSheet({ learner, enrollment, row }, key) {
+  const publicUrl = `${process.env.R2_PUBLIC_URL}/${key}`;
+  const existing = await query(
+    `SELECT file_key FROM schedule_uploads WHERE schedule_id = $1 AND enrollment_id = $2`,
+    [row.id, enrollment.id]
+  );
+  let result;
+  if (existing.rows.length) {
+    result = await query(
+      `UPDATE schedule_uploads SET file_url = $1, file_key = $2, uploaded_at = NOW(), file_deleted_at = NULL,
+         learner_name = $3, learner_email = $4, learner_phone = $5
+       WHERE schedule_id = $6 AND enrollment_id = $7 RETURNING *`,
+      [publicUrl, key, learner.name, learner.email, learner.phone, row.id, enrollment.id]
+    );
+    const oldKey = existing.rows[0].file_key;
+    if (oldKey && oldKey !== key) {
+      try { await r2.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: oldKey })); }
+      catch (err) { console.warn(`⚠️  Could not delete old R2 upload "${oldKey}":`, err.message); }
+    }
+  } else {
+    result = await query(
+      `INSERT INTO schedule_uploads (schedule_id, enrollment_id, learner_name, learner_email, learner_phone, file_url, file_key)
+       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+      [row.id, enrollment.id, learner.name, learner.email, learner.phone, publicUrl, key]
+    );
+  }
+  return result.rows[0];
+}
+
+/* ── POST .../tests/:scheduleId/upload-url ──
+   Body: { filename, content_type, size }. The signed URL is bound to
+   this exact Content-Type and Content-Length, so the browser can't use
+   it to push a different or larger file. Valid for 10 minutes. */
+router.post('/:program_slug/tests/:scheduleId/upload-url', protectLearner, async (req, res, next) => {
+  try {
+    const { filename, content_type, size } = req.body || {};
+    const bytes = parseInt(size, 10);
+    if (!ANSWER_SHEET_TYPE(content_type)) return res.status(400).json({ error: 'Only image or PDF files are allowed.' });
+    if (!bytes || bytes < 1) return res.status(400).json({ error: 'Empty file.' });
+    if (bytes > MAX_ANSWER_SHEET_BYTES) return res.status(400).json({ error: 'File is too large. Max 20 MB.' });
+
+    const ctx = await uploadContext(req);
+    if (ctx.error) return res.status(ctx.status).json({ error: ctx.error });
+
+    const key = answerSheetKey(ctx.row, ctx.enrollment, filename);
+    const url = await getSignedUrl(r2, new PutObjectCommand({
+      Bucket: BUCKET, Key: key, ContentType: content_type, ContentLength: bytes,
+    }), { expiresIn: 600, signableHeaders: new Set(['content-type']) });
+    res.json({ url, key });
+  } catch (err) { next(err); }
+});
+
+/* ── POST .../tests/:scheduleId/confirm-upload ──
+   Body: { key }. Only accepts a key minted for THIS learner's enrollment
+   and THIS test, and checks the object really landed in R2 within the
+   size limit before recording it. */
+router.post('/:program_slug/tests/:scheduleId/confirm-upload', protectLearner, async (req, res, next) => {
+  try {
+    const ctx = await uploadContext(req);
+    if (ctx.error) return res.status(ctx.status).json({ error: ctx.error });
+
+    const key = String((req.body || {}).key || '');
+    if (!key.startsWith(`answer-sheets/${ctx.row.id}/${ctx.enrollment.id}-`) || key.includes('..')) {
+      return res.status(400).json({ error: 'Invalid upload.' });
+    }
+    let head;
+    try { head = await r2.send(new HeadObjectCommand({ Bucket: BUCKET, Key: key })); }
+    catch (e) { return res.status(400).json({ error: 'Upload not found - please try again.' }); }
+    if ((head.ContentLength || 0) > MAX_ANSWER_SHEET_BYTES || !ANSWER_SHEET_TYPE(head.ContentType)) {
+      try { await r2.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key })); } catch (_) {}
+      return res.status(400).json({ error: 'Only image or PDF files up to 20 MB are allowed.' });
+    }
+
+    res.status(201).json({ upload: await saveAnswerSheet(ctx, key) });
+  } catch (err) { next(err); }
+});
+
+/* ── POST .../tests/:scheduleId/submit-omr ── fallback: multipart upload
+   through Render, buffered to a temp file (not RAM) then streamed to R2. */
 router.post('/:program_slug/tests/:scheduleId/submit-omr', protectLearner, cleanupTempFile, upload.single('photo'), handleUploadError, async (req, res, next) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
 
-    const learner = await loadLearner(req.learner.id);
-    if (!learner) return res.status(401).json({ error: 'Learner not found.' });
+    const ctx = await uploadContext(req);
+    if (ctx.error) return res.status(ctx.status).json({ error: ctx.error });
 
-    const enrollment = await getActiveEnrollment(learner.id, learner.email, learner.phone, req.params.program_slug);
-    if (!enrollment) {
-      return res.status(403).json({ error: 'No active enrollment for this program. If you were refunded, this program is no longer accessible.' });
-    }
-
-    const scheduleRes = await query(
-      `SELECT * FROM program_schedule WHERE id = $1 AND program_slug = ANY($2::text[])`,
-      [req.params.scheduleId, slugsFor(req.params.program_slug)]
-    );
-    if (!scheduleRes.rows.length) {
-      return res.status(404).json({ error: 'Test not found.' });
-    }
-    const row = scheduleRes.rows[0];
-    if (!computeFlags(row).upload_open) {
-      return res.status(403).json({ error: 'The upload window for this test is closed.' });
-    }
-
-    const existing = await query(
-      `SELECT file_key FROM schedule_uploads WHERE schedule_id = $1 AND enrollment_id = $2`,
-      [row.id, enrollment.id]
-    );
-
-    const key = `answer-sheets/${row.id}/${enrollment.id}-${Date.now()}-${req.file.originalname.replace(/\s+/g, '-')}`;
+    const key = answerSheetKey(ctx.row, ctx.enrollment, req.file.originalname);
     await putFileToR2(req.file, key, req.file.mimetype);
-    const publicUrl = `${process.env.R2_PUBLIC_URL}/${key}`;
 
-    let result;
-    if (existing.rows.length) {
-      result = await query(
-        `UPDATE schedule_uploads SET file_url = $1, file_key = $2, uploaded_at = NOW(),
-           learner_name = $3, learner_email = $4, learner_phone = $5
-         WHERE schedule_id = $6 AND enrollment_id = $7 RETURNING *`,
-        [publicUrl, key, learner.name, learner.email, learner.phone, row.id, enrollment.id]
-      );
-      const oldKey = existing.rows[0].file_key;
-      if (oldKey && oldKey !== key) {
-        try { await r2.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: oldKey })); }
-        catch (err) { console.warn(`⚠️  Could not delete old R2 upload "${oldKey}":`, err.message); }
-      }
-    } else {
-      result = await query(
-        `INSERT INTO schedule_uploads (schedule_id, enrollment_id, learner_name, learner_email, learner_phone, file_url, file_key)
-         VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-        [row.id, enrollment.id, learner.name, learner.email, learner.phone, publicUrl, key]
-      );
-    }
-
-    res.status(201).json({ upload: result.rows[0] });
+    res.status(201).json({ upload: await saveAnswerSheet(ctx, key) });
   } catch (err) { next(err); }
 });
 
