@@ -2079,14 +2079,41 @@
         listEl.innerHTML = '<p class="admin-empty">Loading…</p>';
         adminFetch('GET', '/api/programs/schedule/'+row.id+'/uploads').then(function(d){
           var uploads = d.uploads || [];
-          if (!uploads.length) { listEl.innerHTML = '<p class="admin-empty">No uploads yet.</p>'; return; }
-          listEl.innerHTML = '<div class="admin-table-wrap" style="margin-top:8px;"><table class="admin-table"><thead><tr><th>Learner</th><th>Contact</th><th>Uploaded</th><th></th></tr></thead><tbody>' +
+          var cleanupBar = '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:8px;font-size:12.5px;color:#6b6b8a;">' +
+            '<span>Learner OMR uploads are kept for 14 days. Question papers, blank OMRs and solutions are never erased.</span>' +
+            pillBtn('id="gt_cleanup_'+row.id+'"', 'Erase OMR uploads older than 14 days (all tests)', 'outline') + '</div>';
+          if (!uploads.length) { listEl.innerHTML = cleanupBar + '<p class="admin-empty">No uploads yet.</p>'; wireCleanup(row.id); return; }
+          listEl.innerHTML = cleanupBar + '<div class="admin-table-wrap" style="margin-top:8px;"><table class="admin-table"><thead><tr><th>Learner</th><th>Contact</th><th>Uploaded</th><th></th></tr></thead><tbody>' +
             uploads.map(function(u){
               return '<tr><td>'+e(u.learner_name||'-')+'</td><td>'+e(u.learner_email||u.learner_phone||'-')+'</td>' +
                 '<td>'+new Date(u.uploaded_at).toLocaleString('en-IN')+'</td>' +
-                '<td><a href="'+e(u.file_url)+'" target="_blank" rel="noopener">Download</a></td></tr>';
+                '<td>'+(u.file_url
+                  ? '<a href="'+e(u.file_url)+'" target="_blank" rel="noopener">Download</a>'
+                  : '<span style="color:#9999b0;">File erased'+(u.file_deleted_at ? ' ('+new Date(u.file_deleted_at).toLocaleDateString('en-IN')+')' : '')+'</span>')+'</td></tr>';
             }).join('') + '</tbody></table></div>';
+          wireCleanup(row.id);
         }).catch(function(e){ listEl.innerHTML = '<p class="admin-empty">'+e.message+'</p>'; });
+      };
+    }
+    /* Erase learner OMR answer-sheet files older than 14 days, across all
+       tests. Shows the count first; nothing is deleted without confirm. */
+    function wireCleanup(rowId){
+      var btn = document.getElementById('gt_cleanup_'+rowId);
+      if (!btn) return;
+      btn.onclick = function(){
+        var label = btn.textContent;
+        btn.disabled = true; btn.textContent = 'Checking…';
+        adminFetch('GET', '/api/programs/answer-sheets/cleanup').then(function(d){
+          btn.disabled = false; btn.textContent = label;
+          if (!d.count) { showToast('No learner OMR uploads older than ' + d.days + ' days.', 'success'); return; }
+          if (!confirm('Permanently erase ' + d.count + ' learner OMR upload file(s) older than ' + d.days + ' days, across all tests?\n\nLearners stay marked as submitted and results are kept. Question papers, blank OMRs and solutions are NOT touched.\n\nThis cannot be undone.')) return;
+          btn.disabled = true; btn.textContent = 'Erasing…';
+          return adminFetch('POST', '/api/programs/answer-sheets/cleanup').then(function(r){
+            showToast('Erased ' + r.erased + ' file(s)' + (r.failed ? ', ' + r.failed + ' could not be erased (see logs)' : '') + '.', r.failed ? 'error' : 'success');
+            var up = document.getElementById('gt_uploads_'+rowId); if (up) up.click();
+          });
+        }).catch(function(err){ showToast(err.message || 'Failed', 'error'); })
+          .finally(function(){ btn.disabled = false; btn.textContent = label; });
       };
     }
     var downloadAllBtn = document.getElementById('gt_downloadall_'+row.id);

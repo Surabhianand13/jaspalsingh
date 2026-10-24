@@ -949,6 +949,14 @@ async function migrate() {
   `);
   await query(`CREATE INDEX IF NOT EXISTS idx_schedule_uploads_schedule ON schedule_uploads(schedule_id)`);
   await query(`CREATE UNIQUE INDEX IF NOT EXISTS schedule_uploads_schedule_enrollment_uidx ON schedule_uploads(schedule_id, enrollment_id) WHERE enrollment_id IS NOT NULL`);
+  /* Learner answer-sheet files can be erased from R2 after 14 days
+     (admin "Erase old OMR uploads"); the row stays as the record that the
+     learner submitted, with file_url/file_key cleared and file_deleted_at
+     set. Question papers / blank OMRs / solutions are separate columns on
+     program_schedule and are never touched by this. (2026-10-24) */
+  await query(`ALTER TABLE schedule_uploads ALTER COLUMN file_url DROP NOT NULL`);
+  await query(`ALTER TABLE schedule_uploads ALTER COLUMN file_key DROP NOT NULL`);
+  await query(`ALTER TABLE schedule_uploads ADD COLUMN IF NOT EXISTS file_deleted_at TIMESTAMPTZ`);
 
   /* Manual per-test results (2026-08-16): replaces the fully-manual
      WhatsApp-only ranking process. Deliberately simpler than the

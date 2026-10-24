@@ -15,7 +15,7 @@ const fs      = require('fs');
 const os      = require('os');
 const path    = require('path');
 const archiver = require('archiver');
-const { PutObjectCommand, DeleteObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
+const { PutObjectCommand, DeleteObjectCommand, DeleteObjectsCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
 const { r2, BUCKET } = require('../config/r2');
 const { query } = require('../config/db');
 const { protect } = require('../middleware/auth');
@@ -397,11 +397,66 @@ router.put('/schedule/:id/gating', protect, async (req, res, next) => {
 router.get('/schedule/:id/uploads', protect, async (req, res, next) => {
   try {
     const result = await query(
-      `SELECT id, learner_name, learner_email, learner_phone, file_url, uploaded_at
+      `SELECT id, learner_name, learner_email, learner_phone, file_url, uploaded_at, file_deleted_at
        FROM schedule_uploads WHERE schedule_id = $1 ORDER BY uploaded_at DESC`,
       [req.params.id]
     );
     res.json({ uploads: result.rows });
+  } catch (err) { next(err); }
+});
+
+/* ── ADMIN: erase learner OMR answer-sheet files older than 14 days ──
+   Only learner uploads (schedule_uploads) - question papers, blank OMRs
+   and solutions live on program_schedule and are never touched. The
+   upload row is kept (learner still shows as "submitted", results are
+   untouched); only the R2 file goes and file_url/file_key are cleared.
+   GET previews the count, POST does it. Works in batches so memory stays
+   flat however many files there are. (2026-10-24) */
+const ANSWER_SHEET_KEEP_DAYS = 14;
+
+router.get('/answer-sheets/cleanup', protect, async (req, res, next) => {
+  try {
+    const r = await query(
+      `SELECT COUNT(*)::int AS count, MIN(uploaded_at) AS oldest
+       FROM schedule_uploads
+       WHERE file_key IS NOT NULL AND uploaded_at < NOW() - make_interval(days => $1)`,
+      [ANSWER_SHEET_KEEP_DAYS]
+    );
+    res.json({ days: ANSWER_SHEET_KEEP_DAYS, count: r.rows[0].count, oldest: r.rows[0].oldest });
+  } catch (err) { next(err); }
+});
+
+router.post('/answer-sheets/cleanup', protect, async (req, res, next) => {
+  try {
+    let erased = 0, failed = 0, lastId = 0;
+    for (;;) {
+      const batch = await query(
+        `SELECT id, file_key FROM schedule_uploads
+         WHERE file_key IS NOT NULL AND uploaded_at < NOW() - make_interval(days => $1) AND id > $2
+         ORDER BY id LIMIT 500`,
+        [ANSWER_SHEET_KEEP_DAYS, lastId]
+      );
+      if (!batch.rows.length) break;
+      lastId = batch.rows[batch.rows.length - 1].id;
+
+      const out = await r2.send(new DeleteObjectsCommand({
+        Bucket: BUCKET,
+        Delete: { Objects: batch.rows.map(r => ({ Key: r.file_key })), Quiet: true },
+      }));
+      const failedKeys = new Set((out.Errors || []).map(e => e.Key));
+      const okIds = batch.rows.filter(r => !failedKeys.has(r.file_key)).map(r => r.id);
+      failed += failedKeys.size;
+      if (failedKeys.size) console.error('[answer-sheets/cleanup] R2 could not delete', failedKeys.size, 'file(s):', (out.Errors || [])[0]);
+      if (okIds.length) {
+        await query(
+          `UPDATE schedule_uploads SET file_key = NULL, file_url = NULL, file_deleted_at = NOW() WHERE id = ANY($1::int[])`,
+          [okIds]
+        );
+        erased += okIds.length;
+      }
+    }
+    console.log(`[answer-sheets/cleanup] Erased ${erased} learner answer-sheet file(s) older than ${ANSWER_SHEET_KEEP_DAYS} days` + (failed ? `, ${failed} failed` : ''));
+    res.json({ erased, failed, days: ANSWER_SHEET_KEEP_DAYS });
   } catch (err) { next(err); }
 });
 
@@ -414,10 +469,10 @@ router.get('/schedule/:id/uploads/download-all', protect, async (req, res, next)
       `SELECT su.learner_name, su.learner_email, su.file_key, sr.test_number
        FROM schedule_uploads su
        JOIN program_schedule sr ON sr.id = su.schedule_id
-       WHERE su.schedule_id = $1 ORDER BY su.uploaded_at ASC`,
+       WHERE su.schedule_id = $1 AND su.file_key IS NOT NULL ORDER BY su.uploaded_at ASC`,
       [req.params.id]
     );
-    if (!result.rows.length) return res.status(404).json({ error: 'No uploads for this test yet.' });
+    if (!result.rows.length) return res.status(404).json({ error: 'No answer-sheet files for this test (none uploaded yet, or erased after 14 days).' });
 
     /* Stream the zip: one answer sheet is pulled from R2 and written into
        the archive at a time, and the archive streams straight to the
