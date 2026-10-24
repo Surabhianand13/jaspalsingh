@@ -14,7 +14,7 @@ const multer  = require('multer');
 const fs      = require('fs');
 const os      = require('os');
 const path    = require('path');
-const AdmZip = require('adm-zip');
+const archiver = require('archiver');
 const { PutObjectCommand, DeleteObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
 const { r2, BUCKET } = require('../config/r2');
 const { query } = require('../config/db');
@@ -35,7 +35,9 @@ const scheduleAssetUpload = multer({
 /* Stream a file from disk to R2 and clean up the temp file. */
 async function streamFileToR2(localPath, key, contentType) {
   const stream = fs.createReadStream(localPath);
-  await r2.send(new PutObjectCommand({ Bucket: BUCKET, Key: key, Body: stream, ContentType: contentType }));
+  // R2 rejects streamed bodies of unknown length - always send the size.
+  const { size } = fs.statSync(localPath);
+  await r2.send(new PutObjectCommand({ Bucket: BUCKET, Key: key, Body: stream, ContentLength: size, ContentType: contentType }));
   try { fs.unlinkSync(localPath); } catch (_) {}
 }
 
@@ -417,41 +419,45 @@ router.get('/schedule/:id/uploads/download-all', protect, async (req, res, next)
     );
     if (!result.rows.length) return res.status(404).json({ error: 'No uploads for this test yet.' });
 
-    /* Fetch all files into memory BEFORE sending any headers so errors
-       can still be returned as JSON. */
-    const files = [];
+    /* Stream the zip: one answer sheet is pulled from R2 and written into
+       the archive at a time, and the archive streams straight to the
+       admin's browser. The old version held every file plus the finished
+       zip in memory at once - for a test with many uploads that alone
+       could exceed the 512 MB Render limit (2026-10-24 OOM). Headers go
+       out before the first file, so a mid-stream R2 failure aborts the
+       download (the browser shows it as failed) instead of returning JSON. */
+    const usedNames = new Set();
+    const archive = archiver('zip', { zlib: { level: 1 } });
+    archive.on('warning', (err) => console.warn('[download-all] warning:', err.message));
+    archive.on('error', (err) => { console.error('[download-all] archive error:', err.message); res.destroy(err); });
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="test-${req.params.id}-uploads.zip"`);
+    archive.pipe(res);
+
     for (const row of result.rows) {
-      const obj = await r2.send(new GetObjectCommand({ Bucket: BUCKET, Key: row.file_key }));
-      const chunks = [];
-      for await (const chunk of obj.Body) chunks.push(chunk);
-      const buf = Buffer.concat(chunks);
       const ext = row.file_key.includes('.') ? row.file_key.slice(row.file_key.lastIndexOf('.')) : '';
       const testNo = row.test_number ? 'Test' + row.test_number + '_' : '';
       const email = (row.learner_email || '').replace(/[^a-zA-Z0-9@._-]/g, '').slice(0, 40);
       const namePart = (row.learner_name || 'learner').replace(/[^a-zA-Z0-9 _-]/g, '').trim() || 'learner';
-      files.push({ buf, base: testNo + namePart + (email ? '_' + email : ''), ext });
-    }
-
-    /* Deduplicate filenames */
-    const usedNames = new Set();
-    for (const f of files) {
-      let name = f.base + f.ext, counter = 1;
-      while (usedNames.has(name)) { counter++; name = f.base + '-' + counter + f.ext; }
+      const base = testNo + namePart + (email ? '_' + email : '');
+      let name = base + ext, counter = 1;
+      while (usedNames.has(name)) { counter++; name = base + '-' + counter + ext; }
       usedNames.add(name);
-      f.finalName = name;
-    }
 
-    /* All buffers ready - build zip in memory and send */
-    const zip = new AdmZip();
-    for (const f of files) zip.addFile(f.finalName, f.buf);
-    const zipBuf = zip.toBuffer();
-    res.setHeader('Content-Type', 'application/zip');
-    res.setHeader('Content-Disposition', `attachment; filename="test-${req.params.id}-uploads.zip"`);
-    res.setHeader('Content-Length', zipBuf.length);
-    res.send(zipBuf);
+      const obj = await r2.send(new GetObjectCommand({ Bucket: BUCKET, Key: row.file_key }));
+      archive.append(obj.Body, { name });
+      // Wait for this entry to be fully written before fetching the next,
+      // so only one file is ever in flight.
+      await new Promise((resolve, reject) => {
+        const onEntry = () => { archive.off('error', reject); resolve(); };
+        archive.once('entry', onEntry);
+        archive.once('error', reject);
+      });
+    }
+    await archive.finalize();
   } catch (err) {
     console.error('[download-all] error:', err.name, '-', err.message);
-    if (res.headersSent) return;
+    if (res.headersSent) { res.destroy(err); return; }
     res.status(500).json({ error: '[download-all] ' + err.message });
   }
 });

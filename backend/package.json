@@ -13,6 +13,7 @@
     "@aws-sdk/lib-storage": "^3.1079.0",
     "@aws-sdk/s3-request-presigner": "^3.1079.0",
     "adm-zip": "^0.5.16",
+    "archiver": "^7.0.1",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^2.10.0",
     "cors": "^2.8.5",

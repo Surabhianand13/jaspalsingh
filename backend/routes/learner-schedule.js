@@ -24,9 +24,10 @@
 const express = require('express');
 const router  = express.Router();
 const multer  = require('multer');
-const { PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const { r2, BUCKET } = require('../config/r2');
 const { watermarkFromR2 } = require('../utils/pdfWatermark');
+const { diskUpload, cleanupTempFile, putFileToR2 } = require('../utils/diskUpload');
 const { query } = require('../config/db');
 const { protectLearner } = require('../middleware/learnerAuth');
 const { handleUploadError } = require('../middleware/upload');
@@ -43,8 +44,7 @@ router.param('program_slug', (req, res, next, slug) => {
   next();
 });
 
-const upload = multer({
-  storage: multer.memoryStorage(),
+const upload = diskUpload({
   limits: { fileSize: 20 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (/^image\//.test(file.mimetype) || file.mimetype === 'application/pdf') return cb(null, true);
@@ -252,7 +252,7 @@ router.get('/:program_slug/materials/:id/view', protectLearner, async (req, res,
    downloads it". Re-validates enrollment AND the upload window
    server-side - the frontend hiding the button is not the enforcement.
    Re-uploading before the deadline replaces the previous file. */
-router.post('/:program_slug/tests/:scheduleId/submit-omr', protectLearner, upload.single('photo'), handleUploadError, async (req, res, next) => {
+router.post('/:program_slug/tests/:scheduleId/submit-omr', protectLearner, cleanupTempFile, upload.single('photo'), handleUploadError, async (req, res, next) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
 
@@ -282,9 +282,7 @@ router.post('/:program_slug/tests/:scheduleId/submit-omr', protectLearner, uploa
     );
 
     const key = `answer-sheets/${row.id}/${enrollment.id}-${Date.now()}-${req.file.originalname.replace(/\s+/g, '-')}`;
-    await r2.send(new PutObjectCommand({
-      Bucket: BUCKET, Key: key, Body: req.file.buffer, ContentType: req.file.mimetype,
-    }));
+    await putFileToR2(req.file, key, req.file.mimetype);
     const publicUrl = `${process.env.R2_PUBLIC_URL}/${key}`;
 
     let result;

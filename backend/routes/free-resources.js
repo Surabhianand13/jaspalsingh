@@ -6,15 +6,15 @@
 
 const express  = require('express');
 const router   = express.Router();
-const multer   = require('multer');
-const { PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const { r2, BUCKET } = require('../config/r2');
 const { watermarkFromR2 } = require('../utils/pdfWatermark');
+const { diskUpload, cleanupTempFile, putFileToR2 } = require('../utils/diskUpload');
 const { query }      = require('../config/db');
 const { protect }    = require('../middleware/auth');
 const { protectLearner } = require('../middleware/learnerAuth');
 
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
+const upload = diskUpload({ limits: { fileSize: 100 * 1024 * 1024 } });
 
 /* RPSC AE-gated PDFs open for a learner who verified their RPSC AE
    application, or who paid for an interview program (RPSC AE Interview
@@ -39,7 +39,7 @@ async function isRpscVerified(learner) {
 }
 
 /* ── POST /api/free-resources  (admin upload) ── */
-router.post('/', protect, upload.single('pdf'), async (req, res, next) => {
+router.post('/', protect, cleanupTempFile, upload.single('pdf'), async (req, res, next) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
     const { title, description, gating_type, category } = req.body;
@@ -50,12 +50,7 @@ router.post('/', protect, upload.single('pdf'), async (req, res, next) => {
       .replace(/[^a-zA-Z0-9._\-]/g, '_');
     const key = `resources/${Date.now()}-${safeName}`;
 
-    await r2.send(new PutObjectCommand({
-      Bucket:      BUCKET,
-      Key:         key,
-      Body:        req.file.buffer,
-      ContentType: 'application/pdf',
-    }));
+    await putFileToR2(req.file, key, 'application/pdf');
 
     const publicUrl = `${process.env.R2_PUBLIC_URL}/${key}`;
 
