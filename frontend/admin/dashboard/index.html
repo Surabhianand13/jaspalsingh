@@ -73,6 +73,11 @@
           Programs
         </button>
 
+        <button class="admin-nav-link" data-section="testday">
+          <i class="fas fa-clipboard-check" aria-hidden="true"></i>
+          Test Day
+        </button>
+
         <button class="admin-nav-link" data-section="enrollments">
           <i class="fas fa-indian-rupee-sign" aria-hidden="true"></i>
           Enrollments
@@ -929,6 +934,49 @@
         </div>
       </section>
 
+      <!-- ── TEST DAY (ops: upload status + OMR zip) ── -->
+      <section class="admin-section" id="section-testday" aria-label="Test day upload status">
+        <div class="section-header">
+          <h2 class="section-title">Test Day</h2>
+        </div>
+        <p style="color:#6b6b8a;font-size:14px;margin-bottom:16px;max-width:860px;">Every test across all programs on a date (default: this Sunday). See at a glance whether the <strong>question paper, blank OMR and solution</strong> are uploaded, with the uploaded file name, and download <strong>all learner OMR sheets in one zip</strong> (one folder per test). Filter by exam using the program's exam tag.</p>
+        <div id="testDayRoot"><p class="admin-empty">Loading…</p></div>
+        <style>
+          .td-sm { padding:6px 12px !important; font-size:12.5px !important; }
+          .td-filters { display:flex; flex-wrap:wrap; gap:12px 16px; align-items:flex-end; background:#fff; border:1.5px solid #E2E8F0; border-radius:12px; padding:14px 16px; margin-bottom:16px; }
+          .td-quick { display:flex; gap:6px; flex-wrap:wrap; width:100%; }
+          .td-filters label { display:flex; flex-direction:column; gap:4px; font-size:12px; font-weight:700; color:#475569; }
+          .td-filters input[type=date], .td-filters select { border:1.5px solid #E2E8F0; border-radius:8px; padding:7px 10px; font-size:13.5px; min-width:160px; }
+          .td-filters .td-check { flex-direction:row; align-items:center; gap:8px; font-weight:600; }
+          .td-summary { background:#fff; border:1.5px solid #E2E8F0; border-radius:12px; padding:16px; margin-bottom:16px; }
+          .td-range { font-size:15px; margin-bottom:10px; }
+          .td-stats { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+          .td-stat { background:#F8FAFC; border-radius:10px; padding:8px 14px; min-width:110px; }
+          .td-stat b { display:block; font-size:20px; font-weight:800; }
+          .td-stat b small { font-size:13px; color:#94A3B8; font-weight:700; }
+          .td-stat span { font-size:11.5px; color:#64748B; }
+          .td-stat--ok b { color:#166534; }
+          .td-stat--warn b { color:#B45309; }
+          .td-actions { display:flex; gap:8px; flex-wrap:wrap; }
+          .td-group { background:#fff; border:1.5px solid #E2E8F0; border-radius:12px; padding:14px 16px; margin-bottom:14px; }
+          .td-group h3 { margin:0 0 10px; font-size:15px; font-weight:800; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+          .td-group h3 small { color:#94A3B8; font-weight:600; font-size:12px; }
+          .td-exam { background:#EEF2FF; color:#3730A3; border-radius:50px; padding:2px 10px; font-size:12px; font-weight:800; }
+          .td-table-wrap { overflow-x:auto; }
+          .td-table { width:100%; border-collapse:collapse; font-size:13px; }
+          .td-table th { text-align:left; font-size:11px; text-transform:uppercase; color:#94A3B8; padding:8px; border-bottom:1.5px solid #E2E8F0; white-space:nowrap; }
+          .td-table td { padding:9px 8px; border-bottom:1px solid #F1F5F9; vertical-align:top; }
+          .td-row-miss td { background:#FFFBEB; }
+          .td-ok { color:#166534; font-weight:600; overflow-wrap:anywhere; }
+          .td-miss { color:#B91C1C; font-weight:800; }
+          .td-na { color:#94A3B8; }
+          .td-meta { font-size:12px; color:#64748B; margin-top:2px; }
+          .td-track { display:inline-block; background:#F1F5F9; color:#475569; border-radius:50px; padding:1px 8px; font-size:11px; font-weight:700; }
+          .td-empty { background:#fff; border:1.5px dashed #CBD5E1; border-radius:12px; padding:28px; text-align:center; color:#475569; }
+          .td-empty i { font-size:26px; color:#C81240; }
+        </style>
+      </section>
+
       <!-- ── INTERVIEW BOOKING ── -->
       <section class="admin-section" id="section-interviews" aria-label="Interview slot booking">
         <div class="section-header">
@@ -1580,9 +1628,10 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
 <!-- Admin JS -->
-<script src="/admin/js/admin.js?v=4"></script>
+<script src="/admin/js/admin.js?v=5"></script>
 <script src="/admin/js/nav-menu-admin.js"></script>
 <script src="/admin/js/home-programs-admin.js"></script>
+<script src="/admin/js/test-day-admin.js?v=1"></script>
 <script src="/admin/js/interviews-admin.js?v=2"></script>
 <script>document.getElementById('btnNewInterviewPhase').addEventListener('click', function () { if (window.InterviewsAdmin) window.InterviewsAdmin.showNewForm(); });</script>
 

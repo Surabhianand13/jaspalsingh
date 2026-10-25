@@ -63,6 +63,115 @@ router.get('/admin/all', protect, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/* ── ADMIN: Test Day board (2026-10-25) ───────────────────
+   One view across every program for the ops manager: which tests fall
+   on a date range (e.g. this Sunday), whether the question paper /
+   blank OMR / solution are uploaded and under what file name, and how
+   many learners uploaded answer sheets. Optional exam filter (the
+   programs.exam tag, e.g. "RSSB JE 2026"). test_date is free text, so
+   rows are filtered in JS via utils/testDate.js. */
+const { testDayKey } = require('../utils/testDate');
+const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/* "test-assets/12/paper-1729-RSSB-Test-5.pdf" -> "RSSB-Test-5.pdf" */
+function assetFileName(key) {
+  if (!key) return null;
+  const base = key.slice(key.lastIndexOf('/') + 1);
+  const m = base.match(/^(?:paper|blank-omr|solution)-\d{10,}-(.+)$/);
+  return m ? m[1] : base;
+}
+
+async function testDayRows(from, to, exam) {
+  const rows = (await query(
+    `SELECT ps.id, ps.program_slug, ps.test_number, ps.test_date, ps.syllabus, ps.questions, ps.marks, ps.category,
+            ps.question_paper_key, ps.blank_omr_key, ps.solution_key, ps.paper_release_at, ps.omr_upload_deadline, ps.requires_omr_upload,
+            p.title AS program_title, p.short_name AS program_short_name, p.exam, p.is_visible,
+            (SELECT COUNT(*)::int FROM schedule_uploads su WHERE su.schedule_id = ps.id) AS omr_uploads,
+            (SELECT COUNT(*)::int FROM schedule_uploads su WHERE su.schedule_id = ps.id AND su.file_key IS NOT NULL) AS omr_files
+     FROM program_schedule ps
+     LEFT JOIN programs p ON p.slug = ps.program_slug`
+  )).rows;
+  return rows
+    .map(r => Object.assign(r, { day: testDayKey(r) }))
+    .filter(r => r.day && r.day >= from && r.day <= to && (!exam || r.exam === exam))
+    .sort((a, b) => a.day.localeCompare(b.day) || String(a.exam || '').localeCompare(String(b.exam || ''))
+      || String(a.program_title || a.program_slug).localeCompare(String(b.program_title || b.program_slug))
+      || String(a.category || '').localeCompare(String(b.category || '')) || a.test_number - b.test_number);
+}
+
+router.get('/admin/test-day', protect, async (req, res, next) => {
+  try {
+    const { from, to } = req.query;
+    if (!DAY_RE.test(from || '') || !DAY_RE.test(to || '') || to < from) return res.status(400).json({ error: 'Pick a valid date range.' });
+    const exam = req.query.exam ? String(req.query.exam) : null;
+    const tests = (await testDayRows(from, to, exam)).map(r => ({
+      id: r.id, day: r.day, program_slug: r.program_slug, program_title: r.program_title || r.program_slug,
+      program_short_name: r.program_short_name, exam: r.exam, is_visible: r.is_visible, category: r.category,
+      test_number: r.test_number, test_date: r.test_date, syllabus: r.syllabus, questions: r.questions, marks: r.marks,
+      paper_file: assetFileName(r.question_paper_key), blank_omr_file: assetFileName(r.blank_omr_key), solution_file: assetFileName(r.solution_key),
+      paper_release_at: r.paper_release_at, omr_upload_deadline: r.omr_upload_deadline, requires_omr_upload: r.requires_omr_upload,
+      omr_uploads: r.omr_uploads, omr_files: r.omr_files,
+    }));
+    const exams = (await query(`SELECT DISTINCT exam FROM programs WHERE exam IS NOT NULL AND exam <> '' ORDER BY exam`)).rows.map(x => x.exam);
+    res.json({ tests, exams });
+  } catch (err) { next(err); }
+});
+
+/* ADMIN: one zip with every learner answer sheet for all tests in the
+   range (+ optional exam), one folder per test. Streams one file at a
+   time like /schedule/:id/uploads/download-all, so memory stays flat. */
+router.get('/admin/test-day/omr-zip', protect, async (req, res, next) => {
+  try {
+    const { from, to } = req.query;
+    if (!DAY_RE.test(from || '') || !DAY_RE.test(to || '') || to < from) return res.status(400).json({ error: 'Pick a valid date range.' });
+    const exam = req.query.exam ? String(req.query.exam) : null;
+    const tests = await testDayRows(from, to, exam);
+    const byId = {};
+    tests.forEach(t => { byId[t.id] = t; });
+    const files = tests.length ? (await query(
+      `SELECT su.schedule_id, su.learner_name, su.learner_email, su.file_key, e.roll_number
+       FROM schedule_uploads su LEFT JOIN enrollments e ON e.id = su.enrollment_id
+       WHERE su.schedule_id = ANY($1::int[]) AND su.file_key IS NOT NULL
+       ORDER BY su.schedule_id, su.uploaded_at`,
+      [tests.map(t => t.id)]
+    )).rows : [];
+    if (!files.length) return res.status(404).json({ error: 'No learner answer sheets for these tests (none uploaded yet, or erased after 14 days).' });
+
+    const clean = (s, n) => String(s || '').replace(/[\/\\:*?"<>|]/g, '-').replace(/\s+/g, ' ').trim().slice(0, n);
+    const folderFor = t => clean(`${t.day} - ${t.exam || 'No exam'} - ${t.program_short_name || t.program_title || t.program_slug}${t.category ? ' (' + t.category + ')' : ''} - Test ${t.test_number}${t.syllabus ? ' - ' + t.syllabus : ''}`, 150);
+
+    const archive = archiver('zip', { zlib: { level: 1 } });
+    archive.on('warning', (err) => console.warn('[test-day zip] warning:', err.message));
+    archive.on('error', (err) => { console.error('[test-day zip] archive error:', err.message); res.destroy(err); });
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="omr-sheets-${from}${to !== from ? '_to_' + to : ''}${exam ? '-' + exam.replace(/[^a-zA-Z0-9]+/g, '-') : ''}.zip"`);
+    archive.pipe(res);
+
+    const used = new Set();
+    for (const f of files) {
+      const t = byId[f.schedule_id];
+      const ext = f.file_key.includes('.') ? f.file_key.slice(f.file_key.lastIndexOf('.')) : '';
+      const roll = clean(String(f.roll_number || '').split('|')[0], 30);
+      const base = `${folderFor(t)}/${[roll, clean(f.learner_name || 'learner', 60)].filter(Boolean).join(' - ')}`;
+      let name = base + ext, n = 1;
+      while (used.has(name)) { n++; name = `${base} (${n})${ext}`; }
+      used.add(name);
+      const obj = await r2.send(new GetObjectCommand({ Bucket: BUCKET, Key: f.file_key }));
+      archive.append(obj.Body, { name });
+      await new Promise((resolve, reject) => {
+        const onEntry = () => { archive.off('error', reject); resolve(); };
+        archive.once('entry', onEntry);
+        archive.once('error', reject);
+      });
+    }
+    await archive.finalize();
+  } catch (err) {
+    console.error('[test-day zip] error:', err.name, '-', err.message);
+    if (res.headersSent) { res.destroy(err); return; }
+    res.status(500).json({ error: '[test-day zip] ' + err.message });
+  }
+});
+
 /* ── ADMIN: create ───────────────────────────────────────── */
 router.post('/', protect, async (req, res, next) => {
   try {

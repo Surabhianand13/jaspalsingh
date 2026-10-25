@@ -3101,6 +3101,17 @@ async function migrate() {
   }
   console.log('✅ Seeded ' + missingPosts.length + ' additional blog posts');
 
+  /* ── RSSB JE 2026 FLT (4 Oct) exam tag (2026-10-25): the 4 programs
+     were seeded without programs.exam, so they had no exam tag in admin
+     and were missing from the exam filter on the Test Day board. Only
+     fills it when empty, so an admin edit later wins. ── */
+  await query(
+    `UPDATE programs SET exam = 'RSSB JE 2026'
+     WHERE slug IN ('rssb-je-2026-4oct-flt-degree-offline', 'rssb-je-2026-4oct-flt-diploma-offline',
+                    'rssb-je-2026-4oct-flt-degree-omr', 'rssb-je-2026-4oct-flt-diploma-omr')
+       AND (exam IS NULL OR exam = '')`
+  );
+
   /* ── Interview slot booking (RPSC AE Interview Guidance, 2026-10-21) -
      tables live in services/interviewService.js. ── */
   await require('./services/interviewService').migrate();
