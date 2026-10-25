@@ -216,6 +216,7 @@
     'messages':     'Messages',
     'learners':     'Learners',
     'programs':     'Programs',
+    'testday':      'Test Day',
     'enrollments':  'Enrollments',
     'paidlearners': 'Paid Learners',
     'referralpayouts': 'Referral Payouts',
@@ -268,6 +269,7 @@
       case 'messages':     loadMessages();     break;
       case 'learners':     loadLearners();     break;
       case 'programs':     loadPrograms();     break;
+      case 'testday':      if (window.TestDayAdmin) window.TestDayAdmin.load(); break;
       case 'enrollments':  loadEnrollments();  break;
       case 'paidlearners': loadPaidLearners(); break;
       case 'referralpayouts': loadReferralPayouts(); loadReferralCodesAdmin(); break;
