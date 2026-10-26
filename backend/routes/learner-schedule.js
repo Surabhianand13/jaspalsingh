@@ -27,7 +27,7 @@ const multer  = require('multer');
 const { PutObjectCommand, DeleteObjectCommand, HeadObjectCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const { r2, BUCKET } = require('../config/r2');
-const { watermarkFromR2 } = require('../utils/pdfWatermark');
+const { sendPdfForViewing } = require('../utils/pdfWatermark');
 const { diskUpload, cleanupTempFile, putFileToR2 } = require('../utils/diskUpload');
 const { query } = require('../config/db');
 const { protectLearner } = require('../middleware/learnerAuth');
@@ -235,16 +235,8 @@ router.get('/:program_slug/materials/:id/view', protectLearner, async (req, res,
     if (!tracks.includes(material.track)) return res.status(403).json({ error: 'Not part of your enrolled track.' });
 
     const stamp = `${learner.name || 'Learner'} · ${learner.email}${learner.phone ? ' · ' + learner.phone : ''} · ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`;
-    const watermarked = await watermarkFromR2(material.file_key, stamp);
-    if (!watermarked) return res.status(422).json({ error: 'This file could not be opened for viewing.' });
-
-    res.set({
-      'Content-Type': 'application/pdf',
-      'Content-Disposition': 'inline; filename="material.pdf"',
-      'Cache-Control': 'no-store, private',
-      'Content-Length': watermarked.length,
-    });
-    res.send(watermarked);
+    const ok = await sendPdfForViewing(res, material.file_key, stamp, 'material.pdf');
+    if (!ok) return res.status(422).json({ error: 'This file could not be opened for viewing.' });
   } catch (err) { next(err); }
 });
 

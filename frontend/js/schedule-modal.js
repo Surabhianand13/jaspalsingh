@@ -16,6 +16,28 @@
 (function () {
   'use strict';
 
+  /* Learner name/email tiled over each rendered page. Big PDFs are
+     streamed without a burned-in stamp (backend utils/pdfWatermark.js,
+     to keep the server from running out of memory), so this keeps every
+     page visibly marked either way. */
+  function drawViewerWatermark(canvas) {
+    var u = {};
+    try { u = JSON.parse(localStorage.getItem('jaspal_learner') || '{}') || {}; } catch (e) { u = {}; }
+    var text = [u.name, u.email].filter(Boolean).join(' · ');
+    if (!text) return;
+    var ctx = canvas.getContext('2d');
+    ctx.save();
+    ctx.globalAlpha = 0.14;
+    ctx.fillStyle = '#8c1a1a';
+    ctx.font = 'bold ' + Math.round(canvas.width / 45) + 'px Arial, sans-serif';
+    var step = ctx.measureText(text).width + 80;
+    ctx.rotate(-Math.PI / 6);
+    for (var y = -canvas.height; y < canvas.height * 2; y += Math.round(canvas.width / 6)) {
+      for (var x = -canvas.width; x < canvas.width * 2; x += step) ctx.fillText(text, x, y);
+    }
+    ctx.restore();
+  }
+
   var API_BASE = (function () {
     var h = window.location.hostname;
     return (h === 'localhost' || h === '127.0.0.1') ? 'http://localhost:5000' : 'https://jaspalsingh.onrender.com';
@@ -344,6 +366,7 @@
           canvas.style.cssText = 'max-width:100%;box-shadow:0 2px 10px rgba(0,0,0,.3);';
           pagesEl.appendChild(canvas);
           page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport }).promise.then(function () {
+            drawViewerWatermark(canvas);
             renderPage(pageNum + 1);
           });
         });
