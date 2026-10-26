@@ -8,7 +8,7 @@ const router   = express.Router();
 const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
 const { query } = require('../config/db');
-const { ensureGrants: ensureAdminPreviewGrants } = require('../utils/adminPreview');
+const { ensureGrants: ensureAdminPreviewGrants, realLearnersOnly } = require('../utils/adminPreview');
 const { protectLearner } = require('../middleware/learnerAuth');
 const { canonicalize, slugsFor } = require('../utils/programSlugAliases');
 const { resolveFulfillment } = require('../services/paymentEmailService');
@@ -267,7 +267,7 @@ router.get('/admin/all', protect, async (req, res, next) => {
     const rawLimit = parseInt(req.query.limit, 10);
     const limit = (!isNaN(rawLimit) && rawLimit > 0 && rawLimit <= 1000) ? rawLimit : null;
     const params = [];
-    const conditions = [];
+    const conditions = [realLearnersOnly()]; // admin preview grants are not real sales
     if (status) { params.push(status); conditions.push(`status = $${params.length}`); }
     const periodMap = {
       today:  `paid_at >= CURRENT_DATE`,
@@ -293,7 +293,7 @@ router.get('/admin/all', protect, async (req, res, next) => {
          COALESCE(SUM(amount) FILTER (WHERE status='paid' AND refund_status != 'initiated'),0)::int AS revenue,
          COUNT(*) FILTER (WHERE status='paid' AND refund_status='initiated')::int AS refunded_count,
          COALESCE(SUM(refund_amount) FILTER (WHERE refund_status='initiated'),0)::int AS refunded_amount
-       FROM enrollments`);
+       FROM enrollments WHERE ${realLearnersOnly()}`);
     res.json({ enrollments: rows.rows, total: rows.rowCount, summary: summary.rows[0] });
   } catch (err) { next(err); }
 });
@@ -306,7 +306,7 @@ router.get('/admin/paid-learners', protect, async (req, res, next) => {
   try {
     const { program, search } = req.query;
     const params = [];
-    const conditions = [`status = 'paid'`];
+    const conditions = [`status = 'paid'`, realLearnersOnly()];
     if (program) { params.push(program); conditions.push(`program_slug = $${params.length}`); }
     if (search) {
       params.push(`%${search}%`);
@@ -326,7 +326,7 @@ router.get('/admin/paid-learners', protect, async (req, res, next) => {
          COUNT(*)::int AS total_paid,
          COALESCE(SUM(amount) FILTER (WHERE refund_status != 'initiated'),0)::int AS net_revenue,
          COUNT(*) FILTER (WHERE refund_status = 'initiated')::int AS refunded_count
-       FROM enrollments WHERE status = 'paid'`);
+       FROM enrollments WHERE status = 'paid' AND ${realLearnersOnly()}`);
 
     /* Active subscriptions per program for the admin summary panel.
        "active" excludes refunded enrollments (refund is an internal flag -
@@ -346,7 +346,7 @@ router.get('/admin/paid-learners', protect, async (req, res, next) => {
               MAX(p.title) AS title, MAX(p.short_name) AS short_name, MAX(p.exam) AS exam, MAX(p.category) AS category
        FROM enrollments e
        LEFT JOIN programs p ON p.slug = e.program_slug
-       WHERE e.status = 'paid'
+       WHERE e.status = 'paid' AND ${realLearnersOnly('e')}
        GROUP BY e.program_slug
        ORDER BY active DESC, count DESC`);
     const byProgram = byProgramRes.rows.map(r => ({
@@ -963,7 +963,7 @@ router.post('/admin/send-omr-papers', protect, async (req, res) => {
       const enrResult = await query(
         `SELECT id, student_name, student_email, student_phone
          FROM enrollments
-         WHERE program_slug = $1 AND status = 'paid' AND refund_status != 'initiated'
+         WHERE program_slug = $1 AND status = 'paid' AND refund_status != 'initiated' AND ${realLearnersOnly()}
          ORDER BY id ASC`,
         [program_slug]
       );
@@ -1163,7 +1163,7 @@ router.post('/admin/send-omr-analysis', protect, async (req, res) => {
       const enrResult = await query(
         `SELECT id, student_name, student_email, student_phone
          FROM enrollments
-         WHERE program_slug = $1 AND status = 'paid' AND refund_status != 'initiated'
+         WHERE program_slug = $1 AND status = 'paid' AND refund_status != 'initiated' AND ${realLearnersOnly()}
          ORDER BY id ASC`,
         [program_slug]
       );

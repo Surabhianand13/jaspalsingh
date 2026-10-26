@@ -3204,7 +3204,8 @@ async function backfillMissingRollNumbers() {
   try {
     const rows = await query(
       `SELECT id, program_slug FROM enrollments
-       WHERE status = 'paid' AND refund_status != 'initiated' AND roll_number IS NULL`
+       WHERE status = 'paid' AND refund_status != 'initiated' AND roll_number IS NULL
+         AND order_id NOT LIKE 'JSP-ADMINPREVIEW-%'`
     );
     for (const row of rows.rows) {
       try {

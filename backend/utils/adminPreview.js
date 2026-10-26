@@ -23,6 +23,15 @@ const { query } = require('../config/db');
 
 const ADMIN_PREVIEW_EMAILS = ['anand.surabhi.a@gmail.com', 'jaspalsingh.pec@gmail.com'];
 
+/* SQL condition that leaves admin preview grants out. Add it to every
+   query that COUNTS, LISTS or EMAILS learners (paid learner list,
+   revenue, dashboard, admit card queue, bulk emails, interview invites),
+   but never to access checks - the admins must keep their preview access.
+   Pass the table alias when the query uses one: realLearnersOnly('e'). */
+function realLearnersOnly(alias) {
+  return `${alias ? alias + '.' : ''}order_id NOT LIKE 'JSP-ADMINPREVIEW-%'`;
+}
+
 function isAdminPreviewEmail(email) {
   return ADMIN_PREVIEW_EMAILS.includes(String(email || '').toLowerCase().trim());
 }
@@ -59,4 +68,4 @@ async function grantAll() {
   for (const email of ADMIN_PREVIEW_EMAILS) await ensureGrants(email);
 }
 
-module.exports = { ADMIN_PREVIEW_EMAILS, isAdminPreviewEmail, ensureGrants, grantAll };
+module.exports = { ADMIN_PREVIEW_EMAILS, isAdminPreviewEmail, realLearnersOnly, ensureGrants, grantAll };
