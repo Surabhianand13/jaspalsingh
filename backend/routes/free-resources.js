@@ -8,7 +8,7 @@ const express  = require('express');
 const router   = express.Router();
 const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const { r2, BUCKET } = require('../config/r2');
-const { watermarkFromR2 } = require('../utils/pdfWatermark');
+const { sendPdfForViewing } = require('../utils/pdfWatermark');
 const { diskUpload, cleanupTempFile, putFileToR2 } = require('../utils/diskUpload');
 const { query }      = require('../config/db');
 const { protect }    = require('../middleware/auth');
@@ -165,16 +165,8 @@ router.get('/:id/view', protectLearner, async (req, res, next) => {
     }
 
     const stamp = `${learner.name || learner.email} · ${learner.email} · ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`;
-    const watermarked = await watermarkFromR2(r2_key, stamp);
-    if (!watermarked) return res.status(422).json({ error: 'This file could not be opened for viewing.' });
-
-    res.set({
-      'Content-Type': 'application/pdf',
-      'Content-Disposition': 'inline; filename="resource.pdf"',
-      'Cache-Control': 'no-store, private',
-      'Content-Length': watermarked.length,
-    });
-    res.send(watermarked);
+    const ok = await sendPdfForViewing(res, r2_key, stamp, 'resource.pdf');
+    if (!ok) return res.status(422).json({ error: 'This file could not be opened for viewing.' });
   } catch (err) { next(err); }
 });
 
