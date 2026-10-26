@@ -25,7 +25,7 @@ router.get('/admin', protect, async (req, res, next) => {
     // exclude those rows so a refunded enrollment never lingers in (or gets
     // approved from) the review queue.
     const statusCond = status ? `admit_card_status = $1` : `admit_card_status != 'none'`;
-    const where = `WHERE ${statusCond} AND status = 'paid' AND refund_status != 'initiated'`;
+    const where = `WHERE ${statusCond} AND status = 'paid' AND refund_status != 'initiated' AND order_id NOT LIKE 'JSP-ADMINPREVIEW-%'`;
     const params = status ? [status] : [];
     const result = await query(
       `SELECT id, order_id, student_name, student_email, student_phone, program_slug, program_name,

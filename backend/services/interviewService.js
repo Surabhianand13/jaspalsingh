@@ -375,7 +375,7 @@ async function announceVenue(phase) {
      FROM interview_bookings b
      JOIN interview_slots s ON s.id = b.slot_id
      JOIN enrollments e ON e.id = b.enrollment_id
-     WHERE b.phase_id = $1 AND e.status = 'paid' AND e.refund_status != 'initiated'
+     WHERE b.phase_id = $1 AND e.status = 'paid' AND e.refund_status != 'initiated' AND e.order_id NOT LIKE 'JSP-ADMINPREVIEW-%'
      ORDER BY s.starts_at`,
     [phase.id]
   )).rows;
@@ -414,6 +414,7 @@ async function eligibleLearners(phase) {
               e.id, e.student_name, e.student_email, e.student_phone, e.roll_number, e.paid_at
        FROM enrollments e
        WHERE e.program_slug = ANY($1::text[]) AND e.status = 'paid' AND e.refund_status != 'initiated'
+         AND e.order_id NOT LIKE 'JSP-ADMINPREVIEW-%' -- admin previews: no invites, not counted
        ORDER BY LOWER(TRIM(e.student_email)), e.paid_at ASC
      )
      SELECT paid.*,

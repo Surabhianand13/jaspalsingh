@@ -308,7 +308,7 @@ const adminGetAll = async (req, res, next) => {
               COUNT(DISTINCT e.id)::int AS paid_count
        FROM learners l
        LEFT JOIN learner_downloads ld ON ld.learner_id = l.id
-       LEFT JOIN enrollments e ON e.status = 'paid'
+       LEFT JOIN enrollments e ON e.status = 'paid' AND e.order_id NOT LIKE 'JSP-ADMINPREVIEW-%'
          AND (e.learner_id = l.id OR e.student_email = l.email OR e.student_phone = l.phone)
        ${where}
        GROUP BY l.id
@@ -389,7 +389,7 @@ const adminStats = async (req, res, next) => {
           COALESCE(SUM(amount), 0)::int AS revenue,
           COUNT(*)::int AS count
         FROM enrollments
-        WHERE status = 'paid' AND refund_status <> 'initiated'
+        WHERE status = 'paid' AND refund_status <> 'initiated' AND order_id NOT LIKE 'JSP-ADMINPREVIEW-%'
         GROUP BY category
         ORDER BY revenue DESC
       `),
