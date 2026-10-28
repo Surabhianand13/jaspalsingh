@@ -3123,6 +3123,79 @@ async function migrate() {
        AND (exam IS NULL OR exam = '')`
   );
 
+  /* ── RSSB JE 2026 FLT (15 Nov) programs (2026-10-28): a second
+     15-test full-length batch, same paper for Degree and Diploma, from
+     15 Nov 2026 to 1 Feb 2027 (weekly on Sundays, plus extra tests on
+     21 Jan, 28 Jan and 1 Feb). Same setup as the 4 Oct batch: offline
+     with centre pricing (Jaipur 999 / other 1299, MRP 2999), Printed OMR
+     599 (MRP 1999). One Tally form per mode serves Degree + Diploma -
+     tally-generic resolves the program from the learner's paid
+     enrollment, not from the form. ── */
+  const flt15NovPrograms = [
+    ['rssb-je-2026-15nov-flt-degree-offline', 'Degree', 'offline', 'NFDOF', 42],
+    ['rssb-je-2026-15nov-flt-diploma-offline', 'Diploma', 'offline', 'NFPOF', 43],
+    ['rssb-je-2026-15nov-flt-degree-omr', 'Degree', 'omr', 'NFDOM', 44],
+    ['rssb-je-2026-15nov-flt-diploma-omr', 'Diploma', 'omr', 'NFPOM', 45],
+  ];
+  const flt15NovTally = { offline: 'https://tally.so/r/6DDPWO', omr: 'https://tally.so/r/7XXEa9' };
+  for (const [slug, level, mode, rollPrefix, sortOrder] of flt15NovPrograms) {
+    const offline = mode === 'offline';
+    const title = `15th Nov'26 - RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil ${level} ${offline ? 'Offline' : 'OMR'}`;
+    await query(
+      `INSERT INTO programs (slug, title, short_desc, exam, price, mrp, sort_order, is_visible, omr_enabled, launch_config, pricing_tiers)
+       VALUES ($1,$2,$3,'RSSB JE 2026',$4,$5,$6,TRUE,$7,$8,$9)
+       ON CONFLICT (slug) DO NOTHING`,
+      [
+        slug, title,
+        offline
+          ? `15 full-length tests from 15 Nov 2026, offline at centre - ${level} level`
+          : `15 full-length tests from 15 Nov 2026, printed OMR from anywhere - ${level} level`,
+        offline ? 999 : 599, offline ? 2999 : 1999, sortOrder, !offline,
+        JSON.stringify({
+          seriesName: `15th Nov'26 - RSSB JE 2026 - Jaspal Sir Ki Test Series - Civil ${level} (${offline ? 'Offline' : 'Printed OMR'})`,
+          tallyFormUrl: flt15NovTally[offline ? 'offline' : 'omr'],
+          mode: offline ? 'offline' : 'home',
+          rollPrefix,
+          waGroupUrl: null,
+          lastTestDate: '1 Feb 2027 (FLT-15)',
+        }),
+        offline
+          ? JSON.stringify({ jaipur: { label: 'Jaipur', price: 999, mrp: 2999 }, other: { label: 'Other Centres', price: 1299, mrp: 2999 } })
+          : null,
+      ]
+    );
+  }
+  /* Schedule: added ONCE (site_settings marker) so a test the admin later
+     deletes on purpose is not re-created on deploy. */
+  {
+    const marker = await query(`SELECT 1 FROM site_settings WHERE key = 'seed_15nov_flt_schedule_v1'`);
+    if (!marker.rows.length) {
+      const dates = ['15 Nov 2026', '22 Nov 2026', '29 Nov 2026', '6 Dec 2026', '13 Dec 2026', '20 Dec 2026', '27 Dec 2026',
+        '3 Jan 2027', '10 Jan 2027', '17 Jan 2027', '21 Jan 2027', '24 Jan 2027', '28 Jan 2027', '31 Jan 2027', '1 Feb 2027'];
+      let added = 0;
+      for (const [slug] of flt15NovPrograms) {
+        for (const [i, date] of dates.entries()) {
+          const n = i + 1;
+          const r = await query(
+            `INSERT INTO program_schedule (program_slug, test_number, test_date, syllabus, questions, marks, sort_order, category)
+             SELECT $1::varchar, $2::int, $3::varchar, $4::text, 120, 120, $5::int, NULL
+             WHERE NOT EXISTS (
+               SELECT 1 FROM program_schedule WHERE program_slug = $1::varchar AND test_number = $2::int AND category IS NULL
+             )`,
+            [slug, n, date, `Full Length Test - ${String(n).padStart(2, '0')}`, i]
+          );
+          added += r.rowCount;
+        }
+      }
+      await query(
+        `INSERT INTO site_settings (key, value, updated_by) VALUES ('seed_15nov_flt_schedule_v1', $1, 'migrate') ON CONFLICT (key) DO NOTHING`,
+        [JSON.stringify({ added, at: new Date().toISOString() })]
+      );
+      console.log(`✅ 15 Nov FLT schedules: added ${added} test rows`);
+    }
+  }
+  console.log('✅ Seeded 4 RSSB JE 2026 FLT (15 Nov) programs');
+
   /* ── Interview slot booking (RPSC AE Interview Guidance, 2026-10-21) -
      tables live in services/interviewService.js. ── */
   await require('./services/interviewService').migrate();
