@@ -50,7 +50,7 @@
   }
 
   /* ── Today's homepage, reproduced exactly (same rules as its built-in mode) ── */
-  var PINNED = ['rssb-je-2026-4oct-flt-degree-offline', 'rssb-je-2026-4oct-flt-diploma-offline', 'rssb-je-2026-4oct-flt-degree-omr', 'rssb-je-2026-4oct-flt-diploma-omr'];
+  var PINNED = ['rssb-je-2026-15nov-flt-degree-offline', 'rssb-je-2026-15nov-flt-diploma-offline', 'rssb-je-2026-15nov-flt-degree-omr', 'rssb-je-2026-15nov-flt-diploma-omr', 'rssb-je-2026-4oct-flt-degree-offline', 'rssb-je-2026-4oct-flt-diploma-offline', 'rssb-je-2026-4oct-flt-degree-omr', 'rssb-je-2026-4oct-flt-diploma-omr'];
   var HIDDEN = ['shaurya-offline-rssb-je-2026-degree', 'shaurya-offline-rssb-je-2026-diploma', 'shaurya-omr-rssb-je-2026-degree', 'shaurya-omr-rssb-je-2026-diploma'];
   function bucketFor(t) {
     t = (t || '').toLowerCase();
