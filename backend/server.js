@@ -2070,7 +2070,18 @@ async function migrate() {
     `UPDATE programs SET launch_config = jsonb_set(launch_config, '{waGroupUrl}', $1::jsonb)
      WHERE slug = 'rpsc-ae-interview' AND launch_config IS NOT NULL
        AND COALESCE(launch_config->>'waGroupUrl', '') = ''`,
-    [JSON.stringify('https://chat.whatsapp.com/FzrWaa8rZlu2AexNwo4CSA')]
+    [JSON.stringify('https://chat.whatsapp.com/K6zqCXtsT6K0UPBgUIa2x5?s=cl&p=a&mlu=0')]
+  );
+
+  /* ── RPSC AE Interview WhatsApp group replaced 2026-10-28: the old group
+     link (https://chat.whatsapp.com/FzrWaa8rZlu2AexNwo4CSA) had a problem. Swaps it for the new one wherever
+     it is still the old link (or empty), so a different link set later
+     from the admin panel is left alone. ── */
+  await query(
+    `UPDATE programs SET launch_config = jsonb_set(launch_config, '{waGroupUrl}', $1::jsonb)
+     WHERE slug = 'rpsc-ae-interview' AND launch_config IS NOT NULL
+       AND COALESCE(launch_config->>'waGroupUrl', '') IN ('', $2)`,
+    [JSON.stringify('https://chat.whatsapp.com/K6zqCXtsT6K0UPBgUIa2x5?s=cl&p=a&mlu=0'), 'https://chat.whatsapp.com/FzrWaa8rZlu2AexNwo4CSA']
   );
 
   /* ── UP Polytechnic roll-number backfill (2026-08-15): learners who

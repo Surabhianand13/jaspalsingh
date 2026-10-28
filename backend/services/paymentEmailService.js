@@ -25,7 +25,7 @@ const WA_GROUP_DIPLOMA     = 'https://chat.whatsapp.com/Iq5hz6qm9kPFdjOEESK4Ka?s
 const WA_GROUP_DEGREE      = 'https://chat.whatsapp.com/K0Upt2jTmdQLkaI5c0CvM0?s=sh&p=a&ilr=4';
 const WA_GROUP_OMR_DIPLOMA = 'https://chat.whatsapp.com/GK6ASDe1SKND7WAxXOrrlp?s=sh&p=a&ilr=4';
 const WA_GROUP_OMR_DEGREE  = 'https://chat.whatsapp.com/Im6ILJK7W1D5IQsZARS3IG?s=sh&p=a&ilr=4';
-const WA_GROUP_RPSC_AE     = '';
+const WA_GROUP_RPSC_AE     = 'https://chat.whatsapp.com/K6zqCXtsT6K0UPBgUIa2x5?s=cl&p=a&mlu=0';
 
 /* Combo slugs contain BOTH "degree" and "diploma" (and one contains "omr")
    so they must be matched exactly, before the generic substring checks
