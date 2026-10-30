@@ -3,6 +3,10 @@
 /checkout /checkout/ 301
 /payment-success /payment-success/ 301
 /my-programs /my-programs/ 301
+# Shareable link for RPSC AE learners to buy extra mock interviews
+# (Mock Interview Add-on card in My Programs - log in, then pay there).
+/mock-interviews /my-programs/#mock-interviews 302
+/mock-interviews/ /my-programs/#mock-interviews 302
 /programs/rssb-jen-diploma-test-series /programs/rssb-jen-2026-jaspalsirki-testseries-diploma-civil/ 301
 /programs/rssb-jen-diploma-test-series/ /programs/rssb-jen-2026-jaspalsirki-testseries-diploma-civil/ 301
 /programs/rssb-jen-degree-test-series /programs/rssb-je-jaspalsirki-testseries-degree-civil/ 301

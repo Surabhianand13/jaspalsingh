@@ -260,7 +260,9 @@
     var best = sl.packs.reduce(function (m, p) { return !m || p.price / p.slots < m.price / m.slots ? p : m; }, null);
     var small = sl.packs.reduce(function (m, p) { return !m || p.slots < m.slots ? p : m; }, null);
     var slug = e.canonical_slug || e.program_slug;
-    return '<div class="ld-addon" data-ld-addon-card="' + esc(slug) + '">' +
+    // id = target of the shareable link jaspalsingh.in/mock-interviews
+    // (_redirects -> /my-programs/#mock-interviews).
+    return '<div class="ld-addon" id="mock-interviews" data-ld-addon-card="' + esc(slug) + '">' +
       '<div class="ld-addon-tag">For RPSC AE Interview learners only</div>' +
       '<div class="ld-addon-title"><i class="fas fa-user-tie"></i> ' + (sl.extra ? 'Add even more mock interviews' : 'Want more mock interviews?') + '</div>' +
       '<p class="ld-addon-sub">' + (sl.extra
@@ -710,10 +712,18 @@
         return p.then(function (sched) {
           schedules[i] = sched;
           repaintCard(container, e, sched, i);
+          // The add-on card only exists once the interview data is in.
+          if (window.location.hash === '#mock-interviews' && document.getElementById('mock-interviews') && !render._addonScrolled) {
+            render._addonScrolled = true;
+            scrollToHash();
+          }
         });
       })).then(function () {
         publishActions(actionItems(enrollments, schedules), true);
         writeDashCache(enrollments, schedules);
+        if (window.location.hash === '#mock-interviews' && !document.getElementById('mock-interviews')) {
+          container.insertAdjacentHTML('afterbegin', '<div class="ld-addon-msg">Mock interview add-ons are only for RPSC AE Interview Guidance learners. Please log in with the email you used when you enrolled, or WhatsApp us at +91 98291 33317.</div>');
+        }
       });
     }).catch(function (err) {
       if (painted) return; // keep showing the last known dashboard
