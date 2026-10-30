@@ -43,7 +43,7 @@ const { slugsFor, canonicalize } = require('../utils/programSlugAliases');
 const calendar = require('./interviewCalendar');
 const emails = require('./interviewEmails');
 const { SITE } = require('./paymentEmailService');
-const { ADDON_BASE_PROGRAM, ADDON_PACKS, ADDON_SLUGS, addonPack } = require('../config/interviewRules');
+const { BRANCHES, ADDON_BASE_PROGRAM, ADDON_PACKS, ADDON_SLUGS, addonPack } = require('../config/interviewRules');
 
 /* The interview program an enrollment books under: an add-on pack
    enrollment ("interviews only" buyer) books under RPSC AE Interview. */
@@ -205,6 +205,22 @@ async function hasBaseProgram(email, db = { query }) {
   return r.rows.length > 0;
 }
 
+/* Branch chosen at payment (enrollments.engg_branch) for this email:
+   the programme order first, else the earliest pack. null for orders
+   placed before the branch was asked - the booking page then asks. */
+async function branchFor(email) {
+  if (!email) return null;
+  const r = await query(
+    `SELECT engg_branch FROM enrollments
+     WHERE (program_slug = ANY($1::text[]) OR program_slug = ANY($2::text[]))
+       AND status = 'paid' AND refund_status != 'initiated' AND engg_branch IS NOT NULL
+       AND LOWER(TRIM(student_email)) = LOWER(TRIM($3))
+     ORDER BY (program_slug = ANY($1::text[])) DESC, paid_at ASC LIMIT 1`,
+    [slugsFor(ADDON_BASE_PROGRAM), ADDON_SLUGS, email]
+  );
+  return r.rows.length ? r.rows[0].engg_branch : null;
+}
+
 /* Total interviews for a learner: included slots (only with the
    programme) + add-on packs. Every other program: just baseSlots. */
 async function slotAllowance(programSlug, email, baseSlots, db = { query }) {
@@ -324,6 +340,7 @@ async function bookSlots(enrollment, { phaseId, slotIds, branch }) {
 
     // Branch is chosen with the first booking and kept for the rest.
     if (existing.length) branch = existing[0].branch;
+    if (!branch) branch = await branchFor(enrollment.student_email);
     if (!branch) throw new BookingError('Please choose your branch.');
 
     const ids = [...new Set((slotIds || []).map(Number).filter(Boolean))];
@@ -494,7 +511,7 @@ async function eligibleLearners(phase) {
        ORDER BY LOWER(TRIM(e.student_email)), (e.program_slug = ANY($1::text[])) DESC, e.paid_at ASC
      )
      SELECT paid.*,
-            COALESCE(bk.booked_count, 0) AS booked_count, bk.branch, bk.slots,
+            COALESCE(bk.booked_count, 0) AS booked_count, COALESCE(bk.branch, pb.engg_branch) AS branch, bk.slots,
             inv.invited_at, inv.last_reminded_at, ad.extra_slots
      FROM paid
      LEFT JOIN LATERAL (
@@ -509,6 +526,14 @@ async function eligibleLearners(phase) {
        WHERE a.program_slug = ANY($5::text[]) AND a.status = 'paid' AND a.refund_status != 'initiated'
          AND LOWER(TRIM(a.student_email)) = LOWER(TRIM(paid.student_email))
      ) ad ON TRUE
+     LEFT JOIN LATERAL (
+       -- Branch asked at payment, for learners who haven't booked yet.
+       SELECT x.engg_branch FROM enrollments x
+       WHERE (x.program_slug = ANY($1::text[]) OR x.program_slug = ANY($5::text[]))
+         AND x.status = 'paid' AND x.refund_status != 'initiated' AND x.engg_branch IS NOT NULL
+         AND LOWER(TRIM(x.student_email)) = LOWER(TRIM(paid.student_email))
+       ORDER BY (x.program_slug = ANY($1::text[])) DESC, x.paid_at ASC LIMIT 1
+     ) pb ON TRUE
      LEFT JOIN interview_invites inv ON inv.phase_id = $2 AND inv.enrollment_id = paid.id
      ORDER BY paid.paid_at ASC`,
     [slugsFor(phase.program_slug), phase.id, phase.program_slug, ADDON_SLOTS_JSON,
@@ -705,6 +730,16 @@ async function addonSummary() {
     interviews_only: learners.filter(l => !l.has_base).length,
     offered: targets.filter(l => offered.has(l.id)).length,
     not_offered: targets.filter(l => !offered.has(l.id)).length,
+    // RPSC learners by branch (payment-time branch, else booked branch).
+    branches: {
+      total: learners.length,
+      programme: learners.filter(l => l.has_base).length,
+      interviews_only: learners.filter(l => !l.has_base).length,
+      rows: BRANCHES.concat([null]).map(b => {
+        const ls = learners.filter(l => (l.branch || null) === b);
+        return { branch: b, total: ls.length, programme: ls.filter(l => l.has_base).length, interviews_only: ls.filter(l => !l.has_base).length };
+      }),
+    },
   };
 }
 
@@ -764,5 +799,5 @@ module.exports = {
   getPhase, learnerBookings, withDisplayNumbers, openPhasesWithAvailability, bookSlots, BookingError,
   releaseLearner, updateCalendarLocations, announceVenue, eligibleLearners, sendInvites, inviteNewEnrollment, phaseStats,
   syncCalendar, tick, PHASE_COLS,
-  extraSlotsFor, slotAllowance, programOf, baseEnrollmentForEmail, addonSummary, addonPrices, sendAddonOffers, sendAddonPurchasedEmail,
+  extraSlotsFor, slotAllowance, programOf, branchFor, baseEnrollmentForEmail, addonSummary, addonPrices, sendAddonOffers, sendAddonPurchasedEmail,
 };

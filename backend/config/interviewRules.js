@@ -7,6 +7,11 @@
 
 const BRANCHES = ['Civil', 'Mechanical', 'Electrical'];
 
+/* Every RPSC order (programme, add-on packs, interviews only) asks the
+   branch at payment time (2026-10-30); it is stored in
+   enrollments.engg_branch and pre-fills the booking page. */
+function needsBranch(slug) { return /^rpsc-/.test(String(slug || '')); }
+
 const CONTACT_PHONE   = '+91 98291 33317';
 const CONTACT_WA_LINK = 'https://wa.me/919829133317';
 
@@ -52,4 +57,4 @@ const ADDON_PACKS = [
 const ADDON_SLUGS = ADDON_PACKS.map(p => p.slug);
 function addonPack(slug) { return ADDON_PACKS.find(p => p.slug === slug) || null; }
 
-module.exports = { BRANCHES, CONTACT_PHONE, CONTACT_WA_LINK, DEFAULT_VENUE, INSTRUCTIONS, TERMS, ADDON_BASE_PROGRAM, ADDON_PACKS, ADDON_SLUGS, addonPack };
+module.exports = { BRANCHES, needsBranch, CONTACT_PHONE, CONTACT_WA_LINK, DEFAULT_VENUE, INSTRUCTIONS, TERMS, ADDON_BASE_PROGRAM, ADDON_PACKS, ADDON_SLUGS, addonPack };

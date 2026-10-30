@@ -109,7 +109,8 @@ async function bookingState(enr) {
       ? { packs: await svc.addonPrices(), extra }
       : null,
     booked: {
-      branch: bookings.length ? bookings[0].branch : null,
+      // Booked branch, else the one chosen at payment (skips the branch step).
+      branch: bookings.length ? bookings[0].branch : (program === ADDON_BASE_PROGRAM ? await svc.branchFor(enr.student_email) : null),
       total,
       included,
       extra,
@@ -168,8 +169,10 @@ router.post('/addon-order', addonOrderLimiter, async (req, res, next) => {
     }
     const pack = ADDON_PACKS.find(p => p.slug === (req.body && req.body.pack));
     if (!pack) return res.status(400).json({ error: 'Please choose a pack.' });
+    // No form here: the branch carries over from their programme order or bookings.
+    const branch = (await svc.branchFor(enr.student_email)) || ((await svc.learnerBookings(enr))[0] || {}).branch || null;
     const { createAddonOrder } = require('./payment');
-    res.json(await createAddonOrder(enr, pack.slug));
+    res.json(await createAddonOrder(enr, pack.slug, branch));
   } catch (err) {
     if (err instanceof svc.BookingError) return sendError(res, next, err);
     console.error('[interview addon-order]', err?.error || err?.message || err);
@@ -194,6 +197,7 @@ router.post('/addon-order-public', addonOrderLimiter, async (req, res, next) => 
     if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || phone.length !== 10) {
       return res.status(400).json({ error: 'Please enter your name, a valid email and a 10-digit mobile number.' });
     }
+    if (!BRANCHES.includes(b.branch)) return res.status(400).json({ error: 'Please choose your branch (Civil, Mechanical or Electrical).' });
     const origin = req.headers.origin || '';
     if (!/\.translate\.goog$/.test(origin) && !(await verifyTurnstile(b.turnstile_token, req.ip))) {
       return res.status(400).json({ error: 'Verification failed. Please refresh the page and try again.' });
@@ -202,7 +206,7 @@ router.post('/addon-order-public', addonOrderLimiter, async (req, res, next) => 
       return res.status(400).json({ error: 'Please enter your real name, email and mobile number.' });
     }
     const { createAddonOrder } = require('./payment');
-    res.json(await createAddonOrder({ id: null, student_name: name, student_email: email, student_phone: phone }, pack.slug));
+    res.json(await createAddonOrder({ id: null, student_name: name, student_email: email, student_phone: phone }, pack.slug, b.branch));
   } catch (err) {
     console.error('[interview addon-order-public]', err?.error || err?.message || err);
     res.status(err.status || 500).json({ error: err.status ? err.message : 'Payment gateway error. Please try again.' });

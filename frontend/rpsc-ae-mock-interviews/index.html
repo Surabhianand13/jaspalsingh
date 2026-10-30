@@ -66,6 +66,9 @@
     .mi-phone { display: flex; }
     .mi-phone em { font-style: normal; border: 1.5px solid var(--line); border-right: 0; border-radius: 10px 0 0 10px; padding: 12px; background: #f9fafb; font-weight: 700; color: var(--muted); }
     .mi-phone input { border-radius: 0 10px 10px 0; }
+    .mi-branches { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .mi-branches button { border: 1.5px solid var(--line); background: #fff; color: var(--ink); border-radius: 10px; padding: 11px 6px; font-size: 14px; font-weight: 700; cursor: pointer; }
+    .mi-branches button.is-on { border-color: var(--purple); background: #f5f3ff; color: #6D28D9; box-shadow: 0 0 0 3px rgba(124,58,237,.15); }
     .mi-agree { display: flex; gap: 10px; align-items: flex-start; font-size: 13.5px; margin: 4px 0 14px; cursor: pointer; }
     .mi-agree input { width: 19px; height: 19px; accent-color: var(--purple); flex: none; margin-top: 1px; }
     .mi-btn { width: 100%; border: 0; background: var(--purple); color: #fff; font-weight: 800; font-size: 16px; border-radius: 12px; padding: 15px 20px; cursor: pointer; display: flex; gap: 8px; align-items: center; justify-content: center; }
@@ -128,6 +131,11 @@
       <label class="mi-field"><span>Full name</span><input id="fName" autocomplete="name" placeholder="As on your Govt. ID" /></label>
       <label class="mi-field"><span>Email</span><input id="fEmail" type="email" autocomplete="email" placeholder="you@example.com" /></label>
       <label class="mi-field"><span>Mobile number</span><div class="mi-phone"><em>+91</em><input id="fPhone" type="tel" inputmode="numeric" maxlength="10" autocomplete="tel-national" placeholder="10-digit number" /></div></label>
+      <div class="mi-field"><span>Your branch</span><div class="mi-branches" id="fBranch" role="radiogroup" aria-label="Your branch">
+        <button type="button" role="radio" aria-checked="false" data-branch="Civil">Civil</button>
+        <button type="button" role="radio" aria-checked="false" data-branch="Mechanical">Mechanical</button>
+        <button type="button" role="radio" aria-checked="false" data-branch="Electrical">Electrical</button>
+      </div></div>
       <div class="cf-turnstile" data-sitekey="0x4AAAAAADwBsHyyE7gWH-Oj" data-theme="light" data-refresh-expired="auto" style="margin:4px 0 12px;"></div>
       <label class="mi-agree"><input type="checkbox" id="fAgree" /> <span>I understand slots are booked first-come first-served, one per day, and booked slots cannot be rescheduled or cancelled. The venue is shared on email.</span></label>
       <button class="mi-btn" id="payBtn" disabled><i class="fas fa-lock"></i> <span id="payText">Pay</span></button>
@@ -216,11 +224,23 @@
       });
     }
 
+    var branch = '';
+    $('fBranch').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-branch]');
+      if (!b) return;
+      branch = b.getAttribute('data-branch');
+      [].forEach.call(this.querySelectorAll('[data-branch]'), function (x) {
+        x.classList.toggle('is-on', x === b);
+        x.setAttribute('aria-checked', x === b ? 'true' : 'false');
+      });
+    });
+
     $('payBtn').addEventListener('click', function () {
       var name = $('fName').value.trim(), email = $('fEmail').value.trim(), phone = $('fPhone').value.trim();
       if (!name) return showErr('Please enter your full name.');
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showErr('Please enter a valid email address.');
       if (phone.length !== 10) return showErr('Please enter your 10-digit mobile number.');
+      if (!branch) return showErr('Please choose your branch.');
       showErr('');
       if (DEMO) return showDone(email, picked.slots);
       var token = (typeof turnstile !== 'undefined') ? turnstile.getResponse() : '';
@@ -230,7 +250,7 @@
       btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Opening payment…';
       Promise.all([
         fetch(API + '/api/interviews/addon-order-public', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ pack: picked.slug, name: name, email: email, phone: phone, turnstile_token: token }) })
+          body: JSON.stringify({ pack: picked.slug, name: name, email: email, phone: phone, branch: branch, turnstile_token: token }) })
           .then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.error || 'Something went wrong.'); return d; }); }),
         loadRazorpay(),
       ]).then(function (res) {

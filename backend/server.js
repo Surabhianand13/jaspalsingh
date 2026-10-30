@@ -1716,6 +1716,8 @@ async function migrate() {
      to reference one keeps working). ── */
   await query(`ALTER TABLE programs ADD COLUMN IF NOT EXISTS pricing_tiers JSONB`);
   await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS centre_tier VARCHAR(30)`);
+  // RPSC orders: Civil / Mechanical / Electrical, asked at payment (config/interviewRules.js needsBranch)
+  await query(`ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS engg_branch VARCHAR(20)`);
 
   const shauryaOfflineLaunches = [
     {

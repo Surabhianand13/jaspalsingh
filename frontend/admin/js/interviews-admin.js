@@ -105,7 +105,7 @@
           ' <button class="btn-admin-secondary iv-sm" id="ivCalCheck">Check connection</button> <span id="ivCalMsg"></span></div>' +
         '<div class="iv-sample"><input type="email" id="ivSampleTo" placeholder="Send sample emails to…" value="anand.surabhi.a@gmail.com" />' +
           '<button class="btn-admin-secondary iv-sm" id="ivSampleBtn"><i class="fas fa-paper-plane"></i> Send sample emails</button></div>' +
-      '</div>' + addonBar(d.addon) +
+      '</div>' + branchBar(d.addon) + addonBar(d.addon) +
       '<div id="ivNewForm" style="display:none;"></div>';
 
     if (!d.phases.length) {
@@ -121,6 +121,22 @@
     }
     $('interviewsBody').innerHTML = html;
     wireTop();
+  }
+
+  /* RPSC AE learners (programme + interviews only) by branch. Branch is
+     asked at payment; older orders fall back to the branch they booked. */
+  function branchBar(a) {
+    var b = a && a.branches;
+    if (!b) return '';
+    var cell = function (label, r) {
+      return '<div class="iv-stat"><b>' + r.total + '</b><span>' + label +
+        (r.interviews_only ? '<br><small>' + r.programme + ' programme · ' + r.interviews_only + ' interviews only</small>' : '') + '</span></div>';
+    };
+    return '<div class="iv-bar" style="display:block;"><div style="margin-bottom:8px;"><strong><i class="fas fa-users"></i> RPSC AE learners by branch</strong></div>' +
+      '<div class="iv-stats" style="margin:0;">' +
+        cell('Total RPSC', b) +
+        b.rows.map(function (r) { return r.branch || r.total ? cell(r.branch || 'Branch not given', r) : ''; }).join('') +
+      '</div></div>';
   }
 
   /* Mock Interview Add-on packs: sales + the one-time offer email. */
