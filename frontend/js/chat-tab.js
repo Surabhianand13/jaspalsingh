@@ -2,7 +2,7 @@
   /* "Need help choosing a course?" guided chat - loads wherever this
      WhatsApp chat tab does, and sits above it. */
   var ch = document.createElement('script');
-  ch.src = '/js/course-helper.js?v=1';
+  ch.src = '/js/course-helper.js?v=2';
   ch.defer = true;
   document.head.appendChild(ch);
 

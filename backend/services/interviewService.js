@@ -24,6 +24,9 @@
      - no booking deadline - a slot is bookable until it starts
      - interview numbers (Interview 1/2/3) are by date, not by the
        order slots were booked - see withDisplayNumbers()
+     - Mock Interview Add-on packs (2026-10-30, config/interviewRules.js)
+       raise a learner's limit: 3 + 2 or 4 per paid pack, packs stack.
+       Same phases, same one-per-day rule - see extraSlotsFor()
 
    Every eligibility check is "paid AND not refunded" - see
    project notes on refunds: enrollments.status stays 'paid' after a
@@ -36,6 +39,7 @@ const { slugsFor, canonicalize } = require('../utils/programSlugAliases');
 const calendar = require('./interviewCalendar');
 const emails = require('./interviewEmails');
 const { SITE } = require('./paymentEmailService');
+const { ADDON_BASE_PROGRAM, ADDON_PACKS, ADDON_SLUGS } = require('../config/interviewRules');
 
 const TOKEN_PURPOSE = 'interview-booking';
 const PHASE_COLS = `p.id, p.program_slug, p.name, p.status, p.slots_per_learner, p.slot_minutes,
@@ -103,6 +107,11 @@ async function migrate() {
     digest_date DATE PRIMARY KEY,
     sent_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`);
+  // Who was emailed the Mock Interview Add-on offer (at most once each).
+  await query(`CREATE TABLE IF NOT EXISTS interview_addon_offers (
+    enrollment_id INTEGER PRIMARY KEY,
+    sent_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`);
 }
 
 /* ── Time helpers (IST is a fixed +05:30, no DST) ───────────── */
@@ -153,6 +162,36 @@ async function activeEnrollmentById(id) {
     [id]
   );
   return r.rows[0] || null;
+}
+
+/* ── Mock Interview Add-on allowance ────────────────────────── */
+
+const ADDON_SLOTS_JSON = JSON.stringify(Object.fromEntries(ADDON_PACKS.map(p => [p.slug, p.slots])));
+
+/* Extra slots bought through add-on packs: paid, not refunded, matched
+   by email (like bookings), so they count whichever enrollment the
+   learner books with. Only the RPSC AE Interview program has add-ons. */
+async function extraSlotsFor(programSlug, email, db = { query }) {
+  if (!email || canonicalize(programSlug) !== ADDON_BASE_PROGRAM) return 0;
+  const r = await db.query(
+    `SELECT COALESCE(SUM((($1::jsonb) ->> e.program_slug)::int), 0)::int AS n
+     FROM enrollments e
+     WHERE e.program_slug = ANY($2::text[]) AND e.status = 'paid' AND e.refund_status != 'initiated'
+       AND LOWER(TRIM(e.student_email)) = LOWER(TRIM($3))`,
+    [ADDON_SLOTS_JSON, ADDON_SLUGS, email]
+  );
+  return r.rows[0].n;
+}
+
+/* Included slots per learner when no phase is at hand (add-on emails):
+   the open phase's setting, else the latest phase's, else 3. */
+async function baseSlotsPerLearner(programSlug = ADDON_BASE_PROGRAM) {
+  const r = await query(
+    `SELECT slots_per_learner FROM interview_phases WHERE program_slug = ANY($1::text[])
+     ORDER BY (status = 'open') DESC, date_from DESC LIMIT 1`,
+    [slugsFor(canonicalize(programSlug))]
+  );
+  return r.rows.length ? r.rows[0].slots_per_learner : 3;
 }
 
 /* ── Reads ──────────────────────────────────────────────────── */
@@ -248,8 +287,9 @@ async function bookSlots(enrollment, { phaseId, slotIds, branch }) {
        WHERE p.program_slug = $3 AND (b.enrollment_id = $1 OR LOWER(TRIM(b.student_email)) = LOWER(TRIM($2)))`,
       [enrollment.id, enrollment.student_email || '', phase.program_slug]
     )).rows;
-    const remaining = phase.slots_per_learner - existing.length;
-    if (remaining <= 0) throw new BookingError(`You have already booked all ${phase.slots_per_learner} of your slots.`, 409);
+    const total = phase.slots_per_learner + await extraSlotsFor(phase.program_slug, enrollment.student_email, client);
+    const remaining = total - existing.length;
+    if (remaining <= 0) throw new BookingError(`You have already booked all ${total} of your slots.`, 409);
 
     // Branch is chosen with the first booking and kept for the rest.
     if (existing.length) branch = existing[0].branch;
@@ -290,8 +330,8 @@ async function bookSlots(enrollment, { phaseId, slotIds, branch }) {
     const all = withDisplayNumbers(existing.concat(inserted));
     const newIds = new Set(inserted.map(b => b.id));
     // After commit: confirmation + calendar, never blocking the response.
-    afterBooking(enrollment, phase, all, newIds).catch(err => console.error('[interview afterBooking]', err.message));
-    return { phase, bookings: all, newIds: [...newIds], remaining: phase.slots_per_learner - all.length, branch };
+    afterBooking(enrollment, phase, all, newIds, total).catch(err => console.error('[interview afterBooking]', err.message));
+    return { phase, bookings: all, newIds: [...newIds], remaining: total - all.length, total, branch };
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
     if (err.code === '23505') {
@@ -303,7 +343,7 @@ async function bookSlots(enrollment, { phaseId, slotIds, branch }) {
   }
 }
 
-async function afterBooking(enrollment, phase, allBookings, newIds) {
+async function afterBooking(enrollment, phase, allBookings, newIds, total) {
   if (enrollment.student_email) {
     emails.sendConfirmationEmail({
       to: enrollment.student_email,
@@ -312,7 +352,7 @@ async function afterBooking(enrollment, phase, allBookings, newIds) {
       branch: allBookings[0].branch,
       bookings: allBookings,
       newIds,
-      total: phase.slots_per_learner,
+      total,
       link: bookingLink(enrollment.id),
       phase,
     }).catch(err => console.error('[interview confirmation email]', err.message));
@@ -406,7 +446,8 @@ async function announceVenue(phase) {
 
 /* One row per learner (deduped by email) who has paid and not been
    refunded, with how many slots they hold (any phase) and their invite
-   status for the given phase. pending = slots still to book. */
+   status for the given phase. total_slots = included + add-on slots,
+   pending = slots still to book. */
 async function eligibleLearners(phase) {
   const r = await query(
     `WITH paid AS (
@@ -419,7 +460,7 @@ async function eligibleLearners(phase) {
      )
      SELECT paid.*,
             COALESCE(bk.booked_count, 0) AS booked_count, bk.branch, bk.slots,
-            inv.invited_at, inv.last_reminded_at
+            inv.invited_at, inv.last_reminded_at, ad.extra_slots
      FROM paid
      LEFT JOIN LATERAL (
        SELECT COUNT(*)::int AS booked_count, MIN(b.branch) AS branch,
@@ -427,11 +468,21 @@ async function eligibleLearners(phase) {
        FROM interview_bookings b JOIN interview_slots s ON s.id = b.slot_id JOIN interview_phases p ON p.id = b.phase_id
        WHERE p.program_slug = $3 AND (b.enrollment_id = paid.id OR LOWER(TRIM(b.student_email)) = LOWER(TRIM(paid.student_email)))
      ) bk ON TRUE
+     LEFT JOIN LATERAL (
+       SELECT COALESCE(SUM((($4::jsonb) ->> a.program_slug)::int), 0)::int AS extra_slots
+       FROM enrollments a
+       WHERE a.program_slug = ANY($5::text[]) AND a.status = 'paid' AND a.refund_status != 'initiated'
+         AND LOWER(TRIM(a.student_email)) = LOWER(TRIM(paid.student_email))
+     ) ad ON TRUE
      LEFT JOIN interview_invites inv ON inv.phase_id = $2 AND inv.enrollment_id = paid.id
      ORDER BY paid.paid_at ASC`,
-    [slugsFor(phase.program_slug), phase.id, phase.program_slug]
+    [slugsFor(phase.program_slug), phase.id, phase.program_slug, ADDON_SLOTS_JSON,
+     canonicalize(phase.program_slug) === ADDON_BASE_PROGRAM ? ADDON_SLUGS : []]
   );
-  return r.rows.map(l => Object.assign(l, { pending: Math.max(0, phase.slots_per_learner - l.booked_count) }));
+  return r.rows.map(l => {
+    const total = phase.slots_per_learner + l.extra_slots;
+    return Object.assign(l, { total_slots: total, pending: Math.max(0, total - l.booked_count) });
+  });
 }
 
 /* mode 'new'    - everyone with slots still to book, not yet invited to this phase
@@ -446,7 +497,7 @@ async function sendInvites(phase, mode) {
     for (const l of targets) {
       try {
         if (mode === 'remind') {
-          await emails.sendInviteEmail({ to: l.student_email, name: l.student_name, phase, link: bookingLink(l.id), reminder: true, bookedCount: l.booked_count });
+          await emails.sendInviteEmail({ to: l.student_email, name: l.student_name, phase, link: bookingLink(l.id), reminder: true, bookedCount: l.booked_count, total: l.total_slots });
           await query(`UPDATE interview_invites SET last_reminded_at = NOW() WHERE phase_id = $1 AND enrollment_id = $2`, [phase.id, l.id]);
         } else {
           const claim = await query(
@@ -454,7 +505,7 @@ async function sendInvites(phase, mode) {
             [phase.id, l.id]
           );
           if (!claim.rows.length) continue;
-          await emails.sendInviteEmail({ to: l.student_email, name: l.student_name, phase, link: bookingLink(l.id), bookedCount: l.booked_count });
+          await emails.sendInviteEmail({ to: l.student_email, name: l.student_name, phase, link: bookingLink(l.id), bookedCount: l.booked_count, total: l.total_slots });
         }
       } catch (err) {
         console.error(`[interview invite] ${l.student_email}:`, err.message);
@@ -477,13 +528,15 @@ async function inviteNewEnrollment(enrollment) {
   if (!phase) return;
   const fresh = await activeEnrollmentById(enrollment.id);
   if (!fresh) return;
-  if ((await learnerBookings(fresh)).length >= phase.slots_per_learner) return;
+  const total = phase.slots_per_learner + await extraSlotsFor(phase.program_slug, fresh.student_email);
+  const bookedCount = (await learnerBookings(fresh)).length;
+  if (bookedCount >= total) return;
   const claim = await query(
     `INSERT INTO interview_invites (phase_id, enrollment_id) VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING 1`,
     [phase.id, fresh.id]
   );
   if (!claim.rows.length) return;
-  await emails.sendInviteEmail({ to: fresh.student_email, name: fresh.student_name, phase, link: bookingLink(fresh.id) });
+  await emails.sendInviteEmail({ to: fresh.student_email, name: fresh.student_name, phase, link: bookingLink(fresh.id), bookedCount, total });
 }
 
 /* ── Phase summary (admin list + daily digest) ──────────────── */
@@ -537,7 +590,8 @@ async function tick() {
     if (b.booked_late || !b.student_email) continue;
     if (!(await activeEnrollmentById(b.enrollment_id))) continue; // refunded since booking
     const phase = await getPhase(b.phase_id);
-    emails.sendDayBeforeReminder({ to: b.student_email, name: b.student_name, booking: b, phase })
+    const total = phase.slots_per_learner + await extraSlotsFor(phase.program_slug, b.student_email);
+    emails.sendDayBeforeReminder({ to: b.student_email, name: b.student_name, booking: b, phase, total })
       .catch(err => console.error('[interview reminder]', err.message));
   }
 
@@ -577,10 +631,97 @@ async function maybeSendDigest(todayIST) {
   console.log(`[interview digest] sent for ${todayIST}`);
 }
 
+/* ── Mock Interview Add-on: offer + purchase emails ──────────── */
+
+/* The learner's RPSC AE Interview enrollment (the one booking links are
+   signed for): earliest paid, not refunded, matched by email. */
+async function baseEnrollmentForEmail(email) {
+  if (!email) return null;
+  const r = await query(
+    `SELECT id FROM enrollments
+     WHERE program_slug = ANY($1::text[]) AND status = 'paid' AND refund_status != 'initiated'
+       AND LOWER(TRIM(student_email)) = LOWER(TRIM($2))
+     ORDER BY (order_id LIKE 'JSP-ADMINPREVIEW-%'), paid_at ASC LIMIT 1`,
+    [slugsFor(ADDON_BASE_PROGRAM), email]
+  );
+  return r.rows.length ? activeEnrollmentById(r.rows[0].id) : null;
+}
+
+/* Admin summary: packs sold and who has / hasn't had the offer email. */
+async function addonSummary() {
+  const learners = await eligibleLearners({ id: 0, program_slug: ADDON_BASE_PROGRAM, slots_per_learner: 3 });
+  const sold = (await query(
+    `SELECT program_slug, COUNT(*)::int AS n FROM enrollments
+     WHERE program_slug = ANY($1::text[]) AND status = 'paid' AND refund_status != 'initiated'
+       AND order_id NOT LIKE 'JSP-ADMINPREVIEW-%'
+     GROUP BY program_slug`,
+    [ADDON_SLUGS]
+  )).rows;
+  const offered = new Set((await query(`SELECT enrollment_id FROM interview_addon_offers`)).rows.map(r => r.enrollment_id));
+  const targets = learners.filter(l => l.student_email && !l.extra_slots);
+  return {
+    packs: ADDON_PACKS.map(p => ({ slug: p.slug, slots: p.slots, sold: (sold.find(x => x.program_slug === p.slug) || {}).n || 0 })),
+    buyers: learners.filter(l => l.extra_slots > 0).length,
+    offered: targets.filter(l => offered.has(l.id)).length,
+    not_offered: targets.filter(l => !offered.has(l.id)).length,
+  };
+}
+
+/* Email the add-on offer (with their own booking link) to every paid
+   learner who hasn't bought a pack or had the offer yet. Background send. */
+async function sendAddonOffers() {
+  const learners = (await eligibleLearners({ id: 0, program_slug: ADDON_BASE_PROGRAM, slots_per_learner: 3 }))
+    .filter(l => l.student_email && !l.extra_slots);
+  const offered = new Set((await query(`SELECT enrollment_id FROM interview_addon_offers`)).rows.map(r => r.enrollment_id));
+  const targets = learners.filter(l => !offered.has(l.id));
+  const prices = await addonPrices();
+  (async () => {
+    for (const l of targets) {
+      try {
+        const claim = await query(`INSERT INTO interview_addon_offers (enrollment_id) VALUES ($1) ON CONFLICT DO NOTHING RETURNING 1`, [l.id]);
+        if (!claim.rows.length) continue;
+        await emails.sendAddonOfferEmail({ to: l.student_email, name: l.student_name, link: bookingLink(l.id), packs: prices });
+      } catch (err) {
+        console.error(`[interview addon offer] ${l.student_email}:`, err.message);
+      }
+    }
+    console.log(`[interview addon offer] queued ${targets.length} email(s)`);
+  })();
+  return targets.length;
+}
+
+/* Live pack prices (programs table, admin-editable) with config fallback. */
+async function addonPrices() {
+  const rows = (await query(`SELECT slug, price FROM programs WHERE slug = ANY($1::text[])`, [ADDON_SLUGS])).rows;
+  return ADDON_PACKS.map(p => {
+    const row = rows.find(r => r.slug === p.slug);
+    return { slug: p.slug, slots: p.slots, price: row && row.price != null ? Number(row.price) : p.price };
+  });
+}
+
+/* After an add-on pack is paid (replaces the generic welcome email -
+   no form to fill): how many interviews they have now + booking link. */
+async function sendAddonPurchasedEmail(addonEnrollment) {
+  const base = await baseEnrollmentForEmail(addonEnrollment.student_email);
+  if (!base) {
+    console.error(`[interview addon] paid add-on ${addonEnrollment.order_id} has no active RPSC AE enrollment for ${addonEnrollment.student_email}`);
+    return;
+  }
+  const pack = ADDON_PACKS.find(p => p.slug === addonEnrollment.program_slug);
+  const total = await baseSlotsPerLearner() + await extraSlotsFor(ADDON_BASE_PROGRAM, base.student_email);
+  const booked = (await learnerBookings(base)).length;
+  const open = (await openPhasesWithAvailability(ADDON_BASE_PROGRAM)).filter(p => p.status === 'open');
+  await emails.sendAddonPurchasedEmail({
+    to: base.student_email, name: base.student_name, added: pack ? pack.slots : 0,
+    total, booked, link: bookingLink(base.id), phaseOpen: open.length > 0,
+  });
+}
+
 module.exports = {
   migrate, generateSlotTimes, istDateKey,
   signBookingToken, bookingLink, verifyBookingToken, activeEnrollmentById,
   getPhase, learnerBookings, withDisplayNumbers, openPhasesWithAvailability, bookSlots, BookingError,
   releaseLearner, updateCalendarLocations, announceVenue, eligibleLearners, sendInvites, inviteNewEnrollment, phaseStats,
   syncCalendar, tick, PHASE_COLS,
+  extraSlotsFor, baseEnrollmentForEmail, addonSummary, addonPrices, sendAddonOffers, sendAddonPurchasedEmail,
 };
