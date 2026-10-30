@@ -105,7 +105,7 @@
           ' <button class="btn-admin-secondary iv-sm" id="ivCalCheck">Check connection</button> <span id="ivCalMsg"></span></div>' +
         '<div class="iv-sample"><input type="email" id="ivSampleTo" placeholder="Send sample emails to…" value="anand.surabhi.a@gmail.com" />' +
           '<button class="btn-admin-secondary iv-sm" id="ivSampleBtn"><i class="fas fa-paper-plane"></i> Send sample emails</button></div>' +
-      '</div>' + addonBar(d.addon) +
+      '</div>' + branchBar(d.addon) + addonBar(d.addon) +
       '<div id="ivNewForm" style="display:none;"></div>';
 
     if (!d.phases.length) {
@@ -123,12 +123,29 @@
     wireTop();
   }
 
+  /* RPSC AE learners (programme + interviews only) by branch. Branch is
+     asked at payment; older orders fall back to the branch they booked. */
+  function branchBar(a) {
+    var b = a && a.branches;
+    if (!b) return '';
+    var cell = function (label, r) {
+      return '<div class="iv-stat"><b>' + r.total + '</b><span>' + label +
+        (r.interviews_only ? '<br><small>' + r.programme + ' programme · ' + r.interviews_only + ' interviews only</small>' : '') + '</span></div>';
+    };
+    return '<div class="iv-bar" style="display:block;"><div style="margin-bottom:8px;"><strong><i class="fas fa-users"></i> RPSC AE learners by branch</strong></div>' +
+      '<div class="iv-stats" style="margin:0;">' +
+        cell('Total RPSC', b) +
+        b.rows.map(function (r) { return r.branch || r.total ? cell(r.branch || 'Branch not given', r) : ''; }).join('') +
+      '</div></div>';
+  }
+
   /* Mock Interview Add-on packs: sales + the one-time offer email. */
   function addonBar(a) {
     if (!a) return '';
     return '<div class="iv-bar"><div><strong><i class="fas fa-user-tie"></i> Mock Interview Add-on:</strong> ' +
         a.packs.map(function (p) { return p.sold + ' × ' + p.slots + '-interview pack'; }).join(' · ') +
         ' · <strong>' + a.buyers + '</strong> learner' + (a.buyers === 1 ? '' : 's') + ' bought' +
+        (a.interviews_only ? ' (' + a.interviews_only + ' interviews-only, not enrolled)' : '') +
         (a.offered ? ' · offer emailed to ' + a.offered : '') + '</div>' +
       '<div><button class="btn-admin-secondary iv-sm" id="ivAddonOffer"' + (a.not_offered ? '' : ' disabled') + '><i class="fas fa-bullhorn"></i> Email add-on offer (' + a.not_offered + ' learners)</button></div></div>';
   }
@@ -526,7 +543,7 @@
         : '<span class="iv-badge iv-badge--warn">Not booked</span>';
       var invite = l.invited_at ? 'Invited ' + esc(new Date(l.invited_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: TZ })) + (l.last_reminded_at ? '<br>Reminded ' + esc(new Date(l.last_reminded_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: TZ })) : '') : '<span class="iv-meta">Not invited to this phase</span>';
       return '<tr><td><strong>' + esc(l.student_name) + '</strong><br><span class="iv-meta">' + esc(l.student_phone || '') + ' · ' + esc(l.student_email || '') + '</span></td>' +
-        '<td>' + esc(l.roll_number || '') + '</td><td>' + status + (l.extra_slots ? ' <span class="iv-badge" style="background:#ede9fe;color:#5b21b6;">Add-on +' + l.extra_slots + '</span>' : '') + (l.branch ? '<br><span class="iv-meta">' + esc(l.branch) + '</span>' : '') + '</td><td>' + (slots || '') + '</td><td>' + invite + '</td>' +
+        '<td>' + esc(l.roll_number || '') + '</td><td>' + status + (l.extra_slots ? ' <span class="iv-badge" style="background:#ede9fe;color:#5b21b6;">' + (l.has_base ? 'Add-on +' + l.extra_slots : 'Interviews only (' + l.extra_slots + ')') + '</span>' : '') + (l.branch ? '<br><span class="iv-meta">' + esc(l.branch) + '</span>' : '') + '</td><td>' + (slots || '') + '</td><td>' + invite + '</td>' +
         '<td class="iv-row-actions"><button class="btn-admin-secondary iv-sm" data-copy="' + esc(l.booking_link) + '" title="Copy this learner\'s personal booking link"><i class="fas fa-link"></i> Copy link</button>' +
           '<a class="btn-admin-secondary iv-sm" href="' + esc(l.booking_link) + '" target="_blank" rel="noopener" title="Book on the learner\'s behalf - they still get the confirmation email"><i class="fas fa-up-right-from-square"></i> Book for them</a>' +
           (l.booked_count ? '<button class="btn-admin-secondary iv-sm iv-danger" data-release="' + l.id + '" data-name="' + esc(l.student_name) + '"><i class="fas fa-rotate-left"></i> Release slots</button>' : '') +

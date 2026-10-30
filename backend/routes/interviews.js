@@ -9,6 +9,10 @@
      POST /api/interviews/addon-order      - Razorpay order for a Mock Interview
                                              Add-on pack { pack: slug }; paid via
                                              the normal POST /api/payment/verify
+     POST /api/interviews/addon-order-public - same packs for people NOT enrolled
+                                             ("interviews only"), from the unlisted
+                                             /rpsc-ae-mock-interviews/ page:
+                                             { pack, name, email, phone, turnstile_token }
 
    Admin (protect):
      GET    /api/interviews/admin/overview
@@ -34,11 +38,13 @@ const { query } = require('../config/db');
 const { protect } = require('../middleware/auth');
 const { getActiveEnrollment } = require('../utils/enrollmentAccess');
 const { canonicalize } = require('../utils/programSlugAliases');
+const { verifyTurnstile } = require('../utils/turnstile');
+const { isObviousTestSubmission } = require('../utils/spamFilter');
 const svc = require('../services/interviewService');
 const calendar = require('../services/interviewCalendar');
 const emails = require('../services/interviewEmails');
 const { SITE } = require('../services/paymentEmailService');
-const { BRANCHES, INSTRUCTIONS, TERMS, CONTACT_PHONE, CONTACT_WA_LINK, DEFAULT_VENUE, ADDON_BASE_PROGRAM, ADDON_PACKS } = require('../config/interviewRules');
+const { BRANCHES, INSTRUCTIONS, TERMS, CONTACT_PHONE, CONTACT_WA_LINK, DEFAULT_VENUE, ADDON_BASE_PROGRAM, ADDON_PACKS, addonPack } = require('../config/interviewRules');
 
 const DEFAULT_PROGRAM = 'rpsc-ae-interview';
 
@@ -94,17 +100,17 @@ async function bookingState(enr) {
   const bookings = await svc.learnerBookings(enr);
   const phases = await svc.openPhasesWithAvailability(enr.program_slug, bookings.map(b => svc.istDateKey(b.starts_at)));
   const firstPhase = bookings.length ? await svc.getPhase(bookings[0].phase_id) : phases[0];
-  const included = (firstPhase && firstPhase.slots_per_learner) || 3;
-  const extra = await svc.extraSlotsFor(enr.program_slug, enr.student_email);
-  const total = included + extra;
+  const program = svc.programOf(enr);
+  const { included, extra, total } = await svc.slotAllowance(program, enr.student_email, (firstPhase && firstPhase.slots_per_learner) || 3);
   const remaining = Math.max(0, total - bookings.length);
   return {
     // Mock Interview Add-on packs on sale (RPSC AE only) + what they own.
-    addons: canonicalize(enr.program_slug) === ADDON_BASE_PROGRAM
+    addons: program === ADDON_BASE_PROGRAM
       ? { packs: await svc.addonPrices(), extra }
       : null,
     booked: {
-      branch: bookings.length ? bookings[0].branch : null,
+      // Booked branch, else the one chosen at payment (skips the branch step).
+      branch: bookings.length ? bookings[0].branch : (program === ADDON_BASE_PROGRAM ? await svc.branchFor(enr.student_email) : null),
       total,
       included,
       extra,
@@ -124,7 +130,11 @@ async function bookingState(enr) {
 router.get('/booking', async (req, res, next) => {
   try {
     const enr = await resolveEnrollment(req);
-    const learner = { name: enr.student_name, roll_number: enr.roll_number, program_name: enr.program_name };
+    const learner = {
+      name: enr.student_name, roll_number: enr.roll_number,
+      // Interviews-only buyers book with their pack enrollment.
+      program_name: addonPack(enr.program_slug) ? 'RPSC AE 2024 - Mock Interviews' : enr.program_name,
+    };
     res.json(Object.assign({ learner }, await bookingState(enr), STATIC_INFO));
   } catch (err) { sendError(res, next, err); }
 });
@@ -154,16 +164,51 @@ const addonOrderLimiter = rateLimit({
 router.post('/addon-order', addonOrderLimiter, async (req, res, next) => {
   try {
     const enr = await resolveEnrollment(req);
-    if (canonicalize(enr.program_slug) !== ADDON_BASE_PROGRAM) {
+    if (svc.programOf(enr) !== ADDON_BASE_PROGRAM) {
       return res.status(403).json({ error: 'Mock interview add-ons are only for RPSC AE Interview learners.' });
     }
     const pack = ADDON_PACKS.find(p => p.slug === (req.body && req.body.pack));
     if (!pack) return res.status(400).json({ error: 'Please choose a pack.' });
+    // No form here: the branch carries over from their programme order or bookings.
+    const branch = (await svc.branchFor(enr.student_email)) || ((await svc.learnerBookings(enr))[0] || {}).branch || null;
     const { createAddonOrder } = require('./payment');
-    res.json(await createAddonOrder(enr, pack.slug));
+    res.json(await createAddonOrder(enr, pack.slug, branch));
   } catch (err) {
     if (err instanceof svc.BookingError) return sendError(res, next, err);
     console.error('[interview addon-order]', err?.error || err?.message || err);
+    res.status(err.status || 500).json({ error: err.status ? err.message : 'Payment gateway error. Please try again.' });
+  }
+});
+
+/* ── POST /addon-order-public ───────────────────────────────
+   "Interviews only": anyone can buy a pack from the unlisted
+   /rpsc-ae-mock-interviews/ page (never linked from the site, so the
+   programme itself is not undercut). Same packs and prices; the buyer
+   books in the same phases with 0 included + their pack slots. An
+   enrolled learner using this page just gets the pack added as usual. */
+router.post('/addon-order-public', addonOrderLimiter, async (req, res, next) => {
+  try {
+    const b = req.body || {};
+    const pack = ADDON_PACKS.find(p => p.slug === b.pack);
+    if (!pack) return res.status(400).json({ error: 'Please choose a pack.' });
+    const name = String(b.name || '').trim();
+    const email = String(b.email || '').toLowerCase().trim();
+    const phone = String(b.phone || '').replace(/\D/g, '').slice(-10);
+    if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || phone.length !== 10) {
+      return res.status(400).json({ error: 'Please enter your name, a valid email and a 10-digit mobile number.' });
+    }
+    if (!BRANCHES.includes(b.branch)) return res.status(400).json({ error: 'Please choose your branch (Civil, Mechanical or Electrical).' });
+    const origin = req.headers.origin || '';
+    if (!/\.translate\.goog$/.test(origin) && !(await verifyTurnstile(b.turnstile_token, req.ip))) {
+      return res.status(400).json({ error: 'Verification failed. Please refresh the page and try again.' });
+    }
+    if (isObviousTestSubmission({ name, email, phone })) {
+      return res.status(400).json({ error: 'Please enter your real name, email and mobile number.' });
+    }
+    const { createAddonOrder } = require('./payment');
+    res.json(await createAddonOrder({ id: null, student_name: name, student_email: email, student_phone: phone }, pack.slug, b.branch));
+  } catch (err) {
+    console.error('[interview addon-order-public]', err?.error || err?.message || err);
     res.status(err.status || 500).json({ error: err.status ? err.message : 'Payment gateway error. Please try again.' });
   }
 });

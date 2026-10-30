@@ -27,6 +27,7 @@ const { sendAllPaymentEmails, onEnrollmentPaid, getProgramData } = require('./pa
 const { optionalLearner } = require('../middleware/learnerAuth');
 const { isObviousTestSubmission } = require('../utils/spamFilter');
 const { verifyTurnstile } = require('../utils/turnstile');
+const { needsBranch, BRANCHES } = require('../config/interviewRules');
 
 const ICICI_MID          = process.env.ICICI_MID          || '100000000539179';
 const ICICI_AGGREGATOR   = process.env.ICICI_AGGREGATOR   || '';
@@ -118,7 +119,7 @@ router.post('/create-order', createOrderLimiter, optionalLearner, async (req, re
   }
 
   try {
-    const { program_slug, name, email: rawEmail, phone: rawPhone, turnstile_token } = req.body;
+    const { program_slug, name, email: rawEmail, phone: rawPhone, turnstile_token, branch } = req.body;
 
     if (!program_slug || !name || !rawEmail || !rawPhone) {
       return res.status(400).json({ error: 'name, email, phone and program_slug are required.' });
@@ -136,6 +137,10 @@ router.post('/create-order', createOrderLimiter, optionalLearner, async (req, re
 
     if (isObviousTestSubmission({ name, email, phone })) {
       return res.status(400).json({ error: 'Please enter your real name, email and mobile number.' });
+    }
+
+    if (needsBranch(program_slug) && !BRANCHES.includes(branch)) {
+      return res.status(400).json({ error: 'Please choose your branch (Civil, Mechanical or Electrical).' });
     }
 
     const program = await getProgramData(program_slug);
@@ -158,10 +163,10 @@ router.post('/create-order', createOrderLimiter, optionalLearner, async (req, re
     const merchantTxnNo = order_id.replace(/-/g, '').slice(0, 20);
 
     await query(
-      `INSERT INTO enrollments (order_id, program_slug, program_name, amount, student_name, student_email, student_phone, status, learner_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8)
+      `INSERT INTO enrollments (order_id, program_slug, program_name, amount, student_name, student_email, student_phone, status, learner_id, engg_branch)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8, $9)
        ON CONFLICT (order_id) DO NOTHING`,
-      [order_id, program_slug, program.name, finalPrice, name, email, phone, req.learner?.id || null]
+      [order_id, program_slug, program.name, finalPrice, name, email, phone, req.learner?.id || null, needsBranch(program_slug) ? branch : null]
     );
 
     // Store merchantTxnNo in cf_payment_id for the return callback lookup

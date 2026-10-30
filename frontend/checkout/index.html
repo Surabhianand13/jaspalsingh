@@ -317,6 +317,17 @@
             <input class="form-input" type="email" id="inp-email" name="email" placeholder="your@email.com" required autocomplete="email" />
           </div>
 
+          <!-- Branch - RPSC programs only (shown by script) -->
+          <div class="form-group" id="grp-branch" style="display:none;">
+            <label class="form-label" for="inp-branch">Your Branch *</label>
+            <select class="form-input" id="inp-branch" name="branch" style="cursor:pointer;">
+              <option value="">Select your branch</option>
+              <option value="Civil">Civil</option>
+              <option value="Mechanical">Mechanical</option>
+              <option value="Electrical">Electrical</option>
+            </select>
+          </div>
+
           <!-- Password - only for guests (creates account on purchase) -->
           <div class="form-group" id="grp-password" style="display:none;">
             <label class="form-label" for="inp-password" id="lbl-password">Create Password * <span style="font-size:11px;font-weight:400;color:#9999b0;">(sets up your free account)</span></label>
@@ -568,6 +579,11 @@
 
     const params = new URLSearchParams(window.location.search);
     const slug   = params.get('program');
+
+    // RPSC programs ask the branch at payment (backend needsBranch).
+    const needsBranch = /^rpsc-/.test(slug || '');
+    if (needsBranch) document.getElementById('grp-branch').style.display = '';
+    function branchValue() { return needsBranch ? document.getElementById('inp-branch').value : null; }
 
     // Show EMI failure notice when returning from a failed ICICI payment
     if (params.get('icici_failed') === '1') {
@@ -891,6 +907,7 @@
       if (!name)               { showError('Please enter your name as per Aadhaar.'); return; }
       if (phone.length !== 10) { showError('Please enter a valid 10-digit mobile number.'); return; }
       if (!email)              { showError('Please enter your email ID.'); return; }
+      if (needsBranch && !branchValue()) { showError('Please select your branch (Civil, Mechanical or Electrical).'); return; }
       if (!_loggedIn && password.length < 6) { showError('Please set a password (min 6 characters) to create your account.'); return; }
       if (!tnc)                { showError('Please read and accept the Terms & Conditions to proceed.'); return; }
       if (!isTranslateProxy && !turnstileToken) { showError('Security check is still loading - please wait a moment and click Pay again.'); return; }
@@ -950,7 +967,7 @@
 
         const res  = await fetch(API + '/api/payment/create-order', {
           method: 'POST', headers,
-          body: JSON.stringify({ program_slug: slug, name, email, phone, coupon_code: appliedCoupon, referral_code: appliedReferral, turnstile_token: turnstileToken, centre_tier: selectedCentreTier }),
+          body: JSON.stringify({ program_slug: slug, name, email, phone, coupon_code: appliedCoupon, referral_code: appliedReferral, turnstile_token: turnstileToken, centre_tier: selectedCentreTier, branch: branchValue() }),
         });
         const data = await res.json();
 
@@ -1049,6 +1066,7 @@
       if (!name)               { showError('Please enter your name as per Aadhaar.'); return; }
       if (phone.length !== 10) { showError('Please enter a valid 10-digit mobile number.'); return; }
       if (!email)              { showError('Please enter your email ID.'); return; }
+      if (needsBranch && !branchValue()) { showError('Please select your branch (Civil, Mechanical or Electrical).'); return; }
       if (!_loggedIn && password.length < 6) { showError('Please set a password (min 6 characters) to create your account.'); return; }
       if (!tnc)                { showError('Please read and accept the Terms & Conditions to proceed.'); return; }
       if (!isTranslateProxy && !turnstileToken) { showError('Security check is still loading - please wait a moment and try again.'); return; }
@@ -1103,7 +1121,7 @@
 
         const res  = await fetch(API + '/api/icici/create-order', {
           method: 'POST', headers,
-          body: JSON.stringify({ program_slug: slug, name, email, phone, turnstile_token: turnstileToken }),
+          body: JSON.stringify({ program_slug: slug, name, email, phone, turnstile_token: turnstileToken, branch: branchValue() }),
         });
         const data = await res.json();
 

@@ -218,9 +218,11 @@
       ? '<div class="bi-addon-ok"><i class="fas fa-circle-check"></i> Payment received - ' + state.justBought + ' extra mock interview' + (state.justBought === 1 ? '' : 's') + ' added. ' + (booked().remaining && bookablePhases().length ? 'Pick your slots above.' : 'We will email you when the next booking round opens.') + '</div>'
       : '';
     return '<div class="bi-card bi-addon" id="addonCard">' + bought +
-      '<div class="bi-addon-tag">For RPSC AE Interview learners only</div>' +
+      '<div class="bi-addon-tag">' + (booked().included ? 'For RPSC AE Interview learners only' : 'RPSC AE mock interviews') + '</div>' +
       '<div class="bi-h2"><i class="fas fa-user-tie" style="color:#6D28D9;"></i> ' + (a.extra ? 'Add even more mock interviews' : 'Want more mock interviews?') + '</div>' +
-      '<p class="bi-hint">' + (a.extra
+      '<p class="bi-hint">' + (a.extra && !booked().included
+        ? 'You have <strong>' + a.extra + ' mock interview' + (a.extra === 1 ? '' : 's') + '</strong>. Want more practice? Packs stack - buy another anytime.'
+        : a.extra
         ? 'You have <strong>' + a.extra + ' add-on interview' + (a.extra === 1 ? '' : 's') + '</strong> on top of your ' + (booked().included || 3) + ' included ones. Packs stack - buy another anytime.'
         : 'Your programme includes ' + (booked().included || 3) + ' one-to-one mock interviews. Get more practice in front of the panel before the real RPSC board.') + '</p>' +
       '<div class="bi-packs">' + a.packs.map(function (p) {
@@ -336,7 +338,7 @@
     var title = done ? 'All ' + b.total + ' interview slots booked'
       : n ? 'Book your remaining ' + b.remaining + ' ' + plural(b.remaining, 'slot', 'slots')
       : 'Book your interview slots';
-    var extraText = b.extra ? ' (' + (b.included || b.total - b.extra) + ' included + ' + b.extra + ' add-on)' : '';
+    var extraText = b.extra && b.included ? ' (' + b.included + ' included + ' + b.extra + ' add-on)' : '';
     var sub = done ? 'You are all set. See you at the venue!' + (b.extra ? ' You have ' + b.total + ' interviews' + extraText + '.' : '')
       : 'You get ' + b.total + ' slots' + extraText + ' on ' + b.total + ' different days. Book one now and the rest anytime later - or all together.';
     var dots = '';

@@ -15,7 +15,7 @@ const { isObviousTestSubmission } = require('../utils/spamFilter');
 const { verifyTurnstile } = require('../utils/turnstile');
 const { generateRollNumber } = require('../utils/rollNumber');
 const { resolveRollNumberPrefix } = require('../utils/rollNumberPrefix');
-const { addonPack } = require('../config/interviewRules');
+const { addonPack, needsBranch, BRANCHES } = require('../config/interviewRules');
 
 const REFERRAL_DISCOUNT = 100;
 const REFERRAL_MIN_PRICE = 1599; // referral codes only apply to programs priced at or above this
@@ -355,7 +355,7 @@ router.post('/validate-referral', optionalLearner, async (req, res) => {
 /* ── POST /api/payment/create-order ─────────────────────── */
 router.post('/create-order', createOrderLimiter, optionalLearner, async (req, res) => {
   try {
-    const { program_slug, name, email: rawEmail, phone: rawPhone, coupon_code, referral_code, turnstile_token, centre_tier } = req.body;
+    const { program_slug, name, email: rawEmail, phone: rawPhone, coupon_code, referral_code, turnstile_token, centre_tier, branch } = req.body;
 
     if (!program_slug || !name || !rawEmail || !rawPhone) {
       return res.status(400).json({ error: 'name, email, phone and program_slug are required.' });
@@ -386,6 +386,10 @@ router.post('/create-order', createOrderLimiter, optionalLearner, async (req, re
     // (createAddonOrder), never through the public checkout.
     if (addonPack(program_slug)) {
       return res.status(400).json({ error: 'This add-on is only for enrolled RPSC AE Interview learners - buy it from your interview booking page.' });
+    }
+
+    if (needsBranch(program_slug) && !BRANCHES.includes(branch)) {
+      return res.status(400).json({ error: 'Please choose your branch (Civil, Mechanical or Electrical).' });
     }
 
     const program = await getProgramData(program_slug);
@@ -433,10 +437,10 @@ router.post('/create-order', createOrderLimiter, optionalLearner, async (req, re
 
     // Store enrollment as pending
     await query(
-      `INSERT INTO enrollments (order_id, program_slug, program_name, amount, student_name, student_email, student_phone, status, coupon_code, referred_by, learner_id, centre_tier)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8, $9, $10, $11)
+      `INSERT INTO enrollments (order_id, program_slug, program_name, amount, student_name, student_email, student_phone, status, coupon_code, referred_by, learner_id, centre_tier, engg_branch)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8, $9, $10, $11, $12)
        ON CONFLICT (order_id) DO NOTHING`,
-      [order_id, program_slug, program.name, finalPrice, name, email, phone, couponApplied, referredBy, req.learner?.id || null, resolved.tier]
+      [order_id, program_slug, program.name, finalPrice, name, email, phone, couponApplied, referredBy, req.learner?.id || null, resolved.tier, needsBranch(program_slug) ? branch : null]
     );
 
     res.json({
@@ -460,7 +464,7 @@ router.post('/create-order', createOrderLimiter, optionalLearner, async (req, re
    typed, and no Turnstile (the signed link already proves who it is).
    The packs are is_visible = FALSE, so the price is read here directly
    instead of through getProgramData. ── */
-async function createAddonOrder(baseEnrollment, packSlug) {
+async function createAddonOrder(baseEnrollment, packSlug, branch = null) {
   const pack = addonPack(packSlug);
   if (!pack) throw Object.assign(new Error('Unknown add-on pack.'), { status: 400 });
   const row = (await query(`SELECT title, short_name, price FROM programs WHERE slug = $1`, [pack.slug])).rows[0] || {};
@@ -468,7 +472,10 @@ async function createAddonOrder(baseEnrollment, packSlug) {
   const name = row.title || pack.title;
   const email = (baseEnrollment.student_email || '').toLowerCase().trim();
   const phone = (baseEnrollment.student_phone || '').replace(/\D/g, '').slice(-10);
-  const learner = await query(`SELECT learner_id FROM enrollments WHERE id = $1`, [baseEnrollment.id]);
+  // Interviews-only buyers (public page) have no enrollment yet - id null.
+  const learner = baseEnrollment.id
+    ? await query(`SELECT learner_id FROM enrollments WHERE id = $1`, [baseEnrollment.id])
+    : { rows: [] };
 
   const order_id = `JSP-ADDON-${Date.now()}`;
   const rzpOrder = await razorpay.orders.create({
@@ -485,10 +492,10 @@ async function createAddonOrder(baseEnrollment, packSlug) {
     },
   });
   await query(
-    `INSERT INTO enrollments (order_id, program_slug, program_name, amount, student_name, student_email, student_phone, status, learner_id)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8)
+    `INSERT INTO enrollments (order_id, program_slug, program_name, amount, student_name, student_email, student_phone, status, learner_id, engg_branch)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8, $9)
      ON CONFLICT (order_id) DO NOTHING`,
-    [order_id, pack.slug, name, price, baseEnrollment.student_name, email, phone, learner.rows[0]?.learner_id || null]
+    [order_id, pack.slug, name, price, baseEnrollment.student_name, email, phone, learner.rows[0]?.learner_id || null, BRANCHES.includes(branch) ? branch : null]
   );
   return {
     order_id,
