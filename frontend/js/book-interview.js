@@ -213,6 +213,9 @@
     var a = state.data.addons;
     if (!a || !a.packs || !a.packs.length) return '';
     var best = a.packs.reduce(function (m, p) { return !m || p.price / p.slots < m.price / m.slots ? p : m; }, null);
+    // Savings vs buying the same number of interviews at the smallest pack's rate.
+    var small = a.packs.reduce(function (m, p) { return !m || p.slots < m.slots ? p : m; }, null);
+    function saving(p) { return Math.round(p.slots * small.price / small.slots - p.price); }
     var bought = state.justBought
       ? '<div class="bi-addon-ok"><i class="fas fa-circle-check"></i> Payment received - ' + state.justBought + ' extra mock interview' + (state.justBought === 1 ? '' : 's') + ' added. ' + (booked().remaining && bookablePhases().length ? 'Pick your slots above.' : 'We will email you when the next booking round opens.') + '</div>'
       : '';
@@ -224,11 +227,13 @@
         : 'Your programme includes ' + (booked().included || 3) + ' one-to-one mock interviews. Get more practice in front of the panel before the real RPSC board.') + '</p>' +
       '<div class="bi-packs">' + a.packs.map(function (p) {
         var isBest = a.packs.length > 1 && p === best;
-        return '<div class="bi-pack' + (isBest ? ' is-best' : '') + '">' + (isBest ? '<span class="bi-pack-best">Best value</span>' : '') +
+        var save = isBest ? saving(p) : 0;
+        return '<div class="bi-pack' + (isBest ? ' is-best' : '') + '">' + (isBest ? '<span class="bi-pack-best"><i class="fas fa-star"></i> Best value</span>' : '') +
           '<b>' + p.slots + ' Mock Interviews</b>' +
           '<div class="bi-pack-price">' + rupees(p.price) + '</div>' +
           '<small>' + rupees(Math.round(p.price / p.slots)) + ' per interview</small>' +
-          '<button class="bi-btn bi-btn--block" data-pack="' + esc(p.slug) + '" data-slots="' + p.slots + '"><i class="fas fa-lock"></i> Buy now</button>' +
+          (save > 0 ? '<span class="bi-pack-save">Save ' + rupees(save) + '</span>' : '') +
+          '<button class="bi-btn bi-btn--block' + (isBest ? ' bi-btn--best' : ' bi-btn--ghost') + '" data-pack="' + esc(p.slug) + '" data-slots="' + p.slots + '"><i class="fas fa-lock"></i> Buy now</button>' +
         '</div>';
       }).join('') + '</div>' +
       '<ul class="bi-ul bi-addon-pts"><li>No form to fill - pay and the interviews are added instantly</li><li>Booked here like your included slots, one per day, in the same booking rounds</li><li>Secure payment by Razorpay - receipt on email</li></ul>' +

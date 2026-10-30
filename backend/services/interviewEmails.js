@@ -390,14 +390,26 @@ async function sendDailyDigest({ newBookings, tomorrow, phases, to = ADMIN_EMAIL
 
 function rupees(n) { return '&#8377;' + Number(n).toLocaleString('en-IN'); }
 
+/* Best value pack (lowest price per interview) is highlighted with
+   its saving vs buying the same count at the smallest pack's rate. */
 function packsTable(packs) {
-  return `
-    <table cellpadding="0" cellspacing="0" style="width:100%;border:1px solid #e2e8f0;border-radius:12px;margin-bottom:22px;">
-      ${packs.map((p, i) => `<tr>
-        <td style="padding:14px 16px;${i < packs.length - 1 ? 'border-bottom:1px solid #e2e8f0;' : ''}font-size:15px;color:#1A1A2E;font-weight:800;">${p.slots} Mock Interviews</td>
-        <td style="padding:14px 16px;${i < packs.length - 1 ? 'border-bottom:1px solid #e2e8f0;' : ''}font-size:15px;color:${RED};font-weight:800;text-align:right;">${rupees(p.price)}</td>
-      </tr>`).join('')}
+  const best = packs.reduce((m, p) => (!m || p.price / p.slots < m.price / m.slots ? p : m), null);
+  const small = packs.reduce((m, p) => (!m || p.slots < m.slots ? p : m), null);
+  return packs.map(p => {
+    const isBest = packs.length > 1 && p === best;
+    const save = Math.round(p.slots * small.price / small.slots - p.price);
+    return `
+    <table cellpadding="0" cellspacing="0" style="width:100%;border:${isBest ? '2px solid #7C3AED' : '1px solid #e2e8f0'};background:${isBest ? '#faf5ff' : '#fff'};border-radius:12px;margin-bottom:12px;">
+      <tr>
+        <td style="padding:14px 16px;font-size:15px;color:#1A1A2E;font-weight:800;">
+          ${isBest ? '<span style="display:inline-block;background:#7C3AED;color:#fff;border-radius:50px;padding:2px 10px;font-size:11px;margin-bottom:6px;">⭐ BEST VALUE</span><br>' : ''}
+          ${p.slots} Mock Interviews
+          <div style="font-size:12.5px;color:#6b7280;font-weight:600;margin-top:2px;">${rupees(Math.round(p.price / p.slots))} per interview${isBest && save > 0 ? ` &nbsp;<span style="color:#166534;font-weight:800;">Save ${rupees(save)}</span>` : ''}</div>
+        </td>
+        <td style="padding:14px 16px;font-size:20px;color:${isBest ? '#6D28D9' : RED};font-weight:800;text-align:right;white-space:nowrap;">${rupees(p.price)}</td>
+      </tr>
     </table>`;
+  }).join('') + '<div style="height:10px;"></div>';
 }
 
 async function sendAddonOfferEmail({ to, name, link, packs, subjectPrefix = '' }) {
