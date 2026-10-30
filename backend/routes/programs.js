@@ -837,6 +837,12 @@ router.post('/batch-materials/bulk', protect, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/* Is this R2 key still used by any material row (bulk groups share one file)? */
+async function materialKeyInUse(key) {
+  const r = await query(`SELECT 1 FROM batch_materials WHERE file_key = $1 LIMIT 1`, [key]);
+  return r.rows.length > 0;
+}
+
 router.post('/batch-materials/:id/upload', protect, scheduleAssetUpload.single('file'), handleUploadError, async (req, res, next) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
@@ -852,17 +858,19 @@ router.post('/batch-materials/:id/upload', protect, scheduleAssetUpload.single('
       [publicUrl, key, req.params.id]
     );
 
-    // Propagate to all other rows in the same bulk group (file_url only - they share the same R2 object)
+    // Propagate to all other rows in the same bulk group - they share the
+    // same R2 object. file_key too: the learner viewer reads the PDF by
+    // key, so a row with only file_url shows "Material not found".
     const groupId = existing.rows[0].bulk_group_id;
     if (groupId) {
       await query(
-        `UPDATE batch_materials SET file_url = $1 WHERE bulk_group_id = $2 AND id != $3`,
-        [publicUrl, groupId, req.params.id]
+        `UPDATE batch_materials SET file_url = $1, file_key = $2 WHERE bulk_group_id = $3 AND id != $4`,
+        [publicUrl, key, groupId, req.params.id]
       );
     }
 
     const oldKey = existing.rows[0].file_key;
-    if (oldKey && oldKey !== key) {
+    if (oldKey && oldKey !== key && !(await materialKeyInUse(oldKey))) {
       try { await r2.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: oldKey })); }
       catch (err) { console.warn(`⚠️  Could not delete old R2 material "${oldKey}":`, err.message); }
     }
@@ -875,7 +883,8 @@ router.delete('/batch-materials/:id', protect, async (req, res, next) => {
   try {
     const existing = await query(`DELETE FROM batch_materials WHERE id = $1 RETURNING file_key`, [req.params.id]);
     const oldKey = existing.rows[0] && existing.rows[0].file_key;
-    if (oldKey) {
+    // Rows of a bulk group share one R2 file - keep it while any remain.
+    if (oldKey && !(await materialKeyInUse(oldKey))) {
       try { await r2.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: oldKey })); }
       catch (err) { console.warn(`⚠️  Could not delete R2 material "${oldKey}":`, err.message); }
     }
