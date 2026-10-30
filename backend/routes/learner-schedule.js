@@ -229,8 +229,13 @@ router.get('/:program_slug/materials/:id/view', protectLearner, async (req, res,
     const tracks = (lc && lc.batch && lc.batch.materialTracks) || [];
     if (!tracks.length) return res.status(403).json({ error: 'Not available for this program.' });
 
-    const matRes = await query(`SELECT id, track, file_key FROM batch_materials WHERE id = $1`, [req.params.id]);
+    const matRes = await query(`SELECT id, track, file_key, file_url FROM batch_materials WHERE id = $1`, [req.params.id]);
     const material = matRes.rows[0];
+    // Older bulk-uploaded rows had only file_url - the key is the URL path.
+    const pub = process.env.R2_PUBLIC_URL;
+    if (material && !material.file_key && material.file_url && pub && material.file_url.startsWith(pub + '/')) {
+      material.file_key = material.file_url.slice(pub.length + 1);
+    }
     if (!material || !material.file_key) return res.status(404).json({ error: 'Material not found.' });
     if (!tracks.includes(material.track)) return res.status(403).json({ error: 'Not part of your enrolled track.' });
 

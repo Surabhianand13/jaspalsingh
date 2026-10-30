@@ -1017,6 +1017,26 @@ async function migrate() {
   await query(`ALTER TABLE batch_materials ADD COLUMN IF NOT EXISTS bulk_group_id UUID`);
   await query(`CREATE INDEX IF NOT EXISTS idx_batch_materials_track ON batch_materials(track)`);
   await query(`CREATE INDEX IF NOT EXISTS idx_batch_materials_bulk_group ON batch_materials(bulk_group_id)`);
+  /* Repair (2026-10-30): a bulk upload used to copy only file_url to the
+     other rows of its group, never file_key - so learners on every track
+     but the first saw the material listed and got "Material not found"
+     on opening it (the viewer reads the PDF by file_key). Copy the key
+     from the sibling that shares the same file, then fall back to
+     deriving it from the public URL. Idempotent - only touches rows
+     still missing a key. */
+  await query(`
+    UPDATE batch_materials b SET file_key = s.file_key
+    FROM batch_materials s
+    WHERE b.file_key IS NULL AND b.file_url IS NOT NULL
+      AND s.bulk_group_id = b.bulk_group_id AND s.id <> b.id
+      AND s.file_key IS NOT NULL AND s.file_url = b.file_url`);
+  if (process.env.R2_PUBLIC_URL) {
+    await query(
+      `UPDATE batch_materials SET file_key = SUBSTRING(file_url FROM LENGTH($1) + 2)
+       WHERE file_key IS NULL AND file_url LIKE $1 || '/%'`,
+      [process.env.R2_PUBLIC_URL]
+    );
+  }
 
   /* Offline CBT pilot (2026-08-09) - results synced in from air-gapped
      exam machines (see /offline-cbt) once a staff member connects that
