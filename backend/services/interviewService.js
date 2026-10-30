@@ -27,6 +27,10 @@
      - Mock Interview Add-on packs (2026-10-30, config/interviewRules.js)
        raise a learner's limit: 3 + 2 or 4 per paid pack, packs stack.
        Same phases, same one-per-day rule - see extraSlotsFor()
+     - "Interviews only" buyers (unlisted /rpsc-ae-mock-interviews/ page)
+       bought a pack without the programme: 0 included + their packs.
+       Their pack enrollment is what their booking link is signed for -
+       see programOf() / slotAllowance()
 
    Every eligibility check is "paid AND not refunded" - see
    project notes on refunds: enrollments.status stays 'paid' after a
@@ -39,7 +43,13 @@ const { slugsFor, canonicalize } = require('../utils/programSlugAliases');
 const calendar = require('./interviewCalendar');
 const emails = require('./interviewEmails');
 const { SITE } = require('./paymentEmailService');
-const { ADDON_BASE_PROGRAM, ADDON_PACKS, ADDON_SLUGS } = require('../config/interviewRules');
+const { ADDON_BASE_PROGRAM, ADDON_PACKS, ADDON_SLUGS, addonPack } = require('../config/interviewRules');
+
+/* The interview program an enrollment books under: an add-on pack
+   enrollment ("interviews only" buyer) books under RPSC AE Interview. */
+function programOf(enrollment) {
+  return addonPack(enrollment.program_slug) ? ADDON_BASE_PROGRAM : canonicalize(enrollment.program_slug);
+}
 
 const TOKEN_PURPOSE = 'interview-booking';
 const PHASE_COLS = `p.id, p.program_slug, p.name, p.status, p.slots_per_learner, p.slot_minutes,
@@ -183,6 +193,27 @@ async function extraSlotsFor(programSlug, email, db = { query }) {
   return r.rows[0].n;
 }
 
+/* Does this email hold a paid, not refunded RPSC AE Interview enrollment
+   (the programme itself, not just an add-on pack)? */
+async function hasBaseProgram(email, db = { query }) {
+  if (!email) return false;
+  const r = await db.query(
+    `SELECT 1 FROM enrollments WHERE program_slug = ANY($1::text[]) AND status = 'paid' AND refund_status != 'initiated'
+       AND LOWER(TRIM(student_email)) = LOWER(TRIM($2)) LIMIT 1`,
+    [slugsFor(ADDON_BASE_PROGRAM), email]
+  );
+  return r.rows.length > 0;
+}
+
+/* Total interviews for a learner: included slots (only with the
+   programme) + add-on packs. Every other program: just baseSlots. */
+async function slotAllowance(programSlug, email, baseSlots, db = { query }) {
+  if (canonicalize(programSlug) !== ADDON_BASE_PROGRAM) return { included: baseSlots, extra: 0, total: baseSlots };
+  const included = (await hasBaseProgram(email, db)) ? baseSlots : 0;
+  const extra = await extraSlotsFor(programSlug, email, db);
+  return { included, extra, total: included + extra };
+}
+
 /* Included slots per learner when no phase is at hand (add-on emails):
    the open phase's setting, else the latest phase's, else 3. */
 async function baseSlotsPerLearner(programSlug = ADDON_BASE_PROGRAM) {
@@ -221,7 +252,7 @@ async function learnerBookings(enrollment) {
      WHERE p.program_slug = ANY($3::text[])
        AND (b.enrollment_id = $1 OR LOWER(TRIM(b.student_email)) = LOWER(TRIM($2)))
      ORDER BY s.starts_at`,
-    [enrollment.id, enrollment.student_email || '', slugsFor(canonicalize(enrollment.program_slug))]
+    [enrollment.id, enrollment.student_email || '', slugsFor(programOf(enrollment))]
   );
   return withDisplayNumbers(r.rows);
 }
@@ -234,7 +265,7 @@ async function openPhasesWithAvailability(programSlug, takenDays = []) {
   const phases = (await query(
     `SELECT ${PHASE_COLS} FROM interview_phases p
      WHERE p.program_slug = ANY($1::text[]) AND p.status = 'open' ORDER BY p.date_from`,
-    [slugsFor(canonicalize(programSlug))]
+    [slugsFor(addonPack(programSlug) ? ADDON_BASE_PROGRAM : canonicalize(programSlug))]
   )).rows;
   for (const p of phases) {
     const slots = (await query(
@@ -277,7 +308,7 @@ async function bookSlots(enrollment, { phaseId, slotIds, branch }) {
 
     const phaseRes = await client.query(`SELECT ${PHASE_COLS} FROM interview_phases p WHERE p.id = $1`, [phaseId]);
     const phase = phaseRes.rows[0];
-    if (!phase || phase.status !== 'open' || !slugsFor(canonicalize(enrollment.program_slug)).includes(phase.program_slug)) {
+    if (!phase || phase.status !== 'open' || !slugsFor(programOf(enrollment)).includes(phase.program_slug)) {
       throw new BookingError('This booking round is not open.', 409);
     }
 
@@ -287,7 +318,7 @@ async function bookSlots(enrollment, { phaseId, slotIds, branch }) {
        WHERE p.program_slug = $3 AND (b.enrollment_id = $1 OR LOWER(TRIM(b.student_email)) = LOWER(TRIM($2)))`,
       [enrollment.id, enrollment.student_email || '', phase.program_slug]
     )).rows;
-    const total = phase.slots_per_learner + await extraSlotsFor(phase.program_slug, enrollment.student_email, client);
+    const { total } = await slotAllowance(phase.program_slug, enrollment.student_email, phase.slots_per_learner, client);
     const remaining = total - existing.length;
     if (remaining <= 0) throw new BookingError(`You have already booked all ${total} of your slots.`, 409);
 
@@ -451,12 +482,16 @@ async function announceVenue(phase) {
 async function eligibleLearners(phase) {
   const r = await query(
     `WITH paid AS (
+       -- Programme enrollments + "interviews only" pack buyers, one row per
+       -- email, preferring the programme enrollment (has_base) if both.
        SELECT DISTINCT ON (LOWER(TRIM(e.student_email)))
-              e.id, e.student_name, e.student_email, e.student_phone, e.roll_number, e.paid_at
+              e.id, e.student_name, e.student_email, e.student_phone, e.roll_number, e.paid_at,
+              (e.program_slug = ANY($1::text[])) AS has_base
        FROM enrollments e
-       WHERE e.program_slug = ANY($1::text[]) AND e.status = 'paid' AND e.refund_status != 'initiated'
+       WHERE (e.program_slug = ANY($1::text[]) OR e.program_slug = ANY($5::text[]))
+         AND e.status = 'paid' AND e.refund_status != 'initiated'
          AND e.order_id NOT LIKE 'JSP-ADMINPREVIEW-%' -- admin previews: no invites, not counted
-       ORDER BY LOWER(TRIM(e.student_email)), e.paid_at ASC
+       ORDER BY LOWER(TRIM(e.student_email)), (e.program_slug = ANY($1::text[])) DESC, e.paid_at ASC
      )
      SELECT paid.*,
             COALESCE(bk.booked_count, 0) AS booked_count, bk.branch, bk.slots,
@@ -480,8 +515,9 @@ async function eligibleLearners(phase) {
      canonicalize(phase.program_slug) === ADDON_BASE_PROGRAM ? ADDON_SLUGS : []]
   );
   return r.rows.map(l => {
-    const total = phase.slots_per_learner + l.extra_slots;
-    return Object.assign(l, { total_slots: total, pending: Math.max(0, total - l.booked_count) });
+    const included = l.has_base ? phase.slots_per_learner : 0;
+    const total = included + l.extra_slots;
+    return Object.assign(l, { included_slots: included, total_slots: total, pending: Math.max(0, total - l.booked_count) });
   });
 }
 
@@ -523,12 +559,13 @@ async function sendInvites(phase, mode) {
    as an open phase still has a free slot. */
 async function inviteNewEnrollment(enrollment) {
   if (!enrollment || !enrollment.id || !enrollment.student_email) return;
+  if (addonPack(enrollment.program_slug)) return; // the add-on email carries the booking link
   const phases = await openPhasesWithAvailability(enrollment.program_slug);
   const phase = phases.find(p => p.bookable);
   if (!phase) return;
   const fresh = await activeEnrollmentById(enrollment.id);
   if (!fresh) return;
-  const total = phase.slots_per_learner + await extraSlotsFor(phase.program_slug, fresh.student_email);
+  const { total } = await slotAllowance(phase.program_slug, fresh.student_email, phase.slots_per_learner);
   const bookedCount = (await learnerBookings(fresh)).length;
   if (bookedCount >= total) return;
   const claim = await query(
@@ -590,7 +627,7 @@ async function tick() {
     if (b.booked_late || !b.student_email) continue;
     if (!(await activeEnrollmentById(b.enrollment_id))) continue; // refunded since booking
     const phase = await getPhase(b.phase_id);
-    const total = phase.slots_per_learner + await extraSlotsFor(phase.program_slug, b.student_email);
+    const { total } = await slotAllowance(phase.program_slug, b.student_email, phase.slots_per_learner);
     emails.sendDayBeforeReminder({ to: b.student_email, name: b.student_name, booking: b, phase, total })
       .catch(err => console.error('[interview reminder]', err.message));
   }
@@ -633,16 +670,19 @@ async function maybeSendDigest(todayIST) {
 
 /* ── Mock Interview Add-on: offer + purchase emails ──────────── */
 
-/* The learner's RPSC AE Interview enrollment (the one booking links are
-   signed for): earliest paid, not refunded, matched by email. */
+/* The enrollment a learner's booking link is signed for: their RPSC AE
+   Interview enrollment, else (interviews-only buyer) their first add-on
+   pack. Earliest paid, not refunded, matched by email - the same row
+   eligibleLearners() picks, so admin links and emails agree. */
 async function baseEnrollmentForEmail(email) {
   if (!email) return null;
   const r = await query(
     `SELECT id FROM enrollments
-     WHERE program_slug = ANY($1::text[]) AND status = 'paid' AND refund_status != 'initiated'
+     WHERE (program_slug = ANY($1::text[]) OR program_slug = ANY($3::text[]))
+       AND status = 'paid' AND refund_status != 'initiated'
        AND LOWER(TRIM(student_email)) = LOWER(TRIM($2))
-     ORDER BY (order_id LIKE 'JSP-ADMINPREVIEW-%'), paid_at ASC LIMIT 1`,
-    [slugsFor(ADDON_BASE_PROGRAM), email]
+     ORDER BY (order_id LIKE 'JSP-ADMINPREVIEW-%'), (program_slug = ANY($1::text[])) DESC, paid_at ASC LIMIT 1`,
+    [slugsFor(ADDON_BASE_PROGRAM), email, ADDON_SLUGS]
   );
   return r.rows.length ? activeEnrollmentById(r.rows[0].id) : null;
 }
@@ -658,10 +698,11 @@ async function addonSummary() {
     [ADDON_SLUGS]
   )).rows;
   const offered = new Set((await query(`SELECT enrollment_id FROM interview_addon_offers`)).rows.map(r => r.enrollment_id));
-  const targets = learners.filter(l => l.student_email && !l.extra_slots);
+  const targets = learners.filter(l => l.student_email && l.has_base && !l.extra_slots);
   return {
     packs: ADDON_PACKS.map(p => ({ slug: p.slug, slots: p.slots, sold: (sold.find(x => x.program_slug === p.slug) || {}).n || 0 })),
     buyers: learners.filter(l => l.extra_slots > 0).length,
+    interviews_only: learners.filter(l => !l.has_base).length,
     offered: targets.filter(l => offered.has(l.id)).length,
     not_offered: targets.filter(l => !offered.has(l.id)).length,
   };
@@ -671,7 +712,7 @@ async function addonSummary() {
    learner who hasn't bought a pack or had the offer yet. Background send. */
 async function sendAddonOffers() {
   const learners = (await eligibleLearners({ id: 0, program_slug: ADDON_BASE_PROGRAM, slots_per_learner: 3 }))
-    .filter(l => l.student_email && !l.extra_slots);
+    .filter(l => l.student_email && l.has_base && !l.extra_slots);
   const offered = new Set((await query(`SELECT enrollment_id FROM interview_addon_offers`)).rows.map(r => r.enrollment_id));
   const targets = learners.filter(l => !offered.has(l.id));
   const prices = await addonPrices();
@@ -704,16 +745,16 @@ async function addonPrices() {
 async function sendAddonPurchasedEmail(addonEnrollment) {
   const base = await baseEnrollmentForEmail(addonEnrollment.student_email);
   if (!base) {
-    console.error(`[interview addon] paid add-on ${addonEnrollment.order_id} has no active RPSC AE enrollment for ${addonEnrollment.student_email}`);
+    console.error(`[interview addon] paid add-on ${addonEnrollment.order_id} has no active enrollment for ${addonEnrollment.student_email}`);
     return;
   }
   const pack = ADDON_PACKS.find(p => p.slug === addonEnrollment.program_slug);
-  const total = await baseSlotsPerLearner() + await extraSlotsFor(ADDON_BASE_PROGRAM, base.student_email);
+  const { included, total } = await slotAllowance(ADDON_BASE_PROGRAM, base.student_email, await baseSlotsPerLearner());
   const booked = (await learnerBookings(base)).length;
   const open = (await openPhasesWithAvailability(ADDON_BASE_PROGRAM)).filter(p => p.status === 'open');
   await emails.sendAddonPurchasedEmail({
     to: base.student_email, name: base.student_name, added: pack ? pack.slots : 0,
-    total, booked, link: bookingLink(base.id), phaseOpen: open.length > 0,
+    total, booked, interviewsOnly: included === 0, link: bookingLink(base.id), phaseOpen: open.length > 0,
   });
 }
 
@@ -723,5 +764,5 @@ module.exports = {
   getPhase, learnerBookings, withDisplayNumbers, openPhasesWithAvailability, bookSlots, BookingError,
   releaseLearner, updateCalendarLocations, announceVenue, eligibleLearners, sendInvites, inviteNewEnrollment, phaseStats,
   syncCalendar, tick, PHASE_COLS,
-  extraSlotsFor, baseEnrollmentForEmail, addonSummary, addonPrices, sendAddonOffers, sendAddonPurchasedEmail,
+  extraSlotsFor, slotAllowance, programOf, baseEnrollmentForEmail, addonSummary, addonPrices, sendAddonOffers, sendAddonPurchasedEmail,
 };

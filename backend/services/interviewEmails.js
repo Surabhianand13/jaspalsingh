@@ -447,7 +447,7 @@ async function sendAddonOfferEmail({ to, name, link, packs, subjectPrefix = '' }
   }, PRIORITY.DEFAULT); // bulk offer - never delays OTP / invoice emails
 }
 
-async function sendAddonPurchasedEmail({ to, name, added, total, booked, link, phaseOpen, subjectPrefix = '' }) {
+async function sendAddonPurchasedEmail({ to, name, added, total, booked, link, phaseOpen, interviewsOnly = false, subjectPrefix = '' }) {
   const firstName = esc((name || 'there').split(' ')[0]);
   const pending = Math.max(0, total - booked);
   const body = `
@@ -457,9 +457,13 @@ async function sendAddonPurchasedEmail({ to, name, added, total, booked, link, p
       </div>
     </div>
 
-    <h2 style="margin:0 0 12px;font-size:22px;color:#1A1A2E;font-weight:800;text-align:center;">${added} extra mock interview${added === 1 ? '' : 's'} added, ${firstName}!</h2>
+    <h2 style="margin:0 0 12px;font-size:22px;color:#1A1A2E;font-weight:800;text-align:center;">${interviewsOnly && total === added
+      ? `Your ${added} RPSC AE mock interview${added === 1 ? ' is' : 's are'} confirmed, ${firstName}!`
+      : `${added} extra mock interview${added === 1 ? '' : 's'} added, ${firstName}!`}</h2>
     <p style="margin:0 0 22px;font-size:15px;color:#374151;line-height:1.7;text-align:center;">
-      There is no form to fill. Your new interviews are already on your booking page.
+      ${interviewsOnly
+        ? 'One-to-one offline mock interviews with Dr. Jaspal Singh\'s panel. Book your slots with the button below - this link is your personal booking page, keep this email safe.'
+        : 'There is no form to fill. Your new interviews are already on your booking page.'}
     </p>
 
     <table cellpadding="0" cellspacing="0" style="width:100%;border:1px solid #e2e8f0;border-radius:12px;margin-bottom:22px;">
@@ -485,7 +489,9 @@ async function sendAddonPurchasedEmail({ to, name, added, total, booked, link, p
   return resendSend({
     from: FROM,
     to,
-    subject: `${subjectPrefix}${added} extra RPSC AE mock interview${added === 1 ? '' : 's'} added - you now have ${total}`,
+    subject: interviewsOnly && total === added
+      ? `${subjectPrefix}Confirmed: ${added} RPSC AE mock interviews - book your slots`
+      : `${subjectPrefix}${added} extra RPSC AE mock interview${added === 1 ? '' : 's'} added - you now have ${total}`,
     html: baseHtml(body),
   }, PRIORITY.INVOICE);
 }

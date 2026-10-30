@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RPSC AE Mock Interviews - Dr. Jaspal Singh</title>
+  <!-- Unlisted (2026-10-30): shared only as a direct link, never linked
+       from the site, not in the sitemap - so it does not undercut the
+       full Interview Guidance Programme. Enrolled learners use
+       /mock-interviews (My Programs add-on card) instead. -->
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#0F1117" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon-32.png" />
+  <link rel="apple-touch-icon" href="/assets/images/apple-touch-icon.png" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+  <style>
+    :root { --red: #C81240; --ink: #1A1A2E; --muted: #6b7280; --line: #e5e7eb; --bg: #f4f5f8; --purple: #7C3AED; --green: #166534; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body { background: var(--bg); color: var(--ink); font-family: 'Plus Jakarta Sans', 'Segoe UI', Arial, sans-serif; font-size: 15px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+    a { color: var(--red); }
+    button, input { font-family: inherit; }
+
+    .mi-top { background: #0F1117; color: #fff; padding: 14px 16px; }
+    .mi-top-in { max-width: 720px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .mi-brand { color: #fff; text-decoration: none; font-weight: 800; font-size: 17px; }
+    .mi-brand span { color: var(--red); }
+    .mi-top small { color: rgba(255,255,255,.55); font-size: 12px; }
+
+    .mi-hero { background: linear-gradient(160deg, #1A1A2E, #33125C); color: #fff; padding: 32px 16px 72px; }
+    .mi-hero-in { max-width: 720px; margin: 0 auto; }
+    .mi-kicker { display: inline-block; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2); border-radius: 50px; padding: 4px 12px; font-size: 12px; font-weight: 700; letter-spacing: .02em; }
+    .mi-hero h1 { font-size: 30px; line-height: 1.2; margin: 14px 0 10px; letter-spacing: -.5px; }
+    .mi-hero p { margin: 0; color: rgba(255,255,255,.78); font-size: 15.5px; max-width: 560px; }
+    .mi-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+    .mi-pills span { background: rgba(255,255,255,.1); border-radius: 10px; padding: 7px 11px; font-size: 13px; font-weight: 600; }
+    .mi-pills i { color: #c4b5fd; margin-right: 6px; }
+
+    .mi-wrap { max-width: 720px; margin: -48px auto 0; padding: 0 16px 48px; }
+    .mi-card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+    .mi-h2 { font-size: 17px; font-weight: 800; margin: 0 0 4px; display: flex; gap: 10px; align-items: center; }
+    .mi-step { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: var(--red); color: #fff; font-size: 13px; font-weight: 800; flex: none; }
+    .mi-hint { color: var(--muted); font-size: 13.5px; margin: 0 0 14px; }
+    .mi-demo { background: #fef3c7; border: 1px solid #fcd34d; color: #92400e; border-radius: 12px; padding: 10px 14px; font-size: 13px; font-weight: 700; margin-bottom: 16px; }
+
+    .mi-packs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 6px; }
+    .mi-pack { position: relative; border: 2px solid var(--line); background: #fff; border-radius: 14px; padding: 20px 12px 16px; text-align: center; cursor: pointer; display: flex; flex-direction: column; align-items: center; font: inherit; color: inherit; }
+    .mi-pack.is-best { border-color: #c4b5fd; background: #faf5ff; }
+    .mi-pack.is-on { border-color: var(--purple); box-shadow: 0 8px 24px rgba(124,58,237,.18); }
+    .mi-pack-best { position: absolute; top: -11px; left: 50%; transform: translateX(-50%); background: var(--purple); color: #fff; font-size: 11px; font-weight: 800; border-radius: 50px; padding: 3px 11px; white-space: nowrap; }
+    .mi-pack b { font-size: 16px; }
+    .mi-pack-price { font-size: 28px; font-weight: 800; color: var(--red); margin: 4px 0 0; letter-spacing: -.5px; }
+    .mi-pack.is-best .mi-pack-price { color: #6D28D9; }
+    .mi-pack small { color: var(--muted); font-size: 12.5px; }
+    .mi-pack-save { background: #dcfce7; color: var(--green); font-size: 12px; font-weight: 800; border-radius: 50px; padding: 3px 10px; margin-top: 8px; }
+    .mi-radio { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #d1d5db; margin-top: 12px; display: flex; align-items: center; justify-content: center; }
+    .mi-pack.is-on .mi-radio { border-color: var(--purple); }
+    .mi-pack.is-on .mi-radio::after { content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--purple); }
+
+    .mi-field { display: block; margin-bottom: 12px; }
+    .mi-field span { display: block; font-size: 13px; font-weight: 700; margin-bottom: 5px; }
+    .mi-field input { width: 100%; border: 1.5px solid var(--line); border-radius: 10px; padding: 12px 13px; font-size: 15px; background: #fff; color: var(--ink); }
+    .mi-field input:focus { outline: none; border-color: var(--purple); box-shadow: 0 0 0 3px rgba(124,58,237,.15); }
+    .mi-phone { display: flex; }
+    .mi-phone em { font-style: normal; border: 1.5px solid var(--line); border-right: 0; border-radius: 10px 0 0 10px; padding: 12px; background: #f9fafb; font-weight: 700; color: var(--muted); }
+    .mi-phone input { border-radius: 0 10px 10px 0; }
+    .mi-agree { display: flex; gap: 10px; align-items: flex-start; font-size: 13.5px; margin: 4px 0 14px; cursor: pointer; }
+    .mi-agree input { width: 19px; height: 19px; accent-color: var(--purple); flex: none; margin-top: 1px; }
+    .mi-btn { width: 100%; border: 0; background: var(--purple); color: #fff; font-weight: 800; font-size: 16px; border-radius: 12px; padding: 15px 20px; cursor: pointer; display: flex; gap: 8px; align-items: center; justify-content: center; }
+    .mi-btn:disabled { background: #d1d5db; cursor: not-allowed; }
+    .mi-error { display: none; background: #fef2f2; border: 1px solid #fca5a5; color: #7f1d1d; border-radius: 10px; padding: 10px 12px; font-size: 13.5px; font-weight: 600; margin-bottom: 12px; }
+    .mi-secure { text-align: center; font-size: 12px; color: var(--muted); margin-top: 10px; }
+
+    .mi-steps { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 12px; }
+    .mi-steps li { display: flex; gap: 12px; align-items: flex-start; font-size: 14px; }
+    .mi-steps li b { display: block; }
+    .mi-steps li span { color: var(--muted); font-size: 13px; }
+    .mi-ul { margin: 6px 0 0; padding-left: 20px; font-size: 13.5px; color: #374151; }
+    .mi-ul li { margin-bottom: 4px; }
+    .mi-enrolled { background: #eff6ff; border: 1px solid #93c5fd; color: #1e3a8a; border-radius: 12px; padding: 12px 14px; font-size: 13.5px; }
+
+    .mi-done { text-align: center; padding: 28px 20px; }
+    .mi-done-icon { width: 60px; height: 60px; border-radius: 50%; background: #f0fdf4; color: var(--green); display: inline-flex; align-items: center; justify-content: center; font-size: 28px; margin-bottom: 12px; }
+
+    @media (max-width: 420px) {
+      .mi-hero h1 { font-size: 25px; }
+      .mi-card { padding: 16px; }
+      .mi-pack-price { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="mi-top">
+    <div class="mi-top-in">
+      <a class="mi-brand" href="/">Dr. <span>Jaspal Singh</span></a>
+      <small>RPSC AE Mock Interviews</small>
+    </div>
+  </header>
+
+  <section class="mi-hero">
+    <div class="mi-hero-in">
+      <span class="mi-kicker"><i class="fas fa-user-tie"></i> RPSC AE 2024 Interview</span>
+      <h1>Face the panel before the real RPSC board</h1>
+      <p>One-to-one offline mock interviews with Dr. Jaspal Singh's panel - for Civil, Mechanical and Electrical candidates.</p>
+      <div class="mi-pills">
+        <span><i class="fas fa-user-check"></i>One-to-one</span>
+        <span><i class="fas fa-building"></i>Offline, in person</span>
+        <span><i class="fas fa-calendar-check"></i>Book your own slots</span>
+      </div>
+    </div>
+  </section>
+
+  <main class="mi-wrap" id="app">
+    <div id="demoNote"></div>
+
+    <div class="mi-card" id="buyCard">
+      <div class="mi-h2"><span class="mi-step">1</span> Choose your pack</div>
+      <p class="mi-hint">Each mock interview is booked on a different day, so you get time to improve between them.</p>
+      <div class="mi-packs" id="packs"></div>
+    </div>
+
+    <div class="mi-card" id="formCard">
+      <div class="mi-h2"><span class="mi-step">2</span> Your details</div>
+      <p class="mi-hint">Your booking link and receipt are sent to this email.</p>
+      <div class="mi-error" id="err"></div>
+      <label class="mi-field"><span>Full name</span><input id="fName" autocomplete="name" placeholder="As on your Govt. ID" /></label>
+      <label class="mi-field"><span>Email</span><input id="fEmail" type="email" autocomplete="email" placeholder="you@example.com" /></label>
+      <label class="mi-field"><span>Mobile number</span><div class="mi-phone"><em>+91</em><input id="fPhone" type="tel" inputmode="numeric" maxlength="10" autocomplete="tel-national" placeholder="10-digit number" /></div></label>
+      <div class="cf-turnstile" data-sitekey="0x4AAAAAADwBsHyyE7gWH-Oj" data-theme="light" data-refresh-expired="auto" style="margin:4px 0 12px;"></div>
+      <label class="mi-agree"><input type="checkbox" id="fAgree" /> <span>I understand slots are booked first-come first-served, one per day, and booked slots cannot be rescheduled or cancelled. The venue is shared on email.</span></label>
+      <button class="mi-btn" id="payBtn" disabled><i class="fas fa-lock"></i> <span id="payText">Pay</span></button>
+      <div class="mi-secure"><i class="fas fa-shield-halved"></i> Secure payment by Razorpay · UPI, cards, net banking</div>
+    </div>
+
+    <div class="mi-card">
+      <div class="mi-h2"><i class="fas fa-route" style="color:var(--purple);"></i> How it works</div>
+      <ol class="mi-steps">
+        <li><span class="mi-step">1</span><div><b>Pay for your pack</b><span>No form to fill afterwards.</span></div></li>
+        <li><span class="mi-step">2</span><div><b>Get your personal booking link on email</b><span>Along with your payment receipt.</span></div></li>
+        <li><span class="mi-step">3</span><div><b>Pick your slots</b><span>One interview per day - book them together or one at a time, whenever booking is open.</span></div></li>
+        <li><span class="mi-step">4</span><div><b>Attend in person</b><span>Venue, timing and what to bring are on your confirmation email.</span></div></li>
+      </ol>
+    </div>
+
+    <div class="mi-card">
+      <div class="mi-h2"><i class="fas fa-file-contract" style="color:var(--purple);"></i> Good to know</div>
+      <ul class="mi-ul">
+        <li>Slots are limited and allotted first-come, first-served.</li>
+        <li>Booked slots cannot be rescheduled, cancelled or exchanged. A missed slot is forfeited.</li>
+        <li>Bring 4 copies of your DAF and an original photo ID, in formal attire.</li>
+        <li>Slots are non-transferable - only the person who paid may attend.</li>
+      </ul>
+    </div>
+
+    <div class="mi-enrolled"><i class="fas fa-circle-info"></i> <strong>Already enrolled in RPSC AE Interview Guidance?</strong> Add interviews from your account instead: <a href="/mock-interviews">jaspalsingh.in/mock-interviews</a></div>
+  </main>
+
+  <script>
+  (function () {
+    'use strict';
+    var API = (function () { var h = location.hostname; return (h === 'localhost' || h === '127.0.0.1') ? 'http://localhost:5000' : 'https://jaspalsingh.onrender.com'; })();
+    var DEMO = new URLSearchParams(location.search).get('demo') === '1';
+    // Prices are re-checked on the server (programs table) - these are display only.
+    var PACKS = [
+      { slug: 'rpsc-ae-mock-interview-addon-2', slots: 2, price: 2999 },
+      { slug: 'rpsc-ae-mock-interview-addon-4', slots: 4, price: 4999 },
+    ];
+    var best = PACKS[1], picked = PACKS[1];
+    var $ = function (id) { return document.getElementById(id); };
+    function rupees(n) { return '₹' + Number(n).toLocaleString('en-IN'); }
+    function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+    if (DEMO) $('demoNote').innerHTML = '<div class="mi-demo"><i class="fas fa-eye"></i> Demo preview - no payment is taken.</div>';
+
+    function renderPacks() {
+      $('packs').innerHTML = PACKS.map(function (p) {
+        var isBest = p === best, save = Math.round(p.slots * PACKS[0].price / PACKS[0].slots - p.price);
+        return '<button type="button" class="mi-pack' + (isBest ? ' is-best' : '') + (p === picked ? ' is-on' : '') + '" data-slug="' + p.slug + '">' +
+          (isBest ? '<span class="mi-pack-best"><i class="fas fa-star"></i> Best value</span>' : '') +
+          '<b>' + p.slots + ' Mock Interviews</b><div class="mi-pack-price">' + rupees(p.price) + '</div>' +
+          '<small>' + rupees(Math.round(p.price / p.slots)) + ' per interview</small>' +
+          (isBest && save > 0 ? '<span class="mi-pack-save">Save ' + rupees(save) + '</span>' : '') +
+          '<span class="mi-radio"></span></button>';
+      }).join('');
+      document.querySelectorAll('[data-slug]').forEach(function (b) {
+        b.addEventListener('click', function () { picked = PACKS.filter(function (p) { return p.slug === b.getAttribute('data-slug'); })[0]; renderPacks(); update(); });
+      });
+    }
+
+    function update() {
+      $('payText').textContent = 'Pay ' + rupees(picked.price) + ' for ' + picked.slots + ' mock interviews';
+      $('payBtn').disabled = !$('fAgree').checked;
+    }
+    $('fAgree').addEventListener('change', update);
+    $('fPhone').addEventListener('input', function () { this.value = this.value.replace(/\D/g, '').slice(0, 10); });
+
+    function showErr(msg) { var e = $('err'); e.textContent = msg; e.style.display = msg ? 'block' : 'none'; if (msg) e.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+    function resetBtn() { $('payBtn').disabled = !$('fAgree').checked; update(); }
+
+    function showDone(email, slots) {
+      $('app').innerHTML = '<div class="mi-card mi-done"><div class="mi-done-icon"><i class="fas fa-check"></i></div>' +
+        '<h2 style="margin:0 0 8px;font-size:22px;">Payment received!</h2>' +
+        '<p style="margin:0 0 6px;color:#374151;">Your ' + slots + ' RPSC AE mock interviews are confirmed.</p>' +
+        '<p style="margin:0;color:#6b7280;font-size:14px;">Your personal booking link has been sent to <strong>' + esc(email) + '</strong>. Use it to pick your slots. Not in your inbox? Check spam, or WhatsApp us at +91 98291 33317.</p></div>';
+      window.scrollTo(0, 0);
+    }
+
+    function loadRazorpay() {
+      if (window.Razorpay) return Promise.resolve();
+      return new Promise(function (resolve, reject) {
+        var s = document.createElement('script'); s.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        s.onload = resolve; s.onerror = function () { reject(new Error('Could not load the payment window. Check your internet connection.')); };
+        document.head.appendChild(s);
+      });
+    }
+
+    $('payBtn').addEventListener('click', function () {
+      var name = $('fName').value.trim(), email = $('fEmail').value.trim(), phone = $('fPhone').value.trim();
+      if (!name) return showErr('Please enter your full name.');
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showErr('Please enter a valid email address.');
+      if (phone.length !== 10) return showErr('Please enter your 10-digit mobile number.');
+      showErr('');
+      if (DEMO) return showDone(email, picked.slots);
+      var token = (typeof turnstile !== 'undefined') ? turnstile.getResponse() : '';
+      if (!token) return showErr('Security check is still loading - please wait a moment and try again.');
+
+      var btn = $('payBtn');
+      btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Opening payment…';
+      Promise.all([
+        fetch(API + '/api/interviews/addon-order-public', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pack: picked.slug, name: name, email: email, phone: phone, turnstile_token: token }) })
+          .then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.error || 'Something went wrong.'); return d; }); }),
+        loadRazorpay(),
+      ]).then(function (res) {
+        var o = res[0];
+        var rzp = new window.Razorpay({
+          key: o.razorpay_key_id, amount: o.amount * 100, currency: 'INR', name: 'Dr. Jaspal Singh', description: o.program_name,
+          order_id: o.razorpay_order_id, prefill: o.prefill, theme: { color: '#7C3AED' },
+          handler: function (resp) {
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Confirming payment…';
+            fetch(API + '/api/payment/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ order_id: o.order_id, razorpay_order_id: resp.razorpay_order_id, razorpay_payment_id: resp.razorpay_payment_id, razorpay_signature: resp.razorpay_signature }) })
+              .then(function (r) { return r.json(); })
+              .then(function (v) { if (!v.paid) throw new Error(); showDone(email, picked.slots); })
+              .catch(function () { resetBtn(); btn.innerHTML = '<i class="fas fa-lock"></i> <span id="payText"></span>'; update(); showErr('Payment received but we could not confirm it here. Please WhatsApp us your payment ID ' + resp.razorpay_payment_id + ' at +91 98291 33317.'); });
+          },
+          modal: { ondismiss: function () { btn.innerHTML = '<i class="fas fa-lock"></i> <span id="payText"></span>'; resetBtn(); if (typeof turnstile !== 'undefined') turnstile.reset(); } },
+        });
+        rzp.on('payment.failed', function (r) { showErr('Payment failed: ' + ((r.error && r.error.description) || 'Please try again.')); });
+        rzp.open();
+      }).catch(function (err) {
+        btn.innerHTML = '<i class="fas fa-lock"></i> <span id="payText"></span>'; resetBtn();
+        if (typeof turnstile !== 'undefined') turnstile.reset();
+        showErr(err.message);
+      });
+    });
+
+    renderPacks(); update();
+  })();
+  </script>
+</body>
+</html>

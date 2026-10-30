@@ -468,7 +468,10 @@ async function createAddonOrder(baseEnrollment, packSlug) {
   const name = row.title || pack.title;
   const email = (baseEnrollment.student_email || '').toLowerCase().trim();
   const phone = (baseEnrollment.student_phone || '').replace(/\D/g, '').slice(-10);
-  const learner = await query(`SELECT learner_id FROM enrollments WHERE id = $1`, [baseEnrollment.id]);
+  // Interviews-only buyers (public page) have no enrollment yet - id null.
+  const learner = baseEnrollment.id
+    ? await query(`SELECT learner_id FROM enrollments WHERE id = $1`, [baseEnrollment.id])
+    : { rows: [] };
 
   const order_id = `JSP-ADDON-${Date.now()}`;
   const rzpOrder = await razorpay.orders.create({
