@@ -370,7 +370,7 @@ router.post('/admin/sample-emails', protect, async (req, res, next) => {
       id: 0, name: 'Phase 1', status: 'open', slots_per_learner: 3, slot_minutes: 15,
       date_from: '2026-11-02', date_to: '2026-11-07',
       windows: [{ start: '09:00', end: '13:00' }, { start: '14:00', end: '18:00' }],
-      venue_name: DEFAULT_VENUE.name, venue_address: DEFAULT_VENUE.address, maps_link: DEFAULT_VENUE.mapsLink,
+      venue_tba: true,
     };
     const at = (day, hm) => new Date(`${day}T${hm}:00+05:30`);
     const plus = (d, m) => new Date(d.getTime() + m * 60000);
@@ -403,7 +403,7 @@ router.post('/admin/sample-emails', protect, async (req, res, next) => {
     });
     // 8. venue confirmed (sent later from "Email venue to booked learners")
     const finalVenue = phase.venue_tba || !phase.venue_address
-      ? Object.assign({}, phase, { venue_tba: false, venue_name: DEFAULT_VENUE.name, venue_address: DEFAULT_VENUE.address, maps_link: DEFAULT_VENUE.mapsLink })
+      ? Object.assign({}, phase, { venue_tba: false, venue_name: 'Venue name (sample)', venue_address: 'The full venue address appears here once you fill it in from Edit venue', maps_link: '' })
       : phase;
     await emails.sendVenueAnnouncement({ to, name, bookings: all, phase: finalVenue, subjectPrefix: prefix });
     // 9. Mock Interview Add-on offer  10. add-on paid

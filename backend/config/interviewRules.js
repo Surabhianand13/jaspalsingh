@@ -10,11 +10,10 @@ const BRANCHES = ['Civil', 'Mechanical', 'Electrical'];
 const CONTACT_PHONE   = '+91 98291 33317';
 const CONTACT_WA_LINK = 'https://wa.me/919829133317';
 
-const DEFAULT_VENUE = {
-  name: 'WHITE HOUSE',
-  address: '33, Tonk Road, Opp. Zone Tech, Madhuvan Colony, Mansingh Pura, Tonk Phatak, Jaipur, Rajasthan 302018',
-  mapsLink: 'https://maps.app.goo.gl/UiYpXv447AWrfyMX8',
-};
+/* No default interview venue (2026-10-30): the interviews are NOT at the
+   Tonk Road centre - the venue is communicated later, so new phases start
+   as "Venue not finalised" and the admin fills it in from Edit venue. */
+const DEFAULT_VENUE = { name: '', address: '', mapsLink: '' };
 
 const INSTRUCTIONS = [
   'Reach the venue 15 minutes before your slot.',

@@ -279,7 +279,7 @@
     if (el.innerHTML) { el.innerHTML = ''; return; }
     var d = state.overview.defaults.venue;
     // Pre-fill the usual centre when the venue was never filled in.
-    var v = p.venue_address ? p : Object.assign({}, p, { venue_name: d.name, venue_address: d.address, maps_link: d.mapsLink });
+    var v = p.venue_address || !d.address ? p : Object.assign({}, p, { venue_name: d.name, venue_address: d.address, maps_link: d.mapsLink });
     el.innerHTML = '<div class="iv-form" style="margin:12px 0 0;border-width:1.5px;">' +
       '<div class="iv-grid">' + venueFields('ive' + id, v) + '</div>' +
       '<p class="iv-help">Saving updates the booking page, every future email and sir\'s calendar events right away. Learners who already booked are only emailed when you click "Email venue to booked learners".</p>' +
@@ -335,7 +335,7 @@
           '<label>Slots per learner<input type="number" id="ivfPer" value="3" min="1" max="10" /></label>' +
           '<label class="iv-check"><input type="checkbox" id="ivfSun" checked /> Skip Sundays</label>' +
           '<span></span>' +
-          venueFields('ivf', { venue_tba: false, venue_name: v.name, venue_address: v.address, maps_link: v.mapsLink }) +
+          venueFields('ivf', { venue_tba: !v.address, venue_name: v.name, venue_address: v.address, maps_link: v.mapsLink }) +
         '</div>' +
         '<p class="iv-help" id="ivfPreview"></p>' +
         '<div class="iv-actions"><button class="btn" id="ivfSave"><i class="fas fa-check"></i> Create phase (as draft)</button><button class="btn-admin-secondary" id="ivfCancel">Cancel</button></div>' +

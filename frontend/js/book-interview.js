@@ -33,7 +33,7 @@
   var TOKEN = params.get('t');
   var PROGRAM = params.get('program') || 'rpsc-ae-interview';
   var DEMO = params.get('demo') === '1';
-  var DEMO_TBA = DEMO && params.get('tba') === '1'; // demo with the venue not finalised yet
+  var DEMO_TBA = DEMO; // interview venue is communicated later - the demo shows that state
 
   var app = document.getElementById('app');
   var bar = document.getElementById('bar');
@@ -157,9 +157,7 @@
         id: 1, name: 'Phase 1', slots_per_learner: 3, slot_minutes: 15, date_from: '2026-11-02', date_to: '2026-11-07',
         windows: [{ start: '09:00', end: '13:00' }, { start: '14:00', end: '18:00' }],
         venue_tba: DEMO_TBA,
-        venue_name: DEMO_TBA ? null : 'WHITE HOUSE',
-        venue_address: DEMO_TBA ? null : '33, Tonk Road, Opp. Zone Tech, Madhuvan Colony, Mansingh Pura, Tonk Phatak, Jaipur, Rajasthan 302018',
-        maps_link: DEMO_TBA ? null : 'https://maps.app.goo.gl/UiYpXv447AWrfyMX8',
+        venue_name: null, venue_address: null, maps_link: null,
         bookable: true, days: days,
       }],
     };
