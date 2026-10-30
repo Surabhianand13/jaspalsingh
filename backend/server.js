@@ -2084,6 +2084,21 @@ async function migrate() {
     [JSON.stringify('https://chat.whatsapp.com/K6zqCXtsT6K0UPBgUIa2x5?s=cl&p=a&mlu=0'), 'https://chat.whatsapp.com/FzrWaa8rZlu2AexNwo4CSA']
   );
 
+  /* ── RPSC AE Mock Interview Add-on packs (2026-10-30): 2 for 2999 and
+     4 for 4999, on top of the 3 included interviews. is_visible = FALSE
+     keeps them off every listing and makes the public /create-order
+     refuse them - they are sold only from a paid learner's booking page
+     (POST /api/interviews/addon-order). category 'interview-addon' keeps
+     them out of My Programs. Inserted once, so admin price edits stick. ── */
+  for (const pack of require('./config/interviewRules').ADDON_PACKS) {
+    await query(
+      `INSERT INTO programs (slug, title, short_name, category, exam, level, status, price, mrp, accent, sort_order, is_visible, short_desc)
+       VALUES ($1, $2, $3, 'interview-addon', 'RPSC AE 2024', 'Interview / Viva', 'enrolling', $4, $4, 'purple', 99, FALSE, $5)
+       ON CONFLICT (slug) DO NOTHING`,
+      [pack.slug, pack.title, pack.shortName, pack.price, `${pack.slots} extra one-to-one mock interviews for paid RPSC AE Interview Guidance learners`]
+    );
+  }
+
   /* ── UP Polytechnic roll-number backfill (2026-08-15): learners who
      paid before/without submitting the post-payment Tally details form
      have no roll_number yet and nothing to show in "My Programs" -

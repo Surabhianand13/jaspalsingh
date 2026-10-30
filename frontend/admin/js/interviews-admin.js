@@ -105,7 +105,7 @@
           ' <button class="btn-admin-secondary iv-sm" id="ivCalCheck">Check connection</button> <span id="ivCalMsg"></span></div>' +
         '<div class="iv-sample"><input type="email" id="ivSampleTo" placeholder="Send sample emails to…" value="anand.surabhi.a@gmail.com" />' +
           '<button class="btn-admin-secondary iv-sm" id="ivSampleBtn"><i class="fas fa-paper-plane"></i> Send sample emails</button></div>' +
-      '</div>' +
+      '</div>' + addonBar(d.addon) +
       '<div id="ivNewForm" style="display:none;"></div>';
 
     if (!d.phases.length) {
@@ -121,6 +121,25 @@
     }
     $('interviewsBody').innerHTML = html;
     wireTop();
+  }
+
+  /* Mock Interview Add-on packs: sales + the one-time offer email. */
+  function addonBar(a) {
+    if (!a) return '';
+    return '<div class="iv-bar"><div><strong><i class="fas fa-user-tie"></i> Mock Interview Add-on:</strong> ' +
+        a.packs.map(function (p) { return p.sold + ' × ' + p.slots + '-interview pack'; }).join(' · ') +
+        ' · <strong>' + a.buyers + '</strong> learner' + (a.buyers === 1 ? '' : 's') + ' bought' +
+        (a.offered ? ' · offer emailed to ' + a.offered : '') + '</div>' +
+      '<div><button class="btn-admin-secondary iv-sm" id="ivAddonOffer"' + (a.not_offered ? '' : ' disabled') + '><i class="fas fa-bullhorn"></i> Email add-on offer (' + a.not_offered + ' learners)</button></div></div>';
+  }
+
+  function sendAddonOffers() {
+    var a = state.overview.addon;
+    if (!confirm('Email the Mock Interview Add-on offer (2 / 4 extra interviews) to ' + a.not_offered + ' paid RPSC AE learner(s)?\n\nEach learner gets it only once. Learners who already bought a pack, and refunded learners, are skipped.')) return;
+    api('POST', '/api/interviews/admin/addon-offers').then(function (r) {
+      msg('Add-on offer queued to ' + r.queued + ' learner(s) - emails go out over the next few minutes.', 'success');
+      load();
+    }).catch(function (e) { msg(e.message, 'error'); });
   }
 
   function stat(n, label, tone) {
@@ -154,7 +173,7 @@
       '<div id="ivVenueEdit' + p.id + '"></div>' +
       '<div class="iv-stats">' +
         stat(s.slots_free, 'slots free', 'ok') + stat(s.slots_booked, 'booked') + stat(s.slots_blocked, 'blocked') +
-        stat(s.fully_booked, 'learners: all ' + p.slots_per_learner + ' booked', 'ok') + stat(s.partly_booked, 'part booked') + stat(s.not_started, 'not started', s.not_started ? 'warn' : '') +
+        stat(s.fully_booked, 'learners: all booked', 'ok') + stat(s.partly_booked, 'part booked') + stat(s.not_started, 'not started', s.not_started ? 'warn' : '') +
         stat(s.eligible_learners, 'paid learners') +
         (s.calendar_pending ? stat(s.calendar_pending, 'not on calendar yet', 'warn') : '') +
       '</div>' +
@@ -167,6 +186,7 @@
     var newBtn2 = $('ivNewBtn2'); if (newBtn2) newBtn2.addEventListener('click', showNewForm);
     $('ivCalCheck').addEventListener('click', checkCalendar);
     $('ivSampleBtn').addEventListener('click', sendSamples);
+    if ($('ivAddonOffer')) $('ivAddonOffer').addEventListener('click', sendAddonOffers);
     root.querySelectorAll('[data-pick]').forEach(function (card) {
       card.addEventListener('click', function (e) {
         if (e.target.closest('button')) return;
@@ -215,7 +235,7 @@
   function sendSamples() {
     var to = $('ivSampleTo').value.trim();
     if (!to) return msg('Enter an email address.', 'error');
-    if (!confirm('Send 8 sample emails (with dummy learner data) to ' + to + '?')) return;
+    if (!confirm('Send 10 sample emails (with dummy learner data) to ' + to + '?')) return;
     var btn = $('ivSampleBtn');
     btn.disabled = true;
     api('POST', '/api/interviews/admin/sample-emails', { to: to })
@@ -499,14 +519,14 @@
       return !f || [l.student_name, l.student_email, l.student_phone, l.roll_number].join(' ').toLowerCase().indexOf(f) !== -1;
     });
     var rows = shown.map(function (l) {
-      var total = p.slots_per_learner;
+      var total = l.total_slots || p.slots_per_learner; // included + add-on
       var slots = (l.slots || []).map(function (s) { return esc(fmtDay(s.starts_at)) + ' ' + esc(fmtTime(s.starts_at)); }).join('<br>');
       var status = l.booked_count >= total ? '<span class="iv-badge iv-badge--ok">All ' + total + ' booked</span>'
         : l.booked_count ? '<span class="iv-badge">' + l.booked_count + ' of ' + total + ' booked</span>'
         : '<span class="iv-badge iv-badge--warn">Not booked</span>';
       var invite = l.invited_at ? 'Invited ' + esc(new Date(l.invited_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: TZ })) + (l.last_reminded_at ? '<br>Reminded ' + esc(new Date(l.last_reminded_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: TZ })) : '') : '<span class="iv-meta">Not invited to this phase</span>';
       return '<tr><td><strong>' + esc(l.student_name) + '</strong><br><span class="iv-meta">' + esc(l.student_phone || '') + ' · ' + esc(l.student_email || '') + '</span></td>' +
-        '<td>' + esc(l.roll_number || '') + '</td><td>' + status + (l.branch ? '<br><span class="iv-meta">' + esc(l.branch) + '</span>' : '') + '</td><td>' + (slots || '') + '</td><td>' + invite + '</td>' +
+        '<td>' + esc(l.roll_number || '') + '</td><td>' + status + (l.extra_slots ? ' <span class="iv-badge" style="background:#ede9fe;color:#5b21b6;">Add-on +' + l.extra_slots + '</span>' : '') + (l.branch ? '<br><span class="iv-meta">' + esc(l.branch) + '</span>' : '') + '</td><td>' + (slots || '') + '</td><td>' + invite + '</td>' +
         '<td class="iv-row-actions"><button class="btn-admin-secondary iv-sm" data-copy="' + esc(l.booking_link) + '" title="Copy this learner\'s personal booking link"><i class="fas fa-link"></i> Copy link</button>' +
           '<a class="btn-admin-secondary iv-sm" href="' + esc(l.booking_link) + '" target="_blank" rel="noopener" title="Book on the learner\'s behalf - they still get the confirmation email"><i class="fas fa-up-right-from-square"></i> Book for them</a>' +
           (l.booked_count ? '<button class="btn-admin-secondary iv-sm iv-danger" data-release="' + l.id + '" data-name="' + esc(l.student_name) + '"><i class="fas fa-rotate-left"></i> Release slots</button>' : '') +

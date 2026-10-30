@@ -6,6 +6,8 @@
      sendConfirmationEmail   - all 3 slots in one email, .ics attached
      sendDayBeforeReminder   - ~24h before each slot
      sendDailyDigest         - owner summary, once a day
+     sendAddonOfferEmail     - Mock Interview Add-on offer (admin button)
+     sendAddonPurchasedEmail - add-on paid: extra interviews added
    All go through resendQueue like every other Resend email.
    ============================================================ */
 
@@ -130,9 +132,9 @@ function buildIcs(bookings, phase) {
 
 /* ── 1. Invite / not-booked-yet reminder ──────────────────── */
 
-async function sendInviteEmail({ to, name, phase, link, reminder = false, bookedCount = 0, subjectPrefix = '' }) {
+async function sendInviteEmail({ to, name, phase, link, reminder = false, bookedCount = 0, total = 0, subjectPrefix = '' }) {
   const firstName = esc((name || 'there').split(' ')[0]);
-  const total = phase.slots_per_learner || 3;
+  total = total || phase.slots_per_learner || 3; // included + add-on slots
   const n = Math.max(1, total - bookedCount); // slots still to book
   const body = `
     <div style="text-align:center;margin-bottom:22px;">
@@ -255,9 +257,9 @@ async function sendConfirmationEmail({ to, name, roll, branch, bookings, phase, 
 
 /* ── 3. Day-before reminder (one per slot) ────────────────── */
 
-async function sendDayBeforeReminder({ to, name, booking, phase, subjectPrefix = '' }) {
+async function sendDayBeforeReminder({ to, name, booking, phase, total = 0, subjectPrefix = '' }) {
   const firstName = esc((name || 'there').split(' ')[0]);
-  const total = phase.slots_per_learner || 3;
+  total = total || phase.slots_per_learner || 3;
   const body = `
     <div style="text-align:center;margin-bottom:22px;">
       <div style="display:inline-block;background:#eff6ff;border:1px solid #93c5fd;border-radius:50px;padding:8px 22px;">
@@ -384,4 +386,96 @@ async function sendDailyDigest({ newBookings, tomorrow, phases, to = ADMIN_EMAIL
   }, PRIORITY.ADMIN_NOTIFY);
 }
 
-module.exports = { sendInviteEmail, sendConfirmationEmail, sendDayBeforeReminder, sendVenueAnnouncement, sendDailyDigest, VENUE_TBA_TEXT, buildIcs, fmtSlot, fmtDay, fmtTime, fmtRange };
+/* ── 6. Mock Interview Add-on ─────────────────────────────── */
+
+function rupees(n) { return '&#8377;' + Number(n).toLocaleString('en-IN'); }
+
+function packsTable(packs) {
+  return `
+    <table cellpadding="0" cellspacing="0" style="width:100%;border:1px solid #e2e8f0;border-radius:12px;margin-bottom:22px;">
+      ${packs.map((p, i) => `<tr>
+        <td style="padding:14px 16px;${i < packs.length - 1 ? 'border-bottom:1px solid #e2e8f0;' : ''}font-size:15px;color:#1A1A2E;font-weight:800;">${p.slots} Mock Interviews</td>
+        <td style="padding:14px 16px;${i < packs.length - 1 ? 'border-bottom:1px solid #e2e8f0;' : ''}font-size:15px;color:${RED};font-weight:800;text-align:right;">${rupees(p.price)}</td>
+      </tr>`).join('')}
+    </table>`;
+}
+
+async function sendAddonOfferEmail({ to, name, link, packs, subjectPrefix = '' }) {
+  const firstName = esc((name || 'there').split(' ')[0]);
+  const body = `
+    <div style="text-align:center;margin-bottom:22px;">
+      <div style="display:inline-block;background:#f5f3ff;border:1px solid #c4b5fd;border-radius:50px;padding:8px 22px;">
+        <span style="font-size:13px;font-weight:700;color:#5b21b6;">For RPSC AE Interview Guidance learners only</span>
+      </div>
+    </div>
+
+    <h2 style="margin:0 0 12px;font-size:22px;color:#1A1A2E;font-weight:800;text-align:center;">Want more mock interviews, ${firstName}?</h2>
+    <p style="margin:0 0 22px;font-size:15px;color:#374151;line-height:1.7;text-align:center;">
+      Your programme includes 3 one-to-one mock interviews. You can now add more, on top of those 3 - more practice in front of the panel before the real RPSC board.
+    </p>
+
+    ${packsTable(packs)}
+
+    <table cellpadding="0" cellspacing="0" style="width:100%;margin-bottom:22px;">
+      <tr><td style="padding:4px 0;font-size:14px;color:#374151;">✅ No form to fill - pay on your booking page and the extra interviews are added instantly</td></tr>
+      <tr><td style="padding:4px 0;font-size:14px;color:#374151;">✅ Booked the same way as your included slots, one per day</td></tr>
+      <tr><td style="padding:4px 0;font-size:14px;color:#374151;">✅ You can buy more than one pack</td></tr>
+    </table>
+
+    ${button(link, 'Add mock interviews &rarr;')}
+
+    ${helpLine()}
+    <p style="margin:14px 0 0;font-size:11.5px;color:#9ca3af;text-align:center;line-height:1.6;">This link is personal to you - please do not share it.<br>Button not working? Copy this link: <span style="word-break:break-all;">${esc(link)}</span></p>
+  `;
+  return resendSend({
+    from: FROM,
+    to,
+    subject: `${subjectPrefix}Add more RPSC AE mock interviews - ${packs.map(p => `${p.slots} for Rs ${Number(p.price).toLocaleString('en-IN')}`).join(' / ')}`,
+    html: baseHtml(body),
+  }, PRIORITY.DEFAULT); // bulk offer - never delays OTP / invoice emails
+}
+
+async function sendAddonPurchasedEmail({ to, name, added, total, booked, link, phaseOpen, subjectPrefix = '' }) {
+  const firstName = esc((name || 'there').split(' ')[0]);
+  const pending = Math.max(0, total - booked);
+  const body = `
+    <div style="text-align:center;margin-bottom:22px;">
+      <div style="display:inline-block;background:#f0fdf4;border:1px solid #86efac;border-radius:50px;padding:8px 22px;">
+        <span style="font-size:13px;font-weight:700;color:#166534;">✅ Payment received</span>
+      </div>
+    </div>
+
+    <h2 style="margin:0 0 12px;font-size:22px;color:#1A1A2E;font-weight:800;text-align:center;">${added} extra mock interview${added === 1 ? '' : 's'} added, ${firstName}!</h2>
+    <p style="margin:0 0 22px;font-size:15px;color:#374151;line-height:1.7;text-align:center;">
+      There is no form to fill. Your new interviews are already on your booking page.
+    </p>
+
+    <table cellpadding="0" cellspacing="0" style="width:100%;border:1px solid #e2e8f0;border-radius:12px;margin-bottom:22px;">
+      <tr><td style="padding:12px 16px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#6b7280;width:45%;">Total mock interviews</td><td style="padding:12px 16px;border-bottom:1px solid #e2e8f0;font-size:15px;color:#1A1A2E;font-weight:800;">${total}</td></tr>
+      <tr><td style="padding:12px 16px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#6b7280;">Booked so far</td><td style="padding:12px 16px;border-bottom:1px solid #e2e8f0;font-size:15px;color:#1A1A2E;font-weight:800;">${booked}</td></tr>
+      <tr><td style="padding:12px 16px;font-size:13px;color:#6b7280;">Still to book</td><td style="padding:12px 16px;font-size:15px;color:${RED};font-weight:800;">${pending}</td></tr>
+    </table>
+
+    ${phaseOpen
+      ? button(link, 'Book my slots &rarr;')
+      : `<div style="background:#eff6ff;border:1px solid #93c5fd;border-radius:12px;padding:16px 20px;margin-bottom:22px;text-align:center;">
+          <div style="font-size:14px;color:#1e3a8a;line-height:1.7;">No booking round is open right now. We will email you as soon as the next round opens - you can also check anytime with the button below.</div>
+        </div>
+        ${button(link, 'Open my booking page &rarr;')}`}
+
+    <p style="margin:0 0 22px;font-size:13px;color:#374151;line-height:1.7;text-align:center;">
+      Same rules as your included slots: one interview per day, first-come first-served, and booked slots cannot be rescheduled or cancelled.
+    </p>
+
+    ${helpLine()}
+    <p style="margin:14px 0 0;font-size:11.5px;color:#9ca3af;text-align:center;line-height:1.6;">This booking link is personal to you - please do not share it.<br>Button not working? Copy this link: <span style="word-break:break-all;">${esc(link)}</span></p>
+  `;
+  return resendSend({
+    from: FROM,
+    to,
+    subject: `${subjectPrefix}${added} extra RPSC AE mock interview${added === 1 ? '' : 's'} added - you now have ${total}`,
+    html: baseHtml(body),
+  }, PRIORITY.INVOICE);
+}
+
+module.exports = { sendInviteEmail, sendConfirmationEmail, sendDayBeforeReminder, sendVenueAnnouncement, sendDailyDigest, sendAddonOfferEmail, sendAddonPurchasedEmail, VENUE_TBA_TEXT, buildIcs, fmtSlot, fmtDay, fmtTime, fmtRange };

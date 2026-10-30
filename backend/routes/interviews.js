@@ -6,6 +6,9 @@
    logged-in learner JWT + ?program=slug from My Programs):
      GET  /api/interviews/booking          - my booked slots + open slots to pick
      POST /api/interviews/booking          - book 1..remaining slots
+     POST /api/interviews/addon-order      - Razorpay order for a Mock Interview
+                                             Add-on pack { pack: slug }; paid via
+                                             the normal POST /api/payment/verify
 
    Admin (protect):
      GET    /api/interviews/admin/overview
@@ -20,10 +23,12 @@
      POST   /api/interviews/admin/slots/:id/block        - { blocked: bool }
      DELETE /api/interviews/admin/learners/:enrollmentId/bookings - release a learner
      POST   /api/interviews/admin/sample-emails          - { to } dummy copies of every email
+     POST   /api/interviews/admin/addon-offers           - email the add-on offer to learners not yet offered
    ============================================================ */
 
 const express = require('express');
 const router = express.Router();
+const rateLimit = require('express-rate-limit');
 const jwt = require('jsonwebtoken');
 const { query } = require('../config/db');
 const { protect } = require('../middleware/auth');
@@ -33,7 +38,7 @@ const svc = require('../services/interviewService');
 const calendar = require('../services/interviewCalendar');
 const emails = require('../services/interviewEmails');
 const { SITE } = require('../services/paymentEmailService');
-const { BRANCHES, INSTRUCTIONS, TERMS, CONTACT_PHONE, CONTACT_WA_LINK, DEFAULT_VENUE } = require('../config/interviewRules');
+const { BRANCHES, INSTRUCTIONS, TERMS, CONTACT_PHONE, CONTACT_WA_LINK, DEFAULT_VENUE, ADDON_BASE_PROGRAM, ADDON_PACKS } = require('../config/interviewRules');
 
 const DEFAULT_PROGRAM = 'rpsc-ae-interview';
 
@@ -89,12 +94,20 @@ async function bookingState(enr) {
   const bookings = await svc.learnerBookings(enr);
   const phases = await svc.openPhasesWithAvailability(enr.program_slug, bookings.map(b => svc.istDateKey(b.starts_at)));
   const firstPhase = bookings.length ? await svc.getPhase(bookings[0].phase_id) : phases[0];
-  const total = (firstPhase && firstPhase.slots_per_learner) || 3;
+  const included = (firstPhase && firstPhase.slots_per_learner) || 3;
+  const extra = await svc.extraSlotsFor(enr.program_slug, enr.student_email);
+  const total = included + extra;
   const remaining = Math.max(0, total - bookings.length);
   return {
+    // Mock Interview Add-on packs on sale (RPSC AE only) + what they own.
+    addons: canonicalize(enr.program_slug) === ADDON_BASE_PROGRAM
+      ? { packs: await svc.addonPrices(), extra }
+      : null,
     booked: {
       branch: bookings.length ? bookings[0].branch : null,
       total,
+      included,
+      extra,
       remaining,
       bookings: bookings.map(b => ({
         id: b.id, interview_no: b.interview_no, starts_at: b.starts_at, ends_at: b.ends_at, phase_name: b.phase_name,
@@ -130,6 +143,31 @@ router.post('/booking', async (req, res, next) => {
   } catch (err) { sendError(res, next, err); }
 });
 
+/* ── POST /addon-order ──────────────────────────────────────── */
+
+const addonOrderLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: 'Too many payment attempts. Please wait a few minutes and try again.' },
+});
+
+router.post('/addon-order', addonOrderLimiter, async (req, res, next) => {
+  try {
+    const enr = await resolveEnrollment(req);
+    if (canonicalize(enr.program_slug) !== ADDON_BASE_PROGRAM) {
+      return res.status(403).json({ error: 'Mock interview add-ons are only for RPSC AE Interview learners.' });
+    }
+    const pack = ADDON_PACKS.find(p => p.slug === (req.body && req.body.pack));
+    if (!pack) return res.status(400).json({ error: 'Please choose a pack.' });
+    const { createAddonOrder } = require('./payment');
+    res.json(await createAddonOrder(enr, pack.slug));
+  } catch (err) {
+    if (err instanceof svc.BookingError) return sendError(res, next, err);
+    console.error('[interview addon-order]', err?.error || err?.message || err);
+    res.status(err.status || 500).json({ error: err.status ? err.message : 'Payment gateway error. Please try again.' });
+  }
+});
+
 /* ══════════════════════ ADMIN ══════════════════════════════ */
 
 router.get('/admin/overview', protect, async (req, res, next) => {
@@ -138,6 +176,7 @@ router.get('/admin/overview', protect, async (req, res, next) => {
     for (const p of phases) p.stats = await svc.phaseStats(p);
     res.json({
       phases,
+      addon: await svc.addonSummary(),
       calendar: { configured: calendar.isConfigured(), calendarId: calendar.calendarId(), serviceAccount: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || null },
       defaults: { program_slug: DEFAULT_PROGRAM, venue: DEFAULT_VENUE },
     });
@@ -313,6 +352,11 @@ router.delete('/admin/learners/:enrollmentId/bookings', protect, async (req, res
   } catch (err) { next(err); }
 });
 
+router.post('/admin/addon-offers', protect, async (req, res, next) => {
+  try { res.json({ ok: true, queued: await svc.sendAddonOffers() }); }
+  catch (err) { sendError(res, next, err); }
+});
+
 /* Dummy copies of every learner email (+ the owner summary) to one
    address, so the owner can see exactly what learners will receive.
    Uses an existing phase's settings when one exists, else Phase 1. */
@@ -362,7 +406,11 @@ router.post('/admin/sample-emails', protect, async (req, res, next) => {
       ? Object.assign({}, phase, { venue_tba: false, venue_name: DEFAULT_VENUE.name, venue_address: DEFAULT_VENUE.address, maps_link: DEFAULT_VENUE.mapsLink })
       : phase;
     await emails.sendVenueAnnouncement({ to, name, bookings: all, phase: finalVenue, subjectPrefix: prefix });
-    res.json({ ok: true, sent: 8 });
+    // 9. Mock Interview Add-on offer  10. add-on paid
+    const packs = await svc.addonPrices();
+    await emails.sendAddonOfferEmail({ to, name, link: demoLink, packs, subjectPrefix: prefix });
+    await emails.sendAddonPurchasedEmail({ to, name, added: packs[0].slots, total: 3 + packs[0].slots, booked: 3, link: demoLink, phaseOpen: phase.status === 'open', subjectPrefix: prefix });
+    res.json({ ok: true, sent: 10 });
   } catch (err) { next(err); }
 });
 

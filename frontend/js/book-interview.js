@@ -13,6 +13,12 @@
      logged in        learner token from localStorage, ?program=slug
      ?demo=1          sample data, nothing is sent (linked from the
                       sample emails so the owner can try the flow)
+
+   Mock Interview Add-on (RPSC AE only): paid learners can buy 2 or 4
+   extra interviews here (Razorpay modal, no form - details come from
+   their enrollment). Packs stack; the extra slots are booked in the
+   same phases, one per day. Backend: POST /api/interviews/addon-order,
+   then the normal POST /api/payment/verify.
    ============================================================ */
 
 (function () {
@@ -73,8 +79,8 @@
     return base + '?text=' + encodeURIComponent(text);
   }
 
-  function api(method, body) {
-    var url = API_BASE + '/api/interviews/booking';
+  function api(method, body, path) {
+    var url = API_BASE + (path || '/api/interviews/booking');
     var headers = { 'Content-Type': 'application/json' };
     if (TOKEN) {
       if (method === 'GET') url += '?t=' + encodeURIComponent(TOKEN);
@@ -123,7 +129,8 @@
     }
     return {
       learner: { name: 'Rahul Sharma', roll_number: 'RPSCAE0012', program_name: 'RPSC AE 2024 - Interview Guidance Programme' },
-      booked: { branch: null, total: 3, remaining: 3, bookings: [] },
+      booked: { branch: null, total: 3, included: 3, extra: 0, remaining: 3, bookings: [] },
+      addons: { extra: 0, packs: [{ slug: 'rpsc-ae-mock-interview-addon-2', slots: 2, price: 2999 }, { slug: 'rpsc-ae-mock-interview-addon-4', slots: 4, price: 4999 }] },
       branches: ['Civil', 'Mechanical', 'Electrical'],
       instructions: [
         'Reach the venue 15 minutes before your slot.',
@@ -135,7 +142,8 @@
       ],
       terms: [
         'Slots are subject to availability and allotted on a first-come, first-served basis.',
-        'Each learner gets 3 interview slots in total, on 3 different days - book them together or one at a time. Additional slots cannot be booked.',
+        'Each learner gets 3 interview slots in total, each on a different day - book them together or one at a time. Extra mock interviews can only be added by buying a Mock Interview Add-on pack on this booking page.',
+        'Add-on mock interviews follow the same rules as the included slots (one per day, first-come first-served, no reschedule or cancellation) and are booked in the same booking rounds.',
         'Booked slots cannot be rescheduled, cancelled or exchanged.',
         'A missed slot (no-show or late arrival) is forfeited. No compensation or replacement slot will be given.',
         'Report 15 minutes early in formal attire with 4 copies of your DAF and a valid photo ID.',
@@ -198,6 +206,96 @@
       helpRow('Hi, I have a question about my RPSC AE interview slots' + (l.roll_number ? ' (Roll no ' + l.roll_number + ')' : '') + '.') + '</div>';
   }
 
+  /* ── Mock Interview Add-on ── */
+  function rupees(n) { return '\u20B9' + Number(n).toLocaleString('en-IN'); }
+
+  function addonCard() {
+    var a = state.data.addons;
+    if (!a || !a.packs || !a.packs.length) return '';
+    var best = a.packs.reduce(function (m, p) { return !m || p.price / p.slots < m.price / m.slots ? p : m; }, null);
+    var bought = state.justBought
+      ? '<div class="bi-addon-ok"><i class="fas fa-circle-check"></i> Payment received - ' + state.justBought + ' extra mock interview' + (state.justBought === 1 ? '' : 's') + ' added. ' + (booked().remaining && bookablePhases().length ? 'Pick your slots above.' : 'We will email you when the next booking round opens.') + '</div>'
+      : '';
+    return '<div class="bi-card bi-addon" id="addonCard">' + bought +
+      '<div class="bi-addon-tag">For RPSC AE Interview learners only</div>' +
+      '<div class="bi-h2"><i class="fas fa-user-tie" style="color:#6D28D9;"></i> ' + (a.extra ? 'Add even more mock interviews' : 'Want more mock interviews?') + '</div>' +
+      '<p class="bi-hint">' + (a.extra
+        ? 'You have <strong>' + a.extra + ' add-on interview' + (a.extra === 1 ? '' : 's') + '</strong> on top of your ' + (booked().included || 3) + ' included ones. Packs stack - buy another anytime.'
+        : 'Your programme includes ' + (booked().included || 3) + ' one-to-one mock interviews. Get more practice in front of the panel before the real RPSC board.') + '</p>' +
+      '<div class="bi-packs">' + a.packs.map(function (p) {
+        var isBest = a.packs.length > 1 && p === best;
+        return '<div class="bi-pack' + (isBest ? ' is-best' : '') + '">' + (isBest ? '<span class="bi-pack-best">Best value</span>' : '') +
+          '<b>' + p.slots + ' Mock Interviews</b>' +
+          '<div class="bi-pack-price">' + rupees(p.price) + '</div>' +
+          '<small>' + rupees(Math.round(p.price / p.slots)) + ' per interview</small>' +
+          '<button class="bi-btn bi-btn--block" data-pack="' + esc(p.slug) + '" data-slots="' + p.slots + '"><i class="fas fa-lock"></i> Buy now</button>' +
+        '</div>';
+      }).join('') + '</div>' +
+      '<ul class="bi-ul bi-addon-pts"><li>No form to fill - pay and the interviews are added instantly</li><li>Booked here like your included slots, one per day, in the same booking rounds</li><li>Secure payment by Razorpay - receipt on email</li></ul>' +
+    '</div>';
+  }
+
+  var rzpLoading = null;
+  function loadRazorpay() {
+    if (window.Razorpay) return Promise.resolve();
+    if (!rzpLoading) {
+      rzpLoading = new Promise(function (resolve, reject) {
+        var sc = document.createElement('script');
+        sc.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        sc.onload = resolve;
+        sc.onerror = function () { rzpLoading = null; reject(new Error('Could not load the payment window. Check your internet connection.')); };
+        document.head.appendChild(sc);
+      });
+    }
+    return rzpLoading;
+  }
+
+  function buyPack(btn) {
+    var slug = btn.getAttribute('data-pack'), slots = Number(btn.getAttribute('data-slots'));
+    if (DEMO) { toast('Demo preview - in the live flow the Razorpay payment window opens here.'); return; }
+    var label = btn.innerHTML;
+    function reset() { btn.disabled = false; btn.innerHTML = label; }
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Opening payment…';
+    Promise.all([api('POST', { pack: slug }, '/api/interviews/addon-order'), loadRazorpay()]).then(function (r) {
+      var o = r[0];
+      var rzp = new window.Razorpay({
+        key: o.razorpay_key_id,
+        amount: o.amount * 100,
+        currency: 'INR',
+        name: 'Dr. Jaspal Singh',
+        description: o.program_name,
+        order_id: o.razorpay_order_id,
+        prefill: o.prefill,
+        theme: { color: '#C81240' },
+        handler: function (resp) {
+          btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Confirming payment…';
+          fetch(API_BASE + '/api/payment/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order_id: o.order_id, razorpay_order_id: resp.razorpay_order_id, razorpay_payment_id: resp.razorpay_payment_id, razorpay_signature: resp.razorpay_signature }),
+          }).then(function (res) { return res.json(); }).then(function (v) {
+            if (!v.paid) throw new Error('verify');
+            return api('GET').then(function (data) {
+              state.data = data;
+              state.justBought = slots;
+              state.justBooked = null;
+              render();
+              var card = document.getElementById('addonCard');
+              if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            });
+          }).catch(function () {
+            reset();
+            toast('Payment received but we could not confirm it here. Refresh in a minute, or WhatsApp us your payment ID ' + resp.razorpay_payment_id + '.');
+          });
+        },
+        modal: { ondismiss: reset },
+      });
+      rzp.on('payment.failed', function (resp) { reset(); toast('Payment failed: ' + ((resp.error && resp.error.description) || 'Please try again.')); });
+      rzp.open();
+    }).catch(function (err) { reset(); toast(err.message); });
+  }
+
   /* ── States ── */
   function showMessage(icon, title, body, actions) {
     bar.hidden = true;
@@ -235,8 +333,9 @@
     var title = done ? 'All ' + b.total + ' interview slots booked'
       : n ? 'Book your remaining ' + b.remaining + ' ' + plural(b.remaining, 'slot', 'slots')
       : 'Book your interview slots';
-    var sub = done ? 'You are all set. See you at the venue!'
-      : 'You get ' + b.total + ' slots on ' + b.total + ' different days. Book one now and the rest anytime later - or all together.';
+    var extraText = b.extra ? ' (' + (b.included || b.total - b.extra) + ' included + ' + b.extra + ' add-on)' : '';
+    var sub = done ? 'You are all set. See you at the venue!' + (b.extra ? ' You have ' + b.total + ' interviews' + extraText + '.' : '')
+      : 'You get ' + b.total + ' slots' + extraText + ' on ' + b.total + ' different days. Book one now and the rest anytime later - or all together.';
     var dots = '';
     for (var i = 0; i < b.total; i++) {
       dots += '<span style="flex:1;height:6px;border-radius:6px;background:' + (i < n ? '#166534' : '#e5e7eb') + ';"></span>';
@@ -342,8 +441,12 @@
     }
 
     var venuePhase = state.phase || (b.bookings[0] ? b.bookings[0] : null);
-    html += venueCard(venuePhase) + rulesCard(b.remaining === 0) + helpCard();
+    html += addonCard() + venueCard(venuePhase) + rulesCard(b.remaining === 0) + helpCard();
     app.innerHTML = html;
+
+    app.querySelectorAll('[data-pack]').forEach(function (btn) {
+      btn.addEventListener('click', function () { buyPack(btn); });
+    });
 
     var ics = document.getElementById('icsBtn');
     if (ics) ics.addEventListener('click', function () { downloadIcs(b.bookings, venuePhase); });

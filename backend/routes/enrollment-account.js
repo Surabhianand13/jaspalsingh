@@ -213,6 +213,7 @@ router.get('/my-enrollments', protectLearner, async (req, res) => {
        LEFT JOIN programs p ON p.slug = e.program_slug
        WHERE e.status = 'paid'
          AND e.refund_status != 'initiated'
+         AND COALESCE(p.category, '') != 'interview-addon' -- add-on packs show on the booking page, not as a program
          AND (e.learner_id = $1
               OR LOWER(TRIM(e.student_email)) = LOWER(TRIM($2))
               OR RIGHT(REGEXP_REPLACE(e.student_phone, '\\D', '', 'g'), 10) = $3)

@@ -15,6 +15,7 @@ const { isObviousTestSubmission } = require('../utils/spamFilter');
 const { verifyTurnstile } = require('../utils/turnstile');
 const { generateRollNumber } = require('../utils/rollNumber');
 const { resolveRollNumberPrefix } = require('../utils/rollNumberPrefix');
+const { addonPack } = require('../config/interviewRules');
 
 const REFERRAL_DISCOUNT = 100;
 const REFERRAL_MIN_PRICE = 1599; // referral codes only apply to programs priced at or above this
@@ -144,7 +145,9 @@ async function onEnrollmentPaid(enrollment) {
   await ensureReferralCode(enrollment);
   await recordReferralCredit(enrollment);
   await cancelDuplicatePendingEnrollments(enrollment);
-  await assignRollNumber(enrollment);
+  // Mock Interview Add-on: the learner keeps their RPSC AE roll number,
+  // the add-on order never gets one of its own.
+  if (!addonPack(enrollment.program_slug)) await assignRollNumber(enrollment);
   // Interview programs: learners who pay after the booking invites went
   // out get their slot booking link right away (no-op for every other
   // program - only fires when an open interview phase exists for it).
@@ -379,6 +382,12 @@ router.post('/create-order', createOrderLimiter, optionalLearner, async (req, re
       return res.status(400).json({ error: 'Please enter your real name, email and mobile number.' });
     }
 
+    // Add-on packs are sold only from the learner's booking page
+    // (createAddonOrder), never through the public checkout.
+    if (addonPack(program_slug)) {
+      return res.status(400).json({ error: 'This add-on is only for enrolled RPSC AE Interview learners - buy it from your interview booking page.' });
+    }
+
     const program = await getProgramData(program_slug);
     if (!program) return res.status(400).json({ error: 'Invalid program.' });
 
@@ -445,6 +454,52 @@ router.post('/create-order', createOrderLimiter, optionalLearner, async (req, re
   }
 });
 
+/* ── Mock Interview Add-on order (routes/interviews.js) ────────
+   Only reachable with a paid RPSC AE Interview learner's booking link
+   or login, so name/email/phone come from that enrollment - nothing is
+   typed, and no Turnstile (the signed link already proves who it is).
+   The packs are is_visible = FALSE, so the price is read here directly
+   instead of through getProgramData. ── */
+async function createAddonOrder(baseEnrollment, packSlug) {
+  const pack = addonPack(packSlug);
+  if (!pack) throw Object.assign(new Error('Unknown add-on pack.'), { status: 400 });
+  const row = (await query(`SELECT title, short_name, price FROM programs WHERE slug = $1`, [pack.slug])).rows[0] || {};
+  const price = row.price != null ? Number(row.price) : pack.price;
+  const name = row.title || pack.title;
+  const email = (baseEnrollment.student_email || '').toLowerCase().trim();
+  const phone = (baseEnrollment.student_phone || '').replace(/\D/g, '').slice(-10);
+  const learner = await query(`SELECT learner_id FROM enrollments WHERE id = $1`, [baseEnrollment.id]);
+
+  const order_id = `JSP-ADDON-${Date.now()}`;
+  const rzpOrder = await razorpay.orders.create({
+    amount:   price * 100,
+    currency: 'INR',
+    receipt:  order_id,
+    notes: {
+      jsp_order_id:  order_id,
+      program_slug:  pack.slug,
+      program_name:  row.short_name || pack.shortName,
+      student_name:  baseEnrollment.student_name,
+      student_email: email,
+      student_phone: phone,
+    },
+  });
+  await query(
+    `INSERT INTO enrollments (order_id, program_slug, program_name, amount, student_name, student_email, student_phone, status, learner_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8)
+     ON CONFLICT (order_id) DO NOTHING`,
+    [order_id, pack.slug, name, price, baseEnrollment.student_name, email, phone, learner.rows[0]?.learner_id || null]
+  );
+  return {
+    order_id,
+    razorpay_order_id: rzpOrder.id,
+    razorpay_key_id:   process.env.RAZORPAY_KEY_ID,
+    amount:            price,
+    program_name:      name,
+    prefill:           { name: baseEnrollment.student_name, email, contact: phone },
+  };
+}
+
 /* ── sendAllPaymentEmails ─────────────────────────────────── */
 async function sendAllPaymentEmails(enrollment, { sendInvoice = true } = {}) {
   if (sendInvoice) {
@@ -460,6 +515,10 @@ async function sendAllPaymentEmails(enrollment, { sendInvoice = true } = {}) {
     );
     if (!claimed.rows.length) {
       console.log(`[welcome email] already claimed for ${enrollment.order_id}, skipping`);
+    } else if (addonPack(enrollment.program_slug)) {
+      // No Tally form for add-ons: "N extra interviews added" + booking link.
+      await require('../services/interviewService').sendAddonPurchasedEmail(enrollment);
+      console.log(`[welcome email] add-on email sent OK for ${enrollment.order_id}`);
     } else {
       await sendWelcomePaymentEmail(enrollment);
       console.log(`[welcome email] sent OK for ${enrollment.order_id}`);
@@ -820,4 +879,5 @@ module.exports = router;
 // email/referral-code/duplicate-cleanup pipeline a real Razorpay payment does.
 module.exports.sendAllPaymentEmails = sendAllPaymentEmails;
 module.exports.onEnrollmentPaid     = onEnrollmentPaid;
+module.exports.createAddonOrder     = createAddonOrder;
 module.exports.getProgramData       = getProgramData;
