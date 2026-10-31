@@ -8,6 +8,7 @@ const router   = express.Router();
 const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
 const { query } = require('../config/db');
+const { attachBatches } = require('../utils/programBatches');
 const { ensureGrants: ensureAdminPreviewGrants, realLearnersOnly } = require('../utils/adminPreview');
 const { protectLearner } = require('../middleware/learnerAuth');
 const { canonicalize, slugsFor } = require('../utils/programSlugAliases');
@@ -287,6 +288,7 @@ router.get('/admin/all', protect, async (req, res, next) => {
               refund_status, refund_reason, refund_amount, refund_initiated_at, refunded_by
        FROM enrollments ${where} ORDER BY created_at DESC ${limitClause}`, params);
     rows.rows.forEach(r => { r.program_label = programLabel(r.program_slug, r.program_name); });
+    await attachBatches(rows.rows);
     const summary = await query(
       `SELECT
          COUNT(*) FILTER (WHERE status='paid')::int    AS paid_count,
@@ -321,6 +323,7 @@ router.get('/admin/paid-learners', protect, async (req, res, next) => {
               refund_status, refund_reason, refund_amount, refund_initiated_at, refunded_by
        FROM enrollments ${where} ORDER BY paid_at DESC`, params);
     rows.rows.forEach(r => { r.program_label = programLabel(r.program_slug, r.program_name); });
+    await attachBatches(rows.rows);
 
     const overall = await query(
       `SELECT

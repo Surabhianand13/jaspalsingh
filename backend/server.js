@@ -1957,6 +1957,19 @@ async function migrate() {
   );
   console.log('✅ Seeded/updated 2 शौर्य Offline Practice Batch Course - RSSB JE 2026 rows (Degree/Diploma)');
 
+  /* ── Batch numbering (2026-10-31): the Practice Batch takes new
+     enrollments from 17 Nov 2026 on the same page and into the same
+     classroom. programs.batches lists each batch's start date; admin shows
+     "Batch 1 (28 Sep 2026)" / "Batch 2 (17 Nov 2026)" from paid_at
+     (utils/programBatches.js) - no enrollment row is changed. Seeded only
+     while NULL so admin edits (Programs > Edit) win. ── */
+  await query(`ALTER TABLE programs ADD COLUMN IF NOT EXISTS batches JSONB`);
+  await query(
+    `UPDATE programs SET batches = $1::jsonb
+     WHERE slug IN ('shaurya-practice-batch-rssb-je-2026-degree', 'shaurya-practice-batch-rssb-je-2026-diploma') AND batches IS NULL`,
+    [JSON.stringify(['2026-09-28', '2026-11-17'])]
+  );
+
   /* ── Shared शौर्य Batch Tally forms wired 2026-08-30 - the owner built
      ONE Tally form per track (Degree/Diploma) covering several शौर्य
      Batch SKUs at once (Complete Course, Technical + Test Series, and
