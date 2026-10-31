@@ -18,6 +18,7 @@ const archiver = require('archiver');
 const { PutObjectCommand, DeleteObjectCommand, DeleteObjectsCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
 const { r2, BUCKET } = require('../config/r2');
 const { query } = require('../config/db');
+const { cleanBatches } = require('../utils/programBatches');
 const { protect } = require('../middleware/auth');
 const { handleUploadError } = require('../middleware/upload');
 
@@ -218,6 +219,7 @@ router.put('/:id', protect, async (req, res, next) => {
          short_name = COALESCE($15,short_name), icon_class = COALESCE($16,icon_class),
          omr_enabled = COALESCE($17,omr_enabled), total_tests = $18,
          omr_categories = $19, launch_config = $20,
+         batches = CASE WHEN $22::boolean THEN $23::jsonb ELSE batches END,
          updated_at = NOW()
        WHERE id = $21 RETURNING *`,
       [
@@ -235,6 +237,9 @@ router.put('/:id', protect, async (req, res, next) => {
         (b.omr_categories && b.omr_categories.length) ? JSON.stringify(b.omr_categories) : null,
         b.launch_config ? JSON.stringify(b.launch_config) : null,
         req.params.id,
+        // Batch start dates (utils/programBatches.js) - only touched when sent.
+        b.batches !== undefined,
+        cleanBatches(b.batches).length ? JSON.stringify(cleanBatches(b.batches)) : null,
       ]
     );
     if (!result.rows.length) return res.status(404).json({ error: 'Program not found.' });

@@ -2404,6 +2404,8 @@
       tagCheckboxes('pm_tag', p.tags||[]) +
       fld('Feature bullets shown on the card (comma separated, e.g. Subject-wise Mock Tests, Full-Length Papers, Expert Review)','pm_features', (p.tags||[]).filter(function(t){ return !PRESET_TAGS[t]; }).join(', ')) +
       fld('Sort order','pm_sort',p.sort_order||0) +
+      fld('Batch start dates (comma separated, YYYY-MM-DD, e.g. 2026-09-28, 2026-11-17 - leave blank if this program has no batches)','pm_batches',(p.batches||[]).join(', ')) +
+      '<div class="admin-form-hint" style="margin-top:-8px;">Learners are labelled by payment date - e.g. "Batch 2 (17 Nov 2026)" for everyone who paid on or after 17 Nov. Nothing changes for the learner.</div>' +
       '<div style="border-top:1px dashed rgba(26,26,46,.15);margin:14px 0;padding-top:14px;">' +
         '<label class="admin-field" style="flex-direction:row;align-items:center;gap:10px;"><input type="checkbox" id="pm_omr" style="width:auto;"'+(p.omr_enabled?' checked':'')+'> <span>Printed OMR Offline program (shows up in the OMR sending picker)</span></label>' +
         fld('Total tests in this series','pm_total_tests',p.total_tests||'') +
@@ -2461,7 +2463,10 @@
         omr_enabled: checked('pm_omr'),
         total_tests: val('pm_total_tests') ? parseInt(val('pm_total_tests'),10) : '',
         omr_categories: val('pm_omr_categories') ? val('pm_omr_categories').split(',').map(function(c){return c.trim();}).filter(Boolean) : null,
-        launch_config: launchEnabled ? {
+        batches: val('pm_batches').split(',').map(function(d){return d.trim();}).filter(Boolean),
+        // Keep launch_config keys this form doesn't show (batch.materialTracks,
+        // educators...) - saving used to drop them.
+        launch_config: launchEnabled ? Object.assign({}, lc || {}, {
           seriesName: val('pm_lc_series') || val('pm_title'),
           tallyFormUrl: val('pm_lc_tallyurl'),
           mode: val('pm_lc_mode'),
@@ -2473,8 +2478,11 @@
             address: val('pm_lc_centre_address') || 'To be announced - contact us on WhatsApp for details',
             mapsLink: val('pm_lc_centre_maps') || 'https://wa.me/919829133317',
           } : null,
-        } : null,
+        }) : null,
       };
+      if (payload.batches.some(function(d){ return !/^\d{4}-\d{2}-\d{2}$/.test(d); })) {
+        showToast('Batch start dates must look like 2026-11-17', 'error'); return;
+      }
       if (launchEnabled && !payload.launch_config.tallyFormUrl) {
         showToast('Tally form URL is required when self-serve Tally intake is enabled', 'error'); return;
       }
@@ -2540,7 +2548,7 @@
           : '';
         return '<tr><td>'+e(x.student_name)+'<br><span style="color:#9999b0;font-size:12px;">'+e(x.student_phone)+(x.student_email?' · '+e(x.student_email):'')+
           ' <a href="#" data-edit-enroll-email="'+x.id+'" data-current-email="'+e(x.student_email||'')+'" style="color:#4f46e5;">edit</a></span></td>' +
-          '<td>'+e(x.program_label||x.program_name)+'</td><td>'+inr(x.amount)+(x.coupon_code?'<br><span style="color:#16a34a;font-size:11px;">'+e(x.coupon_code)+'</span>':'')+'</td>' +
+          '<td>'+e(x.program_label||x.program_name)+batchBadge(x)+'</td><td>'+inr(x.amount)+(x.coupon_code?'<br><span style="color:#16a34a;font-size:11px;">'+e(x.coupon_code)+'</span>':'')+'</td>' +
           '<td><span class="admin-badge admin-badge--'+(x.status==='paid'?'green':x.status==='pending'?'orange':'grey')+'">'+e(x.status)+'</span></td>' +
           '<td>'+formBadge+emailBadge+reissueBtn+markBtn+admitBtn+markPaidBtn+'</td>'+
           '<td>'+fmtDate(x.paid_at||x.created_at)+'</td><td style="font-size:11px;color:#9999b0;">'+e(x.order_id)+'</td></tr>';
@@ -2952,7 +2960,36 @@
     draw();
   }
 
+  /* "Batch 2 (17 Nov 2026)" - programs with batch start dates only
+     (backend utils/programBatches.js, worked out from the payment date). */
+  function batchBadge(x) {
+    return x.batch_label ? '<br><span class="admin-badge" style="background:#ede9fe;color:#5b21b6;font-size:10px;">'+e(x.batch_label)+'</span>' : '';
+  }
+
+  /* Active learners per batch + click to show one batch only. */
+  var plBatchFilter = '';
+  function paidBatchBar(rows, body) {
+    var counts = {}, order = [];
+    rows.forEach(function (x) {
+      if (!x.batch_label) return;
+      if (!counts[x.batch_label]) { counts[x.batch_label] = { no: x.batch_no, n: 0 }; order.push(x.batch_label); }
+      if (x.refund_status !== 'initiated') counts[x.batch_label].n++;
+    });
+    if (!order.length) { plBatchFilter = ''; return ''; }
+    if (plBatchFilter && !counts[plBatchFilter]) plBatchFilter = '';
+    order.sort(function (a, b) { return counts[a].no - counts[b].no; });
+    var chip = function (label, text, on) {
+      return '<button type="button" class="btn-admin-secondary btn-admin-sm" data-plbatch="'+e(label)+'" style="font-size:12px;'+(on?'background:#5b21b6;color:#fff;border-color:#5b21b6;':'')+'">'+text+'</button>';
+    };
+    return '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px;"><strong style="font-size:13px;"><i class="fas fa-layer-group"></i> Batches:</strong>' +
+      chip('', 'All', !plBatchFilter) +
+      order.map(function (l) { return chip(l, e(l)+' - <b>'+counts[l].n+'</b> active', plBatchFilter === l); }).join('') + '</div>';
+  }
+
   function renderPaidLearnerRows(rows, body) {
+    var bar = paidBatchBar(rows, body);
+    var allRows = rows;
+    if (plBatchFilter) rows = rows.filter(function (x) { return x.batch_label === plBatchFilter; });
     var html = rows.map(function (x) {
       var refunded = x.refund_status === 'initiated';
       var refundBadge = refunded
@@ -2964,7 +3001,7 @@
 
       return '<tr>' +
         '<td>'+e(x.student_name)+'<br><span style="color:#9999b0;font-size:12px;">'+e(x.student_phone)+(x.student_email?' · '+e(x.student_email):'')+'</span></td>' +
-        '<td>'+e(x.program_label||x.program_name)+'</td>' +
+        '<td>'+e(x.program_label||x.program_name)+batchBadge(x)+'</td>' +
         '<td>'+(x.roll_number?'<span style="font-family:monospace;">'+e(x.roll_number)+'</span>':'<span style="color:#c7c7d6;">Pending</span>')+'</td>' +
         '<td>'+inr(x.amount)+'</td>' +
         '<td>'+(x.referred_by?e(x.referred_by):'<span style="color:#c7c7d6;">-</span>')+'</td>' +
@@ -2976,10 +3013,16 @@
         '</tr>';
     }).join('');
 
-    body.innerHTML = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr>' +
+    body.innerHTML = bar + '<div class="admin-table-wrap"><table class="admin-table"><thead><tr>' +
       '<th>Learner</th><th>Program</th><th>Roll Number</th><th>Amount</th><th>Referral Code</th><th>Coupon</th><th>Order / Payment ID</th><th>Purchase Date</th><th>Refund</th><th>Action</th>' +
       '</tr></thead><tbody>'+html+'</tbody></table></div>';
 
+    body.querySelectorAll('[data-plbatch]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        plBatchFilter = btn.getAttribute('data-plbatch') || '';
+        renderPaidLearnerRows(allRows, body);
+      });
+    });
     body.querySelectorAll('[data-refund]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         showRefundModal(btn.getAttribute('data-refund'), btn.getAttribute('data-name'), btn.getAttribute('data-amount'));
