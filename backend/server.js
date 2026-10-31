@@ -1969,6 +1969,14 @@ async function migrate() {
      WHERE slug IN ('shaurya-practice-batch-rssb-je-2026-degree', 'shaurya-practice-batch-rssb-je-2026-diploma') AND batches IS NULL`,
     [JSON.stringify(['2026-09-28', '2026-11-17'])]
   );
+  /* RPSC AE Interview Guidance Batch 2.0 (2026-10-31): same page, same
+     price, same mock booking link - Batch 1 admissions closed, Batch 2.0
+     admissions open with no fixed start date (sessions begin once full).
+     Anyone paying from 1 Nov 2026 (IST) is tagged Batch 2 in admin. */
+  await query(
+    `UPDATE programs SET batches = $1::jsonb WHERE slug = 'rpsc-ae-interview' AND batches IS NULL`,
+    [JSON.stringify(['2026-10-26', '2026-11-01'])]
+  );
 
   /* ── Shared शौर्य Batch Tally forms wired 2026-08-30 - the owner built
      ONE Tally form per track (Degree/Diploma) covering several शौर्य
