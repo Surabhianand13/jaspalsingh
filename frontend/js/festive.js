@@ -1,8 +1,9 @@
-/* festive.js - Dussehra 2026 festive UX layer
-   Auto-expires: 22 Oct 2026 12:00 AM IST (21 Oct 18:30 UTC)
+/* festive.js - Diwali 2026 festive UX layer (DIWALI coupon, 5% off)
+   Auto-expires: 13 Nov 2026 12:00 AM IST (12 Nov 18:30 UTC), i.e. live
+   through the whole of 12 Nov. Reused from Dussehra (22 Oct).
    Include on any page; safe no-op after deadline. */
 (function () {
-  var DEADLINE = new Date('2026-10-21T18:30:00Z');
+  var DEADLINE = new Date('2026-11-12T18:30:00Z');
   if (Date.now() >= DEADLINE) return;
 
   /* ── 1. INJECT STYLES ─────────────────────────────────── */
@@ -164,7 +165,7 @@
   var badge = document.createElement('div');
   badge.id = 'fest-corner-badge';
   badge.innerHTML = '<span class="fbc-fire" style="font-size:16px;">🪔</span>' +
-    '<span>Use <strong>DUSSHERA</strong><br>for 5% OFF</span>' +
+    '<span>Diwali Offer: Use <strong>DIWALI</strong><br>for 5% OFF</span>' +
     '<button class="fbc-close" onclick="this.closest(\'#fest-corner-badge\').remove()" aria-label="Close">&times;</button>';
   document.body.appendChild(badge);
 

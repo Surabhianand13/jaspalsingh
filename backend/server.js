@@ -2239,6 +2239,18 @@ async function migrate() {
        is_active = TRUE, label = EXCLUDED.label, expires_at = EXCLUDED.expires_at, updated_at = NOW()`
   );
 
+  /* ── DIWALI coupon (2026-11-07): 5% off all programs, exclusive (blocks
+     referral code), no usage cap - same setup as the Dussehra DUSSHERA
+     offer. Live until 23:59:59 IST on 12 Nov 2026 (= 18:29:59 UTC);
+     applyCoupon() rejects it after expires_at, so it switches itself off.
+     DO NOTHING so a change made in Admin > Coupons is never overwritten
+     on redeploy. ── */
+  await query(
+    `INSERT INTO coupons (code, type, discount_amount, program_prices, program_slugs, max_uses, exclusive, is_active, label, expires_at)
+     VALUES ('DIWALI', 'percent_discount', 5, NULL, NULL, NULL, TRUE, TRUE, 'Diwali Special - 5% Off', '2026-11-12T18:29:59Z')
+     ON CONFLICT (code) DO NOTHING`
+  );
+
   /* ── Seed second admin user from env var (never hardcode passwords) ── */
   {
     const bcrypt = require('bcryptjs');
