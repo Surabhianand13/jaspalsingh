@@ -6,6 +6,9 @@
      - open / close booking, send invites, remind learners with slots
        still pending
      - day-wise schedule (print / CSV), block or unblock free slots
+     - per interview: attendance (present / absent / shifted), marks out
+       of 72 + feedback or a note, and the recording's Drive link
+       (shared only with that learner; shows on their My Programs card)
      - paid learners with booking status, personal booking links,
        release a learner's slots (refund / emergency)
      - Google Calendar connection check, sample emails
@@ -19,7 +22,7 @@
 
   var API = location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://jaspalsingh.onrender.com';
   var TZ = 'Asia/Kolkata';
-  var state = { overview: null, phaseId: null, tab: 'schedule', schedule: null, learners: null, day: null, filter: '' };
+  var state = { overview: null, phaseId: null, tab: 'schedule', schedule: null, learners: null, day: null, filter: '', edit: null };
 
   function token() { return localStorage.getItem('jaspal_admin_token'); }
   function api(method, path, body) {
@@ -209,7 +212,7 @@
         if (e.target.closest('button')) return;
         var id = Number(card.getAttribute('data-pick'));
         if (id === state.phaseId) return;
-        state.phaseId = id; state.day = null; state.schedule = null; state.learners = null;
+        state.phaseId = id; state.day = null; state.schedule = null; state.learners = null; state.edit = null;
         render(); loadDetail();
       });
     });
@@ -230,7 +233,7 @@
     });
     root.querySelectorAll('[data-tab]').forEach(function (b) {
       b.addEventListener('click', function () {
-        state.tab = b.getAttribute('data-tab');
+        state.tab = b.getAttribute('data-tab'); state.edit = null;
         root.querySelectorAll('[data-tab]').forEach(function (x) { x.classList.toggle('is-on', x === b); });
         loadDetail();
       });
@@ -458,12 +461,16 @@
         status = '<span class="iv-badge">Free</span>';
         action = '<button class="btn-admin-secondary iv-sm" data-block="1" data-slot="' + s.id + '">Block</button>';
       }
+      var res = resultCells(s, d);
       var cal = !s.booking_id ? '' : s.calendar_event_id ? '<i class="fas fa-check" style="color:#16a34a;" title="On calendar"></i>' : '<i class="fas fa-triangle-exclamation" style="color:#B45309;" title="' + esc(s.calendar_error || 'Not synced yet') + '"></i>';
       return '<tr class="' + (s.booking_id ? 'iv-row-booked' : '') + '">' +
         '<td><strong>' + esc(fmtTime(s.starts_at)) + '</strong></td><td>' + status + '</td>' +
         '<td>' + (s.booking_id ? '<strong>' + esc(s.student_name) + '</strong><br><span class="iv-meta">' + esc(s.student_phone || '') + '</span>' : '') + '</td>' +
         '<td>' + esc(s.branch || '') + '</td><td>' + esc(s.roll_number || '') + '</td>' +
-        '<td>' + (s.booking_id ? 'Interview ' + s.interview_no : '') + '</td><td>' + cal + '</td><td>' + action + '</td></tr>';
+        '<td>' + (s.booking_id ? 'Interview ' + s.interview_no : '') + '</td><td>' + cal + '</td>' +
+        '<td>' + res.attendance + '</td><td class="iv-fb-cell">' + res.feedback + '</td><td>' + res.recording + '</td>' +
+        '<td>' + action + '</td></tr>' +
+        (s.booking_id && state.edit && state.edit.id === s.booking_id ? '<tr class="iv-edit-row"><td colspan="11">' + editorHtml(s, d) + '</td></tr>' : '');
     }).join('');
     var bookedCount = day.slots.filter(function (s) { return s.booking_id; }).length;
     el.innerHTML =
@@ -471,10 +478,10 @@
       '<div class="iv-actions" style="margin:10px 0;"><strong style="margin-right:auto;">' + esc(fmtKey(day.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })) + ' - ' + bookedCount + ' interview(s)</strong>' +
         '<button class="btn-admin-secondary iv-sm" id="ivPrint"><i class="fas fa-print"></i> Print this day</button>' +
         '<button class="btn-admin-secondary iv-sm" id="ivCsv"><i class="fas fa-file-csv"></i> CSV (all days)</button></div>' +
-      '<div class="iv-table-wrap"><table class="iv-table"><thead><tr><th>Time</th><th>Status</th><th>Learner</th><th>Branch</th><th>Roll no</th><th>#</th><th>Cal</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+      '<div class="iv-table-wrap"><table class="iv-table"><thead><tr><th>Time</th><th>Status</th><th>Learner</th><th>Branch</th><th>Roll no</th><th>#</th><th>Cal</th><th>Attendance</th><th>Feedback</th><th>Recording</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>';
 
     el.querySelectorAll('[data-day]').forEach(function (b) {
-      b.addEventListener('click', function () { state.day = b.getAttribute('data-day'); renderSchedule(el); });
+      b.addEventListener('click', function () { state.day = b.getAttribute('data-day'); state.edit = null; renderSchedule(el); });
     });
     el.querySelectorAll('[data-block]').forEach(function (b) {
       b.addEventListener('click', function () {
@@ -487,6 +494,156 @@
     });
     $('ivPrint').addEventListener('click', function () { printDay(day); });
     $('ivCsv').addEventListener('click', downloadCsv);
+    wireResults(el);
+  }
+
+  /* ── Attendance / feedback / recording (per booked interview) ── */
+  var ATT = {
+    present: '<span class="iv-badge iv-badge--ok">Present</span>',
+    absent: '<span class="iv-badge iv-badge--bad">Absent</span>',
+    shifted: '<span class="iv-badge iv-badge--info">Shifted</span>',
+  };
+  function findSlot(bookingId) {
+    var out = null;
+    (state.schedule ? state.schedule.days : []).forEach(function (day) {
+      day.slots.forEach(function (s) { if (s.booking_id === bookingId) out = s; });
+    });
+    return out;
+  }
+  function clip(t, n) { t = String(t || ''); return t.length > n ? t.slice(0, n - 1) + '…' : t; }
+
+  function resultCells(s, d) {
+    if (!s.booking_id) return { attendance: '', feedback: '', recording: '' };
+    var id = s.booking_id, a = s.attendance;
+    var attendance = a
+      ? ATT[a] + ' <button class="iv-link" data-res-edit="' + id + '" data-kind="result">change</button>'
+      : '<select class="iv-att-select" data-att-pick="' + id + '"><option value="">Mark…</option><option value="present">Present</option><option value="absent">Absent</option><option value="shifted">Shifted</option></select>';
+    var feedback;
+    if (!a) feedback = '<span class="iv-meta">Mark attendance first</span>';
+    else if (a === 'present') {
+      feedback = (s.marks != null ? '<b>' + esc(Number(s.marks)) + ' / ' + d.max_marks + '</b><br>' : '') +
+        (s.feedback ? '<span class="iv-meta">' + esc(clip(s.feedback, 60)) + '</span><br>' : '') +
+        '<button class="btn-admin-secondary iv-sm" data-res-edit="' + id + '" data-kind="result">' + (s.marks != null || s.feedback ? 'Edit' : 'Add feedback') + '</button>';
+    } else {
+      feedback = (s.note ? '<span class="iv-meta">' + (a === 'shifted' ? 'Note: ' : 'Reason: ') + esc(clip(s.note, 60)) + '</span><br>' : '') +
+        '<button class="btn-admin-secondary iv-sm" data-res-edit="' + id + '" data-kind="result">' + (s.note ? 'Edit' : 'Add ' + (a === 'shifted' ? 'note' : 'reason')) + '</button>';
+    }
+    var recording;
+    if (a !== 'present') recording = a ? '<span class="iv-meta">Not needed</span>' : '<span class="iv-meta">-</span>';
+    else if (s.recording_url && s.recording_shared_at) recording = '<span class="iv-badge iv-badge--ok"><i class="fas fa-lock"></i> Shared with learner</span><br><a class="iv-link" href="' + esc(s.recording_url) + '" target="_blank" rel="noopener">open</a> · <button class="iv-link" data-res-edit="' + id + '" data-kind="rec">change</button>';
+    else if (s.recording_url) recording = '<span class="iv-badge iv-badge--warn" title="' + esc(s.recording_error || '') + '"><i class="fas fa-triangle-exclamation"></i> Not shared</span><br><span class="iv-meta">' + esc(clip(s.recording_error, 70)) + '</span><br><button class="btn-admin-secondary iv-sm" data-res-edit="' + id + '" data-kind="rec">Retry / change</button>';
+    else recording = '<span class="iv-badge">Pending</span><br><button class="btn-admin-secondary iv-sm" data-res-edit="' + id + '" data-kind="rec">Add link</button>';
+    return { attendance: attendance, feedback: feedback, recording: recording };
+  }
+
+  function editorHtml(s, d) {
+    var e = state.edit, a = e.attendance;
+    var head = '<div class="iv-edit-head"><strong>' + esc(s.student_name) + ' - Interview ' + s.interview_no + '</strong> <span class="iv-meta">' + esc(fmtDay(s.starts_at)) + ', ' + esc(fmtTime(s.starts_at)) + '</span></div>';
+    if (e.kind === 'rec') {
+      var gmail = /@(gmail|googlemail)\.com$/i.test(s.student_email || '');
+      return '<div class="iv-form iv-edit">' + head +
+        '<div class="iv-grid"><label class="iv-wide">Google Drive link of the recording<input id="ivRecUrl" placeholder="https://drive.google.com/file/d/..." value="' + esc(s.recording_url || '') + '"></label></div>' +
+        '<p class="iv-help"><i class="fas fa-lock"></i> Shared view only (no download) with <strong>' + esc(s.student_email || 'no email') + '</strong> only. Keep the file itself restricted, never "Anyone with the link".' +
+          (gmail ? '' : '<br><span style="color:#B45309;">This is not a Gmail address. If it has no Google account, the learner clicks "Request access" on the video and you approve it.</span>') +
+          (d.drive_configured ? '' : '<br><span style="color:#B91C1C;">Google service account is not set up on the server.</span>') + '</p>' +
+        '<div class="iv-actions"><button class="btn iv-sm" id="ivRecSave"><i class="fas fa-share-nodes"></i> Save and share</button>' +
+          (s.recording_url ? '<button class="btn-admin-secondary iv-sm iv-danger" id="ivRecRemove">Remove from dashboard</button>' : '') +
+          '<button class="btn-admin-secondary iv-sm" id="ivEditCancel">Cancel</button></div></div>';
+    }
+    var pick = '<label>Attendance<select id="ivAtt">' +
+      ['present', 'absent', 'shifted'].map(function (k) { return '<option value="' + k + '"' + (a === k ? ' selected' : '') + '>' + k.charAt(0).toUpperCase() + k.slice(1) + '</option>'; }).join('') + '</select></label>';
+    var fields = a === 'present'
+      ? '<label>Marks (out of ' + d.max_marks + ')<input id="ivMarks" type="number" min="0" max="' + d.max_marks + '" step="0.5" value="' + (s.marks != null ? esc(Number(s.marks)) : '') + '"></label>' +
+        '<label class="iv-wide">Detailed feedback (the learner sees this)<textarea id="ivFeedback" rows="5">' + esc(s.feedback || '') + '</textarea></label>'
+      : '<label class="iv-wide">' + (a === 'shifted' ? 'Note, e.g. new date / slot (admin only, the learner does not see this)' : 'Reason (the learner sees this)') +
+        '<textarea id="ivNote" rows="3">' + esc(s.note || '') + '</textarea></label>';
+    return '<div class="iv-form iv-edit">' + head + '<div class="iv-grid">' + pick + fields + '</div>' +
+      '<div class="iv-actions"><button class="btn iv-sm" id="ivResSave"><i class="fas fa-check"></i> Save</button>' +
+        (s.attendance ? '<button class="btn-admin-secondary iv-sm iv-danger" id="ivResClear">Clear attendance</button>' : '') +
+        '<button class="btn-admin-secondary iv-sm" id="ivEditCancel">Cancel</button></div></div>';
+  }
+
+  function openEditor(id, kind, attendance) {
+    var s = findSlot(id);
+    if (!s) return;
+    state.edit = { id: id, kind: kind, attendance: attendance || s.attendance || 'present' };
+    renderSchedule($('ivDetail'));
+    var row = document.querySelector('.iv-edit-row');
+    if (row) row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+  function closeEditor() { state.edit = null; renderSchedule($('ivDetail')); }
+  function saveResult(id, body, btn) {
+    if (btn) btn.disabled = true;
+    return api('PATCH', '/api/interviews/admin/bookings/' + id + '/result', body).then(function () {
+      var s = findSlot(id);
+      if (s) {
+        s.attendance = body.attendance;
+        s.marks = body.attendance === 'present' && body.marks !== '' && body.marks != null ? Number(body.marks) : null;
+        s.feedback = body.attendance === 'present' ? (body.feedback || '').trim() || null : null;
+        s.note = body.attendance === 'absent' || body.attendance === 'shifted' ? (body.note || '').trim() || null : null;
+      }
+      state.edit = null;
+      msg('Saved.', 'success');
+      renderSchedule($('ivDetail'));
+    }).catch(function (e) { msg(e.message, 'error'); if (btn) btn.disabled = false; });
+  }
+
+  function wireResults(el) {
+    el.querySelectorAll('[data-att-pick]').forEach(function (sel) {
+      sel.addEventListener('change', function () {
+        var id = Number(sel.getAttribute('data-att-pick'));
+        if (sel.value) openEditor(id, 'result', sel.value);
+      });
+    });
+    el.querySelectorAll('[data-res-edit]').forEach(function (b) {
+      b.addEventListener('click', function () { openEditor(Number(b.getAttribute('data-res-edit')), b.getAttribute('data-kind')); });
+    });
+    if (!state.edit) return;
+    var id = state.edit.id;
+    var cancel = $('ivEditCancel');
+    if (cancel) cancel.addEventListener('click', closeEditor);
+    var att = $('ivAtt');
+    if (att) att.addEventListener('change', function () { state.edit.attendance = att.value; renderSchedule($('ivDetail')); });
+    var save = $('ivResSave');
+    if (save) save.addEventListener('click', function () {
+      var a = $('ivAtt').value, body = { attendance: a };
+      if (a === 'present') {
+        body.marks = $('ivMarks').value.trim();
+        body.feedback = $('ivFeedback').value;
+        var max = state.schedule.max_marks;
+        if (body.marks !== '' && (isNaN(Number(body.marks)) || Number(body.marks) < 0 || Number(body.marks) > max)) return msg('Marks must be between 0 and ' + max + '.', 'error');
+      } else {
+        body.note = $('ivNote').value;
+      }
+      saveResult(id, body, save);
+    });
+    var clear = $('ivResClear');
+    if (clear) clear.addEventListener('click', function () {
+      if (!confirm('Clear attendance, marks and feedback / note for this interview?')) return;
+      saveResult(id, { attendance: null }, clear);
+    });
+    var recSave = $('ivRecSave');
+    if (recSave) recSave.addEventListener('click', function () {
+      var url = $('ivRecUrl').value.trim();
+      if (!url) return msg('Paste the Google Drive link first.', 'error');
+      recSave.disabled = true;
+      recSave.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sharing…';
+      api('POST', '/api/interviews/admin/bookings/' + id + '/recording', { url: url }).then(function (r) {
+        msg(r.ok ? 'Recording shared with the learner.' : 'Saved, but not shared: ' + r.error, r.ok ? 'success' : 'error');
+        state.edit = null;
+        return loadDetail();
+      }).catch(function (e) { msg(e.message, 'error'); recSave.disabled = false; recSave.innerHTML = '<i class="fas fa-share-nodes"></i> Save and share'; });
+    });
+    var recRemove = $('ivRecRemove');
+    if (recRemove) recRemove.addEventListener('click', function () {
+      if (!confirm('Remove the recording from this learner\'s dashboard?\n\nDrive access already given is not removed - remove it in Google Drive if needed.')) return;
+      recRemove.disabled = true;
+      api('POST', '/api/interviews/admin/bookings/' + id + '/recording', { url: '' }).then(function () {
+        msg('Recording removed from the dashboard.', 'success');
+        state.edit = null;
+        return loadDetail();
+      }).catch(function (e) { msg(e.message, 'error'); recRemove.disabled = false; });
+    });
   }
 
   function refreshStats() {
@@ -515,11 +672,12 @@
   function csvCell(v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; }
   function downloadCsv() {
     var d = state.schedule;
-    var lines = [['Date', 'Time', 'Learner', 'Branch', 'Roll no', 'Phone', 'Email', 'Interview #', 'Booked at', 'On calendar'].join(',')];
+    var lines = [['Date', 'Time', 'Learner', 'Branch', 'Roll no', 'Phone', 'Email', 'Interview #', 'Booked at', 'On calendar', 'Attendance', 'Marks', 'Feedback / note', 'Recording shared'].join(',')];
     d.days.forEach(function (day) {
       day.slots.filter(function (s) { return s.booking_id; }).forEach(function (s) {
         lines.push([fmtKey(day.date, { day: 'numeric', month: 'short', year: 'numeric' }), fmtTime(s.starts_at), s.student_name, s.branch, s.roll_number, s.student_phone, s.student_email, s.interview_no,
-          new Date(s.booked_at).toLocaleString('en-IN', { timeZone: TZ }), s.calendar_event_id ? 'yes' : 'no'].map(csvCell).join(','));
+          new Date(s.booked_at).toLocaleString('en-IN', { timeZone: TZ }), s.calendar_event_id ? 'yes' : 'no',
+          s.attendance || '', s.marks != null ? Number(s.marks) : '', s.attendance === 'present' ? (s.feedback || '') : (s.note || ''), s.recording_shared_at ? 'yes' : 'no'].map(csvCell).join(','));
       });
     });
     var a = document.createElement('a');

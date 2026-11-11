@@ -25,6 +25,8 @@
      POST   /api/interviews/admin/phases/:id/invites     - { mode: 'new' | 'remind' }
      POST   /api/interviews/admin/phases/:id/announce-venue - email the final venue to booked learners
      POST   /api/interviews/admin/slots/:id/block        - { blocked: bool }
+     PATCH  /api/interviews/admin/bookings/:id/result    - attendance + marks/feedback or note
+     POST   /api/interviews/admin/bookings/:id/recording - Drive link, shared only with the learner
      DELETE /api/interviews/admin/learners/:enrollmentId/bookings - release a learner
      POST   /api/interviews/admin/sample-emails          - { to } dummy copies of every email
      POST   /api/interviews/admin/addon-offers           - email the add-on offer to learners not yet offered
@@ -47,6 +49,8 @@ const { SITE } = require('../services/paymentEmailService');
 const { BRANCHES, INSTRUCTIONS, TERMS, CONTACT_PHONE, CONTACT_WA_LINK, DEFAULT_VENUE, ADDON_BASE_PROGRAM, ADDON_PACKS, addonPack } = require('../config/interviewRules');
 
 const DEFAULT_PROGRAM = 'rpsc-ae-interview';
+const MAX_MARKS = 72; // RPSC AE interview is marked out of 72
+const drive = require('../services/interviewDrive');
 
 /* ── Learner identity ───────────────────────────────────────── */
 
@@ -91,6 +95,21 @@ function publicPhase(p) {
   };
 }
 
+/* What the learner sees about an interview after the day: attendance,
+   marks + feedback (present), the absent reason, and the recording once
+   it has been shared with them. The "shifted" note is admin only. */
+function learnerResult(b) {
+  const a = b.attendance || null;
+  return {
+    attendance: a,
+    max_marks: MAX_MARKS,
+    marks: a === 'present' && b.marks != null ? Number(b.marks) : null,
+    feedback: a === 'present' ? (b.feedback || null) : null,
+    absent_note: a === 'absent' ? (b.note || null) : null,
+    recording_url: a === 'present' && b.recording_shared_at ? b.recording_url : null,
+  };
+}
+
 const STATIC_INFO = { branches: BRANCHES, instructions: INSTRUCTIONS, terms: TERMS, contact: { phone: CONTACT_PHONE, whatsapp: CONTACT_WA_LINK } };
 
 /* What the booking page needs: slots booked so far (numbered by date,
@@ -119,6 +138,7 @@ async function bookingState(enr) {
         id: b.id, interview_no: b.interview_no, starts_at: b.starts_at, ends_at: b.ends_at, phase_name: b.phase_name,
         venue_tba: !!b.venue_tba,
         venue_name: b.venue_tba ? null : b.venue_name, venue_address: b.venue_tba ? null : b.venue_address, maps_link: b.venue_tba ? null : b.maps_link,
+        ...learnerResult(b),
       })),
     },
     phases: remaining ? phases.map(p => Object.assign(publicPhase(p), { bookable: p.bookable, days: p.days })) : [],
@@ -336,6 +356,8 @@ router.get('/admin/phases/:id/schedule', protect, async (req, res, next) => {
               (SELECT COUNT(*)::int FROM interview_bookings b2 JOIN interview_slots s2 ON s2.id = b2.slot_id
                 WHERE b2.enrollment_id = b.enrollment_id AND s2.starts_at <= s.starts_at) AS interview_no, b.student_name, b.student_phone, b.student_email,
               b.roll_number, b.calendar_event_id, b.calendar_error, b.created_at AS booked_at,
+              b.attendance, b.marks, b.feedback, b.note, b.attendance_at,
+              b.recording_url, b.recording_shared_at, b.recording_error,
               (e.refund_status = 'initiated') AS refunded
        FROM interview_slots s
        LEFT JOIN interview_bookings b ON b.slot_id = s.id
@@ -345,7 +367,7 @@ router.get('/admin/phases/:id/schedule', protect, async (req, res, next) => {
     )).rows;
     const days = {};
     rows.forEach(r => { const k = svc.istDateKey(r.starts_at); (days[k] = days[k] || []).push(r); });
-    res.json({ phase, days: Object.keys(days).sort().map(date => ({ date, slots: days[date] })) });
+    res.json({ phase, max_marks: MAX_MARKS, drive_configured: drive.isConfigured(), days: Object.keys(days).sort().map(date => ({ date, slots: days[date] })) });
   } catch (err) { next(err); }
 });
 
@@ -387,6 +409,59 @@ router.post('/admin/slots/:id/block', protect, async (req, res, next) => {
     );
     if (!r.rows.length) return res.status(409).json({ error: 'This slot is booked - release the learner first.' });
     res.json({ ok: true });
+  } catch (err) { next(err); }
+});
+
+/* Attendance + feedback for one booked interview.
+   { attendance: null|'present'|'absent'|'shifted', marks, feedback, note }
+   null clears the mark (undo). Marks/feedback are kept only for
+   present; the note only for absent / shifted. */
+router.patch('/admin/bookings/:id/result', protect, async (req, res, next) => {
+  try {
+    const b = req.body || {};
+    const att = b.attendance == null || b.attendance === '' ? null : String(b.attendance);
+    if (att !== null && !['present', 'absent', 'shifted'].includes(att)) return res.status(400).json({ error: 'Choose Present, Absent or Shifted.' });
+    let marks = null;
+    if (att === 'present' && b.marks !== undefined && b.marks !== null && String(b.marks).trim() !== '') {
+      marks = Number(b.marks);
+      if (!isFinite(marks) || marks < 0 || marks > MAX_MARKS) return res.status(400).json({ error: `Marks must be between 0 and ${MAX_MARKS}.` });
+      marks = Math.round(marks * 10) / 10;
+    }
+    const feedback = att === 'present' ? (String(b.feedback || '').trim().slice(0, 5000) || null) : null;
+    const note = att === 'absent' || att === 'shifted' ? (String(b.note || '').trim().slice(0, 1000) || null) : null;
+    const r = await query(
+      `UPDATE interview_bookings
+          SET attendance = $1, marks = $2, feedback = $3, note = $4,
+              attendance_at = CASE WHEN $1::text IS NULL THEN NULL ELSE NOW() END
+        WHERE id = $5 RETURNING id`,
+      [att, marks, feedback, note, req.params.id]
+    );
+    if (!r.rows.length) return res.status(404).json({ error: 'Booking not found.' });
+    res.json({ ok: true });
+  } catch (err) { next(err); }
+});
+
+/* Recording link for a present learner: saved, then shared (view only)
+   with the learner's registered email. { url } - empty url removes it
+   from the learner's dashboard (Drive access already given stays). */
+router.post('/admin/bookings/:id/recording', protect, async (req, res, next) => {
+  try {
+    const bk = (await query(`SELECT id, attendance, student_email FROM interview_bookings WHERE id = $1`, [req.params.id])).rows[0];
+    if (!bk) return res.status(404).json({ error: 'Booking not found.' });
+    const url = String((req.body && req.body.url) || '').trim();
+    if (!url) {
+      await query(`UPDATE interview_bookings SET recording_url = NULL, recording_shared_at = NULL, recording_error = NULL WHERE id = $1`, [bk.id]);
+      return res.json({ ok: true, removed: true });
+    }
+    if (bk.attendance !== 'present') return res.status(400).json({ error: 'Mark the learner Present first.' });
+    const fileId = drive.fileIdFrom(url);
+    if (!fileId) return res.status(400).json({ error: 'Paste the Google Drive link of the video file (drive.google.com/file/d/...).' });
+    const share = await drive.shareWithLearner(fileId, String(bk.student_email || '').trim().toLowerCase());
+    await query(
+      `UPDATE interview_bookings SET recording_url = $1, recording_shared_at = $2, recording_error = $3 WHERE id = $4`,
+      [drive.viewLink(fileId), share.ok ? new Date() : null, share.ok ? null : share.error, bk.id]
+    );
+    res.json({ ok: share.ok, error: share.error });
   } catch (err) { next(err); }
 });
 

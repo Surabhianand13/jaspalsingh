@@ -242,7 +242,7 @@
     // Slots booked so far + Mock Interview Add-on packs (same data as the
     // booking page). Optional - the card still renders without it.
     var slotsP = authFetch('/api/interviews/booking?program=' + encodeURIComponent(slug)).then(function (d) {
-      return { total: d.booked.total, included: d.booked.included, extra: d.booked.extra || 0, booked: d.booked.bookings.length, remaining: d.booked.remaining, packs: d.addons ? d.addons.packs : null };
+      return { total: d.booked.total, included: d.booked.included, extra: d.booked.extra || 0, booked: d.booked.bookings.length, remaining: d.booked.remaining, packs: d.addons ? d.addons.packs : null, bookings: d.booked.bookings };
     }).catch(function () { return null; });
     return Promise.all([bookP, slotsP]).then(function (r) {
       return { tests: [], categories: [], materialsCount: 0, bookId: r[0], slots: r[1] };
@@ -397,6 +397,54 @@
     ['Session 5', '1 Personality Development Session', 'Body language, confident articulation, structured response framing, dress code and board etiquette - aspects that directly influence interview scores.'],
   ];
 
+  /* "Your mock interviews": each booked interview with its status and,
+     once the panel has marked it, marks (out of 72) + detailed feedback
+     and the private recording (shared only with this learner's email). */
+  function mockResultsBlock(sched) {
+    var list = (sched.slots && sched.slots.bookings) || [];
+    if (!list.length) return '';
+    var now = Date.now();
+    var cards = list.map(function (b) {
+      var a = b.attendance, past = new Date(b.ends_at || b.starts_at).getTime() < now;
+      var badge = a === 'present' ? '<span class="ld-mi-badge ld-mi-badge--ok"><i class="fas fa-circle-check"></i> Attended</span>'
+        : a === 'absent' ? '<span class="ld-mi-badge ld-mi-badge--bad">Missed</span>'
+        : a === 'shifted' ? '<span class="ld-mi-badge ld-mi-badge--info">Rescheduled</span>'
+        : past ? '<span class="ld-mi-badge">Result awaited</span>'
+        : '<span class="ld-mi-badge ld-mi-badge--info">Upcoming</span>';
+      var body = '';
+      if (a === 'present') {
+        var max = b.max_marks || 72;
+        var hasMarks = b.marks != null;
+        var pct = hasMarks ? Math.max(0, Math.min(100, Math.round(b.marks / max * 100))) : 0;
+        body =
+          '<div class="ld-mi-result">' +
+            (hasMarks
+              ? '<div class="ld-mi-score" style="--p:' + pct + '"><div><b>' + esc(Number(b.marks)) + '</b><small>out of ' + max + '</small></div></div>'
+              : '') +
+            '<div class="ld-mi-fb">' +
+              '<div class="ld-mi-fb-label"><i class="fas fa-comment-dots"></i> Panel feedback</div>' +
+              (b.feedback ? '<div class="ld-mi-fb-text">' + esc(b.feedback) + '</div>' : '<div class="ld-mi-fb-text ld-mi-muted">Your detailed feedback will appear here soon.</div>') +
+            '</div>' +
+          '</div>' +
+          (b.recording_url
+            ? '<a class="ld-btn ld-btn--primary ld-mi-rec" href="' + esc(b.recording_url) + '" target="_blank" rel="noopener"><i class="fas fa-circle-play"></i> Watch your recording</a>' +
+              '<p class="ld-mi-note"><i class="fas fa-lock"></i> Private to you. Open it with the Google account of your registered email. If Google asks, click "Request access".</p>'
+            : '<p class="ld-mi-note"><i class="fas fa-clock"></i> Your interview recording will appear here soon.</p>');
+      } else if (a === 'absent') {
+        body = b.absent_note ? '<p class="ld-mi-note">' + esc(b.absent_note) + '</p>' : '';
+      } else if (a === 'shifted') {
+        body = '<p class="ld-mi-note">This interview has been moved. We will share the new date and time with you.</p>';
+      }
+      return '<div class="ld-mi-card' + (a === 'present' ? ' ld-mi-card--done' : '') + '">' +
+        '<div class="ld-mi-head"><div><strong>Interview ' + b.interview_no + '</strong><span>' + esc(fmtWhen(b.starts_at)) + '</span></div>' + badge + '</div>' +
+        body +
+      '</div>';
+    }).join('');
+    return '<div class="ld-mi">' +
+      '<div class="ld-mi-title"><i class="fas fa-user-check"></i> Your mock interviews</div>' + cards +
+    '</div>';
+  }
+
   /* WhatsApp group (session dates/timings), the 5-session plan and the
      Interview Guidance Book - interview programs only. */
   function interviewBlock(e, sched) {
@@ -428,7 +476,7 @@
         '<p class="ld-plan-note"><i class="fab fa-whatsapp"></i> Sessions can run on the same day. Exact dates and timings for each session are posted on the WhatsApp group. Your mock interviews are separate - book them with the Book / view slots button above.</p>' +
       '</details>';
 
-    return addonBlock(e, sched) + waBlock + bookBlock + plan;
+    return mockResultsBlock(sched) + addonBlock(e, sched) + waBlock + bookBlock + plan;
   }
 
   function renderProgram(e, sched, idx) {

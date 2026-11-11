@@ -219,3 +219,34 @@
 .ld-addon-msg { margin-top: 12px; background: #fef2f2; border: 1px solid #fca5a5; color: #7f1d1d; border-radius: 10px; padding: 10px 12px; font-size: 13px; font-weight: 600; }
 .ld-addon-msg.is-ok { background: #f0fdf4; border-color: #86efac; color: #166534; }
 .ld-addon-note { font-size: 12px; color: #6b6b8a; margin: 12px 0 0; }
+
+/* ── Your mock interviews (attendance, marks out of 72, feedback, recording) ── */
+.ld-mi { margin: 14px 0; }
+.ld-mi-title { font-weight: 800; font-size: 15px; margin-bottom: 10px; }
+.ld-mi-title i { color: #C81240; margin-right: 4px; }
+.ld-mi-card { background: #fff; border: 1.5px solid #E2E8F0; border-radius: 14px; padding: 14px 16px; margin-bottom: 10px; }
+.ld-mi-card--done { border-color: #BBF7D0; }
+.ld-mi-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+.ld-mi-head strong { display: block; font-size: 14.5px; }
+.ld-mi-head span { font-size: 12.5px; color: #64748B; }
+.ld-mi-badge { display: inline-block; font-size: 11.5px; font-weight: 700; border-radius: 50px; padding: 3px 10px; background: #F1F5F9; color: #475569; white-space: nowrap; }
+.ld-mi-badge--ok { background: #DCFCE7; color: #166534; }
+.ld-mi-badge--bad { background: #FEE2E2; color: #991B1B; }
+.ld-mi-badge--info { background: #DBEAFE; color: #1E40AF; }
+.ld-mi-result { display: flex; gap: 16px; align-items: flex-start; margin-top: 12px; }
+.ld-mi-score { --p: 0; flex: none; width: 84px; height: 84px; border-radius: 50%; display: grid; place-items: center;
+  background: conic-gradient(#16A34A calc(var(--p) * 1%), #E2E8F0 0); }
+.ld-mi-score > div { width: 68px; height: 68px; border-radius: 50%; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.ld-mi-score b { font-size: 21px; line-height: 1.1; color: #166534; }
+.ld-mi-score small { font-size: 10.5px; color: #64748B; }
+.ld-mi-fb { flex: 1; min-width: 0; background: #F8FAFC; border-radius: 10px; padding: 10px 12px; }
+.ld-mi-fb-label { font-size: 11.5px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: .03em; margin-bottom: 4px; }
+.ld-mi-fb-label i { color: #C81240; margin-right: 3px; }
+.ld-mi-fb-text { font-size: 13.5px; line-height: 1.6; color: #1E293B; white-space: pre-line; overflow-wrap: anywhere; }
+.ld-mi-muted { color: #64748B; }
+.ld-mi-rec { margin-top: 12px; display: inline-flex; }
+.ld-mi-note { font-size: 12.5px; color: #64748B; margin: 8px 0 0; line-height: 1.5; }
+@media (max-width: 520px) {
+  .ld-mi-result { flex-direction: column; align-items: stretch; }
+  .ld-mi-score { align-self: flex-start; }
+}
