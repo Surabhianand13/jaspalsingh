@@ -108,7 +108,7 @@
           ' <button class="btn-admin-secondary iv-sm" id="ivCalCheck">Check connection</button> <span id="ivCalMsg"></span></div>' +
         '<div class="iv-sample"><input type="email" id="ivSampleTo" placeholder="Send sample emails to…" value="anand.surabhi.a@gmail.com" />' +
           '<button class="btn-admin-secondary iv-sm" id="ivSampleBtn"><i class="fas fa-paper-plane"></i> Send sample emails</button></div>' +
-      '</div>' + branchBar(d.addon) + addonBar(d.addon) +
+      '</div>' + branchBar(d.addon) + addonBar(d.addon) + dafBar(d.daf) +
       '<div id="ivNewForm" style="display:none;"></div>';
 
     if (!d.phases.length) {
@@ -151,6 +151,38 @@
         (a.interviews_only ? ' (' + a.interviews_only + ' interviews-only, not enrolled)' : '') +
         (a.offered ? ' · offer emailed to ' + a.offered : '') + '</div>' +
       '<div><button class="btn-admin-secondary iv-sm" id="ivAddonOffer"' + (a.not_offered ? '' : ' disabled') + '><i class="fas fa-bullhorn"></i> Email add-on offer (' + a.not_offered + ' learners)</button></div></div>';
+  }
+
+  /* One-time blank DAF PDF email to all active RPSC AE learners. */
+  function dafBar(f) {
+    if (!f) return '';
+    return '<div class="iv-bar"><div><strong><i class="fas fa-file-pdf"></i> Blank DAF email:</strong> ' +
+        '<a href="/assets/docs/rpsc-ae-daf-blank.pdf" target="_blank" rel="noopener">view PDF</a> · sent to <strong>' + f.sent + '</strong> of ' + f.total + ' learners</div>' +
+      '<div class="iv-sample"><input id="ivDafTo" type="email" placeholder="your email for a sample" value="biz@solvvai.com">' +
+        '<button class="btn-admin-secondary iv-sm" id="ivDafSample"><i class="fas fa-eye"></i> Send sample</button>' +
+        '<button class="btn iv-sm" id="ivDafAll"' + (f.pending ? '' : ' disabled') + '><i class="fas fa-paper-plane"></i> Send to all (' + f.pending + ' learners)</button></div></div>';
+  }
+  function wireDaf() {
+    // wireTop() also runs after stats refreshes - wire these only once.
+    if (!$('ivDafSample') || $('ivDafSample').getAttribute('data-wired')) return;
+    $('ivDafSample').setAttribute('data-wired', '1');
+    if ($('ivDafSample')) $('ivDafSample').addEventListener('click', function () {
+      var b = this, to = $('ivDafTo').value.trim();
+      b.disabled = true;
+      api('POST', '/api/interviews/admin/daf-email', { mode: 'sample', to: to })
+        .then(function () { msg('Sample DAF email sent to ' + to + '.', 'success'); })
+        .catch(function (e) { msg(e.message, 'error'); })
+        .then(function () { b.disabled = false; });
+    });
+    if ($('ivDafAll')) $('ivDafAll').addEventListener('click', function () {
+      var f = state.overview.daf;
+      if (!confirm('Email the blank DAF PDF to ' + f.pending + ' active RPSC AE learner(s)?\n\nEach learner gets it only once. Refunded learners are skipped.')) return;
+      this.disabled = true;
+      api('POST', '/api/interviews/admin/daf-email', { mode: 'all' }).then(function (r) {
+        msg('DAF email queued to ' + r.queued + ' learner(s) - emails go out over the next few minutes.', 'success');
+        load();
+      }).catch(function (e) { msg(e.message, 'error'); });
+    });
   }
 
   function sendAddonOffers() {
@@ -207,6 +239,7 @@
     $('ivCalCheck').addEventListener('click', checkCalendar);
     $('ivSampleBtn').addEventListener('click', sendSamples);
     if ($('ivAddonOffer')) $('ivAddonOffer').addEventListener('click', sendAddonOffers);
+    wireDaf();
     root.querySelectorAll('[data-pick]').forEach(function (card) {
       card.addEventListener('click', function (e) {
         if (e.target.closest('button')) return;

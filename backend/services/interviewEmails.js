@@ -8,6 +8,7 @@
      sendDailyDigest         - owner summary, once a day
      sendAddonOfferEmail     - Mock Interview Add-on offer (admin button)
      sendAddonPurchasedEmail - add-on paid: extra interviews added
+     sendDafEmail            - one-time blank DAF PDF (admin button)
    All go through resendQueue like every other Resend email.
    ============================================================ */
 
@@ -447,6 +448,45 @@ async function sendAddonOfferEmail({ to, name, link, packs, subjectPrefix = '' }
   }, PRIORITY.DEFAULT); // bulk offer - never delays OTP / invoice emails
 }
 
+/* One-time: blank RPSC DAF PDF (hosted on the site) for learners to
+   fill and bring 4 copies of to their mock interviews. */
+const DAF_PDF_URL = `${SITE}/assets/docs/rpsc-ae-daf-blank.pdf`;
+async function sendDafEmail({ to, name, subjectPrefix = '' }) {
+  const firstName = esc((name || 'there').split(' ')[0]);
+  const body = `
+    <div style="text-align:center;margin-bottom:22px;">
+      <div style="display:inline-block;background:#fff8f0;border:1px solid #fed7aa;border-radius:50px;padding:8px 22px;">
+        <span style="font-size:13px;font-weight:700;color:#9a3412;">For RPSC AE Interview Guidance learners</span>
+      </div>
+    </div>
+
+    <h2 style="margin:0 0 12px;font-size:22px;color:#1A1A2E;font-weight:800;text-align:center;">Your DAF form, ${firstName}</h2>
+    <p style="margin:0 0 22px;font-size:15px;color:#374151;line-height:1.7;text-align:center;">
+      You need to bring <strong>4 copies of your DAF (Detailed Application Form)</strong> to every mock interview. If you don't have it handy, download the blank DAF below, fill it in and print 4 copies.
+    </p>
+
+    ${button(DAF_PDF_URL, 'Download blank DAF (PDF) &rarr;')}
+
+    <div style="background:#fff8f0;border:1px solid #fed7aa;border-radius:12px;padding:16px 20px;margin-bottom:22px;">
+      ${sectionLabel('Bring with you &amp; reporting')}
+      <ul style="margin:0;padding-left:20px;font-size:14px;color:#374151;line-height:1.8;">
+        <li>4 copies of your filled DAF</li>
+        <li>A valid photo ID</li>
+        <li>Report 15 minutes early in formal attire</li>
+      </ul>
+    </div>
+
+    ${helpLine()}
+    <p style="margin:14px 0 0;font-size:11.5px;color:#9ca3af;text-align:center;line-height:1.6;">Button not working? Copy this link: <span style="word-break:break-all;">${esc(DAF_PDF_URL)}</span></p>
+  `;
+  return resendSend({
+    from: FROM,
+    to,
+    subject: `${subjectPrefix}RPSC AE Mock Interview - Blank DAF form to fill and bring`,
+    html: baseHtml(body),
+  }, PRIORITY.DEFAULT); // bulk - never delays OTP / invoice emails
+}
+
 async function sendAddonPurchasedEmail({ to, name, added, total, booked, link, phaseOpen, interviewsOnly = false, subjectPrefix = '' }) {
   const firstName = esc((name || 'there').split(' ')[0]);
   const pending = Math.max(0, total - booked);
@@ -496,4 +536,4 @@ async function sendAddonPurchasedEmail({ to, name, added, total, booked, link, p
   }, PRIORITY.INVOICE);
 }
 
-module.exports = { sendInviteEmail, sendConfirmationEmail, sendDayBeforeReminder, sendVenueAnnouncement, sendDailyDigest, sendAddonOfferEmail, sendAddonPurchasedEmail, VENUE_TBA_TEXT, buildIcs, fmtSlot, fmtDay, fmtTime, fmtRange };
+module.exports = { sendDafEmail, sendInviteEmail, sendConfirmationEmail, sendDayBeforeReminder, sendVenueAnnouncement, sendDailyDigest, sendAddonOfferEmail, sendAddonPurchasedEmail, VENUE_TBA_TEXT, buildIcs, fmtSlot, fmtDay, fmtTime, fmtRange };

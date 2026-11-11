@@ -30,6 +30,7 @@
      DELETE /api/interviews/admin/learners/:enrollmentId/bookings - release a learner
      POST   /api/interviews/admin/sample-emails          - { to } dummy copies of every email
      POST   /api/interviews/admin/addon-offers           - email the add-on offer to learners not yet offered
+     POST   /api/interviews/admin/daf-email              - one-time blank DAF PDF { mode: 'sample', to } | { mode: 'all' }
    ============================================================ */
 
 const express = require('express');
@@ -242,6 +243,7 @@ router.get('/admin/overview', protect, async (req, res, next) => {
     res.json({
       phases,
       addon: await svc.addonSummary(),
+      daf: await svc.dafSummary(),
       calendar: { configured: calendar.isConfigured(), calendarId: calendar.calendarId(), serviceAccount: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || null },
       defaults: { program_slug: DEFAULT_PROGRAM, venue: DEFAULT_VENUE },
     });
@@ -469,6 +471,22 @@ router.delete('/admin/learners/:enrollmentId/bookings', protect, async (req, res
   try {
     const released = await svc.releaseLearner(req.params.enrollmentId);
     res.json({ ok: true, released });
+  } catch (err) { next(err); }
+});
+
+/* One-time blank DAF email. { mode: 'sample', to } sends one [SAMPLE]
+   copy; { mode: 'all' } emails every learner not sent yet. */
+router.post('/admin/daf-email', protect, async (req, res, next) => {
+  try {
+    const b = req.body || {};
+    if (b.mode === 'sample') {
+      const to = String(b.to || '').trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) return res.status(400).json({ error: 'Enter a valid email address.' });
+      await emails.sendDafEmail({ to, name: 'Rahul Sharma', subjectPrefix: '[SAMPLE] ' });
+      return res.json({ ok: true, sent: 1 });
+    }
+    if (b.mode !== 'all') return res.status(400).json({ error: 'Invalid mode.' });
+    res.json({ ok: true, queued: await svc.sendDafEmails() });
   } catch (err) { next(err); }
 });
 
