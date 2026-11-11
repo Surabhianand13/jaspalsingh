@@ -106,6 +106,20 @@ async function migrate() {
   // be shared soon on email" until the admin fills it in and announces it.
   await query(`ALTER TABLE interview_phases ADD COLUMN IF NOT EXISTS venue_tba BOOLEAN NOT NULL DEFAULT FALSE`);
   await query(`ALTER TABLE interview_phases ADD COLUMN IF NOT EXISTS venue_announced_at TIMESTAMPTZ`);
+  // Attendance, panel feedback and the recording (2026-11-11). All new
+  // columns start empty, so existing bookings read as "not marked yet".
+  //   attendance: NULL | 'present' | 'absent' | 'shifted'
+  //   marks + feedback: present only (learner sees both)
+  //   note: absent reason (learner sees it) / shifted note (admin only)
+  //   recording_*: Drive link added later, shared only with the learner
+  await query(`ALTER TABLE interview_bookings ADD COLUMN IF NOT EXISTS attendance TEXT`);
+  await query(`ALTER TABLE interview_bookings ADD COLUMN IF NOT EXISTS marks NUMERIC(4,1)`);
+  await query(`ALTER TABLE interview_bookings ADD COLUMN IF NOT EXISTS feedback TEXT`);
+  await query(`ALTER TABLE interview_bookings ADD COLUMN IF NOT EXISTS note TEXT`);
+  await query(`ALTER TABLE interview_bookings ADD COLUMN IF NOT EXISTS attendance_at TIMESTAMPTZ`);
+  await query(`ALTER TABLE interview_bookings ADD COLUMN IF NOT EXISTS recording_url TEXT`);
+  await query(`ALTER TABLE interview_bookings ADD COLUMN IF NOT EXISTS recording_shared_at TIMESTAMPTZ`);
+  await query(`ALTER TABLE interview_bookings ADD COLUMN IF NOT EXISTS recording_error TEXT`);
   await query(`CREATE TABLE IF NOT EXISTS interview_invites (
     phase_id         INTEGER NOT NULL REFERENCES interview_phases(id) ON DELETE CASCADE,
     enrollment_id    INTEGER NOT NULL,
@@ -261,7 +275,8 @@ function withDisplayNumbers(bookings) {
 async function learnerBookings(enrollment) {
   const r = await query(
     `SELECT b.id, b.phase_id, b.slot_id, b.interview_no, b.branch, s.starts_at, s.ends_at,
-            p.name AS phase_name, p.venue_name, p.venue_address, p.maps_link, p.venue_tba, p.slots_per_learner
+            p.name AS phase_name, p.venue_name, p.venue_address, p.maps_link, p.venue_tba, p.slots_per_learner,
+            b.attendance, b.marks, b.feedback, b.note, b.recording_url, b.recording_shared_at
      FROM interview_bookings b
      JOIN interview_slots s ON s.id = b.slot_id
      JOIN interview_phases p ON p.id = b.phase_id
