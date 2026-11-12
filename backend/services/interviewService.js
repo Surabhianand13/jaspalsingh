@@ -131,6 +131,11 @@ async function migrate() {
     digest_date DATE PRIMARY KEY,
     sent_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`);
+  // Who was emailed the blank DAF PDF (one-time, at most once per email).
+  await query(`CREATE TABLE IF NOT EXISTS interview_daf_emails (
+    email   TEXT PRIMARY KEY,
+    sent_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`);
   // Who was emailed the Mock Interview Add-on offer (at most once each).
   await query(`CREATE TABLE IF NOT EXISTS interview_addon_offers (
     enrollment_id INTEGER PRIMARY KEY,
@@ -781,6 +786,37 @@ async function sendAddonOffers() {
   return targets.length;
 }
 
+/* One-time blank DAF email: every active (paid, not refunded) RPSC AE
+   learner - programme + "interviews only" pack buyers, one per email.
+   Each email address gets it at most once. */
+async function dafTargets() {
+  const learners = (await eligibleLearners({ id: 0, program_slug: ADDON_BASE_PROGRAM, slots_per_learner: 3 }))
+    .filter(l => l.student_email);
+  const sent = new Set((await query(`SELECT email FROM interview_daf_emails`)).rows.map(r => r.email));
+  const key = l => String(l.student_email).trim().toLowerCase();
+  return { total: learners.length, sent: learners.filter(l => sent.has(key(l))).length, targets: learners.filter(l => !sent.has(key(l))), key };
+}
+async function dafSummary() {
+  const { total, sent, targets } = await dafTargets();
+  return { total, sent, pending: targets.length };
+}
+async function sendDafEmails() {
+  const { targets, key } = await dafTargets();
+  (async () => {
+    for (const l of targets) {
+      try {
+        const claim = await query(`INSERT INTO interview_daf_emails (email) VALUES ($1) ON CONFLICT DO NOTHING RETURNING 1`, [key(l)]);
+        if (!claim.rows.length) continue;
+        await emails.sendDafEmail({ to: l.student_email, name: l.student_name });
+      } catch (err) {
+        console.error(`[interview DAF email] ${l.student_email}:`, err.message);
+      }
+    }
+    console.log(`[interview DAF email] queued ${targets.length} email(s)`);
+  })();
+  return targets.length;
+}
+
 /* Live pack prices (programs table, admin-editable) with config fallback. */
 async function addonPrices() {
   const rows = (await query(`SELECT slug, price FROM programs WHERE slug = ANY($1::text[])`, [ADDON_SLUGS])).rows;
@@ -809,6 +845,7 @@ async function sendAddonPurchasedEmail(addonEnrollment) {
 }
 
 module.exports = {
+  dafSummary, sendDafEmails,
   migrate, generateSlotTimes, istDateKey,
   signBookingToken, bookingLink, verifyBookingToken, activeEnrollmentById,
   getPhase, learnerBookings, withDisplayNumbers, openPhasesWithAvailability, bookSlots, BookingError,
