@@ -359,7 +359,7 @@ router.get('/admin/phases/:id/schedule', protect, async (req, res, next) => {
                 WHERE b2.enrollment_id = b.enrollment_id AND s2.starts_at <= s.starts_at) AS interview_no, b.student_name, b.student_phone, b.student_email,
               b.roll_number, b.calendar_event_id, b.calendar_error, b.created_at AS booked_at,
               b.attendance, b.marks, b.feedback, b.note, b.attendance_at,
-              b.recording_url, b.recording_shared_at, b.recording_error,
+              b.recording_url, b.recording_shared_at, b.recording_error, b.absent_emailed_at,
               (e.refund_status = 'initiated') AS refunded
        FROM interview_slots s
        LEFT JOIN interview_bookings b ON b.slot_id = s.id
@@ -439,6 +439,8 @@ router.patch('/admin/bookings/:id/result', protect, async (req, res, next) => {
       [att, marks, feedback, note, req.params.id]
     );
     if (!r.rows.length) return res.status(404).json({ error: 'Booking not found.' });
+    // Marked absent: email the learner right away (once per booking).
+    if (att === 'absent') svc.sendAbsentEmail(Number(req.params.id)).catch(err => console.error('[interview absent email]', err.message));
     res.json({ ok: true });
   } catch (err) { next(err); }
 });
