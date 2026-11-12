@@ -120,6 +120,8 @@ async function migrate() {
   await query(`ALTER TABLE interview_bookings ADD COLUMN IF NOT EXISTS recording_url TEXT`);
   await query(`ALTER TABLE interview_bookings ADD COLUMN IF NOT EXISTS recording_shared_at TIMESTAMPTZ`);
   await query(`ALTER TABLE interview_bookings ADD COLUMN IF NOT EXISTS recording_error TEXT`);
+  // "You were marked absent" email, at most once per booking (2026-11-12).
+  await query(`ALTER TABLE interview_bookings ADD COLUMN IF NOT EXISTS absent_emailed_at TIMESTAMPTZ`);
   await query(`CREATE TABLE IF NOT EXISTS interview_invites (
     phase_id         INTEGER NOT NULL REFERENCES interview_phases(id) ON DELETE CASCADE,
     enrollment_id    INTEGER NOT NULL,
@@ -677,11 +679,43 @@ async function tick() {
       .catch(err => console.error('[interview reminder]', err.message));
   }
 
+  // 2b. "Marked absent" emails not sent yet (absents marked before this
+  //     existed, or a send that failed).
+  const absents = (await query(
+    `SELECT id FROM interview_bookings WHERE attendance = 'absent' AND absent_emailed_at IS NULL ORDER BY id LIMIT 50`
+  )).rows;
+  for (const a of absents) await sendAbsentEmail(a.id);
+
   // 3. Owner daily summary, 9 PM IST (catches up later that evening if
   //    the free-tier server was asleep at 9). Claimed in the DB so a
   //    restart never sends it twice.
   const istNow = new Date(Date.now() + 5.5 * 3600 * 1000);
   if (istNow.getUTCHours() >= 21) await maybeSendDigest(istNow.toISOString().slice(0, 10));
+}
+
+/* Email a learner marked Absent - once per booking. Claimed in the DB
+   first so a double click / the tick never sends twice; released again
+   if the send itself fails so the next tick retries. Refunded: skipped. */
+async function sendAbsentEmail(bookingId) {
+  const r = (await query(
+    `UPDATE interview_bookings b SET absent_emailed_at = NOW()
+       FROM interview_slots s
+      WHERE s.id = b.slot_id AND b.id = $1 AND b.attendance = 'absent' AND b.absent_emailed_at IS NULL
+      RETURNING b.id, b.enrollment_id, b.student_name, b.student_email, b.note, s.starts_at, s.ends_at,
+                (SELECT COUNT(*)::int FROM interview_bookings b2 JOIN interview_slots s2 ON s2.id = b2.slot_id
+                  WHERE b2.enrollment_id = b.enrollment_id AND s2.starts_at <= s.starts_at) AS interview_no`,
+    [bookingId]
+  )).rows[0];
+  if (!r || !r.student_email) return false;
+  if (!(await activeEnrollmentById(r.enrollment_id))) return false; // refunded
+  try {
+    await emails.sendAbsentEmail({ to: r.student_email, name: r.student_name, booking: r, note: r.note });
+    return true;
+  } catch (err) {
+    await query(`UPDATE interview_bookings SET absent_emailed_at = NULL WHERE id = $1`, [r.id]);
+    console.error(`[interview absent email] booking ${r.id}:`, err.message);
+    return false;
+  }
 }
 
 async function maybeSendDigest(todayIST) {
@@ -845,6 +879,7 @@ async function sendAddonPurchasedEmail(addonEnrollment) {
 }
 
 module.exports = {
+  sendAbsentEmail,
   dafSummary, sendDafEmails,
   migrate, generateSlotTimes, istDateKey,
   signBookingToken, bookingLink, verifyBookingToken, activeEnrollmentById,

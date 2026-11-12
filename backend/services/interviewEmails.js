@@ -9,6 +9,7 @@
      sendAddonOfferEmail     - Mock Interview Add-on offer (admin button)
      sendAddonPurchasedEmail - add-on paid: extra interviews added
      sendDafEmail            - one-time blank DAF PDF (admin button)
+     sendAbsentEmail         - learner marked Absent (once per booking)
    All go through resendQueue like every other Resend email.
    ============================================================ */
 
@@ -448,6 +449,44 @@ async function sendAddonOfferEmail({ to, name, link, packs, subjectPrefix = '' }
   }, PRIORITY.DEFAULT); // bulk offer - never delays OTP / invoice emails
 }
 
+/* Learner marked Absent by the admin (sent once per booking). */
+async function sendAbsentEmail({ to, name, booking, note, subjectPrefix = '' }) {
+  const firstName = esc((name || 'there').split(' ')[0]);
+  const when = `${fmtDay(booking.starts_at)}, ${fmtTime(booking.starts_at)}`;
+  const body = `
+    <div style="text-align:center;margin-bottom:22px;">
+      <div style="display:inline-block;background:#fef2f2;border:1px solid #fecaca;border-radius:50px;padding:8px 22px;">
+        <span style="font-size:13px;font-weight:700;color:#991b1b;">RPSC AE 2024 Interview Guidance Program</span>
+      </div>
+    </div>
+
+    <h2 style="margin:0 0 12px;font-size:22px;color:#1A1A2E;font-weight:800;text-align:center;">We missed you, ${firstName}</h2>
+    <p style="margin:0 0 20px;font-size:15px;color:#374151;line-height:1.7;text-align:center;">
+      You were marked <strong style="color:#991b1b;">absent</strong> for your RPSC AE mock interview.
+    </p>
+
+    <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:16px 20px;margin-bottom:22px;">
+      ${sectionLabel('Missed interview')}
+      <div style="font-size:15px;font-weight:800;color:#1A1A2E;">Interview ${booking.interview_no} - ${esc(when)}</div>
+      ${note ? `<div style="font-size:13px;color:#6b7280;margin-top:6px;">Note: ${esc(note)}</div>` : ''}
+    </div>
+
+    <p style="margin:0 0 14px;font-size:14px;color:#374151;line-height:1.7;">
+      <strong>A missed slot cannot be rescheduled - no rescheduling is allowed</strong>, as per the slot booking terms.
+      Your other booked interviews are unchanged. Please report 15 minutes early in formal attire with 4 copies of your DAF and a valid photo ID.
+    </p>
+
+    ${button(`${SITE}/my-programs/`, 'View my interviews &rarr;')}
+    ${helpLine()}
+  `;
+  return resendSend({
+    from: FROM,
+    to,
+    subject: `${subjectPrefix}You missed your RPSC AE mock interview - ${when}`,
+    html: baseHtml(body),
+  }, PRIORITY.DEFAULT);
+}
+
 /* One-time: blank RPSC DAF PDF (hosted on the site) for learners to
    fill and bring 4 copies of to their mock interviews. */
 const DAF_PDF_URL = `${SITE}/assets/docs/rpsc-ae-daf-blank.pdf`;
@@ -536,4 +575,4 @@ async function sendAddonPurchasedEmail({ to, name, added, total, booked, link, p
   }, PRIORITY.INVOICE);
 }
 
-module.exports = { sendDafEmail, sendInviteEmail, sendConfirmationEmail, sendDayBeforeReminder, sendVenueAnnouncement, sendDailyDigest, sendAddonOfferEmail, sendAddonPurchasedEmail, VENUE_TBA_TEXT, buildIcs, fmtSlot, fmtDay, fmtTime, fmtRange };
+module.exports = { sendAbsentEmail, sendDafEmail, sendInviteEmail, sendConfirmationEmail, sendDayBeforeReminder, sendVenueAnnouncement, sendDailyDigest, sendAddonOfferEmail, sendAddonPurchasedEmail, VENUE_TBA_TEXT, buildIcs, fmtSlot, fmtDay, fmtTime, fmtRange };

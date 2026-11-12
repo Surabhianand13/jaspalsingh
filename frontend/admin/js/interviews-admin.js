@@ -549,7 +549,7 @@
     if (!s.booking_id) return { attendance: '', feedback: '', recording: '' };
     var id = s.booking_id, a = s.attendance;
     var attendance = a
-      ? ATT[a] + ' <button class="iv-link" data-res-edit="' + id + '" data-kind="result">change</button>'
+      ? ATT[a] + (a === 'absent' && s.absent_emailed_at ? ' <i class="fas fa-envelope-circle-check" style="color:#16a34a;" title="Absent email sent"></i>' : '') + ' <button class="iv-link" data-res-edit="' + id + '" data-kind="result">change</button>'
       : '<select class="iv-att-select" data-att-pick="' + id + '"><option value="">Mark…</option><option value="present">Present</option><option value="absent">Absent</option><option value="shifted">Shifted</option></select>';
     var feedback;
     if (!a) feedback = '<span class="iv-meta">Mark attendance first</span>';
@@ -588,9 +588,12 @@
     var fields = a === 'present'
       ? '<label>Marks (out of ' + d.max_marks + ')<input id="ivMarks" type="number" min="0" max="' + d.max_marks + '" step="0.5" value="' + (s.marks != null ? esc(Number(s.marks)) : '') + '"></label>' +
         '<label class="iv-wide">Detailed feedback (the learner sees this)<textarea id="ivFeedback" rows="5">' + esc(s.feedback || '') + '</textarea></label>'
-      : '<label class="iv-wide">' + (a === 'shifted' ? 'Note, e.g. new date / slot (admin only, the learner does not see this)' : 'Reason (the learner sees this)') +
+      : '<label class="iv-wide">' + (a === 'shifted' ? 'Note, e.g. new date / slot (admin only, the learner does not see this)' : 'Reason (the learner sees this, also in the absent email)') +
         '<textarea id="ivNote" rows="3">' + esc(s.note || '') + '</textarea></label>';
-    return '<div class="iv-form iv-edit">' + head + '<div class="iv-grid">' + pick + fields + '</div>' +
+    var absentHelp = a !== 'absent' ? '' : s.absent_emailed_at
+      ? '<p class="iv-help"><i class="fas fa-envelope-circle-check"></i> Absent email already sent - it is not sent again.</p>'
+      : '<p class="iv-help"><i class="fas fa-envelope"></i> Saving emails the learner that they were marked absent (no rescheduling). Write the reason first.</p>';
+    return '<div class="iv-form iv-edit">' + head + '<div class="iv-grid">' + pick + fields + '</div>' + absentHelp +
       '<div class="iv-actions"><button class="btn iv-sm" id="ivResSave"><i class="fas fa-check"></i> Save</button>' +
         (s.attendance ? '<button class="btn-admin-secondary iv-sm iv-danger" id="ivResClear">Clear attendance</button>' : '') +
         '<button class="btn-admin-secondary iv-sm" id="ivEditCancel">Cancel</button></div></div>';
@@ -616,8 +619,10 @@
         s.note = body.attendance === 'absent' || body.attendance === 'shifted' ? (body.note || '').trim() || null : null;
       }
       state.edit = null;
-      msg('Saved.', 'success');
+      msg(body.attendance === 'absent' && !(s && s.absent_emailed_at) ? 'Saved - absent email is being sent to the learner.' : 'Saved.', 'success');
       renderSchedule($('ivDetail'));
+      // Pick up the "absent email sent" tick once the server has sent it.
+      if (body.attendance === 'absent') setTimeout(function () { if (!state.edit) loadDetail(); }, 4000);
     }).catch(function (e) { msg(e.message, 'error'); if (btn) btn.disabled = false; });
   }
 
