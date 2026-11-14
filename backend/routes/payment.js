@@ -464,11 +464,14 @@ router.post('/create-order', createOrderLimiter, optionalLearner, async (req, re
    typed, and no Turnstile (the signed link already proves who it is).
    The packs are is_visible = FALSE, so the price is read here directly
    instead of through getProgramData. ── */
-async function createAddonOrder(baseEnrollment, packSlug, branch = null) {
+async function createAddonOrder(baseEnrollment, packSlug, branch = null, { withFlash = false } = {}) {
   const pack = addonPack(packSlug);
   if (!pack) throw Object.assign(new Error('Unknown add-on pack.'), { status: 400 });
   const row = (await query(`SELECT title, short_name, price FROM programs WHERE slug = $1`, [pack.slug])).rows[0] || {};
-  const price = row.price != null ? Number(row.price) : pack.price;
+  const fullPrice = row.price != null ? Number(row.price) : pack.price;
+  // Running add-on discount (admin "Email with offer"), enrolled learners only.
+  const isvc = require('../services/interviewService');
+  const price = withFlash ? isvc.flashPrice(fullPrice, await isvc.activeFlash()) : fullPrice;
   const name = row.title || pack.title;
   const email = (baseEnrollment.student_email || '').toLowerCase().trim();
   const phone = (baseEnrollment.student_phone || '').replace(/\D/g, '').slice(-10);
