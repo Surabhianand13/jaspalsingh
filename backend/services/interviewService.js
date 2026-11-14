@@ -138,6 +138,22 @@ async function migrate() {
     email   TEXT PRIMARY KEY,
     sent_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`);
+  // Time-limited add-on discount set from the admin "Email with offer"
+  // button (single row, id = 1). Active only while ends_at is ahead.
+  await query(`CREATE TABLE IF NOT EXISTS interview_addon_flash (
+    id         INTEGER PRIMARY KEY DEFAULT 1,
+    percent    INTEGER NOT NULL,
+    ends_at    TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`);
+  // Add-on campaign emails (repeatable rounds from the admin button).
+  await query(`CREATE TABLE IF NOT EXISTS interview_addon_campaign_sends (
+    id            SERIAL PRIMARY KEY,
+    enrollment_id INTEGER NOT NULL,
+    with_offer    BOOLEAN NOT NULL DEFAULT FALSE,
+    sent_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_addon_campaign_enr ON interview_addon_campaign_sends (enrollment_id, sent_at)`);
   // Who was emailed the Mock Interview Add-on offer (at most once each).
   await query(`CREATE TABLE IF NOT EXISTS interview_addon_offers (
     enrollment_id INTEGER PRIMARY KEY,
@@ -851,13 +867,69 @@ async function sendDafEmails() {
   return targets.length;
 }
 
-/* Live pack prices (programs table, admin-editable) with config fallback. */
-async function addonPrices() {
+/* Add-on discount currently running (null when none / expired). */
+async function activeFlash() {
+  const r = (await query(`SELECT percent, ends_at FROM interview_addon_flash WHERE id = 1 AND ends_at > NOW()`)).rows[0];
+  return r && r.percent > 0 ? { percent: Number(r.percent), ends_at: r.ends_at } : null;
+}
+function flashPrice(price, flash) {
+  return flash ? Math.round(price * (100 - flash.percent) / 100) : price;
+}
+
+/* Live pack prices (programs table, admin-editable) with config fallback.
+   withFlash: apply the running add-on discount (enrolled learners only -
+   the public "interviews only" page always shows full prices). Each pack
+   keeps mrp (full price) and offer { percent, ends_at } when discounted. */
+async function addonPrices({ withFlash = true } = {}) {
   const rows = (await query(`SELECT slug, price FROM programs WHERE slug = ANY($1::text[])`, [ADDON_SLUGS])).rows;
+  const flash = withFlash ? await activeFlash() : null;
   return ADDON_PACKS.map(p => {
     const row = rows.find(r => r.slug === p.slug);
-    return { slug: p.slug, slots: p.slots, price: row && row.price != null ? Number(row.price) : p.price };
+    const mrp = row && row.price != null ? Number(row.price) : p.price;
+    return { slug: p.slug, slots: p.slots, price: flashPrice(mrp, flash), mrp, offer: flash };
   });
+}
+
+/* Repeatable add-on campaign: every active RPSC AE programme learner who
+   has not bought an add-on pack. Anyone emailed in the last 6 hours is
+   skipped, so a double click never sends twice. */
+const CAMPAIGN_GAP_HOURS = 6;
+async function addonCampaignTargets() {
+  const learners = (await eligibleLearners({ id: 0, program_slug: ADDON_BASE_PROGRAM, slots_per_learner: 3 }))
+    .filter(l => l.student_email && l.has_base && !l.extra_slots);
+  const recent = new Set((await query(
+    `SELECT enrollment_id FROM interview_addon_campaign_sends WHERE sent_at > NOW() - ($1 || ' hours')::interval`, [String(CAMPAIGN_GAP_HOURS)]
+  )).rows.map(r => r.enrollment_id));
+  return learners.filter(l => !recent.has(l.id));
+}
+async function addonCampaignSummary() {
+  const last = (await query(`SELECT sent_at, with_offer FROM interview_addon_campaign_sends ORDER BY sent_at DESC LIMIT 1`)).rows[0];
+  return { targets: (await addonCampaignTargets()).length, last_sent_at: last ? last.sent_at : null, last_with_offer: last ? last.with_offer : null, flash: await activeFlash() };
+}
+/* offer: { percent, ends_at } to start/replace the discount, or null for
+   a plain email at regular prices. Returns how many were queued. */
+async function sendAddonCampaign(offer) {
+  if (offer) {
+    await query(
+      `INSERT INTO interview_addon_flash (id, percent, ends_at, updated_at) VALUES (1, $1, $2, NOW())
+       ON CONFLICT (id) DO UPDATE SET percent = EXCLUDED.percent, ends_at = EXCLUDED.ends_at, updated_at = NOW()`,
+      [offer.percent, offer.ends_at]
+    );
+  }
+  const targets = await addonCampaignTargets();
+  const packs = await addonPrices({ withFlash: !!offer });
+  (async () => {
+    for (const l of targets) {
+      try {
+        await query(`INSERT INTO interview_addon_campaign_sends (enrollment_id, with_offer) VALUES ($1, $2)`, [l.id, !!offer]);
+        await emails.sendAddonOfferEmail({ to: l.student_email, name: l.student_name, link: bookingLink(l.id), packs, offer: offer ? packs[0].offer : null });
+      } catch (err) {
+        console.error(`[interview addon campaign] ${l.student_email}:`, err.message);
+      }
+    }
+    console.log(`[interview addon campaign] queued ${targets.length} email(s)${offer ? ` with ${offer.percent}% offer` : ''}`);
+  })();
+  return targets.length;
 }
 
 /* After an add-on pack is paid (replaces the generic welcome email -
@@ -886,5 +958,5 @@ module.exports = {
   getPhase, learnerBookings, withDisplayNumbers, openPhasesWithAvailability, bookSlots, BookingError,
   releaseLearner, updateCalendarLocations, announceVenue, eligibleLearners, sendInvites, inviteNewEnrollment, phaseStats,
   syncCalendar, tick, PHASE_COLS,
-  extraSlotsFor, slotAllowance, programOf, branchFor, baseEnrollmentForEmail, addonSummary, addonPrices, sendAddonOffers, sendAddonPurchasedEmail,
+  extraSlotsFor, slotAllowance, programOf, branchFor, baseEnrollmentForEmail, addonSummary, addonPrices, activeFlash, flashPrice, addonCampaignSummary, sendAddonCampaign, sendAddonOffers, sendAddonPurchasedEmail,
 };

@@ -108,7 +108,7 @@
           ' <button class="btn-admin-secondary iv-sm" id="ivCalCheck">Check connection</button> <span id="ivCalMsg"></span></div>' +
         '<div class="iv-sample"><input type="email" id="ivSampleTo" placeholder="Send sample emails to…" value="anand.surabhi.a@gmail.com" />' +
           '<button class="btn-admin-secondary iv-sm" id="ivSampleBtn"><i class="fas fa-paper-plane"></i> Send sample emails</button></div>' +
-      '</div>' + branchBar(d.addon) + addonBar(d.addon) + dafBar(d.daf) +
+      '</div>' + branchBar(d.addon) + addonBar(d.addon) + campaignBar(d.addon_campaign) + dafBar(d.daf) +
       '<div id="ivNewForm" style="display:none;"></div>';
 
     if (!d.phases.length) {
@@ -151,6 +151,76 @@
         (a.interviews_only ? ' (' + a.interviews_only + ' interviews-only, not enrolled)' : '') +
         (a.offered ? ' · offer emailed to ' + a.offered : '') + '</div>' +
       '<div><button class="btn-admin-secondary iv-sm" id="ivAddonOffer"' + (a.not_offered ? '' : ' disabled') + '><i class="fas fa-bullhorn"></i> Email add-on offer (' + a.not_offered + ' learners)</button></div></div>';
+  }
+
+  /* Add-on email to every active RPSC AE learner without a pack - with or
+     without a time-limited % discount. Sent only when the admin clicks. */
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+  function localInput(d) {
+    return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()) + 'T' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+  }
+  function fmtWhenIST(iso) {
+    return new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true, timeZone: TZ });
+  }
+  function campaignBar(c) {
+    if (!c) return '';
+    var tonight = new Date(); tonight.setHours(23, 59, 0, 0);
+    var running = c.flash
+      ? '<span class="iv-badge iv-badge--warn"><i class="fas fa-bolt"></i> ' + c.flash.percent + '% offer live until ' + esc(fmtWhenIST(c.flash.ends_at)) + '</span> <button class="iv-link" id="ivFlashStop">stop offer</button>'
+      : '<span class="iv-meta">No offer running - regular prices</span>';
+    return '<div class="iv-bar" style="display:block;">' +
+      '<div style="margin-bottom:10px;"><strong><i class="fas fa-envelope-open-text"></i> Add-on email to learners without a pack:</strong> ' +
+        '<strong>' + c.targets + '</strong> learner' + (c.targets === 1 ? '' : 's') +
+        (c.last_sent_at ? ' · last sent ' + esc(fmtWhenIST(c.last_sent_at)) + (c.last_with_offer ? ' (with offer)' : '') : ' · never sent') + ' · ' + running + '</div>' +
+      '<div class="iv-sample" style="margin-bottom:8px;">' +
+        '<label class="iv-meta">Offer <input id="ivCampPct" type="number" min="1" max="50" value="' + (c.flash ? c.flash.percent : 10) + '" style="min-width:0;width:64px;"> % off until</label>' +
+        '<input id="ivCampEnds" type="datetime-local" value="' + localInput(c.flash ? new Date(c.flash.ends_at) : tonight) + '" style="min-width:0;">' +
+      '</div>' +
+      '<div class="iv-sample">' +
+        '<input id="ivCampTo" type="email" value="biz@solvvai.com" placeholder="your email for a sample">' +
+        '<button class="btn-admin-secondary iv-sm" data-camp="sample" data-offer="1"><i class="fas fa-eye"></i> Sample with offer</button>' +
+        '<button class="btn-admin-secondary iv-sm" data-camp="sample" data-offer="0"><i class="fas fa-eye"></i> Sample without offer</button>' +
+        '<button class="btn iv-sm" data-camp="all" data-offer="1"' + (c.targets ? '' : ' disabled') + '><i class="fas fa-bolt"></i> Email with offer (' + c.targets + ')</button>' +
+        '<button class="btn-admin-secondary iv-sm" data-camp="all" data-offer="0"' + (c.targets ? '' : ' disabled') + '><i class="fas fa-paper-plane"></i> Email without offer (' + c.targets + ')</button>' +
+      '</div>' +
+      '<p class="iv-help">Goes to every paid, non-refunded RPSC AE programme learner who has not bought an add-on pack. Anyone emailed in the last 6 hours is skipped. "With offer" turns on the discount for add-on packs (booking page + My Programs) until the end time, then prices go back to normal on their own.</p>' +
+    '</div>';
+  }
+  function wireCampaign() {
+    var first = document.querySelector('[data-camp]');
+    if (!first || first.getAttribute('data-wired')) return;
+    first.setAttribute('data-wired', '1');
+    document.querySelectorAll('[data-camp]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var mode = b.getAttribute('data-camp'), withOffer = b.getAttribute('data-offer') === '1';
+        var body = { mode: mode, offer: withOffer };
+        if (withOffer) {
+          body.percent = parseInt($('ivCampPct').value, 10);
+          var ends = new Date($('ivCampEnds').value);
+          if (!(body.percent >= 1 && body.percent <= 50)) return msg('Discount must be 1-50%.', 'error');
+          if (isNaN(ends) || ends <= new Date()) return msg('Pick an offer end time in the future.', 'error');
+          body.ends_at = ends.toISOString();
+        }
+        if (mode === 'sample') {
+          body.to = $('ivCampTo').value.trim();
+        } else {
+          var c = state.overview.addon_campaign;
+          var what = withOffer ? 'the add-on email WITH ' + body.percent + '% OFF (offer ends ' + fmtWhenIST(body.ends_at) + ')' : 'the add-on email WITHOUT any offer (regular prices)';
+          if (!confirm('Send ' + what + ' to ' + c.targets + ' RPSC AE learner(s) who have not bought an add-on?' + (withOffer ? '\n\nThe discount goes live for add-on packs right away.' : ''))) return;
+        }
+        b.disabled = true;
+        api('POST', '/api/interviews/admin/addon-campaign', body).then(function (r) {
+          msg(mode === 'sample' ? 'Sample sent to ' + body.to + '.' : 'Queued to ' + r.queued + ' learner(s) - emails go out over the next few minutes.', 'success');
+          if (mode === 'all') load();
+        }).catch(function (e) { msg(e.message, 'error'); }).then(function () { b.disabled = false; });
+      });
+    });
+    var stop = $('ivFlashStop');
+    if (stop) stop.addEventListener('click', function () {
+      if (!confirm('Stop the add-on offer now? Prices go back to normal immediately.')) return;
+      api('DELETE', '/api/interviews/admin/addon-flash').then(function () { msg('Offer stopped.', 'success'); load(); })
+        .catch(function (e) { msg(e.message, 'error'); });
+    });
   }
 
   /* One-time blank DAF PDF email to all active RPSC AE learners. */
@@ -240,6 +310,7 @@
     $('ivSampleBtn').addEventListener('click', sendSamples);
     if ($('ivAddonOffer')) $('ivAddonOffer').addEventListener('click', sendAddonOffers);
     wireDaf();
+    wireCampaign();
     root.querySelectorAll('[data-pick]').forEach(function (card) {
       card.addEventListener('click', function (e) {
         if (e.target.closest('button')) return;

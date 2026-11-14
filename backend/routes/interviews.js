@@ -30,6 +30,8 @@
      DELETE /api/interviews/admin/learners/:enrollmentId/bookings - release a learner
      POST   /api/interviews/admin/sample-emails          - { to } dummy copies of every email
      POST   /api/interviews/admin/addon-offers           - email the add-on offer to learners not yet offered
+     POST   /api/interviews/admin/addon-campaign         - add-on email to learners without a pack, optional % offer
+     DELETE /api/interviews/admin/addon-flash            - stop a running add-on discount
      POST   /api/interviews/admin/daf-email              - one-time blank DAF PDF { mode: 'sample', to } | { mode: 'all' }
    ============================================================ */
 
@@ -193,7 +195,7 @@ router.post('/addon-order', addonOrderLimiter, async (req, res, next) => {
     // No form here: the branch carries over from their programme order or bookings.
     const branch = (await svc.branchFor(enr.student_email)) || ((await svc.learnerBookings(enr))[0] || {}).branch || null;
     const { createAddonOrder } = require('./payment');
-    res.json(await createAddonOrder(enr, pack.slug, branch));
+    res.json(await createAddonOrder(enr, pack.slug, branch, { withFlash: true }));
   } catch (err) {
     if (err instanceof svc.BookingError) return sendError(res, next, err);
     console.error('[interview addon-order]', err?.error || err?.message || err);
@@ -244,6 +246,7 @@ router.get('/admin/overview', protect, async (req, res, next) => {
       phases,
       addon: await svc.addonSummary(),
       daf: await svc.dafSummary(),
+      addon_campaign: await svc.addonCampaignSummary(),
       calendar: { configured: calendar.isConfigured(), calendarId: calendar.calendarId(), serviceAccount: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || null },
       defaults: { program_slug: DEFAULT_PROGRAM, venue: DEFAULT_VENUE },
     });
@@ -490,6 +493,40 @@ router.post('/admin/daf-email', protect, async (req, res, next) => {
     if (b.mode !== 'all') return res.status(400).json({ error: 'Invalid mode.' });
     res.json({ ok: true, queued: await svc.sendDafEmails() });
   } catch (err) { next(err); }
+});
+
+/* Add-on email to every active RPSC AE learner without an add-on pack.
+   { mode: 'sample'|'all', offer: bool, percent, ends_at, to }
+   offer: also starts a percent discount on add-on packs until ends_at. */
+router.post('/admin/addon-campaign', protect, async (req, res, next) => {
+  try {
+    const b = req.body || {};
+    let offer = null;
+    if (b.offer) {
+      const percent = parseInt(b.percent, 10);
+      const ends = new Date(b.ends_at);
+      if (!(percent >= 1 && percent <= 50)) return res.status(400).json({ error: 'Discount must be 1-50%.' });
+      if (isNaN(ends) || ends <= new Date()) return res.status(400).json({ error: 'Pick an offer end time in the future.' });
+      if (ends - Date.now() > 31 * 86400000) return res.status(400).json({ error: 'An offer can run at most 31 days.' });
+      offer = { percent, ends_at: ends };
+    }
+    if (b.mode === 'sample') {
+      const to = String(b.to || '').trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) return res.status(400).json({ error: 'Enter a valid email address.' });
+      const full = await svc.addonPrices({ withFlash: false });
+      const packs = offer ? full.map(p => Object.assign({}, p, { price: svc.flashPrice(p.mrp, offer), offer })) : full;
+      await emails.sendAddonOfferEmail({ to, name: 'Rahul Sharma', link: `${SITE}/book-interview/?demo=1`, packs, offer, subjectPrefix: '[SAMPLE] ' });
+      return res.json({ ok: true, sent: 1 });
+    }
+    if (b.mode !== 'all') return res.status(400).json({ error: 'Invalid mode.' });
+    res.json({ ok: true, queued: await svc.sendAddonCampaign(offer) });
+  } catch (err) { next(err); }
+});
+
+/* Stop a running add-on discount early. */
+router.delete('/admin/addon-flash', protect, async (req, res, next) => {
+  try { await query(`DELETE FROM interview_addon_flash WHERE id = 1`); res.json({ ok: true }); }
+  catch (err) { next(err); }
 });
 
 router.post('/admin/addon-offers', protect, async (req, res, next) => {

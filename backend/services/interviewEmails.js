@@ -408,24 +408,40 @@ function packsTable(packs) {
           ${p.slots} Mock Interviews
           <div style="font-size:12.5px;color:#6b7280;font-weight:600;margin-top:2px;">${rupees(Math.round(p.price / p.slots))} per interview${isBest && save > 0 ? ` &nbsp;<span style="color:#166534;font-weight:800;">Save ${rupees(save)}</span>` : ''}</div>
         </td>
-        <td style="padding:14px 16px;font-size:20px;color:${isBest ? '#6D28D9' : RED};font-weight:800;text-align:right;white-space:nowrap;">${rupees(p.price)}</td>
+        <td style="padding:14px 16px;font-size:20px;color:${isBest ? '#6D28D9' : RED};font-weight:800;text-align:right;white-space:nowrap;">${p.mrp && p.mrp > p.price ? `<span style="font-size:13px;color:#9ca3af;font-weight:600;text-decoration:line-through;">${rupees(p.mrp)}</span><br>` : ''}${rupees(p.price)}</td>
       </tr>
     </table>`;
   }).join('') + '<div style="height:10px;"></div>';
 }
 
-async function sendAddonOfferEmail({ to, name, link, packs, subjectPrefix = '' }) {
-  const firstName = esc((name || 'there').split(' ')[0]);
-  const body = `
-    <div style="text-align:center;margin-bottom:22px;">
-      <div style="display:inline-block;background:#f5f3ff;border:1px solid #c4b5fd;border-radius:50px;padding:8px 22px;">
-        <span style="font-size:13px;font-weight:700;color:#5b21b6;">For RPSC AE Interview Guidance learners only</span>
-      </div>
-    </div>
+function fmtOfferEnd(d) {
+  return new Date(d).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true, timeZone: TZ }).replace(/\b(am|pm)\b/, m => m.toUpperCase());
+}
+function isTodayIST(d) {
+  const k = x => new Date(new Date(x).getTime() + 5.5 * 3600000).toISOString().slice(0, 10);
+  return k(d) === k(Date.now());
+}
 
-    <h2 style="margin:0 0 12px;font-size:22px;color:#1A1A2E;font-weight:800;text-align:center;">Want more mock interviews, ${firstName}?</h2>
+/* Mock Interview Add-on offer. offer = { percent, ends_at } for the
+   time-limited discount version (packs then carry mrp + discounted price). */
+async function sendAddonOfferEmail({ to, name, link, packs, offer = null, subjectPrefix = '' }) {
+  const firstName = esc((name || 'there').split(' ')[0]);
+  const endsTxt = offer ? (isTodayIST(offer.ends_at) ? `Today only - ends ${fmtTime(offer.ends_at)} tonight` : `Offer ends ${fmtOfferEnd(offer.ends_at)}`) : '';
+  const tag = offer
+    ? `<div style="display:inline-block;background:#fef2f2;border:1px solid #fecaca;border-radius:50px;padding:8px 22px;">
+        <span style="font-size:13px;font-weight:700;color:#991b1b;">⏰ ${esc(endsTxt)}</span>
+      </div>`
+    : `<div style="display:inline-block;background:#f5f3ff;border:1px solid #c4b5fd;border-radius:50px;padding:8px 22px;">
+        <span style="font-size:13px;font-weight:700;color:#5b21b6;">For RPSC AE Interview Guidance learners only</span>
+      </div>`;
+  const body = `
+    <div style="text-align:center;margin-bottom:22px;">${tag}</div>
+
+    <h2 style="margin:0 0 12px;font-size:22px;color:#1A1A2E;font-weight:800;text-align:center;">${offer ? `${offer.percent}% OFF extra mock interviews, ${firstName}` : `Want more mock interviews, ${firstName}?`}</h2>
     <p style="margin:0 0 22px;font-size:15px;color:#374151;line-height:1.7;text-align:center;">
-      Your programme includes 3 one-to-one mock interviews. You can now add more, on top of those 3 - more practice in front of the panel before the real RPSC board.
+      ${offer
+        ? `More practice in front of the panel before the real RPSC board. The ${offer.percent}% discount is applied automatically - no coupon needed.`
+        : 'Your programme includes 3 one-to-one mock interviews. You can now add more, on top of those 3 - more practice in front of the panel before the real RPSC board.'}
     </p>
 
     ${packsTable(packs)}
@@ -436,15 +452,20 @@ async function sendAddonOfferEmail({ to, name, link, packs, subjectPrefix = '' }
       <tr><td style="padding:4px 0;font-size:14px;color:#374151;">✅ You can buy more than one pack</td></tr>
     </table>
 
-    ${button(link, 'Add mock interviews &rarr;')}
+    ${button(link, offer ? `Get ${offer.percent}% OFF now &rarr;` : 'Add mock interviews &rarr;')}
+
+    ${offer ? `<p style="margin:-10px 0 18px;font-size:12.5px;color:#991b1b;text-align:center;font-weight:700;">Offer ends ${esc(fmtOfferEnd(offer.ends_at))}. After that, regular prices apply.</p>` : ''}
 
     ${helpLine()}
     <p style="margin:14px 0 0;font-size:11.5px;color:#9ca3af;text-align:center;line-height:1.6;">This link is personal to you - please do not share it.<br>Button not working? Copy this link: <span style="word-break:break-all;">${esc(link)}</span></p>
   `;
+  const subject = offer
+    ? `${isTodayIST(offer.ends_at) ? 'Today only' : 'Limited offer'}: ${offer.percent}% OFF extra RPSC AE mock interviews - ends ${isTodayIST(offer.ends_at) ? fmtTime(offer.ends_at) + ' tonight' : fmtOfferEnd(offer.ends_at)}`
+    : `Add more RPSC AE mock interviews - ${packs.map(p => `${p.slots} for Rs ${Number(p.price).toLocaleString('en-IN')}`).join(' / ')}`;
   return resendSend({
     from: FROM,
     to,
-    subject: `${subjectPrefix}Add more RPSC AE mock interviews - ${packs.map(p => `${p.slots} for Rs ${Number(p.price).toLocaleString('en-IN')}`).join(' / ')}`,
+    subject: subjectPrefix + subject,
     html: baseHtml(body),
   }, PRIORITY.DEFAULT); // bulk offer - never delays OTP / invoice emails
 }

@@ -254,6 +254,16 @@
      then the normal /api/payment/verify. Packs stack. ── */
   function rupees(n) { return '\u20B9' + Number(n).toLocaleString('en-IN'); }
 
+  /* Time-limited add-on discount (set by the admin): banner above packs. */
+  function offerStrip(o) {
+    if (!o) return '';
+    var end = new Date(o.ends_at);
+    var key = function (d) { return new Date(d.getTime() + 19800000).toISOString().slice(0, 10); };
+    var t = end.toLocaleString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' }).toUpperCase();
+    var when = key(end) === key(new Date()) ? 'today only - ends ' + t + ' tonight' : 'ends ' + end.toLocaleString('en-IN', { day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata' }) + ', ' + t;
+    return '<div class="ao-offer"><i class="fas fa-bolt"></i> <strong>' + o.percent + '% OFF</strong> on mock interview packs - ' + when + '</div>';
+  }
+
   function addonBlock(e, sched) {
     var sl = sched.slots;
     if (!sl || !sl.packs || !sl.packs.length) return '';
@@ -268,12 +278,13 @@
       '<p class="ld-addon-sub">' + (sl.extra
         ? 'You have <strong>' + sl.extra + ' add-on interview' + (sl.extra === 1 ? '' : 's') + '</strong> on top of your ' + sl.included + ' included ones. Packs stack - buy another anytime.'
         : 'Your programme includes ' + (sl.included || 3) + ' one-to-one mock interviews. Get more practice in front of the panel before the real RPSC board.') + '</p>' +
+      offerStrip(sl.packs[0] && sl.packs[0].offer) +
       '<div class="ld-packs">' + sl.packs.map(function (p) {
         var isBest = sl.packs.length > 1 && p === best;
         var save = Math.round(p.slots * small.price / small.slots - p.price);
         return '<div class="ld-pack' + (isBest ? ' is-best' : '') + '">' + (isBest ? '<span class="ld-pack-best"><i class="fas fa-star"></i> Best value</span>' : '') +
           '<b>' + p.slots + ' Mock Interviews</b>' +
-          '<div class="ld-pack-price">' + rupees(p.price) + '</div>' +
+          '<div class="ld-pack-price">' + (p.mrp && p.mrp > p.price ? '<s class="ld-pack-mrp">' + rupees(p.mrp) + '</s> ' : '') + rupees(p.price) + '</div>' +
           '<small>' + rupees(Math.round(p.price / p.slots)) + ' per interview</small>' +
           (isBest && save > 0 ? '<span class="ld-pack-save">Save ' + rupees(save) + '</span>' : '') +
           '<button class="ld-btn ' + (isBest ? 'ld-btn--best' : 'ld-btn--ghost') + '" data-ld-addon="' + esc(p.slug) + '" data-ld-slots="' + p.slots + '" data-ld-program="' + esc(slug) + '"><i class="fas fa-lock"></i> Buy now</button>' +

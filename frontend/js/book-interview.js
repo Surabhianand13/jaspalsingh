@@ -207,6 +207,16 @@
   /* ── Mock Interview Add-on ── */
   function rupees(n) { return '\u20B9' + Number(n).toLocaleString('en-IN'); }
 
+  /* Time-limited add-on discount (set by the admin): banner above packs. */
+  function offerStrip(o) {
+    if (!o) return '';
+    var end = new Date(o.ends_at);
+    var key = function (d) { return new Date(d.getTime() + 19800000).toISOString().slice(0, 10); };
+    var t = end.toLocaleString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' }).toUpperCase();
+    var when = key(end) === key(new Date()) ? 'today only - ends ' + t + ' tonight' : 'ends ' + end.toLocaleString('en-IN', { day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata' }) + ', ' + t;
+    return '<div class="ao-offer"><i class="fas fa-bolt"></i> <strong>' + o.percent + '% OFF</strong> on mock interview packs - ' + when + '</div>';
+  }
+
   function addonCard() {
     var a = state.data.addons;
     if (!a || !a.packs || !a.packs.length) return '';
@@ -225,12 +235,13 @@
         : a.extra
         ? 'You have <strong>' + a.extra + ' add-on interview' + (a.extra === 1 ? '' : 's') + '</strong> on top of your ' + (booked().included || 3) + ' included ones. Packs stack - buy another anytime.'
         : 'Your programme includes ' + (booked().included || 3) + ' one-to-one mock interviews. Get more practice in front of the panel before the real RPSC board.') + '</p>' +
+      offerStrip(a.packs[0] && a.packs[0].offer) +
       '<div class="bi-packs">' + a.packs.map(function (p) {
         var isBest = a.packs.length > 1 && p === best;
         var save = isBest ? saving(p) : 0;
         return '<div class="bi-pack' + (isBest ? ' is-best' : '') + '">' + (isBest ? '<span class="bi-pack-best"><i class="fas fa-star"></i> Best value</span>' : '') +
           '<b>' + p.slots + ' Mock Interviews</b>' +
-          '<div class="bi-pack-price">' + rupees(p.price) + '</div>' +
+          '<div class="bi-pack-price">' + (p.mrp && p.mrp > p.price ? '<s class="bi-pack-mrp">' + rupees(p.mrp) + '</s> ' : '') + rupees(p.price) + '</div>' +
           '<small>' + rupees(Math.round(p.price / p.slots)) + ' per interview</small>' +
           (save > 0 ? '<span class="bi-pack-save">Save ' + rupees(save) + '</span>' : '') +
           '<button class="bi-btn bi-btn--block' + (isBest ? ' bi-btn--best' : ' bi-btn--ghost') + '" data-pack="' + esc(p.slug) + '" data-slots="' + p.slots + '"><i class="fas fa-lock"></i> Buy now</button>' +
