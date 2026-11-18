@@ -80,6 +80,7 @@
         '<div class="rda-row"><input id="rdaTo" type="email" value="biz@solvvai.com" placeholder="your email for a sample">' +
         '<button class="btn-admin-secondary rda-sm" id="rdaSample"><i class="fas fa-eye"></i> Send sample</button>' +
         '<button class="btn-admin-primary rda-sm" id="rdaAll"' + (a.pending ? '' : ' disabled') + '><i class="fas fa-paper-plane"></i> Send to all (' + a.pending + ')</button></div></div>' +
+      teamBar(d.team || {}) +
       '<div class="rda-row" style="margin:12px 0;">' +
         '<input id="rdaQ" type="search" placeholder="Search name / phone / roll / application no." value="' + esc(state.q) + '" style="min-width:260px;">' +
         '<select id="rdaBranch"><option value="">All branches</option>' + ['Civil', 'Mechanical', 'Electrical'].map(function (b) { return '<option' + (state.branch === b ? ' selected' : '') + '>' + b + '</option>'; }).join('') + '</select>' +
@@ -94,6 +95,14 @@
     wire(root);
   }
 
+  function teamBar(t) {
+    return '<div class="rda-bar" style="margin-top:12px;"><div><strong><i class="fas fa-users"></i> Send DAFs to content team</strong> <span class="rda-meta">(PDFs attached, named Learner Name_Paid / _Free; each click sends only DAFs not sent before)' +
+        (t.last_at ? ' · last sent ' + esc(fmtDate(t.last_at)) : '') + '</span></div>' +
+      '<div class="rda-row"><input id="rdaTeamTo" type="text" value="' + esc(t.emails || '') + '" placeholder="content team email(s), comma separated" style="min-width:300px;">' +
+        '<button class="btn-admin-primary rda-sm" id="rdaTeam"' + (t.pending && !t.sending ? '' : ' disabled') + '><i class="fas fa-paper-plane"></i> ' +
+          (t.sending ? 'Sending…' : 'Send new DAFs (' + (t.pending || 0) + ')') + '</button></div></div>';
+  }
+
   function rowHtml(s) {
     var row = '<tr' + (state.open === s.id ? ' class="rda-on"' : '') + '>' +
       '<td>' + esc(fmtDate(s.created_at)) + (s.updated_at && s.updated_at !== s.created_at && s.status !== 'answered' ? '<br><span class="rda-meta">updated ' + esc(fmtDate(s.updated_at)) + '</span>' : '') + '</td>' +
@@ -101,7 +110,8 @@
         '<br><span class="rda-meta">' + esc(s.phone || '') + ' · ' + esc(s.email || '') + '</span></td>' +
       '<td>' + esc(s.branch || '') + '</td>' +
       '<td>' + esc(s.roll_no || '') + '<br><span class="rda-meta">' + esc(s.application_number || '') + '</span></td>' +
-      '<td><button class="rda-link" data-daf="' + s.id + '">View DAF</button></td>' +
+      '<td><button class="rda-link" data-daf="' + s.id + '">View DAF</button>' +
+        (s.team_pending ? '<br><span class="rda-meta">not sent to team</span>' : '<br><span class="rda-meta"><i class="fas fa-check"></i> team ' + esc(fmtDate(s.team_sent_at)) + '</span>') + '</td>' +
       '<td>' + (STATUS[s.status] || esc(s.status)) + (s.replied_at ? '<br><span class="rda-meta">' + esc(fmtDate(s.replied_at)) + '</span>' : '') + '</td>' +
       '<td><button class="btn-admin-secondary rda-sm" data-respond="' + s.id + '">' + (s.status === 'answered' ? 'Edit reply' : s.status === 'in_progress' ? 'Continue' : 'Respond') + '</button></td>' +
     '</tr>';
@@ -164,6 +174,19 @@
         load();
       }).catch(function (e) { msg(e.message, 'error'); btn.disabled = false; });
     });
+    $('rdaTeam').addEventListener('click', function () {
+      var n = (state.data.team || {}).pending, to = $('rdaTeamTo').value.trim(), btn = this;
+      if (!to) return msg('Enter the content team email address first.', 'error');
+      if (!confirm('Email ' + n + ' new DAF(s) to ' + to + '?\n\nDAFs already sent to the team are not sent again (a learner who replaces their DAF counts as new).')) return;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending…';
+      req('POST', '/api/rpsc-daf/admin/send-to-team', { to: to }).then(function (r) {
+        var t = r.sent ? r.sent + ' DAF(s) sent to the content team in ' + r.emails + ' email(s).' : 'No new DAFs to send.';
+        if (r.failed && r.failed.length) t += ' Not sent (try again): ' + r.failed.join(', ');
+        msg(t, r.failed && r.failed.length ? 'error' : 'success');
+        load();
+      }).catch(function (e) { msg(e.message, 'error'); load(); });
+    });
   }
 
   function save(action, btn) {
@@ -190,9 +213,9 @@
 
   function csv() {
     var cell = function (v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; };
-    var lines = [['Submitted', 'Name', 'Phone', 'Email', 'Branch', 'Roll no', 'Application no', 'Paid learner', 'Status', 'Replied at'].join(',')];
+    var lines = [['Submitted', 'Name', 'Phone', 'Email', 'Branch', 'Roll no', 'Application no', 'Paid learner', 'Status', 'Replied at', 'Sent to team'].join(',')];
     filtered().forEach(function (s) {
-      lines.push([fmtDate(s.created_at), s.name, s.phone, s.email, s.branch, s.roll_no, s.application_number, s.paid ? 'yes' : 'no', s.status, fmtDate(s.replied_at)].map(cell).join(','));
+      lines.push([fmtDate(s.created_at), s.name, s.phone, s.email, s.branch, s.roll_no, s.application_number, s.paid ? 'yes' : 'no', s.status, fmtDate(s.replied_at), s.team_pending ? '' : fmtDate(s.team_sent_at)].map(cell).join(','));
     });
     var a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([lines.join('\n')], { type: 'text/csv' }));
