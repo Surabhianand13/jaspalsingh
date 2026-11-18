@@ -220,7 +220,7 @@ router.get('/admin', protect, async (req, res, next) => {
     )).rows;
     for (const r of rows) r.paid = await isPaidInterview(r.learner_id, r.email, r.phone);
     const announce = await announceTargets();
-    const team = (await query('SELECT emails, last_at FROM rpsc_daf_team WHERE id = 1')).rows[0] || {};
+    const team = (await query('SELECT emails, last_at FROM rpsc_daf_team WHERE id = 1')).rows[0] || { emails: 'jaspalsingh.pec@gmail.com' };
     res.json({
       submissions: rows,
       counts: {
@@ -384,7 +384,7 @@ router.post('/admin/announce', protect, async (req, res, next) => {
 
 /* ── Content team hand-off ──────────────────────────────────
    Emails every DAF not yet sent to the content team as attachments
-   named <learner email>_<Paid|Free>.<ext>, with a details table.
+   named <Learner Name>_<Paid|Free>.<ext>, with a details table.
    Each click sends only new (or replaced) DAFs. Large sets are split
    into several emails to stay under the attachment size limit. */
 
@@ -399,7 +399,10 @@ async function r2Buffer(key) {
 }
 
 function teamFilename(s, used) {
-  const base = `${String(s.email || `learner-${s.learner_id}`).trim().toLowerCase().replace(/[^a-z0-9@._+-]/g, '')}_${s.paid ? 'Paid' : 'Free'}`;
+  // "<Learner Name>_<Paid|Free>", e.g. "Navin Rajpurohit_Paid.pdf".
+  const person = String(s.name || '').replace(/[^\p{L}\p{N} .-]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 60)
+    .toLowerCase().replace(/(^|[\s.-])\p{L}/gu, m => m.toUpperCase()) || `Learner ${s.learner_id}`;
+  const base = `${person}_${s.paid ? 'Paid' : 'Free'}`;
   const ext = DAF_TYPES[s.daf_type] || 'pdf';
   let name = `${base}.${ext}`, n = 2;
   while (used.has(name)) name = `${base}-${n++}.${ext}`;
@@ -421,7 +424,7 @@ function teamEmailHtml(batch, part, parts) {
   return baseHtml(`
     <h2 style="margin:0 0 8px;font-size:20px;color:#1A1A2E;font-weight:800;">RPSC AE DAFs for personalised questions</h2>
     <p style="margin:0 0 16px;font-size:14px;color:#374151;line-height:1.7;">
-      ${batch.length} DAF${batch.length === 1 ? '' : 's'} attached${parts > 1 ? ` (email ${part} of ${parts})` : ''}. Each file is named by the learner's registered email and tagged Paid or Free.
+      ${batch.length} DAF${batch.length === 1 ? '' : 's'} attached${parts > 1 ? ` (email ${part} of ${parts})` : ''}. Each file is named by the learner's name and tagged Paid or Free.
       Please prepare the questions; replies are posted from Admin &gt; Free Resources &gt; DAF submissions.
     </p>
     <table cellpadding="0" cellspacing="0" style="width:100%;border:1px solid #e2e8f0;border-radius:10px;border-collapse:separate;">

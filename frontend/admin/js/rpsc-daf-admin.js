@@ -96,7 +96,7 @@
   }
 
   function teamBar(t) {
-    return '<div class="rda-bar" style="margin-top:12px;"><div><strong><i class="fas fa-users"></i> Send DAFs to content team</strong> <span class="rda-meta">(PDFs attached, named learner-email_Paid / _Free; each click sends only DAFs not sent before)' +
+    return '<div class="rda-bar" style="margin-top:12px;"><div><strong><i class="fas fa-users"></i> Send DAFs to content team</strong> <span class="rda-meta">(PDFs attached, named Learner Name_Paid / _Free; each click sends only DAFs not sent before)' +
         (t.last_at ? ' · last sent ' + esc(fmtDate(t.last_at)) : '') + '</span></div>' +
       '<div class="rda-row"><input id="rdaTeamTo" type="text" value="' + esc(t.emails || '') + '" placeholder="content team email(s), comma separated" style="min-width:300px;">' +
         '<button class="btn-admin-primary rda-sm" id="rdaTeam"' + (t.pending && !t.sending ? '' : ' disabled') + '><i class="fas fa-paper-plane"></i> ' +
