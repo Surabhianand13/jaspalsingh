@@ -469,6 +469,8 @@
            SECTION: LEARNERS
            ══════════════════════════════ -->
       <section class="admin-section" id="section-learners" aria-label="Learners management">
+        <!-- One-time announcement emails to every learner (admin/js/announcements-admin.js) -->
+        <div id="announcementsAdmin" style="margin-bottom:20px;"></div>
 
         <div class="section-header">
           <h2 class="section-title">Learners</h2>
@@ -1667,12 +1669,13 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
 <!-- Admin JS -->
-<script src="/admin/js/admin.js?v=6"></script>
+<script src="/admin/js/admin.js?v=7"></script>
 <script src="/admin/js/nav-menu-admin.js"></script>
 <script src="/admin/js/home-programs-admin.js"></script>
 <script src="/admin/js/test-day-admin.js?v=1"></script>
 <script src="/admin/js/interviews-admin.js?v=10"></script>
 <script src="/admin/js/rpsc-daf-admin.js?v=1"></script>
+<script src="/admin/js/announcements-admin.js?v=1"></script>
 <script>document.getElementById('btnNewInterviewPhase').addEventListener('click', function () { if (window.InterviewsAdmin) window.InterviewsAdmin.showNewForm(); });</script>
 
 <script>

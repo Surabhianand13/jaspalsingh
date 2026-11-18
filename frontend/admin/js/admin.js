@@ -267,7 +267,7 @@
       case 'blog':         loadBlog();         break;
       case 'testimonials': loadTestimonials(); break;
       case 'messages':     loadMessages();     break;
-      case 'learners':     loadLearners();     break;
+      case 'learners':     loadLearners(); if (window.AnnouncementsAdmin) window.AnnouncementsAdmin.load(); break;
       case 'programs':     loadPrograms();     break;
       case 'testday':      if (window.TestDayAdmin) window.TestDayAdmin.load(); break;
       case 'enrollments':  loadEnrollments();  break;
