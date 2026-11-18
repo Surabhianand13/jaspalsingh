@@ -932,6 +932,35 @@
           </div>
           <div id="rpsc-verifications-list"><p class="admin-empty">Loading...</p></div>
         </div>
+
+        <!-- FREE personalised RPSC AE interview questions - DAF submissions (admin/js/rpsc-daf-admin.js) -->
+        <div style="margin-top:32px;border-top:1px solid #e2e8f0;padding-top:24px;">
+          <h3 style="margin:0;font-size:15px;font-weight:700;color:#0f172a;"><i class="fas fa-user-tie" style="color:#16a34a;margin-right:7px;"></i>RPSC AE - DAF submissions (free personalised questions)</h3>
+          <p style="margin:4px 0 14px;font-size:12px;color:#64748b;">Verified RPSC AE candidates (free and paid) who uploaded their DAF from Free Resources. Reply with typed questions and/or a PDF - it shows on the learner's profile, and the first send emails them a link.</p>
+          <div id="rpscDafAdmin"><p class="admin-empty">Loading...</p></div>
+          <style>
+            .rda-sm { padding:6px 12px !important; font-size:12.5px !important; }
+            .rda-bar { display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center; justify-content:space-between; background:#fff; border:1.5px solid #E2E8F0; border-radius:12px; padding:12px 16px; font-size:13.5px; }
+            .rda-row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+            .rda-row input, .rda-row select { border:1.5px solid #E2E8F0; border-radius:8px; padding:7px 10px; font-size:13px; }
+            .rda-meta { font-size:12px; color:#64748B; }
+            .rda-b { display:inline-block; font-size:11px; font-weight:700; border-radius:50px; padding:2px 9px; background:#F1F5F9; color:#475569; }
+            .rda-b--new { background:#FEF3C7; color:#92400E; }
+            .rda-b--prog { background:#DBEAFE; color:#1E40AF; }
+            .rda-b--ok { background:#DCFCE7; color:#166534; }
+            .rda-b--paid { background:#EDE9FE; color:#5B21B6; }
+            .rda-wrap { overflow-x:auto; background:#fff; border:1.5px solid #E2E8F0; border-radius:12px; }
+            .rda-table { width:100%; border-collapse:collapse; font-size:13px; }
+            .rda-table th { text-align:left; font-size:11px; text-transform:uppercase; color:#94A3B8; padding:9px 10px; border-bottom:1.5px solid #E2E8F0; white-space:nowrap; }
+            .rda-table td { padding:9px 10px; border-bottom:1px solid #F1F5F9; vertical-align:top; }
+            .rda-on td { background:#F7FEF9; }
+            .rda-edit > td { background:#F7FEF9 !important; }
+            .rda-form { max-width:760px; }
+            .rda-form label { display:flex; flex-direction:column; gap:4px; font-size:12.5px; font-weight:700; color:#475569; margin-top:8px; }
+            .rda-form textarea { border:1.5px solid #E2E8F0; border-radius:8px; padding:9px 10px; font-size:13.5px; font-family:inherit; line-height:1.55; resize:vertical; }
+            .rda-link { background:none; border:0; padding:0; color:#C81240; font-size:12.5px; font-weight:700; cursor:pointer; text-decoration:underline; }
+          </style>
+        </div>
       </section>
 
       <!-- ── TEST DAY (ops: upload status + OMR zip) ── -->
@@ -1643,6 +1672,7 @@
 <script src="/admin/js/home-programs-admin.js"></script>
 <script src="/admin/js/test-day-admin.js?v=1"></script>
 <script src="/admin/js/interviews-admin.js?v=10"></script>
+<script src="/admin/js/rpsc-daf-admin.js?v=1"></script>
 <script>document.getElementById('btnNewInterviewPhase').addEventListener('click', function () { if (window.InterviewsAdmin) window.InterviewsAdmin.showNewForm(); });</script>
 
 <script>
@@ -1822,7 +1852,7 @@ function showQr(id, title) {
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.admin-nav-link').forEach(btn => {
     btn.addEventListener('click', () => {
-      if (btn.dataset.section === 'free-resources') { loadFreeResources(); loadRpscVerifications(); }
+      if (btn.dataset.section === 'free-resources') { loadFreeResources(); loadRpscVerifications(); if (window.RpscDafAdmin) window.RpscDafAdmin.load(); }
     });
   });
 });
