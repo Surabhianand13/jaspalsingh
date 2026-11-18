@@ -141,6 +141,7 @@ app.use('/api/coupons',          require('./routes/coupons'));
 app.use('/api/homepage-content', require('./routes/homepage-content'));
 app.use('/api/site-settings',    require('./routes/site-settings'));
 app.use('/api/interviews',       require('./routes/interviews'));
+app.use('/api/rpsc-daf',         require('./routes/rpsc-daf'));
 
 /* ── Health Check ────────────────────────────────────────── */
 
@@ -3269,6 +3270,10 @@ async function migrate() {
   /* ── Interview slot booking (RPSC AE Interview Guidance, 2026-10-21) -
      tables live in services/interviewService.js. ── */
   await require('./services/interviewService').migrate();
+
+  /* ── FREE personalised RPSC AE interview questions from a learner's
+     DAF (2026-11-18) - tables live in routes/rpsc-daf.js. ── */
+  await require('./routes/rpsc-daf').migrate();
 
   /* ── White House centre PIN code correction (2026-10-21): the owner
      confirmed the centre's PIN is 302018, not 302015. Fixes copies

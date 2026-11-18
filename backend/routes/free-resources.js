@@ -203,3 +203,4 @@ router.delete('/:id', protect, async (req, res, next) => {
 });
 
 module.exports = router;
+module.exports.isRpscVerified = isRpscVerified; // also used by routes/rpsc-daf.js

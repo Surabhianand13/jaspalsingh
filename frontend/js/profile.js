@@ -297,7 +297,7 @@
   function tabFromLocation() {
     var h = (window.location.hash || '').slice(1);
     if (new URLSearchParams(location.search).get('open_resource')) return 'free';
-    if (h === 'free-resources' || h === 'free') return 'free';
+    if (h === 'free-resources' || h === 'free' || h === 'rpsc-questions') return 'free';
     if (h === 'referral') return 'referral';
     if (h === 'account') return 'account';
     if (h === 'courses' || h === 'enrolled' || h.indexOf('ld-') === 0) return 'courses';

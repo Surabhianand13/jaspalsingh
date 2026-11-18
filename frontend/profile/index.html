@@ -24,6 +24,40 @@
   <link rel="stylesheet" href="/css/profile.css?v=3" />
   <link rel="stylesheet" href="/css/learner-dashboard.css?v=7" />
 <script src="/js/loader.js"></script>
+  <style>
+    /* FREE personalised RPSC AE questions (js/rpsc-daf.js) */
+    #rpscDafBox:empty { display:none; }
+    .rdq { border:1.5px solid #BBF7D0; background:#F7FEF9; border-radius:14px; padding:16px 18px; margin:0 0 18px; scroll-margin-top:140px; }
+    .rdq--ready { border-color:#86EFAC; }
+    .rdq-head { display:flex; gap:12px; align-items:flex-start; }
+    .rdq-icon { flex:none; width:40px; height:40px; border-radius:10px; background:#DCFCE7; color:#16A34A; display:grid; place-items:center; font-size:18px; }
+    .rdq-tags { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:4px; }
+    .rdq-tag { font-size:11px; font-weight:800; border-radius:50px; padding:2px 9px; background:#E0F2FE; color:#0369A1; }
+    .rdq-tag--free { background:#16A34A; color:#fff; }
+    .rdq-tag--ok { background:#DCFCE7; color:#166534; }
+    .rdq-tag--wait { background:#FEF3C7; color:#92400E; }
+    .rdq-title { margin:0; font-size:16px; font-weight:800; color:#0F172A; line-height:1.35; }
+    .rdq-sub { margin:10px 0 12px; font-size:13.5px; color:#475569; line-height:1.6; }
+    .rdq-muted { margin:8px 0 0; font-size:12px; color:#64748B; }
+    .rdq-form { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; }
+    .rdq-form label { display:flex; flex-direction:column; gap:5px; font-size:12.5px; font-weight:700; color:#334155; }
+    .rdq-form input, .rdq-form select { border:1.5px solid #E2E8F0; border-radius:8px; padding:9px 10px; font-size:14px; font-weight:500; background:#fff; font-family:inherit; }
+    .rdq-form input[readonly] { background:#F1F5F9; color:#475569; }
+    .rdq-form input[type=file] { padding:7px; font-size:12.5px; }
+    .rdq-form small { font-weight:500; color:#64748B; }
+    .rdq-form .rdq-check, .rdq-form .rdq-msg, .rdq-form .rdq-actions, .rdq-form .rdq-muted { grid-column:1 / -1; }
+    .rdq-check { flex-direction:row !important; align-items:flex-start; gap:8px !important; font-weight:600 !important; }
+    .rdq-check input { margin-top:2px; }
+    .rdq-msg { margin:0; font-size:13px; border-radius:8px; padding:8px 12px; }
+    .rdq-msg--err { background:#FEF2F2; color:#991B1B; }
+    .rdq-msg--ok { background:#F0FDF4; color:#166534; }
+    .rdq-actions { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:4px; }
+    .rdq-btn { background:#C81240; color:#fff; border:0; border-radius:10px; padding:10px 18px; font-size:14px; font-weight:800; cursor:pointer; font-family:inherit; }
+    .rdq-btn:disabled { opacity:.7; cursor:default; }
+    .rdq-link { background:none; border:0; padding:0; color:#C81240; font-size:13px; font-weight:700; cursor:pointer; text-decoration:underline; font-family:inherit; }
+    .rdq-qs { margin:4px 0 12px; padding-left:22px; font-size:14px; color:#1E293B; line-height:1.65; }
+    .rdq-qs li { margin-bottom:6px; overflow-wrap:anywhere; }
+  </style>
 </head>
 <body>
   <a href="#main-content" class="skip-to-main">Skip to main content</a>
@@ -700,6 +734,8 @@
             <h2><i class="fas fa-book-open-reader"></i> Free Study Resources <span class="frx-total" id="frTotalCount" style="display:none;"></span></h2>
             <p class="frx-sub">Notes, test papers and solutions by Jaspal Sir - free for registered learners.</p>
           </div>
+          <!-- FREE personalised RPSC AE interview questions from the learner's DAF (js/rpsc-daf.js) -->
+          <div id="rpscDafBox"></div>
           <div id="freeResourcesBody">
             <div class="profile-skeleton-list">
               <div class="pskel"></div><div class="pskel"></div>
@@ -806,7 +842,8 @@
   <script src="/js/learner-auth.js?v=2"></script>
   <script src="/js/schedule-modal.js?v=7"></script>
   <script src="/js/learner-dashboard.js?v=14"></script>
-  <script src="/js/profile.js?v=6"></script>
+  <script src="/js/profile.js?v=7"></script>
+  <script src="/js/rpsc-daf.js?v=1"></script>
   <script src="/js/login-wall.js" defer></script>
   <script src="/js/track.js" defer></script>
   <a href="https://wa.me/919829133317" target="_blank" rel="noopener" aria-label="Chat on WhatsApp" class="whatsapp-float"><i class="fab fa-whatsapp"></i></a>
