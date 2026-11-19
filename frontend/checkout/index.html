@@ -749,7 +749,17 @@
       // Hide Locations row always (60+ cities - too many to show, shown on program page)
       document.getElementById('coRowLocations').style.display = 'none';
       var isOmr = slug.indexOf('omr') !== -1;
-      document.getElementById('coFormatVal').textContent = isOmr ? 'Printed OMR Offline' : 'Offline';
+      document.getElementById('coFormatVal').textContent = program.pickup ? 'Printed set - collect from Jaipur office' : isOmr ? 'Printed OMR Offline' : 'Offline';
+
+      // No coupon or referral code works on this program (e.g. Practice Set).
+      if (program.noOffers) {
+        ['inp-coupon', 'inp-referral'].forEach(function (id) {
+          var g = document.getElementById(id).closest('.form-group');
+          if (g) g.style.display = 'none';
+        });
+        document.getElementById('couponMsg').style.display = 'none';
+        document.getElementById('referralMsg').style.display = 'none';
+      }
 
       // ── Adapt form based on login state ─────────────────────
       if (_loggedIn) {
@@ -779,7 +789,7 @@
 
       // Auto-apply coupon from URL param (e.g. ?coupon=JASPALSIR)
       const urlCoupon = params.get('coupon');
-      if (urlCoupon) {
+      if (urlCoupon && !program.noOffers) {
         document.getElementById('inp-coupon').value = urlCoupon.toUpperCase();
         document.getElementById('couponApplyBtn').click();
       }

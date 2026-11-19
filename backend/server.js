@@ -3268,6 +3268,43 @@ async function migrate() {
   }
   console.log('✅ Seeded 4 RSSB JE 2026 FLT (15 Nov) programs');
 
+  /* ── RSSB JE 2026 Practice Set (Test Series) (2026-11-19): a printed
+     set of 15 full-length practice papers with solutions + 15 OMR
+     sheets, Degree Civil and Diploma Civil. Rs 499 (MRP 999). Collected
+     from the Jaipur office only (launch_config.mode 'pickup' - no Tally
+     form, admit card, roll number or test schedule). No coupon or
+     referral code works on it (launch_config.noOffers). Inserted once,
+     so admin edits stick. ── */
+  const PRACTICE_SET_PICKUP = {
+    address: '33, White House, Opp. Zone Tech, Tonk Road, Madhuvan Colony, Mansingh Pura, Jaipur, Rajasthan 302018',
+    hours: '10 AM to 5 PM',
+    mapUrl: 'https://maps.app.goo.gl/UiYpXv447AWrfyMX8',
+    includes: '15 full-length practice papers with solutions + 15 OMR sheets',
+  };
+  for (const [slug, level, img, sortOrder] of [
+    ['rssb-je-2026-practice-set-degree-civil', 'Degree', 'practice-set-rssb-je-degree-civil.jpg', 46],
+    ['rssb-je-2026-practice-set-diploma-civil', 'Diploma', 'practice-set-rssb-je-diploma-civil.jpg', 47],
+  ]) {
+    await query(
+      `INSERT INTO programs (slug, title, short_name, category, exam, level, status, price, mrp, accent, icon_class, thumbnail_url,
+                             sort_order, omr_enabled, total_tests, tags, short_desc, detail_url, is_visible, launch_config)
+       VALUES ($1,$2,$3,'test-series','RSSB JE 2026',$4,'enrolling',499,999,'orange','fa-book',$5,$6,FALSE,15,$7,$8,$9,TRUE,$10)
+       ON CONFLICT (slug) DO NOTHING`,
+      [
+        slug,
+        `RSSB JE 2026 - Practice Set (Test Series) - ${level} Civil`,
+        `Practice Set - ${level} Civil`,
+        `${level} (Civil)`,
+        `/assets/images/${img}`,
+        sortOrder,
+        JSON.stringify(['Practice Set', 'Printed', 'Collect from Jaipur office']),
+        `15 full-length practice papers with solutions + 15 OMR sheets, RSSB JE pattern - collect from our Jaipur office`,
+        `/programs/${slug}/`,
+        JSON.stringify({ mode: 'pickup', noOffers: true, pickup: PRACTICE_SET_PICKUP }),
+      ]
+    );
+  }
+
   /* ── Interview slot booking (RPSC AE Interview Guidance, 2026-10-21) -
      tables live in services/interviewService.js. ── */
   await require('./services/interviewService').migrate();

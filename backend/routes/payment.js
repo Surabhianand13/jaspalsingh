@@ -140,6 +140,13 @@ async function assignRollNumber(enrollment) {
   }
 }
 
+async function isPickupProgram(slug) {
+  try {
+    const r = await query(`SELECT launch_config->>'mode' AS mode FROM programs WHERE slug = $1`, [slug]);
+    return !!(r.rows[0] && r.rows[0].mode === 'pickup');
+  } catch (err) { return false; }
+}
+
 /* ── Called whenever an enrollment transitions to 'paid' ── */
 async function onEnrollmentPaid(enrollment) {
   await ensureReferralCode(enrollment);
@@ -147,7 +154,9 @@ async function onEnrollmentPaid(enrollment) {
   await cancelDuplicatePendingEnrollments(enrollment);
   // Mock Interview Add-on: the learner keeps their RPSC AE roll number,
   // the add-on order never gets one of its own.
-  if (!addonPack(enrollment.program_slug)) await assignRollNumber(enrollment);
+  // Collect-from-office products (Practice Set) have no test or admit
+  // card, so no roll number either.
+  if (!addonPack(enrollment.program_slug) && !(await isPickupProgram(enrollment.program_slug))) await assignRollNumber(enrollment);
   // Interview programs: learners who pay after the booking invites went
   // out get their slot booking link right away (no-op for every other
   // program - only fires when an open interview phase exists for it).
@@ -247,7 +256,7 @@ const FALLBACK_PROGRAMS = {
 
 async function getProgramData(slug) {
   try {
-    const result = await query(`SELECT slug, title, short_name, price, mrp, is_visible, pricing_tiers FROM programs WHERE slug = $1`, [slug]);
+    const result = await query(`SELECT slug, title, short_name, price, mrp, is_visible, pricing_tiers, launch_config FROM programs WHERE slug = $1`, [slug]);
     // is_visible = FALSE only ever hid a program from listings (homepage/
     // programs page) - nothing enforced it at the actual purchase point,
     // so a discontinued program (e.g. admin "marks off" a cancelled exam)
@@ -255,7 +264,9 @@ async function getProgramData(slug) {
     // is the real enforcement: explicitly hidden programs can't be bought.
     if (result.rows.length && result.rows[0].price != null && result.rows[0].mrp != null && result.rows[0].is_visible !== false) {
       const row = result.rows[0];
-      return { name: row.title, shortName: row.short_name || row.title, price: row.price, mrp: row.mrp, pricingTiers: row.pricing_tiers || null };
+      return { name: row.title, shortName: row.short_name || row.title, price: row.price, mrp: row.mrp, pricingTiers: row.pricing_tiers || null,
+        // launch_config.noOffers: no coupon and no referral code works (e.g. the Rs 499 Practice Set).
+        noOffers: !!(row.launch_config && row.launch_config.noOffers) };
     }
   } catch (err) {
     console.error('[getProgramData] DB error, falling back to hardcoded catalogue:', err.message);
@@ -293,6 +304,8 @@ router.post('/validate-coupon', async (req, res) => {
 
   const program = await getProgramData(program_slug);
   if (!program) return res.status(400).json({ error: 'Invalid program.' });
+
+  if (program.noOffers) return res.status(400).json({ valid: false, error: 'Coupons cannot be used on this program.' });
 
   const resolved = resolveTierPrice(program, centre_tier);
   if (!resolved) return res.status(400).json({ error: 'Please select your centre first.' });
@@ -337,6 +350,7 @@ router.post('/validate-referral', optionalLearner, async (req, res) => {
 
   const program = await getProgramData(program_slug);
   if (!program) return res.status(400).json({ error: 'Invalid program.' });
+  if (program.noOffers) return res.status(400).json({ valid: false, error: 'Referral codes cannot be used on this program.' });
 
   const resolved = resolveTierPrice(program, centre_tier);
   if (!resolved) return res.status(400).json({ error: 'Please select your centre first.' });
@@ -401,7 +415,7 @@ router.post('/create-order', createOrderLimiter, optionalLearner, async (req, re
     let finalPrice = resolved.price;
     let couponApplied = null;
     let couponExclusive = false;
-    if (coupon_code) {
+    if (coupon_code && !program.noOffers) {
       const coup = await applyCoupon(coupon_code, resolved.price, program_slug);
       if (coup && coup.couponRow && await isCouponUsageExceeded(coup.couponRow)) {
         return res.status(400).json({ error: 'This coupon has already been used.' });
@@ -410,7 +424,7 @@ router.post('/create-order', createOrderLimiter, optionalLearner, async (req, re
     }
 
     let referredBy = null;
-    if (referral_code && !couponExclusive && finalPrice >= REFERRAL_MIN_PRICE && !isFreedomSaleDay()) {
+    if (referral_code && !program.noOffers && !couponExclusive && finalPrice >= REFERRAL_MIN_PRICE && !isFreedomSaleDay()) {
       const lookup = await lookupReferral(referral_code, phone, email, req.learner?.id);
       if (lookup && !lookup.selfReferral) {
         finalPrice = Math.max(1, finalPrice - REFERRAL_DISCOUNT);
@@ -682,7 +696,7 @@ router.get('/programs', async (req, res) => {
   }
   try {
     const result = await query(
-      `SELECT slug, title, price, mrp, thumbnail_url, accent, icon_class, category, pricing_tiers
+      `SELECT slug, title, price, mrp, thumbnail_url, accent, icon_class, category, pricing_tiers, launch_config
        FROM programs WHERE price IS NOT NULL AND mrp IS NOT NULL AND is_visible IS NOT FALSE`
     );
     for (const row of result.rows) {
@@ -694,6 +708,8 @@ router.get('/programs', async (req, res) => {
         color: ACCENT_GRADIENTS[row.accent] || ACCENT_GRADIENTS.blue,
         thumb: row.thumbnail_url || null,
         pricingTiers: row.pricing_tiers || null,
+        noOffers: !!(row.launch_config && row.launch_config.noOffers),
+        pickup: !!(row.launch_config && row.launch_config.mode === 'pickup'),
       };
     }
   } catch (err) {

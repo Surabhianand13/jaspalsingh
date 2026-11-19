@@ -218,6 +218,13 @@ async function resolveFulfillment(enrollment) {
     console.error('[sendWelcomePaymentEmail] launch_config lookup failed:', err.message);
   }
 
+  /* Collect-from-office products (launch_config.mode = 'pickup', e.g. the
+     RSSB JE Practice Set): no Tally form, no admit card, no WhatsApp group -
+     the learner collects the printed set from the office. */
+  if (launchConfig && launchConfig.mode === 'pickup') {
+    return { formUrl: null, needsManualFulfillment: false, waGroups: [], pickup: launchConfig.pickup || {} };
+  }
+
   const isComboOffline = slug === SLUG_COMBO_OFFLINE;
   const isComboOmr     = slug === SLUG_COMBO_OMR;
   const isEse          = !!ESE_TALLY_FORM_URLS[slug];
@@ -268,7 +275,8 @@ async function resolveFulfillment(enrollment) {
 async function sendWelcomePaymentEmail(enrollment) {
   const firstName = esc((enrollment.student_name || 'there').split(' ')[0]);
 
-  const { formUrl, needsManualFulfillment, waGroups } = await resolveFulfillment(enrollment);
+  const { formUrl, needsManualFulfillment, waGroups, pickup } = await resolveFulfillment(enrollment);
+  if (pickup) return sendPickupWelcomeEmail(enrollment, pickup);
 
   const normPhone = (enrollment.student_phone || '').replace(/\D/g, '').slice(-10);
 
@@ -396,6 +404,44 @@ async function sendWelcomePaymentEmail(enrollment) {
       ? `Welcome aboard! We'll be in touch shortly | ${enrollment.program_name}`
       : `Action required - fill your details to get your Admit Card | ${enrollment.program_name}`,
     html:    baseHtml(body),
+  }, PRIORITY.ACTION_REQUIRED);
+}
+
+/* Welcome email for collect-from-office products (Practice Set). */
+async function sendPickupWelcomeEmail(enrollment, pickup) {
+  const firstName = esc((enrollment.student_name || 'there').split(' ')[0]);
+  const normPhone = (enrollment.student_phone || '').replace(/\D/g, '').slice(-10);
+  const body = `
+    <h2 style="margin:0 0 8px;font-size:22px;color:#1A1A2E;font-weight:800;">Thank you, ${firstName}!</h2>
+    <p style="margin:0 0 20px;font-size:15px;color:#374151;line-height:1.75;">
+      Your order for <strong>${esc(enrollment.program_name)}</strong> is confirmed.
+    </p>
+    <div style="background:#fff8f0;border:1px solid #fed7aa;border-radius:12px;padding:20px 24px;margin-bottom:24px;">
+      <div style="font-size:13px;font-weight:800;color:#c2410c;text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;">
+        📦 Collect your practice set from our office
+      </div>
+      ${pickup.includes ? `<p style="margin:0 0 12px;font-size:14px;color:#374151;line-height:1.7;"><strong>You get:</strong> ${esc(pickup.includes)}</p>` : ''}
+      <p style="margin:0 0 6px;font-size:14px;color:#374151;line-height:1.7;"><strong>Address:</strong> ${esc(pickup.address || '')}</p>
+      <p style="margin:0 0 14px;font-size:14px;color:#374151;line-height:1.7;"><strong>Timings:</strong> ${esc(pickup.hours || '')}</p>
+      <p style="margin:0 0 16px;font-size:13px;color:#6b7280;line-height:1.7;">
+        Show this email or your Order ID at the office. Registered mobile: <strong>${normPhone ? '+91 ' + normPhone : esc(enrollment.student_phone || '')}</strong>
+      </p>
+      ${pickup.mapUrl ? `<a href="${esc(pickup.mapUrl)}" style="display:inline-block;background:#C81240;color:#fff;border-radius:10px;padding:13px 26px;font-size:15px;font-weight:700;text-decoration:none;">Open in Google Maps →</a>` : ''}
+    </div>
+    <p style="font-size:13px;color:#9ca3af;margin:0 0 6px;">
+      Order ID: <span style="font-family:monospace;color:#475569;">${esc(enrollment.order_id)}</span>
+    </p>
+    <p style="font-size:13px;color:#9ca3af;margin:0 0 24px;">
+      Your payment receipt has been sent in a separate email. Questions? WhatsApp us at +91 98291 33317.
+    </p>
+    <div style="border-top:1px solid #f0f0f6;padding-top:20px;">
+      <p style="margin:0;font-size:13px;color:#C81240;font-weight:700;">- Dr. Jaspal Singh &nbsp;·&nbsp; ESE AIR-04 &nbsp;·&nbsp; GATE AIR-06</p>
+    </div>`;
+  return resendSend({
+    from: FROM,
+    to: enrollment.student_email,
+    subject: `Order confirmed - collect your practice set from our Jaipur office | ${enrollment.program_name}`,
+    html: baseHtml(body),
   }, PRIORITY.ACTION_REQUIRED);
 }
 

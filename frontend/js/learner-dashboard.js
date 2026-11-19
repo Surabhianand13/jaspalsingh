@@ -126,6 +126,7 @@
      tests are scheduled yet. */
   function programMode(e, tests) {
     if (e.program_category === 'interview') return 'interview';
+    if (e.pickup) return 'pickup';
     if (tests.some(function (t) { return t.requires_omr_upload; })) return 'omr';
     var slug = (e.canonical_slug || e.program_slug || '');
     if (slug.indexOf('omr') !== -1) return 'omr';
@@ -160,6 +161,14 @@
         '<strong>Tests</strong> included in your batch are listed below with their status.',
       ],
     },
+    pickup: {
+      chip: '<i class="fas fa-book"></i> Printed set · collect from office',
+      steps: [
+        '<strong>Visit our Jaipur office</strong> between 10 AM and 5 PM to collect your practice set and OMR sheets.',
+        '<strong>Show your order confirmation email</strong> or your Order ID at the office.',
+        '<strong>Attempt each paper under timed conditions</strong> on the OMR sheet, then check your answers with the solutions in the set.',
+      ],
+    },
     interview: {
       chip: '<i class="fas fa-user-tie"></i> Interview program',
       steps: [
@@ -173,6 +182,12 @@
   /* ── Admit card step ── */
   function admitStep(e) {
     if (e.program_category === 'interview') return null;
+    if (e.pickup) {
+      var pk = e.pickup;
+      return { state: 'todo', label: 'Collect your practice set',
+        note: (pk.address ? esc(pk.address) : 'Our Jaipur office') + (pk.hours ? ' · ' + esc(pk.hours) : '') + '. Show your Order ID <strong class="ld-mono">' + esc(e.order_id) + '</strong>.',
+        action: pk.mapUrl ? '<a class="ld-btn ld-btn--primary" href="' + esc(pk.mapUrl) + '" target="_blank" rel="noopener"><i class="fas fa-location-dot"></i> Open in Maps</a>' : '' };
+    }
     if (e.admit_card_status === 'approved' && e.admit_card_pdf_url) {
       return { state: 'done', label: 'Admit card ready', action: '<a class="ld-btn ld-btn--primary" href="' + esc(e.admit_card_pdf_url) + '" target="_blank" rel="noopener"><i class="fas fa-download"></i> Download admit card</a>' };
     }
@@ -503,7 +518,7 @@
       '<ol class="ld-steps">' +
         '<li class="ld-step ld-step--done"><span class="ld-step-dot"><i class="fas fa-check"></i></span><span>Enrolled<small>' + esc(fmtDay(e.paid_at)) + '</small></span></li>' +
         (admit ? '<li class="ld-step ld-step--' + admit.state + '"><span class="ld-step-dot">' + (admit.state === 'done' ? '<i class="fas fa-check"></i>' : '2') + '</span><span>' + esc(admit.label) + '</span></li>' : '') +
-        (mode !== 'interview' ? '<li class="ld-step ' + (tests.length && doneCount === tests.length ? 'ld-step--done' : 'ld-step--wait') + '"><span class="ld-step-dot">' + (admit ? '3' : '2') + '</span><span>Tests<small>' + (sched.loading ? 'loading…' : tests.length ? doneCount + ' of ' + tests.length + ' done' : 'schedule soon') + '</small></span></li>' : '') +
+        (mode !== 'interview' && mode !== 'pickup' ? '<li class="ld-step ' + (tests.length && doneCount === tests.length ? 'ld-step--done' : 'ld-step--wait') + '"><span class="ld-step-dot">' + (admit ? '3' : '2') + '</span><span>Tests<small>' + (sched.loading ? 'loading…' : tests.length ? doneCount + ' of ' + tests.length + ' done' : 'schedule soon') + '</small></span></li>' : '') +
       '</ol>';
 
     var admitBlock = admit && (admit.note || admit.action)
@@ -514,7 +529,9 @@
       : '';
 
     var nextBlock = '';
-    if (next) {
+    if (mode === 'pickup') {
+      nextBlock = '';
+    } else if (next) {
       var st = testStatus(next);
       var rel = st.key === 'upload' ? relative(next.omr_upload_deadline) : st.key === 'soon' ? relative(next.paper_release_at) : '';
       nextBlock =
@@ -572,7 +589,7 @@
 
     var howTo =
       '<details class="ld-fold">' +
-        '<summary><i class="fas fa-circle-question"></i> ' + (mode === 'interview' ? 'How interview slots work' : 'How tests work for this program') + '</summary>' +
+        '<summary><i class="fas fa-circle-question"></i> ' + (mode === 'interview' ? 'How interview slots work' : mode === 'pickup' ? 'How to collect and use your set' : 'How tests work for this program') + '</summary>' +
         '<ol class="ld-howto">' + info.steps.map(function (s) { return '<li>' + s + '</li>'; }).join('') + '</ol>' +
       '</details>';
 
