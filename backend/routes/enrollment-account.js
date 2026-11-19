@@ -250,6 +250,7 @@ router.get('/my-enrollments', protectLearner, async (req, res) => {
         admit_form_url: formIsNextStep ? fulfillment.formUrl : null,
         manual_followup: !!fulfillment.needsManualFulfillment,
         wa_groups: fulfillment.waGroups || [],
+        pickup: fulfillment.pickup || null, // collect-from-office products (Practice Set)
       };
     }));
 
